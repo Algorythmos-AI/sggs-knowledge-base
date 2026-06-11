@@ -186,6 +186,9 @@ def do_search(q, mode, limit, offset):
             if not res:                                   # curated seeker words
                 lx = lexicon_search(q, limit, offset)
                 if lx: return lx
+            if not res:                                   # precomputed variant index
+                vr = variant_search(q, limit, offset)
+                if vr: return {'mode': 'variant-match', 'results': vr}
             if not res:                                   # English layer before fold:
                 res = search_en(q, limit, offset)         # 'mercy' must hit translations,
                 used = 'english-translation'              # not fold-collide with ਮੋਰਚਾ
@@ -200,6 +203,34 @@ def do_search(q, mode, limit, offset):
         rel = term_concepts(toks)
         if rel: out['related_themes'] = rel[:3]
     return out
+
+def variant_search(q, limit, offset):
+    """Precomputed romanization-variant tier (03_Phonetic-Variant-Engine.md).
+    Each query token resolves to <=3 canonical translit terms (freq*score);
+    combined as ONE FTS expression: translit:(a OR b) AND translit:(c OR d)."""
+    toks = [t for t in q.lower().split() if t.isalnum()]
+    if not toks or len(toks) > 6: return None
+    groups, resolved_any = [], False
+    try:
+        for t in toks:
+            rs = db().execute(
+                'SELECT DISTINCT translit FROM variants WHERE variant = ? '
+                'ORDER BY freq * score DESC LIMIT 3', (t,)).fetchall()
+            if rs:
+                resolved_any = True
+                groups.append('(' + ' OR '.join(f'"{r[0]}"' for r in rs) + ')')
+            else:
+                groups.append(f'("{t}")')        # token may already be canonical
+        if not resolved_any: return None
+        expr = ' AND '.join(f'translit:{g}' for g in groups)
+        sql = (f"SELECT {LINE_COLS} FROM lines JOIN "
+               f"(SELECT rowid, bm25(fts, 10.0, 5.0, 4.0, 3.0, 3.0, 1.0) AS rk "
+               f" FROM fts WHERE fts MATCH ?) m ON lines.id = m.rowid "
+               f"ORDER BY m.rk, lines.id LIMIT ? OFFSET ?")
+        res = rows_to_list(db().execute(sql, (expr, limit, offset)).fetchall())
+        return res or None
+    except sqlite3.OperationalError:
+        return None
 
 def search_en(q, limit, offset):
     """Search the labeled English translation layer (Dr. Sant Singh Khalsa)."""

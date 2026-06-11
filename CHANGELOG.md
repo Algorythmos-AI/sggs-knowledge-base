@@ -1,5 +1,11 @@
 # Changelog — SGGS Knowledge Base
 
+## v1.7.0 — 2026-06-11 — Phonetic Variant Engine
+- **Precomputed romanization-variant index** (Sam's Worker/Supervisor design, productionized): 59,227 variants for 29,241 words from a 15-rule weighted engine (BFS depth 3), built deterministically in 0.7s. LLM agents repositioned to rule-design + adversarial review (2 SME agents; 6 blocking changes applied).
+- **Lowercase-vocabulary English veto**: real-English collisions purged (372) while reverentially-capitalized Gurbani loans (Kirtan, Amrit, Naam) stay searchable; canonical-translit collisions purged (6,232).
+- New `variant-match` query tier (exact → lexicon → variants → English → fold → theme); single-FTS-expression AND with ≤3 fan-out per token. wahiguru/kirtan/hukum/kartaa/nirbhau/darsan/prabhu all resolve; 22/22 battery, 0 regressions.
+- Design doc: `03_Phonetic-Variant-Engine.md`; specs in `validation/`.
+
 ## v1.6.1 — 2026-06-11 — seeker-grade search (SME-validated)
 - **Any natural word now resolves professionally.** SME battery of 73 seeker queries found 18 failures (yashoda→nothing, mercy→ਮੋਰਚਾ "rust", krishna→ਕਿਰਸਾਣੁ "farmer"…); all 18 fixed, zero regressions (26-check suite).
 - **Phonetic-fold v2** on the Roman tier, both index and query: y/j (yashoda≡jasodaa), sh/s, aspirate digraphs (kh gh ch jh th dh bh ph rh), z/j, glide-y (gyan≡giaan), w/v.
