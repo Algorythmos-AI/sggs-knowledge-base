@@ -15,8 +15,11 @@ DB = os.path.join(HERE, '..', 'db', 'sggs.sqlite')
 PORT = int(os.environ.get('SGGS_PORT', '7777'))
 
 # Search-logic release stamp. Lives in code (not DB meta) so a search-only patch
-# doesn't force an 86 MB DB re-commit. /api/health prefers this; DB meta is fallback.
-APP_VERSION = '1.9.2'
+# doesn't force an 86 MB DB re-commit. /api/meta and /api/health prefer these; the
+# DB meta row is the fallback. Bump on every search-logic release so the UI footer
+# (which reads /api/meta) reflects the running build.
+APP_VERSION = '1.9.3'
+APP_BUILT = '2026-06-11'
 
 import sys as _sys
 _sys.path.insert(0, HERE)
@@ -98,6 +101,11 @@ SEEKER_LEXICON = {
     'mind': ('translit', ['man']), 'word': ('translit', ['sabad']),
     'karma': ('translit', ['karam']), 'bhakti': ('translit', ['bhagat']),
     'dhyan': ('translit', ['dhiaan']), 'gyan': ('translit', ['giaan']),
+    # darshan folds to 'drsn' = trisanaa (thirst/desire) — opposite meaning; anchor to
+    # the real word. sewa/seva fold to 'sv' which is dominated by sabh (all). Route both
+    # to their canonical translit so these two most-searched terms resolve cleanly.
+    'darshan': ('translit', ['darasan']), 'darshana': ('translit', ['darasan']),
+    'sewa': ('translit', ['sevaa']), 'seva': ('translit', ['sevaa']), 'sewaa': ('translit', ['sevaa']),
     'farid': ('translit', ['phareed', 'phareedaa']), 'krishna': ('translit', ['krisan']),
     'sita': ('translit', ['seetaa']), 'dhru': ('translit', ['dhroo']),
     'prahlad': ('translit', ['prahilaad', 'prahalaad']), 'ravan': ('translit', ['raavan']),
@@ -316,7 +324,14 @@ def variant_search(q, limit, offset):
                     alts.append(f'translit: "{term}"')
             fn = roman_norm(t)
             if fn and len(fn) >= 2:
-                alts.append(f'translit_norm: "{fn}" *')   # prefix: js -> jsh/jsd (typo tails)
+                # EXACT fold, not prefix. A prefix wildcard on a short fold-skeleton
+                # over-matches catastrophically: query 'dhara'->'dr' would prefix-match
+                # 'teerath'->'drd', so `hamra dhara har` wrongly surfaced Ang 1142 above
+                # the true Ang 366 (whose 'dharhaa' folds to exactly 'dr'). Typo-tail
+                # recall is carried by the curated layers above (variants, canon_tokens,
+                # long-vowel twins, nasal-trim, suffix-strip, lexicon) — not by a blunt
+                # wildcard that fabricates matches across unrelated roots.
+                alts.append(f'translit_norm: "{fn}"')
             if alts:
                 groups.append('(' + ' OR '.join(alts) + ')')
             elif fn:                                 # only a 1-char fold: weak token
@@ -360,7 +375,7 @@ def mixed_search(q, limit, offset):
             if lx and lx[0] == 'translit':
                 for term in lx[1][:2]: alts.append(f'translit: "{term}"')
             fn = roman_norm(t)
-            if fn and len(fn) >= 2: alts.append(f'translit_norm: "{fn}" *')
+            if fn and len(fn) >= 2: alts.append(f'translit_norm: "{fn}"')   # exact fold (see variant_search)
             if alts: groups.append('(' + ' OR '.join(alts) + ')')
         if len(groups) < 2: return None
         expr = ' AND '.join(groups)
@@ -388,20 +403,38 @@ def passage_search(q, limit, offset):
     try:
         cand = db().execute(
             'SELECT comp_id, tnorm, rank FROM fts_shabad WHERE fts_shabad MATCH ? '
-            'ORDER BY rank LIMIT 40', (m,)).fetchall()
-        if not cand: return None
+            'ORDER BY rank LIMIT 60', (m,)).fetchall()   # 60 not 40: a true line can sit
+        if not cand: return None                          # past rank 40 in a long shabad
         seq = re.compile(r'\b' + r'\w*\b.*?\b'.join(re.escape(t) for t in toks) + r'\w*')
         # Rank by the SPAN of the tightest in-order match (non-greedy `.*?` finds the
-        # shortest). A genuine quote keeps its words contiguous — the couplet at Ang 410
-        # spans ~19 chars — while a coincidental scatter across a long shabad spans
-        # hundreds. Span cleanly separates the true couplet (#1) where the old density
-        # score did not: density rewarded long shabads for incidental 1-char-fold hits,
-        # sinking the short true couplet below them.
+        # shortest). A genuine quote keeps its words contiguous; a coincidental scatter
+        # across a long shabad spans hundreds. Score the span PER LINE — a quote normally
+        # sits inside ONE line — and fall back to the whole-shabad tnorm only when no
+        # single line carries the full in-order match, i.e. a true cross-line couplet
+        # (Ang 410: ਜੀਵਤ ਜੋ ਮਰੈ ਹਾਂ ॥ / ਦੁਤਰੁ ਸੋ ਤਰੈ ਹਾਂ ॥). Per-line scoring stops one
+        # incidental short-fold hit elsewhere in a long shabad from inflating the span and
+        # sinking the real line (`jaisee aag…` Ang 921 fell to span 3495 / rank #4 before).
+        comp_ids = [r[0] for r in cand]
+        ph = ','.join('?' * len(comp_ids))
+        line_norms = {}
+        for cid, tn in db().execute(
+                f'SELECT comp_id, translit_norm FROM lines '
+                f'WHERE comp_id IN ({ph}) AND is_header = 0', comp_ids).fetchall():
+            line_norms.setdefault(cid, []).append(tn or '')
         scored = []
         for r in cand:
-            mt = seq.search(r[1] or '')
-            if mt:
-                scored.append((len(mt.group(0)), r[2], r[0]))   # (span, bm25, comp_id)
+            cid, shabad_tn = r[0], (r[1] or '')
+            best = None
+            for ln in line_norms.get(cid, ()):            # tightest single-line match
+                mt = seq.search(ln)
+                if mt:
+                    s = len(mt.group(0))
+                    if best is None or s < best: best = s
+            if best is None:                              # cross-line couplet: whole shabad
+                mt = seq.search(shabad_tn)
+                if mt: best = len(mt.group(0))
+            if best is not None:
+                scored.append((best, r[2], cid))          # (span, bm25, comp_id)
         if not scored: return None                    # no in-order match: abstain, never junk
         scored.sort(key=lambda x: (x[0], x[1]))        # tightest span, then bm25 relevance
         cids = [s[2] for s in scored[:3]]
@@ -500,6 +533,9 @@ def api(path, qs):
     p = [x for x in path.split('/') if x][1:]   # drop 'api'
     if p[0] == 'meta':
         m = {r['key']: r['value'] for r in db().execute('SELECT * FROM meta')}
+        m['db_version'] = m.get('version')          # honest record of the DB build
+        m['version'] = APP_VERSION or m.get('version')   # footer shows the running code build
+        m['built'] = APP_BUILT or m.get('built')
         try:
             m['raags'] = rows_to_list(db().execute('SELECT * FROM raags ORDER BY seq'))
         except sqlite3.OperationalError:
@@ -540,6 +576,7 @@ def api(path, qs):
         m = {k: v for k, v in db().execute('SELECT * FROM meta')}
         h['version'] = APP_VERSION or m.get('version')
         h['db_version'] = m.get('version')
+        h['built'] = APP_BUILT or m.get('built')
         check('lines_60658', db().execute('SELECT count(*) FROM lines').fetchone()[0] == 60658)
         check('angs_1430', db().execute('SELECT count(DISTINCT ang) FROM lines').fetchone()[0] == 1430)
         check('fts5', m.get('fts5') == '1' and bool(
