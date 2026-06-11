@@ -1,5 +1,10 @@
 # Changelog — SGGS Knowledge Base
 
+## v1.8.0 — 2026-06-11 — Full-corpus enrichment (the bulletproof release)
+- **Root cause of `nij bhakti sheelbanti naar` → 0 results: FIXED deterministically** before any LLM call — R16 ਬ/ਵ swap (+10,238 variants), k↔g Sanskrit voicing in the fold (bhakti≡bhagatee), punctuation/danda sanitation (`naar.` ≡ `naari ॥`), terminal-vowel retry, and a HYBRID multi-token AND (per-token: variants→translit, else fold→translit_norm) so one stubborn token can't kill a query.
+- **Full-corpus LLM sweep — 100% of the 21,701-word vocabulary** via the resumable block orchestrator (`pipeline/enrich_orchestrator.py`, 29 blocks × 750, prepare/status/merge, idempotent): 29 Worker agents proposed ~2,400 loanword/deep-typo variants; the deterministic Supervisor purged duplicates/English/canonical with full audit (`enrichment/qa_log.jsonl`); **1,059 novel LLM variants merged → 70,604 total** (rule 69,455 · llm 1,059 · typo 90).
+- shakti/kripa/darshan/maya/yogi/narayan/vidya/jagannath/sandhya/lila… all resolve; 19/20 battery (1 = richer-than-expected lexicon output), zero regressions.
+
 ## v1.7.1 — 2026-06-11 — LLM typo-enrichment pass (Worker→Supervisor)
 - Sam's Worker/Supervisor agent pipeline executed for the one class rules can't derive: **common_typo** on the top-500 words. Worker proposed 344; Supervisor purged 245 with full audit trail (`validation/variant_qa_log.jsonl`: 227 duplicate — evidence the rule engine already covers them — 11 canonical, 4+1 English, 2 implausible); **99 approved, 90 loaded** (rebuild-safe input `pipeline/variants_typo.jsonl`, rtype='typo').
 - swami→ਸੁਆਮੀ, nanakji→ਨਾਨਕ, gurbani→ਗੁਰਬਾਣੀ now resolve; compounds added to the lexicon (satnam→ਸਤਿ ਨਾਮੁ, onkar→ਓਅੰਕਾਰ).

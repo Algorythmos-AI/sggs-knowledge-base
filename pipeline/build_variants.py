@@ -81,6 +81,9 @@ RULES = [  # (id, applies(w)->bool, expand(w)->[variants], weight)
          lambda w: [re.sub(f'(?<=[aeiou])ra([{C}])', r'r\1', w)],                       0.75),
  ('R15', lambda w: re.search('[msn]ar[aeiou]', w),
          lambda w: [re.sub('([msn])a(r[aeiou])', r'\1\2', w)],                          0.70),
+ # R16: regional v↔b swap (ਵ/ਬ alternation: seelvantee↔seelbantee, gobind↔govind)
+ ('R16a', lambda w: 'v' in w[1:],          lambda w: [w[0] + w[1:].replace('v', 'b')],  0.70),
+ ('R16b', lambda w: 'b' in w[1:] and 'bh' not in w, lambda w: [w[0] + w[1:].replace('b', 'v')], 0.70),
 ]
 
 def expand(canonical):

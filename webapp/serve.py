@@ -31,6 +31,7 @@ def roman_norm(s):
         w = w.replace('w', 'v').replace('z', 'j').replace('q', 'k').replace('x', 'k')
         for dg in ('sh', 'chh', 'ch', 'kh', 'gh', 'jh', 'th', 'dh', 'bh', 'ph', 'rh', 'f'):
             w = w.replace(dg, dg[0] if dg != 'f' else 'p')
+        w = w.replace('b', 'v').replace('k', 'g')   # ਬ/ਵ + Sanskrit↔Punjabi voicing (bhakti~bhagatee)
         if w.startswith('y'): w = 'j' + w[1:]
         w = w.replace('y', '')                       # medial glide: gyan ~ giaan
         head = w[0] if w and w[0] in 'aeiou' else ''
@@ -136,8 +137,11 @@ def search_like(col, q, limit, offset):
     sql = f"SELECT {LINE_COLS} FROM lines WHERE {col} LIKE ? ORDER BY id LIMIT ? OFFSET ?"
     return rows_to_list(db().execute(sql, (pat, limit, offset)).fetchall())
 
+PUNCT_RE = re.compile(r'[॥।.,;:!?"\'()\[\]{}|/\\-]+')
+
 def do_search(q, mode, limit, offset):
-    q = q.strip()
+    q = PUNCT_RE.sub(' ', q).strip()          # dandas & punctuation are separators
+    q = re.sub(r'\s+', ' ', q)
     if not q: return {'mode': mode, 'results': []}
     global HAVE_FTS
     if HAVE_FTS is None: HAVE_FTS = have_fts()
@@ -208,23 +212,36 @@ def do_search(q, mode, limit, offset):
 
 def variant_search(q, limit, offset):
     """Precomputed romanization-variant tier (03_Phonetic-Variant-Engine.md).
-    Each query token resolves to <=3 canonical translit terms (freq*score);
-    combined as ONE FTS expression: translit:(a OR b) AND translit:(c OR d)."""
+    HYBRID per-token resolution so one stubborn token can't kill the AND:
+      1. variant-index hit        -> translit:(a OR b OR c)   (<=3 by freq*score)
+      2. trailing-vowel retry     -> same ('naari' ~ canonical 'naar')
+      3. canonical/exact token    -> translit:("t")
+      4. otherwise phonetic fold  -> translit_norm:("fold(t)")
+    All combined in ONE FTS expression."""
     toks = [t for t in q.lower().split() if t.isalnum()]
     if not toks or len(toks) > 6: return None
     groups, resolved_any = [], False
     try:
-        for t in toks:
-            rs = db().execute(
+        def lookup(tok):
+            return db().execute(
                 'SELECT DISTINCT translit FROM variants WHERE variant = ? '
-                'ORDER BY freq * score DESC LIMIT 3', (t,)).fetchall()
+                'ORDER BY freq * score DESC LIMIT 3', (tok,)).fetchall()
+        for t in toks:
+            rs = lookup(t)
+            if not rs and len(t) > 3 and t[-1] in 'aeiou':
+                rs = lookup(t[:-1])                  # dropped/extra terminal vowel
             if rs:
                 resolved_any = True
-                groups.append('(' + ' OR '.join(f'"{r[0]}"' for r in rs) + ')')
+                groups.append('translit:(' + ' OR '.join(f'"{r[0]}"' for r in rs) + ')')
+                continue
+            is_canon = db().execute('SELECT 1 FROM variants WHERE translit = ? LIMIT 1', (t,)).fetchone()
+            if is_canon:
+                groups.append(f'translit:("{t}")')
             else:
-                groups.append(f'("{t}")')        # token may already be canonical
+                resolved_any = True                  # fold contributes real signal
+                groups.append(f'translit_norm:("{roman_norm(t)}")')
         if not resolved_any: return None
-        expr = ' AND '.join(f'translit:{g}' for g in groups)
+        expr = ' AND '.join(groups)
         sql = (f"SELECT {LINE_COLS} FROM lines JOIN "
                f"(SELECT rowid, bm25(fts, 10.0, 5.0, 4.0, 3.0, 3.0, 1.0) AS rk "
                f" FROM fts WHERE fts MATCH ?) m ON lines.id = m.rowid "
