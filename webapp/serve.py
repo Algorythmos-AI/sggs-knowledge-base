@@ -100,6 +100,8 @@ SEEKER_LEXICON = {
     'indra': ('translit', ['indr', 'ind']), 'yashoda': ('translit', ['jasodaa', 'jasudaa']),
     'yamuna': ('translit', ['jamunaa']), 'waheguru': ('translit', ['vaahiguroo']),
     'allah': ('translit', ['alah']), 'khuda': ('translit', ['khudaa', 'khudaae']),
+    'satnam': ('translit', ['sat naam', 'satinaam']), 'satguru': ('translit', ['satigur']),
+    'onkar': ('translit', ['oankaar']), 'ikonkar': ('translit', ['oankaar']),
 }
 
 def lexicon_search(q, limit, offset):

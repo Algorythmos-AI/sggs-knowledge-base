@@ -15,7 +15,7 @@
 | **variant** | A user-typed spelling to be mapped → canonical |
 | **weight** | 0–1 estimate of how frequently real users type this form |
 | **position** | `anywhere` / `initial` / `terminal` / `medial` |
-| **composition** | Applying two rules in sequence to one canonical (BFS depth = 2) |
+| **composition** | Applying rules in sequence to one canonical (BFS depth = 3) |
 | **veto** | Variant discarded because it equals a common ambiguous English word |
 
 ---
@@ -253,7 +253,9 @@ Rules are numbered R01–R15. Apply all applicable rules independently; then app
 
 ## 4. Composition Policy
 
-**BFS depth: exactly 2 (apply at most 2 rules per variant).**
+**BFS depth: 3 (apply at most 3 rules per variant).**
+
+> **Amended at implementation (v1.7.0):** depth 2, as originally specified here, could not reach attested user spellings requiring three composed rules — e.g. `vaahiguroo → wahiguru` (R10 v→w + R01 aa→a + R03 oo→u). The deployed engine (`pipeline/build_variants.py`) uses depth 3 with the ≤15-per-word truncation and score-product ranking absorbing the larger candidate space. Build time remains <1s.
 
 Permitted two-rule compositions (applied in order listed; do not compose further):
 
@@ -275,7 +277,7 @@ Permitted two-rule compositions (applied in order listed; do not compose further
 - R06 + R07: same substitution site, mutually exclusive.
 - Any rule with itself (idempotent).
 
-**Implementation:** Run all single-rule variants first into a set. Then for each single-rule variant, apply each applicable rule once more (depth 2). Deduplicate the combined set.
+**Implementation:** BFS over the rule set to depth 3: seed with the canonical, expand each frontier item with every applicable rule, deduplicate keeping the best score (product of rule weights), then truncate to the top 15.
 
 ---
 
@@ -383,7 +385,7 @@ def generate_variants(canon: str) -> list:
     v = re.sub(r'([msn])a(r[aeiou])', r'\1\2', canon)
     if v != canon: variants.add(v)
 
-    # COMPOSITION PASS (depth 2)
+    # COMPOSITION PASS (BFS depth 3 — see amendment above)
     tier1 = set(variants)
     for bv in tier1:
         if 'aa' in bv: variants.add(bv.replace('aa', 'a'))
@@ -455,7 +457,7 @@ Aspirate insertion (`s→sh` for `krisan→krishan`) is also out of scope — pr
 | Metric | Value |
 |---|---|
 | Total base rules | 15 (R01–R15) |
-| Composition depth | 2 |
+| Composition depth | 3 (amended from 2 at implementation; see §4) |
 | Avg variants / word (25-word sample) | ~2.8 |
 | Max variants / word | 7 (`vaahiguroo`) |
 | Veto list size | 42 entries |

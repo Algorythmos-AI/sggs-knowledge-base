@@ -1,5 +1,10 @@
 # Changelog — SGGS Knowledge Base
 
+## v1.7.1 — 2026-06-11 — LLM typo-enrichment pass (Worker→Supervisor)
+- Sam's Worker/Supervisor agent pipeline executed for the one class rules can't derive: **common_typo** on the top-500 words. Worker proposed 344; Supervisor purged 245 with full audit trail (`validation/variant_qa_log.jsonl`: 227 duplicate — evidence the rule engine already covers them — 11 canonical, 4+1 English, 2 implausible); **99 approved, 90 loaded** (rebuild-safe input `pipeline/variants_typo.jsonl`, rtype='typo').
+- swami→ਸੁਆਮੀ, nanakji→ਨਾਨਕ, gurbani→ਗੁਰਬਾਣੀ now resolve; compounds added to the lexicon (satnam→ਸਤਿ ਨਾਮੁ, onkar→ਓਅੰਕਾਰ).
+- Docs reconciled: variant rules spec amended to BFS depth 3 (implementation reality; wahiguru needs 3 composed rules).
+
 ## v1.7.0 — 2026-06-11 — Phonetic Variant Engine
 - **Precomputed romanization-variant index** (Sam's Worker/Supervisor design, productionized): 59,227 variants for 29,241 words from a 15-rule weighted engine (BFS depth 3), built deterministically in 0.7s. LLM agents repositioned to rule-design + adversarial review (2 SME agents; 6 blocking changes applied).
 - **Lowercase-vocabulary English veto**: real-English collisions purged (372) while reverentially-capitalized Gurbani loans (Kirtan, Amrit, Naam) stay searchable; canonical-translit collisions purged (6,232).

@@ -104,7 +104,7 @@ def expand(canonical):
 cur.executescript('''
 DROP TABLE IF EXISTS variants;
 CREATE TABLE variants(variant TEXT, gurmukhi TEXT, translit TEXT,
-                      freq INT, score REAL);
+                      freq INT, score REAL, rtype TEXT DEFAULT 'rule');
 ''')
 rows, purged = [], collections.Counter()
 for g, tr in canon.items():
@@ -116,8 +116,25 @@ for g, tr in canon.items():
         if len(v) < 2 or not v.isalnum(): purged['form'] += 1; continue
         if v in veto: purged['english'] += 1; continue
         if v in canonical_set: purged['canonical'] += 1; continue   # reviewer change #4
-        rows.append((v, g, tr, fr, s)); kept += 1
-cur.executemany('INSERT INTO variants VALUES(?,?,?,?,?)', rows)
+        rows.append((v, g, tr, fr, s, 'rule')); kept += 1
+
+# LLM-curated common_typo layer (Worker→Supervisor pipeline, QA-approved;
+# audit trail: validation/variant_qa_log.jsonl). Same purge gates re-applied.
+import os, json as _json
+_typo_file = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'variants_typo.jsonl')
+if os.path.exists(_typo_file):
+    existing = {r[0] for r in rows}
+    n_typo = 0
+    for raw in open(_typo_file, encoding='utf-8'):
+        p = _json.loads(raw)
+        v, g, tr = p['variant'], p['gurmukhi'], p['standard_roman']
+        if (len(v) < 2 or not v.isalnum() or v in veto
+                or v in canonical_set or v in existing): continue
+        rows.append((v, g, tr, freq_g.get(g, 1), p.get('confidence', 0.5) * 0.6, 'typo'))
+        existing.add(v); n_typo += 1
+    print(f'typo layer: {n_typo} curated variants loaded')
+
+cur.executemany('INSERT INTO variants VALUES(?,?,?,?,?,?)', rows)
 cur.execute('CREATE INDEX idx_var ON variants(variant)')
 cur.execute("INSERT OR REPLACE INTO meta VALUES('variants', ?)", (str(len(rows)),))
 con.commit()
