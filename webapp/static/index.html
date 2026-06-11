@@ -1,0 +1,526 @@
+<!DOCTYPE html>
+<html lang="pa">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ੴ Sri Guru Granth Sahib — Knowledge Base</title>
+<style>
+:root{
+  --bg:#faf6ee; --card:#ffffff; --ink:#2b2316; --soft:#6b5d49;
+  --accent:#1a3a6b; --accent-soft:#eaf0fa; --saffron:#d97916; --gold:#9a7b1c;
+  --line:#e8dfd0; --rahao:#9a3412; --rahao-bg:#fdf0e8; --chip:#f1e9da;
+  --shadow:0 4px 18px rgba(40,30,10,.07); --gsize:22px;
+}
+@media (prefers-color-scheme: dark){
+  :root{
+    --bg:#161310; --card:#1f1b15; --ink:#ece4d4; --soft:#a89878;
+    --accent:#7fa3dd; --accent-soft:#232c3d; --saffron:#e08a2e; --gold:#cfa83a;
+    --line:#332c21; --rahao:#e8825a; --rahao-bg:#2c1d14; --chip:#2a2419;
+    --shadow:0 4px 18px rgba(0,0,0,.4);
+  }
+}
+*{box-sizing:border-box; margin:0}
+html{scroll-behavior:smooth}
+body{background:var(--bg); color:var(--ink); -webkit-font-smoothing:antialiased;
+  font-family:-apple-system,'SF Pro Text','Segoe UI',Roboto,sans-serif; line-height:1.55}
+.gm{font-family:'Mukta Mahee','Gurmukhi MN','Gurmukhi Sangam MN','Noto Sans Gurmukhi','Raavi',sans-serif}
+button{font-family:inherit}
+
+header{background:linear-gradient(150deg,#142b52,#1a3a6b 55%,#24486f); color:#f7f1e3;
+  padding:30px 20px 22px; text-align:center}
+header .onkar{font-size:46px; line-height:1; color:#f5c542}
+header h1{font-size:21px; font-weight:600; margin-top:8px; letter-spacing:.3px}
+header p{font-size:12.5px; opacity:.72; margin-top:5px}
+
+nav{display:flex; gap:6px; justify-content:center; background:var(--card);
+  background:color-mix(in srgb,var(--card) 88%,transparent);
+  backdrop-filter:blur(12px); -webkit-backdrop-filter:blur(12px);
+  border-bottom:1px solid var(--line); padding:10px; position:sticky; top:0; z-index:30; flex-wrap:wrap}
+nav button{border:1px solid var(--line); background:var(--chip); color:var(--ink);
+  padding:7px 16px; border-radius:20px; font-size:13.5px; cursor:pointer; transition:all .15s}
+nav button:hover{border-color:var(--saffron)}
+nav button.on{background:var(--accent); color:#fff; border-color:var(--accent)}
+
+main{max-width:900px; margin:0 auto; padding:18px 16px 90px}
+
+/* ---------- search ---------- */
+.searchbar{display:flex; gap:8px; margin:8px 0 10px}
+.searchbar input{flex:1; padding:13px 18px; font-size:17px; border:1.5px solid var(--line);
+  border-radius:14px; background:var(--card); color:var(--ink); outline:none; transition:border .15s, box-shadow .15s}
+.searchbar input:focus{border-color:var(--accent); box-shadow:0 0 0 3px color-mix(in srgb,var(--accent) 18%,transparent)}
+.searchbar button{background:var(--saffron); border:none; color:#fff; font-size:15px; font-weight:600;
+  padding:0 24px; border-radius:14px; cursor:pointer}
+.searchbar button:active{transform:scale(.97)}
+.modes{display:flex; gap:6px; flex-wrap:wrap; margin-bottom:12px}
+.modes span{font-size:12px; padding:5px 13px; border-radius:15px; background:var(--chip);
+  cursor:pointer; border:1px solid transparent; color:var(--soft)}
+.modes span.on{background:var(--card); border-color:var(--saffron); color:var(--saffron); font-weight:600}
+.hint{font-size:12.5px; color:var(--soft); margin-bottom:16px}
+.count{font-size:13px; color:var(--soft); margin:4px 2px 12px}
+
+.card{background:var(--card); border:1px solid var(--line); border-radius:14px;
+  padding:14px 18px; margin-bottom:10px; cursor:pointer; transition:box-shadow .15s, transform .15s}
+.card:hover{box-shadow:var(--shadow); transform:translateY(-1px)}
+.card .g{font-size:calc(var(--gsize) - 1px); line-height:1.85}
+.card .t{font-size:13.5px; color:var(--soft); font-style:italic; margin-top:2px}
+.meta{display:flex; gap:6px; flex-wrap:wrap; margin-top:9px}
+.meta span{font-size:11px; background:var(--chip); color:var(--soft); padding:2.5px 10px; border-radius:10px}
+.meta .ang{background:var(--accent-soft); color:var(--accent); font-weight:600}
+.meta .rahao{background:var(--rahao-bg); color:var(--rahao); font-weight:600}
+.themedesc{background:var(--rahao-bg); border:1px solid color-mix(in srgb,var(--saffron) 35%,transparent);
+  border-radius:12px; padding:11px 15px; font-size:13px; color:var(--ink); margin-bottom:12px}
+.more{display:block; margin:12px auto 0; background:var(--chip); border:1px solid var(--line);
+  color:var(--ink); padding:10px 28px; border-radius:12px; cursor:pointer; font-size:13.5px}
+
+/* ---------- reader ---------- */
+.toolbar{display:flex; align-items:center; justify-content:space-between; gap:10px; flex-wrap:wrap;
+  position:sticky; top:54px; z-index:25; background:var(--card);
+  background:color-mix(in srgb,var(--card) 92%,transparent);
+  backdrop-filter:blur(12px); -webkit-backdrop-filter:blur(12px);
+  border:1px solid var(--line); border-radius:16px; padding:9px 12px; margin:4px 0 14px; box-shadow:var(--shadow)}
+.toolbar .nav{display:flex; align-items:center; gap:7px}
+.toolbar button{border:1px solid var(--line); background:var(--chip); color:var(--ink);
+  border-radius:10px; padding:7px 13px; cursor:pointer; font-size:14px}
+.toolbar button:hover{border-color:var(--saffron)}
+.toolbar input{width:74px; text-align:center; padding:7px 4px; font-size:15px; font-weight:600;
+  border:1.5px solid var(--line); border-radius:10px; background:var(--card); color:var(--ink)}
+.toolbar .of{font-size:12px; color:var(--soft); white-space:nowrap}
+.toolbar .right{display:flex; align-items:center; gap:7px}
+.tgl{display:flex; align-items:center; gap:6px; font-size:12px; color:var(--soft); cursor:pointer; user-select:none}
+.tgl .sw{width:34px; height:20px; border-radius:10px; background:var(--chip); border:1px solid var(--line); position:relative; transition:background .15s}
+.tgl .sw::after{content:''; position:absolute; top:2px; left:2px; width:14px; height:14px; border-radius:50%;
+  background:var(--soft); transition:all .15s}
+.tgl.on .sw{background:var(--saffron); border-color:var(--saffron)}
+.tgl.on .sw::after{left:16px; background:#fff}
+
+.ctx{display:flex; gap:6px; flex-wrap:wrap; justify-content:center; margin:0 0 14px}
+.ctx span{font-size:12px; background:var(--chip); color:var(--soft); padding:3px 12px; border-radius:12px}
+.ctx .raagchip{background:var(--accent-soft); color:var(--accent); font-weight:600}
+
+.raagbanner{background:linear-gradient(135deg,var(--accent-soft),transparent); border:1px solid var(--line);
+  border-radius:16px; padding:16px 20px; text-align:center; margin-bottom:16px}
+.raagbanner .rn{font-size:26px; font-weight:600}
+.raagbanner .rr{font-size:12.5px; color:var(--soft); margin-top:3px}
+
+.cont{display:inline-flex; align-items:center; gap:7px; font-size:12.5px; color:var(--soft);
+  background:var(--chip); border:1px dashed var(--line); border-radius:12px; padding:5px 14px;
+  margin:0 auto 14px; cursor:pointer; display:flex; width:fit-content}
+.cont:hover{color:var(--saffron)}
+
+.shabad{background:var(--card); border:1px solid var(--line); border-radius:18px;
+  padding:18px 26px 20px; margin-bottom:16px; box-shadow:var(--shadow)}
+.shabad .hdr{text-align:center; color:var(--gold); font-weight:600; font-size:calc(var(--gsize) - 4px);
+  line-height:1.9; padding:2px 0 8px; border-bottom:1px solid var(--line); margin-bottom:10px}
+.shabad .hdr .t{font-size:12px; color:var(--soft); font-weight:400; font-style:italic}
+.invoc{font-size:calc(var(--gsize) + 9px); font-weight:600; line-height:1.8; padding:6px 0 4px;
+  color:var(--gold); letter-spacing:.3px}
+.sline{padding:8px 2px}
+.sline .g{font-size:var(--gsize); line-height:1.95}
+.sline .t{font-size:13px; color:var(--soft); font-style:italic; margin-top:1px}
+.sline.rahao{background:var(--rahao-bg); border-left:3px solid var(--rahao); border-radius:8px; padding-left:12px; margin:6px 0}
+.sline.rahao .g{color:var(--rahao)}
+.en{font-size:13px; color:var(--accent); margin-top:3px; line-height:1.5}
+.en::before{content:'EN · '; font-size:10px; opacity:.65; letter-spacing:.5px}
+mark{background:color-mix(in srgb, var(--saffron) 30%, transparent); color:inherit;
+  border-radius:3px; padding:0 1px}
+body.hide-t .t{display:none}
+.endnav{display:flex; justify-content:space-between; margin-top:18px}
+.endnav button{border:1px solid var(--line); background:var(--card); color:var(--ink);
+  border-radius:12px; padding:10px 20px; cursor:pointer; font-size:14px}
+
+/* ---------- grids ---------- */
+.gridtitle{font-size:13px; font-weight:600; color:var(--soft); text-transform:uppercase;
+  letter-spacing:.8px; margin:18px 4px 10px}
+.grid{display:grid; grid-template-columns:repeat(auto-fill,minmax(250px,1fr)); gap:10px}
+.tile{background:var(--card); border:1px solid var(--line); border-radius:14px;
+  padding:14px 16px; cursor:pointer; transition:all .15s}
+.tile:hover{border-color:var(--saffron); transform:translateY(-2px); box-shadow:var(--shadow)}
+.tile .seq{font-size:10.5px; color:var(--soft); letter-spacing:.5px}
+.tile .n{font-size:19px; font-weight:600; margin-top:1px}
+.tile .r{font-size:12px; color:var(--saffron); font-style:italic}
+.tile .s{font-size:11.5px; color:var(--soft); margin-top:5px}
+
+/* ---------- panel ---------- */
+.panel{position:fixed; inset:0; background:rgba(15,10,2,.5); display:none;
+  align-items:flex-start; justify-content:center; padding:34px 12px; overflow:auto; z-index:50}
+.panel.on{display:flex}
+.panel .inner{background:var(--bg); max-width:780px; width:100%; border-radius:18px;
+  padding:24px 26px 30px; position:relative; box-shadow:0 18px 60px rgba(0,0,0,.35)}
+.panel .x{position:absolute; top:12px; right:16px; font-size:24px; cursor:pointer; color:var(--soft); background:none; border:none}
+.panel h3{font-size:13px; color:var(--soft); font-weight:600; margin-bottom:12px; text-transform:uppercase; letter-spacing:.6px}
+
+footer{position:fixed; bottom:0; left:0; right:0; background:var(--card);
+  background:color-mix(in srgb,var(--card) 92%,transparent);
+  backdrop-filter:blur(10px); border-top:1px solid var(--line); text-align:center; font-size:11px;
+  color:var(--soft); padding:7px; z-index:20}
+.verdict{border-radius:16px; padding:18px 22px; margin:6px 0 16px; border:1px solid var(--line)}
+.verdict .vv{font-weight:700; font-size:17px; letter-spacing:.4px}
+.verdict .vc{font-size:12.5px; opacity:.8; margin-top:2px}
+.verdict .vh{font-size:13px; margin-top:8px}
+.v-ok{background:#e8f5e4; border-color:#a5cf9b; color:#205c20}
+.v-no{background:#fdeaea; border-color:#e3a3a3; color:#8a1f1f}
+.v-maybe{background:#fdf3df; border-color:#e0c082; color:#7a5b13}
+@media (prefers-color-scheme: dark){
+  .v-ok{background:#16290f; border-color:#3f6b33; color:#a7d99a}
+  .v-no{background:#2e1212; border-color:#7a3434; color:#e8a8a8}
+  .v-maybe{background:#2c2410; border-color:#7a662a; color:#e5c97a}
+}
+#toast{position:fixed; bottom:46px; left:50%; transform:translateX(-50%) translateY(20px);
+  background:var(--ink); color:var(--bg); font-size:13px; padding:10px 20px; border-radius:12px;
+  opacity:0; pointer-events:none; transition:all .25s; z-index:60; max-width:90vw}
+#toast.on{opacity:.95; transform:translateX(-50%) translateY(0)}
+:focus-visible{outline:2px solid var(--saffron); outline-offset:2px}
+@media (prefers-reduced-motion: reduce){
+  *{transition:none !important; scroll-behavior:auto !important}
+}
+@media(max-width:620px){
+  .shabad{padding:14px 16px 16px}
+  .toolbar{top:50px}
+  :root{--gsize:20px}
+}
+</style>
+</head>
+<body>
+<header>
+  <div class="onkar gm">ੴ</div>
+  <h1>Sri Guru Granth Sahib — Knowledge Base</h1>
+  <p>1430 Angs · verbatim Gurmukhi · searchable by word, sound, first letters &amp; theme</p>
+</header>
+<nav>
+  <button data-v="search" class="on">Search</button>
+  <button data-v="ang">Reader</button>
+  <button data-v="raags">Raags</button>
+  <button data-v="themes">Themes</button>
+  <button data-v="random">Hukam-style random</button>
+</nav>
+<main>
+  <section id="v-search">
+    <div class="searchbar">
+      <input id="q" class="gm" placeholder="ਨਾਮੁ · waheguru · saadh sangat · ਧ ਧ ਰ ਗ · dh dh r g …" autofocus>
+      <button onclick="go(0)">Search</button>
+    </div>
+    <div class="modes" id="modes">
+      <span data-m="auto" class="on">Auto</span><span data-m="gurmukhi">Gurmukhi</span>
+      <span data-m="roman">Roman</span><span data-m="first">First letters</span><span data-m="theme">Theme</span>
+      <span data-m="verify">Verify quote</span>
+    </div>
+    <div class="hint">Roman search is spelling-tolerant — <i>waheguru</i>, <i>satgur kirpa</i>, <i>gobind</i> all work. Type word first-letters (<span class="gm">ਧ ਧ ਰ ਗ</span> / <i>dh dh r g</i>) for a line you half-remember, or a theme (<i>naam, hukam, haumai</i>…). <b>Verify quote</b> checks any claimed line against the canonical corpus (add <i>@ang</i> to also check the Ang, e.g. <i>… @8</i>).</div>
+    <div id="results"></div>
+  </section>
+
+  <section id="v-ang" style="display:none">
+    <div class="toolbar">
+      <div class="nav">
+        <button onclick="ang(curAng-1)" title="← key">‹</button>
+        <input id="angIn" type="number" min="1" max="1430" value="1"
+               onchange="ang(parseInt(this.value)||1)">
+        <span class="of">of 1430</span>
+        <button onclick="ang(curAng+1)" title="→ key">›</button>
+      </div>
+      <div class="right">
+        <div class="tgl" id="tglT" onclick="toggleT()" role="switch" tabindex="0" aria-checked="true"
+             aria-label="show transliteration" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();toggleT()}">
+          <span class="sw"></span> transliteration</div>
+        <button onclick="fontSize(-1)" title="smaller text" aria-label="smaller text">ਅ−</button>
+        <button onclick="fontSize(1)" title="larger text" aria-label="larger text">ਅ+</button>
+      </div>
+    </div>
+    <div id="raagBanner"></div>
+    <div class="ctx" id="angCtx"></div>
+    <div id="angOut"></div>
+  </section>
+
+  <section id="v-raags" style="display:none">
+    <div class="gridtitle">The 31 Raags — in the order of Sri Guru Granth Sahib</div>
+    <div class="grid" id="raagsOut"></div>
+    <div class="gridtitle">Banis &amp; closing sections</div>
+    <div class="grid" id="sectionsOut"></div>
+  </section>
+
+  <section id="v-themes" style="display:none">
+    <div class="hint">A theme returns the verbatim lines in which its corpus-verified Gurmukhi terms occur.</div>
+    <div class="grid" id="themesOut"></div>
+  </section>
+</main>
+
+<div id="toast" role="status"></div>
+<div class="panel" id="panel" role="dialog" aria-modal="true">
+  <div class="inner">
+    <button class="x" onclick="closePanel()">×</button>
+    <h3 id="ptitle"></h3>
+    <div id="pbody"></div>
+  </div>
+</div>
+<footer>Scripture is shown verbatim from your edition with its Ang. Transliteration is a mechanical reading aid, not the scripture. · <span class="gm">ਧੁਰ ਕੀ ਬਾਣੀ</span><span id="ver"></span></footer>
+
+<script>
+const $=s=>document.querySelector(s); const esc=s=>(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;');
+let mode='auto', curAng=1, META=null, curView='search', raagCtx=null;
+const store={get:(k,d)=>{try{return localStorage.getItem(k)??d}catch(e){return d}},
+             set:(k,v)=>{try{localStorage.setItem(k,v)}catch(e){}}};
+
+document.querySelectorAll('nav button').forEach(b=>b.onclick=()=>nav(b.dataset.v));
+function nav(v){
+  document.querySelectorAll('nav button').forEach(x=>x.classList.toggle('on',x.dataset.v===v));
+  view(v);
+}
+document.querySelectorAll('#modes span').forEach(s=>s.onclick=()=>{mode=s.dataset.m;
+  document.querySelectorAll('#modes span').forEach(x=>x.classList.toggle('on',x===s)); if($('#q').value) go(0);});
+$('#q').addEventListener('keydown',e=>{if(e.key==='Enter')go(0)});
+document.addEventListener('keydown',e=>{
+  if(e.key==='Escape'){closePanel(); return;}
+  if($('#panel').classList.contains('on')) return;        // don't page behind the modal
+  if(curView!=='ang'||e.target.tagName==='INPUT') return;
+  if(e.key==='ArrowRight'){ang(curAng+1)} if(e.key==='ArrowLeft'){ang(curAng-1)}
+});
+
+let toastTimer=null;
+function toast(msg){
+  const t=$('#toast'); t.textContent=msg; t.classList.add('on');
+  clearTimeout(toastTimer); toastTimer=setTimeout(()=>t.classList.remove('on'), 3200);
+}
+async function api(p){
+  let r;
+  try{ r=await fetch('/api/'+p); }
+  catch(e){ toast('Cannot reach the app — is serve.py still running?'); throw e; }
+  if(!r.ok){
+    let m='Request failed ('+r.status+')';
+    try{ m=(await r.json()).error||m }catch(e){}
+    toast(m); throw new Error(m);
+  }
+  return r.json();
+}
+const guard = fn => async (...a) => { try{ return await fn(...a) } catch(e){ console.error(e) } };
+async function meta(){if(!META) META=await api('meta'); return META;}
+
+function view(v){
+  curView=v;
+  ['search','ang','raags','themes'].forEach(x=>$('#v-'+x).style.display = x===v?'':'none');
+  if(v==='ang') ang(curAng);
+  if(v==='raags') raags();
+  if(v==='themes') themes();
+  if(v==='random') randomShabad();
+}
+
+/* ---------------- search ---------------- */
+let hlToks=[];
+function hl(escaped){
+  if(!hlToks.length) return escaped;
+  let out=escaped;
+  for(const t of hlToks){
+    if(t.length<2) continue;
+    const safe=t.replace(/[.*+?^${}()|[\]\\]/g,'\\$&');
+    out=out.replace(new RegExp(safe,'g'), m=>`<mark>${m}</mark>`);
+  }
+  return out;
+}
+function lineCard(l){
+  const chips=[`<span class="ang">Ang ${l.ang}</span>`];
+  if(l.raag) chips.push(`<span class="gm">${esc(l.raag)}</span>`);
+  if(l.section) chips.push(`<span class="gm">${esc(l.section)}</span>`);
+  if(l.author) chips.push(`<span>${esc(l.author)}</span>`);
+  if(l.is_rahao) chips.push(`<span class="rahao">ਰਹਾਉ · refrain</span>`);
+  if(l.matched_term) chips.push(`<span class="gm">term: ${esc(l.matched_term)}</span>`);
+  return `<div class="card" onclick="shabad(${l.comp_id},${l.id})">
+    <div class="g gm">${hl(esc(l.gurmukhi))}</div><div class="t">${hl(esc(l.translit))}</div>
+    ${l.en?`<div class="en">${esc(l.en)}</div>`:''}
+    <div class="meta">${chips.join('')}</div></div>`;
+}
+async function go(off){
+  const q=$('#q').value.trim(); if(!q) return;
+  if(mode==='verify') return doVerify(q);
+  $('#results').innerHTML='<div class="hint">Searching…</div>';
+  hlToks=q.split(/\s+/).filter(t=>t.length>1);
+  const d=await api(`search?q=${encodeURIComponent(q)}&mode=${mode}&limit=50&offset=${off}`);
+  let h='';
+  if(d.related_themes && d.related_themes.length)
+    h+=`<div class="count">Related themes: ${d.related_themes.map(t=>
+      `<a href="#" onclick="event.preventDefault();$('#q').value='${t}';mode='theme';go(0)" style="color:var(--saffron)">${esc(t)}</a>`).join(' · ')}</div>`;
+  if(d.concept) h+=`<div class="themedesc"><b>${esc(d.concept.name)}</b> — ${esc(d.concept.description)}<br>
+      terms: <span class="gm">${d.concept.terms.map(esc).join(' · ')}</span> — ${d.concept.total} lines</div>`;
+  h+=`<div class="count">${d.results.length}${d.results.length===50?'+':''} result(s) · interpreted as <b>${d.mode}</b>${off?` · from #${off+1}`:''}</div>`;
+  h+=d.results.map(lineCard).join('');
+  if(d.results.length===50) h+=`<button class="more" onclick="go(${off+50})">More ›</button>`;
+  if(!d.results.length) h+=`<div class="hint">Nothing found. Try fewer words, first-letters mode, or a theme (<i>naam, hukam, haumai</i>).</div>`;
+  $('#results').innerHTML=h; window.scrollTo({top:0});
+}
+
+/* ---------------- verify ---------------- */
+async function doVerify(q){
+  // optional "@123" suffix claims an Ang
+  let ang=null; const m=q.match(/@(\d{1,4})\s*$/);
+  if(m){ ang=m[1]; q=q.replace(/@\d{1,4}\s*$/,'').trim(); }
+  const d=await api(`verify?q=${encodeURIComponent(q)}${ang?`&ang=${ang}`:''}`);
+  const v=d.verdict||'';
+  const cls=v.startsWith('VERIFIED')?'v-ok':(v.startsWith('NOT_FOUND')?'v-no':'v-maybe');
+  let h=`<div class="verdict ${cls}">
+      <div class="vv">${esc(v.replace(/\+/g,' + '))}</div>
+      <div class="vc">confidence ${(d.confidence*100).toFixed(1)}%</div>
+      <div class="vh">${v.startsWith('VERIFIED')?'This is scripture, verified against the canonical corpus.':
+        v.startsWith('NOT_FOUND')?'No such line exists in Sri Guru Granth Sahib (this edition). Treat the quote as unverified.':
+        'Close match found — compare carefully below.'}</div></div>`;
+  if(d.gurmukhi){
+    h+=`<div class="count">Canonical line:</div>
+    <div class="card" onclick="nav('ang');ang(${d.ang})">
+      <div class="g gm">${esc(d.gurmukhi)}</div>
+      <div class="meta"><span class="ang">Ang ${d.ang}</span>
+        ${d.raag?`<span class="gm">${esc(d.raag)}</span>`:''}
+        ${d.author?`<span>${esc(d.author)}</span>`:''}</div></div>`;
+  }
+  $('#results').innerHTML=h; window.scrollTo({top:0});
+}
+
+/* ---------------- reader ---------------- */
+function groupShabads(lines){
+  const groups=[]; let g=null;
+  for(const l of lines){
+    if(l.is_header){
+      if(!g || g.body.length) {g={headers:[],body:[]}; groups.push(g);}
+      g.headers.push(l);
+    } else {
+      if(!g){g={headers:[],body:[]}; groups.push(g);}
+      g.body.push(l);
+    }
+  }
+  return groups;
+}
+let angReq=0;
+async function ang(n){
+  curAng=Math.max(1,Math.min(1430,n)); $('#angIn').value=curAng;
+  const myReq=++angReq;
+  const d=await api('ang/'+curAng);
+  if(myReq!==angReq) return;            // a newer page was requested meanwhile
+  // context chips
+  const chips=[];
+  if(d.raag) chips.push(`<span class="raagchip gm">${esc(d.raag)}</span>`);
+  if(d.section) chips.push(`<span class="gm">${esc(d.section)}</span>`);
+  (d.authors||[]).forEach(a=>chips.push(`<span>${esc(a)}</span>`));
+  $('#angCtx').innerHTML=chips.join('');
+  // raag banner while inside a raag opened from the grid
+  let banner='';
+  if(raagCtx && d.raag===raagCtx.name && curAng>=raagCtx.first_ang && curAng<=raagCtx.last_ang){
+    banner=`<div class="raagbanner"><div class="rn gm">ਰਾਗੁ ${esc(raagCtx.name)}</div>
+      <div class="rr">${esc(raagCtx.roman||'')} · Angs ${raagCtx.first_ang}–${raagCtx.last_ang} · ${raagCtx.n_shabads} compositions · ${raagCtx.n_lines} lines</div></div>`;
+  } else if(raagCtx && d.raag!==raagCtx.name){ raagCtx=null; }
+  $('#raagBanner').innerHTML=banner;
+  // continued-from pill
+  let h='';
+  if(d.continued_from) h+=`<div class="cont" onclick="ang(${d.continued_from})">‹ this composition continues from Ang ${d.continued_from}</div>`;
+  // shabad groups
+  for(const g of groupShabads(d.lines)){
+    h+='<div class="shabad">';
+    if(g.headers.length) h+=`<div class="hdr gm">${g.headers.map(x=>
+        `<div class="${x.gurmukhi.startsWith('ੴ')?'invoc':''}">${esc(x.gurmukhi)}</div>`).join('')}
+        <div class="t">${g.headers.map(x=>esc(x.translit)).join(' · ')}</div></div>`;
+    h+=g.body.map(l=>`<div class="sline ${l.is_rahao?'rahao':''}">
+        <div class="g gm">${esc(l.gurmukhi)}</div><div class="t">${esc(l.translit)}</div>
+        ${l.en?`<div class="en">${esc(l.en)}</div>`:''}</div>`).join('');
+    h+='</div>';
+  }
+  h+=`<div class="endnav"><button onclick="ang(${curAng-1})">‹ Ang ${curAng-1||''}</button>
+      <button onclick="ang(${curAng+1})">Ang ${curAng<1430?curAng+1:''} ›</button></div>`;
+  $('#angOut').innerHTML=h;
+  window.scrollTo({top:0});
+}
+function toggleT(){
+  document.body.classList.toggle('hide-t');
+  const on = !document.body.classList.contains('hide-t');
+  $('#tglT').classList.toggle('on', on);
+  $('#tglT').setAttribute('aria-checked', on);
+  store.set('show_t', on?'1':'0');
+}
+function fontSize(d){
+  const cur=parseInt(getComputedStyle(document.documentElement).getPropertyValue('--gsize'))||22;
+  const next=Math.max(17,Math.min(32,cur+d*2));
+  document.documentElement.style.setProperty('--gsize', next+'px');
+  store.set('gsize', next);
+}
+
+/* ---------------- raags & themes ---------------- */
+async function raags(){
+  const m=await meta();
+  $('#raagsOut').innerHTML=m.raags.map((r,i)=>`
+    <div class="tile" data-raag="${i}" role="button" tabindex="0">
+      <div class="seq">RAAG ${r.seq||''}</div>
+      <div class="n gm">${esc(r.name)}</div>
+      <div class="r">${esc(r.roman||'')}</div>
+      <div class="s">Angs ${r.first_ang}–${r.last_ang} · ${r.n_shabads??'—'} compositions · ${r.n_lines} lines</div>
+    </div>`).join('');
+  $('#sectionsOut').innerHTML=m.sections.map((s,i)=>`
+    <div class="tile" data-section="${i}" role="button" tabindex="0">
+      <div class="n gm">${esc(s.name)}</div>
+      <div class="s">Angs ${s.first_ang}–${s.last_ang} · ${s.n_lines} lines</div>
+    </div>`).join('');
+}
+function openRaag(r){ raagCtx=r; nav('ang'); ang(r.first_ang); }
+async function themes(){
+  const m=await meta();
+  $('#themesOut').innerHTML=m.concepts.map((c,i)=>`
+    <div class="tile" data-concept="${i}" role="button" tabindex="0">
+      <div class="n">${esc(c.concept)}</div><div class="s">${esc(c.description)}</div></div>`).join('');
+}
+// delegated tile activation — no data ever interpolated into handlers
+function tileActivate(t){
+  if(t.dataset.raag!==undefined) openRaag(META.raags[+t.dataset.raag]);
+  else if(t.dataset.section!==undefined){ nav('ang'); ang(META.sections[+t.dataset.section].first_ang); }
+  else if(t.dataset.concept!==undefined){
+    $('#q').value=META.concepts[+t.dataset.concept].concept;
+    mode='theme'; nav('search'); go(0);
+  }
+}
+document.addEventListener('click',e=>{
+  const t=e.target.closest('.tile[data-raag],.tile[data-section],.tile[data-concept]');
+  if(t) tileActivate(t);
+});
+document.addEventListener('keydown',e=>{
+  if((e.key==='Enter'||e.key===' ') && e.target.classList?.contains('tile')){
+    e.preventDefault(); tileActivate(e.target);
+  }
+});
+
+/* ---------------- shabad panel & random ---------------- */
+function panelLines(lines){
+  return lines.map(l=>`<div class="sline ${l.is_rahao?'rahao':''}">
+      <div class="g gm ${l.is_header&&l.gurmukhi.startsWith('ੴ')?'invoc':''}" style="${l.is_header?'color:var(--gold);font-weight:600;text-align:center':''}">${esc(l.gurmukhi)}</div>
+      <div class="t" style="${l.is_header?'text-align:center':''}">${esc(l.translit)}</div>
+      ${l.en?`<div class="en">${esc(l.en)}</div>`:''}</div>`).join('');
+}
+async function shabad(cid, hi){
+  const d=await api('shabad/'+cid);
+  $('#ptitle').textContent=`Composition · Ang ${d.lines[0]?.ang||''}`;
+  $('#pbody').innerHTML=panelLines(d.lines)
+    +`<div class="endnav" style="margin-top:16px"><span></span>
+      <button onclick="closePanel();nav('ang');ang(${d.lines[0]?.ang||1})">Open Ang ${d.lines[0]?.ang||''} ›</button></div>`;
+  if(hi){ /* subtle highlight */ }
+  $('#panel').classList.add('on');
+}
+async function randomShabad(){
+  const d=await api('random');
+  $('#ptitle').textContent=`Random shabad · Ang ${d.lines[0]?.ang||''}`;
+  $('#pbody').innerHTML=panelLines(d.lines)
+    +`<div class="endnav" style="margin-top:16px"><button onclick="randomShabad()">Another ↻</button>
+      <button onclick="closePanel();nav('ang');ang(${d.lines[0]?.ang||1})">Open Ang ${d.lines[0]?.ang||''} ›</button></div>`;
+  $('#panel').classList.add('on');
+}
+function closePanel(){$('#panel').classList.remove('on')}
+$('#panel').addEventListener('click',e=>{if(e.target.id==='panel')closePanel()});
+
+/* ---------------- init ---------------- */
+go=guard(go); ang=guard(ang); raags=guard(raags); themes=guard(themes);
+shabad=guard(shabad); randomShabad=guard(randomShabad);   // no silent broken views
+(function(){
+  if(store.get('show_t','1')==='0'){document.body.classList.add('hide-t');}
+  const on = !document.body.classList.contains('hide-t');
+  $('#tglT').classList.toggle('on', on);
+  $('#tglT').setAttribute('aria-checked', on);
+  const gs=parseInt(store.get('gsize','22')); if(gs) document.documentElement.style.setProperty('--gsize', gs+'px');
+  meta().then(m=>{
+    if(m.version) $('#ver').textContent=' · v'+m.version+' ('+(m.built||'')+')';
+    if(parseInt(m.translations_en||'0')>0)
+      $('#ver').textContent+=' · EN: Dr. Sant Singh Khalsa (via BaniDB)';
+  }).catch(()=>{});
+})();
+view('search');
+</script>
+</body>
+</html>

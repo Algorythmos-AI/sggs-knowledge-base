@@ -1,0 +1,35 @@
+# SGGS Knowledge Base — Master Index
+
+**Source:** `Siri-Guru-Granth-Sahib-in-Gurmukhi-with-Index.pdf` (1,483 pages → 1,430 Angs) · v1.3.0, built 2026-06-10 · 60,658 lines (char-for-char reconciled with the source) · 29,245 distinct words · 53 themes · per-Bhatt Swaiyye attribution · Vaar pauris correctly attributed.
+
+## Use it
+
+- **Web app:** double-click **`Start SGGS App.command`** (or `cd webapp && python3 serve.py`) → http://localhost:7777 (see `webapp/README.md`)
+- **Ask Claude:** any Gurbani question in a Cowork session with this folder — answered per `Answer-Protocol.md` (verbatim + Ang + labelled explanation)
+- **Direct SQL:** `db/sggs.sqlite` (SQLite FTS5; open read-only)
+- **Read:** `corpus/by-raag/*.md` (human-readable, by Raag/Bani) · `corpus/sggs.jsonl` (machine-readable)
+
+## What's where
+
+| Path | Contents |
+|---|---|
+| `00_Build-Plan.md` | The approved plan (v1) |
+| `01_Production-Architecture.md` | Production audit + web-app architecture (v2) |
+| `pipeline/` | Reproducible build: `sggs_pipeline.py` (corrections/translit/parse), `build_corpus.py`, `build_db.py`, `golden_test.py` |
+| `corpus/` | `sggs.jsonl` (60,193 records) + `by-raag/` readable Markdown |
+| `db/sggs.sqlite` | The knowledge base: `lines`, FTS5 index, `raags`, `sections`, `authors`, `concepts`, `concept_lines`, `word_freq`, `meta` |
+| `webapp/` | `serve.py` (stdlib server) + `static/index.html` (UI) + README |
+| `Answer-Protocol.md` | Faithfulness rules for answering |
+| `Validation-Report.md` | All quality gates, checks, corrections & known limits |
+
+## Line record (every one of the 60,193 lines)
+
+`ang` · `raag` · `section` (bani) · `author` · `comp_type` · `comp_id` (shabad grouping) · `is_rahao` · `is_header` · `markers` (॥੧॥…) · `gurmukhi` (verbatim) · `translit` · `fl_g`/`fl_r` (first letters) · `skeleton` (matra-stripped)
+
+## How to ask (worked examples)
+
+1. *Find a line:* "ਸੋਚੈ ਸੋਚਿ" → exact line, Ang 1. Half-remembered? first letters: "ਧ ਧ ਰ ਗ" / "dh dh r g" → Ang 968.
+2. *Meaning:* "What does Japji say about Hukam?" → verbatim pauri 2 lines + Ang + labelled explanation.
+3. *Theme:* "What does Gurbani say about haumai?" → theme `haumai` (634 occurrences) → verses + Angs.
+4. *Structure:* "Which raag is Anand Sahib in, and where?" → ਰਾਮਕਲੀ, Angs 917–922, M3, 40 pauris.
+5. *Author:* "Show Sheikh Farid's saloks" → section ਸਲੋਕ ਸੇਖ ਫਰੀਦ, Angs 1377–1385.

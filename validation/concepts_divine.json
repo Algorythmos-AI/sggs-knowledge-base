@@ -1,0 +1,253 @@
+[
+  {
+    "concept": "naam",
+    "gurmukhi_terms": [
+      "ਨਾਮੁ",
+      "ਨਾਮ",
+      "ਨਾਮਿ",
+      "ਨਾਮੈ",
+      "ਨਾਮੋ",
+      "ਨਾਮਹੁ",
+      "ਨਾਉ",
+      "ਨਾਇ",
+      "ਨਾਵੈ",
+      "ਨਾਵਹੁ",
+      "ਨਾਮਾ"
+    ],
+    "description": "The divine Name — the essential Word/identity of the Waheguru whose recitation liberates the soul from the cycle of rebirth.",
+    "total_hits": 5991,
+    "caveats": "ਨਾਇ can mean 'bathing' in a few contexts (e.g. ਨਾਇ ਕਰੀ = 'what good is bathing'); the vast majority of its 169 occurrences carry the sense 'in/with the Name'. ਨਾਮਾ is predominantly 'hari naama' (divine Name); one occurrence refers to Bhagat Namdev."
+  },
+  {
+    "concept": "vahiguru",
+    "gurmukhi_terms": [
+      "ਵਾਹਿਗੁਰੂ",
+      "ਵਾਹਗੁਰੂ",
+      "ਵਾਹੁ",
+      "ਵਾਹਿ"
+    ],
+    "description": "Wondrous Enlightener (Waheguru) — the primary Sikh epithet for the Divine, combining wonder (vāh) and the primal Guru.",
+    "total_hits": 176,
+    "caveats": "ਵਾਹੁ (156) is the exclamation 'wonderful/wondrous' that seeds the Vahiguru mantra; only the 13 instances of ਵਾਹਿਗੁਰੂ and 3 of ਵਾਹਗੁਰੂ are the explicit compound name. ਵਾਹਿ (4) appears in exclamatory praise lines."
+  },
+  {
+    "concept": "hukam",
+    "gurmukhi_terms": [
+      "ਹੁਕਮੁ",
+      "ਹੁਕਮ",
+      "ਹੁਕਮਿ",
+      "ਹੁਕਮੈ",
+      "ਹੁਕਮੀ",
+      "ਹੁਕਮਾਵੈ"
+    ],
+    "description": "Divine Command/Order — the sovereign will of the Creator by which all creation exists, moves, and is judged.",
+    "total_hits": 400,
+    "caveats": "ਹੁਕਮਾਵੈ is rare (1 occurrence) but confirmed in corpus."
+  },
+  {
+    "concept": "akal_kaal",
+    "gurmukhi_terms": [
+      "ਅਕਾਲ",
+      "ਅਕਾਲੁ",
+      "ਕਾਲੁ",
+      "ਕਾਲ",
+      "ਕਾਲਿ",
+      "ਕਾਲੈ"
+    ],
+    "description": "Timeless/Time — ਅਕਾਲ is the Eternal beyond time; ਕਾਲ/ਕਾਲੁ/ਕਾਲਿ/ਕਾਲੈ denote time, death, or the Lord of Time (Mahakaal), all within the cluster of cosmic temporality vs. the Timeless.",
+    "total_hits": 314,
+    "caveats": "Explicitly excluded: ਕਾਲਾ (20), ਕਾਲੀ (11), ਕਾਲੇ (18) — these are the color 'black' and are false friends. ਕਾਲ/ਕਾਲੁ can mean both 'death' and 'time/era'; both senses belong to this theological cluster in Gurbani."
+  },
+  {
+    "concept": "karta",
+    "gurmukhi_terms": [
+      "ਕਰਤਾ",
+      "ਕਰਤਾਰ",
+      "ਕਰਤਾਰੁ",
+      "ਕਰਤਾਰੈ",
+      "ਕਰਤਾਰੋ",
+      "ਕਰਤਾਰਾ",
+      "ਕਰਤੇ",
+      "ਕਰਤੈ",
+      "ਸਿਰਜਨਹਾਰੁ",
+      "ਸਿਰਜਨਹਾਰ",
+      "ਸਿਰਜਿ",
+      "ਸਿਰਜੇ"
+    ],
+    "description": "The Creator — names and verbal forms pointing to God as the sole maker and sustainer of all creation.",
+    "total_hits": 624,
+    "caveats": "ਕਰਤੇ/ਕਰਤੈ are oblique/vocative of ਕਰਤਾ and consistently mean 'of/O Creator'. ਸਿਰਜਨਹਾਰ forms mean 'the one who created/creates' and are included as a near-synonym cluster."
+  },
+  {
+    "concept": "satguru",
+    "gurmukhi_terms": [
+      "ਸਤਿਗੁਰੁ",
+      "ਸਤਿਗੁਰ",
+      "ਸਤਿਗੁਰੂ",
+      "ਸਤਿਗੁਰਾ",
+      "ਸਤਿਗੁਰਿ",
+      "ਸਤਿਗੁਰੈ",
+      "ਗੁਰੁ",
+      "ਗੁਰ",
+      "ਗੁਰੂ",
+      "ਗੁਰਾ",
+      "ਗੁਰਿ"
+    ],
+    "description": "The True Guru — the divine preceptor (both as the historical Sikh Gurus and as the eternal inner illuminator) who connects the seeker to the Divine Name.",
+    "total_hits": 6916,
+    "caveats": "ਗੁਰ (3135) is the most frequent form and appears in numerous compounds (e.g. ਗੁਰਮੁਖਿ, ਗੁਰਬਾਣੀ); here only the standalone ਗੁਰ is counted. The Satguru forms are the explicit 'True Guru' epithet and the plain Gur/Guru forms are overlapping."
+  },
+  {
+    "concept": "shabad",
+    "gurmukhi_terms": [
+      "ਸਬਦੁ",
+      "ਸਬਦ",
+      "ਸਬਦਿ",
+      "ਸਬਦੈ",
+      "ਸਬਦੋ"
+    ],
+    "description": "The Divine Word/Hymn — the living utterance of the Guru, both the scriptural compositions and the cosmic vibration of Truth that permeates creation.",
+    "total_hits": 1743,
+    "caveats": "ਸ਼ਬਦ (with nukta) returns 0 hits — the corpus uses ਸਬਦ without nukta throughout. ਸਬਦਹੁ also returns 0."
+  },
+  {
+    "concept": "amrit",
+    "gurmukhi_terms": [
+      "ਅੰਮ੍ਰਿਤ",
+      "ਅੰਮ੍ਰਿਤੁ",
+      "ਅੰਮ੍ਰਿਤਿ",
+      "ਅੰਮ੍ਰਿਤਾ",
+      "ਅੰਮ੍ਰਿਤੋ"
+    ],
+    "description": "Nectar of Immortality — the ambrosial essence of the divine Name that, when imbibed through naam-simran, grants liberation from death and rebirth.",
+    "total_hits": 737,
+    "caveats": "ਅੰਮ੍ਰਿਤੈ returns 0; the dative/locative form does not appear. ਅੰਮ੍ਰਿਤੋ (2) is very rare but confirmed."
+  },
+  {
+    "concept": "ik_onkar",
+    "gurmukhi_terms": [
+      "ੴ",
+      "ਏਕੁ",
+      "ਏਕ",
+      "ਏਕਿ",
+      "ਏਕੈ",
+      "ਏਕੋ",
+      "ਇਕੁ",
+      "ਇਕਿ",
+      "ਇਕੋ",
+      "ਓਅੰਕਾਰ",
+      "ਓਅੰਕਾਰਿ",
+      "ਓਅੰ",
+      "ਏਕੰਕਾਰੁ",
+      "ਏਕੰਕਾਰ",
+      "ਏਕੰਕਾਰਿ"
+    ],
+    "description": "One Universal Creator (Ik Oankaar) — the foundational declaration of the singular, indivisible, all-pervading Divine Reality that opens the Japji and the entire scripture.",
+    "total_hits": 1956,
+    "caveats": "ੴ (111) is the Mool Mantar symbol itself. ਓਅੰਕਾਰੁ returns 0 in word_freq (the form ਓਅੰ=3, ਓਅੰਕਾਰ=2, ਓਅੰਕਾਰਿ=10 are present). ਏਕੰਕਾਰੁ=25 is a synonym epithet. ਇਕੁ/ਇਕਿ/ਇਕੋ are the ik- root forms ('one/only one') distinct from the ਏਕੁ/ਏਕ set but semantically unified here."
+  },
+  {
+    "concept": "simran",
+    "gurmukhi_terms": [
+      "ਸਿਮਰਨੁ",
+      "ਸਿਮਰਨ",
+      "ਸਿਮਰਿ",
+      "ਸਿਮਰਹੁ",
+      "ਸਿਮਰਤ",
+      "ਸਿਮਰੈ",
+      "ਸਿਮਰੀਐ",
+      "ਸਿਮਰਹਿ",
+      "ਭਜਨੁ",
+      "ਭਜਨ",
+      "ਭਜਿ",
+      "ਜਪੁ",
+      "ਜਪਿ",
+      "ਜਾਪੁ",
+      "ਜਾਪ",
+      "ਜਪਹੁ",
+      "ਜਪੈ"
+    ],
+    "description": "Remembrance/Meditation — the practice of continuously contemplating and reciting the divine Name, encompassing simran (remembrance), bhajan (devotional singing), and jap (repetition).",
+    "total_hits": 1424,
+    "caveats": "ਜਪੁ/ਜਪਿ/ਜਾਪੁ etc. overlap conceptually with naam-recitation and are included as the active simran cluster alongside the root ਸਿਮਰ- forms."
+  },
+  {
+    "concept": "sifat_salah",
+    "gurmukhi_terms": [
+      "ਸਿਫਤਿ",
+      "ਸਿਫਤੀ",
+      "ਸਾਲਾਹਿ",
+      "ਸਾਲਾਹੀ",
+      "ਸਾਲਾਹਣਾ",
+      "ਸਾਲਾਹੇ",
+      "ਵਡਿਆਈ",
+      "ਵਡਿਆਈਆ",
+      "ਵਡਿਆਈਆਂ"
+    ],
+    "description": "Praise and Glorification — the laudation of God's qualities and greatness through hymn, speech, and devoted contemplation; together these terms express the Gurbani ethic of perpetual praise.",
+    "total_hits": 549,
+    "caveats": "ਸਾਲਾਹੁ returns 0 (the imperative form ਸਾਲਾਹਿ=23 is the attested form). ਵਡਿਆਈ (320) is the most common single term in this cluster, meaning 'greatness/glory'."
+  },
+  {
+    "concept": "bani",
+    "gurmukhi_terms": [
+      "ਬਾਣੀ",
+      "ਬਾਣਿ",
+      "ਬਾਣੀਆ",
+      "ਗੁਰਬਾਣੀ"
+    ],
+    "description": "Sacred Utterance/Scripture — the Guru's divine speech, both the body of Gurbani compositions and the spiritual sound-current that is the Guru's essential form.",
+    "total_hits": 391,
+    "caveats": "ਗੁਰਬਾਣੀ (33) is the compound 'Guru's Bani'; ਗੁਰਬਾਣਿ returns 0. Many more occurrences of ਬਾਣੀ exist within compounds (e.g. ਗੁਰਬਾਣੀ already counted separately) — the standalone ਬਾਣੀ (340) is the primary form."
+  },
+  {
+    "concept": "darshan",
+    "gurmukhi_terms": [
+      "ਦਰਸਨੁ",
+      "ਦਰਸਨ",
+      "ਦਰਸਿ",
+      "ਦਰਸਨਿ",
+      "ਦਰਸਨੈ",
+      "ਦਰਸਾਵੈ",
+      "ਦਰਸਨਾ",
+      "ਦੀਦਾਰੁ",
+      "ਦੀਦਾਰ",
+      "ਦੀਦਾਰਿ"
+    ],
+    "description": "The Blessed Vision — beholding God or the Guru in His divine form; the transformative spiritual 'seeing' that grants liberation and peace.",
+    "total_hits": 355,
+    "caveats": "ਦੀਦਾਰੁ/ਦੀਦਾਰ/ਦੀਦਾਰਿ are the Farsi-rooted equivalents of ਦਰਸਨ and are included as near-synonyms in this cluster."
+  },
+  {
+    "concept": "charan",
+    "gurmukhi_terms": [
+      "ਚਰਣ",
+      "ਚਰਣਿ",
+      "ਚਰਣਾ",
+      "ਚਰਣੀ",
+      "ਚਰਣਾਰਬਿੰਦ",
+      "ਪਗ",
+      "ਪਗਿ",
+      "ਪੈਰ",
+      "ਪੈਰੀ"
+    ],
+    "description": "The Lotus Feet — the sacred feet of the Guru/God as a devotional focus and metaphor for humble surrender, refuge, and grace.",
+    "total_hits": 497,
+    "caveats": "ਚਰਣਾਰਬਿੰਦ (8) = 'lotus-feet' compound. ਪਗ/ਪਗਿ/ਪੈਰ/ਪੈਰੀ are synonymous 'feet' terms and almost always appear in devotional surrender contexts (ਗੁਰ ਕੀ ਪੈਰੀ ਪਾਹਿ). ਪਾਇ (393) was considered but excluded as too ambiguous ('to receive/attain' vs. 'at the feet'). ਚਰਣੈ returns 0."
+  },
+  {
+    "concept": "bhana",
+    "gurmukhi_terms": [
+      "ਭਾਣਾ",
+      "ਭਾਣੈ",
+      "ਭਾਣੇ",
+      "ਭਾਣਿ",
+      "ਰਜਾਇ",
+      "ਰਜਾਈ",
+      "ਭਾਵੈ"
+    ],
+    "description": "Divine Will/Pleasure — joyful, unconditional acceptance of whatever the Waheguru wills; the spiritual stance of complete surrender to God's pleasure (bhana mannana).",
+    "total_hits": 847,
+    "caveats": "ਭਾਵੈ ('as it pleases Thee') is the verbal root of ਭਾਣਾ and clearly denotes divine will in context. ਰਜਾਇ/ਰਜਾਈ are the Farsi/Arabic-rooted equivalents (razā = divine pleasure). ਭਾਉ (love/devotion) was considered but is a distinct concept and excluded. ਰਜ਼ਾ (with nukta) returns 0."
+  }
+]
