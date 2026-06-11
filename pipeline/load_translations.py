@@ -9,8 +9,12 @@ Pair format per line: {"ang": N, "gurmukhi": "...", "en": "..."}
 import sys, json, sqlite3, unicodedata, re, difflib, glob
 
 DB = sys.argv[1]
+SOURCE_ID = 'ssk-banidb'
+args = sys.argv[2:]
+if args and args[0].startswith('--source='):
+    SOURCE_ID = args[0].split('=', 1)[1]; args = args[1:]
 files = []
-for pat in sys.argv[2:]:
+for pat in args:
     files += glob.glob(pat)
 
 con = sqlite3.connect(DB)
@@ -25,12 +29,17 @@ INSERT OR REPLACE INTO sources VALUES(
   'ssk-banidb', 'translation-en',
   'English translation by Dr. Sant Singh Khalsa, sourced via BaniDB (banidb.com)',
   'Personal, local, non-commercial use with attribution', date('now'));
+INSERT OR REPLACE INTO sources VALUES(
+  'ssk-shabados', 'translation-en',
+  'English translation by Dr. Sant Singh Khalsa, via the ShabadOS open database (github.com/shabados/database, release 4.8.7)',
+  'Open data with attribution; translation author attribution required', date('now'));
 ''')
 
 MATRAS = 'ਾਿੀੁੂੇੈੋੌ੍ੰਂਃ਼ੱੑੵ'
 def norm(s):
     s = unicodedata.normalize('NFC', s)
     s = re.sub(r'[॥।|੦-੯\s]+', ' ', s).strip()
+    s = re.sub(r'( ਰਹਾਉ( ਦੂਜਾ)?)+$', '', s)   # refrain label = marker, not verse text
     return s
 def skel(s):
     return re.sub('[' + MATRAS + ' ]', '', norm(s))
@@ -71,7 +80,7 @@ for f in files:
         if lid in seen_ids: continue
         seen_ids.add(lid)
         stats[quality] += 1
-        rows.append((lid, 'en', 'ssk-banidb', en, quality))
+        rows.append((lid, 'en', SOURCE_ID, en, quality))
 
 cur.executemany('INSERT OR REPLACE INTO translations VALUES(?,?,?,?,?)', rows)
 cur.execute("INSERT OR REPLACE INTO meta VALUES('translations_en', ?)", (str(len(rows)),))

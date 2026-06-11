@@ -20,7 +20,7 @@ Opens `http://localhost:7777`. Python 3 standard library only — nothing to ins
 | **Metadata** | Raag (31, canonical order) · author (Gurus, Bhagats, per-Bhatt Swaiyye attribution, Vaar-correct pauris) · bani/section · composition · ਰਹਾਉ · Ang |
 | **Search** | Gurmukhi FTS (BM25-ranked) · spelling-tolerant Roman (*waheguru* works) · first-letter (ਧ ਧ ਰ ਗ / *dh dh r g*) · 53 corpus-verified themes · concordance |
 | **Verify engine** | `/api/verify` — any claimed quote → VERIFIED_EXACT / VERIFIED / VERIFIED_PARTIAL / PROBABLE / AMBIGUOUS / NOT_FOUND + Ang cross-check + confidence |
-| **English layer** | 2,587 lines (Dr. Sant Singh Khalsa, via BaniDB — see NOTICE.md): Japji + liturgy complete, Sukhmani ~90%, Anand partial |
+| **English layer** | **58,039 lines — the full Granth** (Dr. Sant Singh Khalsa, via the ShabadOS open database — see NOTICE.md), labeled "EN ·", never mixed with scripture |
 | **Reader** | Shabad-grouped pages, ੴ invocations as printed, translit toggle, font size, ←/→ keys, dark mode |
 
 ## Architecture (the 5 layers)
