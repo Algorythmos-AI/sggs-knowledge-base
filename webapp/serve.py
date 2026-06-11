@@ -14,6 +14,10 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 DB = os.path.join(HERE, '..', 'db', 'sggs.sqlite')
 PORT = int(os.environ.get('SGGS_PORT', '7777'))
 
+# Search-logic release stamp. Lives in code (not DB meta) so a search-only patch
+# doesn't force an 86 MB DB re-commit. /api/health prefers this; DB meta is fallback.
+APP_VERSION = '1.9.2'
+
 import sys as _sys
 _sys.path.insert(0, HERE)
 from verify import verify as verify_claim     # Layer-3: quotation verification engine
@@ -312,7 +316,7 @@ def variant_search(q, limit, offset):
                     alts.append(f'translit: "{term}"')
             fn = roman_norm(t)
             if fn and len(fn) >= 2:
-                alts.append(f'translit_norm: "{fn}"')
+                alts.append(f'translit_norm: "{fn}" *')   # prefix: js -> jsh/jsd (typo tails)
             if alts:
                 groups.append('(' + ' OR '.join(alts) + ')')
             elif fn:                                 # only a 1-char fold: weak token
@@ -356,7 +360,7 @@ def mixed_search(q, limit, offset):
             if lx and lx[0] == 'translit':
                 for term in lx[1][:2]: alts.append(f'translit: "{term}"')
             fn = roman_norm(t)
-            if fn and len(fn) >= 2: alts.append(f'translit_norm: "{fn}"')
+            if fn and len(fn) >= 2: alts.append(f'translit_norm: "{fn}" *')
             if alts: groups.append('(' + ' OR '.join(alts) + ')')
         if len(groups) < 2: return None
         expr = ' AND '.join(groups)
@@ -375,20 +379,32 @@ def passage_search(q, limit, offset):
     toks = [roman_norm(t) for t in q.lower().split() if t.isalnum()]
     toks = [t for t in toks if len(t) >= 2]   # 1-char folds (jo→j, ha→h) are noise
     if len(toks) < 3: return None
+    # EXACT folds, not prefix: 2-3 char skeletons (jvd/mr/dr) prefix-match hundreds
+    # of words, exploding the match set and burying the true couplet — Ang 410 fell
+    # from bm25 rank #20 to #42, out of the LIMIT-25 window. Typo-tail queries
+    # resolve at the variant/waterfall tier before reaching here; the seq-gate below
+    # stays prefix-aware so in-order verification still tolerates tails.
     m = ' AND '.join(f'"{t}"' for t in toks)
     try:
         cand = db().execute(
             'SELECT comp_id, tnorm, rank FROM fts_shabad WHERE fts_shabad MATCH ? '
-            'ORDER BY rank LIMIT 25', (m,)).fetchall()
+            'ORDER BY rank LIMIT 40', (m,)).fetchall()
         if not cand: return None
-        seq = re.compile(r'\b' + r'\b.*?\b'.join(re.escape(t) for t in toks) + r'\b')
-        all_folds = [t for t in (roman_norm(x) for x in q.lower().split()) if t]
-        def density(tnorm):
-            words = (tnorm or '').split()
-            return sum(sum(1 for w in words if w.startswith(f)) for f in all_folds)
-        ranked = sorted(cand, key=lambda r: (0 if seq.search(r[1] or '') else 1,
-                                             -density(r[1]), r[2]))
-        cids = [r[0] for r in ranked[:3]]
+        seq = re.compile(r'\b' + r'\w*\b.*?\b'.join(re.escape(t) for t in toks) + r'\w*')
+        # Rank by the SPAN of the tightest in-order match (non-greedy `.*?` finds the
+        # shortest). A genuine quote keeps its words contiguous — the couplet at Ang 410
+        # spans ~19 chars — while a coincidental scatter across a long shabad spans
+        # hundreds. Span cleanly separates the true couplet (#1) where the old density
+        # score did not: density rewarded long shabads for incidental 1-char-fold hits,
+        # sinking the short true couplet below them.
+        scored = []
+        for r in cand:
+            mt = seq.search(r[1] or '')
+            if mt:
+                scored.append((len(mt.group(0)), r[2], r[0]))   # (span, bm25, comp_id)
+        if not scored: return None                    # no in-order match: abstain, never junk
+        scored.sort(key=lambda x: (x[0], x[1]))        # tightest span, then bm25 relevance
+        cids = [s[2] for s in scored[:3]]
         fold_set = set(toks)
         out = []
         for cid in cids:
@@ -522,7 +538,8 @@ def api(path, qs):
             h['checks'][name] = bool(cond)
             if not cond: h['ok'] = False
         m = {k: v for k, v in db().execute('SELECT * FROM meta')}
-        h['version'] = m.get('version')
+        h['version'] = APP_VERSION or m.get('version')
+        h['db_version'] = m.get('version')
         check('lines_60658', db().execute('SELECT count(*) FROM lines').fetchone()[0] == 60658)
         check('angs_1430', db().execute('SELECT count(DISTINCT ang) FROM lines').fetchone()[0] == 1430)
         check('fts5', m.get('fts5') == '1' and bool(
