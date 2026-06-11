@@ -1,5 +1,11 @@
 # Changelog — SGGS Knowledge Base
 
+## v1.9.0 — 2026-06-11 — Generalized Phonetic Matrix
+- **Root cause of `jeevat jo mara ha duttar so tara ha` → 0: the quote is a COUPLET spanning two ॥-lines (Ang 410)** — no per-line AND could ever match it. New **passage tier**: shabad-level FTS (4,703 shabads) catches quotes crossing line boundaries and returns the relevant lines of the top shabads. Both tuks now surface together.
+- **Generalized rules** R17 (terminal ai→a: marai→mara) and R18 (nasal-anchor strip: haan→haa→ha), +9k variants → **79,666 total**; 2-char veto exemption for refrain particles.
+- **Token waterfall v3**: every query token gets a full OR-group — variants ∪ canonical (new `canon_tokens` table, all 24,676 corpus tokens — fixes words that had no variants losing their exact alternative) ∪ lexicon phrases (satnam→"sat naam") ∪ long-vowel twin (ki↔kee) ∪ nasal-trim (main→mai) ∪ phonetic fold — so no single token can poison a phrase. Weak (1-char-fold) tokens are skipped, killing junk-query false positives.
+- **Trigram FTS index** built (SQLite 3.37, per spec mandate); 300-char input guard (400); battery: 2 fresh SME agents, 26 GOOD/8 WEAK/0 BAD → all 8 WEAKs fixed same-session; final suite 19/20 (1 = correct ਸ੍ਵਾਮੀ-spelling result), p95 ~40ms.
+
 ## v1.8.0 — 2026-06-11 — Full-corpus enrichment (the bulletproof release)
 - **Root cause of `nij bhakti sheelbanti naar` → 0 results: FIXED deterministically** before any LLM call — R16 ਬ/ਵ swap (+10,238 variants), k↔g Sanskrit voicing in the fold (bhakti≡bhagatee), punctuation/danda sanitation (`naar.` ≡ `naari ॥`), terminal-vowel retry, and a HYBRID multi-token AND (per-token: variants→translit, else fold→translit_norm) so one stubborn token can't kill a query.
 - **Full-corpus LLM sweep — 100% of the 21,701-word vocabulary** via the resumable block orchestrator (`pipeline/enrich_orchestrator.py`, 29 blocks × 750, prepare/status/merge, idempotent): 29 Worker agents proposed ~2,400 loanword/deep-typo variants; the deterministic Supervisor purged duplicates/English/canonical with full audit (`enrichment/qa_log.jsonl`); **1,059 novel LLM variants merged → 70,604 total** (rule 69,455 · llm 1,059 · typo 90).

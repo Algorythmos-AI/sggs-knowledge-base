@@ -84,6 +84,13 @@ RULES = [  # (id, applies(w)->bool, expand(w)->[variants], weight)
  # R16: regional v↔b swap (ਵ/ਬ alternation: seelvantee↔seelbantee, gobind↔govind)
  ('R16a', lambda w: 'v' in w[1:],          lambda w: [w[0] + w[1:].replace('v', 'b')],  0.70),
  ('R16b', lambda w: 'b' in w[1:] and 'bh' not in w, lambda w: [w[0] + w[1:].replace('b', 'v')], 0.70),
+ # R17: generalized TERMINAL diphthong collapse (marai→mara; len-gate keeps hai/mai
+ # out of the index — short function words are handled by the query-side fold)
+ ('R17', lambda w: w.endswith('ai') and len(w) >= 4, lambda w: [w[:-2] + 'a'],          0.80),
+ # R18: universal nasal-anchor strip after long vowels (haan→haa, deen→dee…;
+ # composes with R01-R03 down to ha/di/du at depth 2)
+ ('R18', lambda w: re.search('(aa|ee|oo)[nm]($|[^aeiou])', w),
+         lambda w: [re.sub('(aa|ee|oo)[nm]($|[^aeiou])', r'\1\2', w, count=1)],         0.65),
 ]
 
 def expand(canonical):
@@ -117,7 +124,9 @@ for g, tr in canon.items():
     for v, s in cands:
         if kept >= 15: break                                   # reviewer change #5
         if len(v) < 2 or not v.isalnum(): purged['form'] += 1; continue
-        if v in veto: purged['english'] += 1; continue
+        # english veto exempts 2-char variants (refrain particles like ha<-haan;
+        # post-waterfall they only widen OR-groups inside an AND, low collision cost)
+        if v in veto and len(v) > 2: purged['english'] += 1; continue
         if v in canonical_set: purged['canonical'] += 1; continue   # reviewer change #4
         rows.append((v, g, tr, fr, s, 'rule')); kept += 1
 

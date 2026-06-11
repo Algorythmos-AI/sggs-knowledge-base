@@ -102,6 +102,7 @@ SEEKER_LEXICON = {
     'yamuna': ('translit', ['jamunaa']), 'waheguru': ('translit', ['vaahiguroo']),
     'allah': ('translit', ['alah']), 'khuda': ('translit', ['khudaa', 'khudaae']),
     'satnam': ('translit', ['sat naam', 'satinaam']), 'satguru': ('translit', ['satigur']),
+    'satnam waheguru': ('translit', ['vaahiguroo', 'sat naam']),
     'onkar': ('translit', ['oankaar']), 'ikonkar': ('translit', ['oankaar']),
 }
 
@@ -140,6 +141,7 @@ def search_like(col, q, limit, offset):
 PUNCT_RE = re.compile(r'[॥।.,;:!?"\'()\[\]{}|/\\-]+')
 
 def do_search(q, mode, limit, offset):
+    if len(q) > 300: raise ValueError('query too long (max 300 chars)')
     q = PUNCT_RE.sub(' ', q).strip()          # dandas & punctuation are separators
     q = re.sub(r'\s+', ' ', q)
     if not q: return {'mode': mode, 'results': []}
@@ -160,8 +162,10 @@ def do_search(q, mode, limit, offset):
     elif mode == 'roman':
         res = run('translit'); used = 'roman'
         if not res and HAVE_FTS:
-            res = search_fts('translit_norm', roman_norm(q), False, limit, offset)
-            used = 'roman-spelling-tolerant'
+            strong = ' '.join(t for t in roman_norm(q).split() if len(t) >= 2)
+            if strong:
+                res = search_fts('translit_norm', strong, False, limit, offset)
+                used = 'roman-spelling-tolerant'
     elif mode == 'first':
         col = 'fl_g' if is_gurmukhi else 'fl_r'
         res = run(col, phrase=True); used = 'first-letters'
@@ -199,8 +203,13 @@ def do_search(q, mode, limit, offset):
                 res = search_en(q, limit, offset)         # 'mercy' must hit translations,
                 used = 'english-translation'              # not fold-collide with ਮੋਰਚਾ
             if not res and HAVE_FTS:
-                res = search_fts('translit_norm', roman_norm(q), False, limit, offset)
-                used = 'roman-spelling-tolerant'
+                strong = ' '.join(t for t in roman_norm(q).split() if len(t) >= 2)
+                if strong:
+                    res = search_fts('translit_norm', strong, False, limit, offset)
+                    used = 'roman-spelling-tolerant'
+            if not res and len(toks) >= 3:                # quote spans ॥ lines
+                ps = passage_search(q, limit, offset)
+                if ps: return {'mode': 'passage-match (quote spans lines)', 'results': ps}
             if not res and len(toks) == 1:
                 t = theme_search(q, limit, offset)
                 if t['results']: return t
@@ -219,28 +228,52 @@ def variant_search(q, limit, offset):
       4. otherwise phonetic fold  -> translit_norm:("fold(t)")
     All combined in ONE FTS expression."""
     toks = [t for t in q.lower().split() if t.isalnum()]
-    if not toks or len(toks) > 6: return None
-    groups, resolved_any = [], False
+    if not toks or len(toks) > 10: return None
+    groups = []
     try:
         def lookup(tok):
             return db().execute(
                 'SELECT DISTINCT translit FROM variants WHERE variant = ? '
                 'ORDER BY freq * score DESC LIMIT 3', (tok,)).fetchall()
+        weak_skipped = 0
         for t in toks:
+            # Token waterfall: EVERY token gets a full OR-group so a mislabeled
+            # variant or a strict canonical coincidence can never poison the AND:
+            #   (translit:"variant…" OR translit:"self" OR translit:"lexicon" OR translit_norm:"fold")
+            alts = []
             rs = lookup(t)
             if not rs and len(t) > 3 and t[-1] in 'aeiou':
                 rs = lookup(t[:-1])                  # dropped/extra terminal vowel
-            if rs:
-                resolved_any = True
-                groups.append('translit:(' + ' OR '.join(f'"{r[0]}"' for r in rs) + ')')
-                continue
-            is_canon = db().execute('SELECT 1 FROM variants WHERE translit = ? LIMIT 1', (t,)).fetchone()
-            if is_canon:
-                groups.append(f'translit:("{t}")')
+            if not rs and len(t) > 3 and t[-1] in 'nm' and t[-2] in 'aeiou':
+                rs = lookup(t[:-1])                  # user-added nasal: main -> mai
+            for r in rs:
+                alts.append(f'translit: "{r[0]}"')
+            def is_canon(tok):
+                try:
+                    return db().execute('SELECT 1 FROM canon_tokens WHERE token = ?', (tok,)).fetchone()
+                except sqlite3.OperationalError:
+                    return db().execute('SELECT 1 FROM variants WHERE translit = ? LIMIT 1', (tok,)).fetchone()
+            for cand in (t, t[:-1] if len(t) > 3 and t[-1] in 'aeiounm' else None):
+                if cand and is_canon(cand):
+                    alts.append(f'translit: "{cand}"')
+            if t[-1] in 'aiu':                       # ki~kee, jo~joo, sada~sadaa
+                long_v = t[:-1] + {'a': 'aa', 'i': 'ee', 'u': 'oo'}[t[-1]]
+                if is_canon(long_v):
+                    alts.append(f'translit: "{long_v}"')
+            lx = SEEKER_LEXICON.get(t)               # satnam -> "sat naam" phrase
+            if lx and lx[0] == 'translit':
+                for term in lx[1][:2]:
+                    alts.append(f'translit: "{term}"')
+            fn = roman_norm(t)
+            if fn and len(fn) >= 2:
+                alts.append(f'translit_norm: "{fn}"')
+            if alts:
+                groups.append('(' + ' OR '.join(alts) + ')')
+            elif fn:                                 # only a 1-char fold: weak token
+                weak_skipped += 1                    # (jo/so/ha — skip, don't poison)
             else:
-                resolved_any = True                  # fold contributes real signal
-                groups.append(f'translit_norm:("{roman_norm(t)}")')
-        if not resolved_any: return None
+                return None
+        if not groups or (weak_skipped and len(groups) < 2): return None
         expr = ' AND '.join(groups)
         sql = (f"SELECT {LINE_COLS} FROM lines JOIN "
                f"(SELECT rowid, bm25(fts, 10.0, 5.0, 4.0, 3.0, 3.0, 1.0) AS rk "
@@ -248,6 +281,37 @@ def variant_search(q, limit, offset):
                f"ORDER BY m.rk, lines.id LIMIT ? OFFSET ?")
         res = rows_to_list(db().execute(sql, (expr, limit, offset)).fetchall())
         return res or None
+    except sqlite3.OperationalError:
+        return None
+
+def passage_search(q, limit, offset):
+    """Cross-line passage tier: user quotes a couplet spanning ॥ boundaries
+    (ਜੀਵਤ ਜੋ ਮਰੈ ਹਾਂ ॥ ਦੁਤਰੁ ਸੋ ਤਰੈ ਹਾਂ ॥ is TWO corpus lines). Folded tokens
+    are matched at SHABAD level; the shabad's lines are returned in order."""
+    toks = [roman_norm(t) for t in q.lower().split() if t.isalnum()]
+    toks = [t for t in toks if len(t) >= 2]   # 1-char folds (jo→j, ha→h) are noise
+    if len(toks) < 3: return None
+    m = ' AND '.join(f'"{t}"' for t in toks)
+    try:
+        cids = [r[0] for r in db().execute(
+            'SELECT comp_id FROM fts_shabad WHERE fts_shabad MATCH ? '
+            'ORDER BY rank LIMIT 3', (m,)).fetchall()]
+        if not cids: return None
+        fold_set = set(toks)
+        out = []
+        for cid in cids:
+            lines = rows_to_list(db().execute(
+                f'SELECT {LINE_COLS}, translit_norm FROM lines '
+                f'WHERE comp_id = ? AND is_header = 0 ORDER BY id', (cid,)).fetchall())
+            # surface the lines that actually carry the quoted words
+            for l in lines:
+                l['_hits'] = sum(1 for w in (l.pop('translit_norm') or '').split() if w in fold_set)
+            lines.sort(key=lambda l: (-l['_hits'], l['id']))
+            per_comp = max(2, limit // max(len(cids), 1))   # every top shabad surfaces
+            keep = lines[:per_comp]
+            for l in keep: l.pop('_hits', None)
+            out += sorted(keep, key=lambda l: l['id'])
+        return attach_translations(out[offset:offset + limit]) or None
     except sqlite3.OperationalError:
         return None
 
