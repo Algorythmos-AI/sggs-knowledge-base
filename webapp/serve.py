@@ -31,7 +31,7 @@ def roman_norm(s):
         w = w.replace('w', 'v').replace('z', 'j').replace('q', 'k').replace('x', 'k')
         for dg in ('sh', 'chh', 'ch', 'kh', 'gh', 'jh', 'th', 'dh', 'bh', 'ph', 'rh', 'f'):
             w = w.replace(dg, dg[0] if dg != 'f' else 'p')
-        w = w.replace('b', 'v').replace('k', 'g')   # ਬ/ਵ + Sanskrit↔Punjabi voicing (bhakti~bhagatee)
+        w = w.replace('b', 'v').replace('k', 'g').replace('t', 'd').replace('p', 'v')   # ਬ/ਵ + Sanskrit↔Punjabi voicing (bhakti~bhagatee)
         if w.startswith('y'): w = 'j' + w[1:]
         w = w.replace('y', '')                       # medial glide: gyan ~ giaan
         head = w[0] if w and w[0] in 'aeiou' else ''
@@ -104,6 +104,10 @@ SEEKER_LEXICON = {
     'satnam': ('translit', ['sat naam', 'satinaam']), 'satguru': ('translit', ['satigur']),
     'satnam waheguru': ('translit', ['vaahiguroo', 'sat naam']),
     'onkar': ('translit', ['oankaar']), 'ikonkar': ('translit', ['oankaar']),
+    'rabb': ('translit', ['har', 'raam']), 'rab': ('translit', ['har', 'raam']),
+    'dard': ('translit', ['dukh']), 'dil': ('translit', ['man']),
+    'khushi': ('translit', ['sukh']), 'satsang': ('translit', ['saadhasang', 'sang']),
+    'ocean': ('translit', ['saagar']), 'name': ('translit', ['naam']),
 }
 
 def lexicon_search(q, limit, offset):
@@ -154,6 +158,16 @@ def do_search(q, mode, limit, offset):
         if HAVE_FTS: return search_fts(col, q, phrase, limit, offset)
         return search_like('text' if col == 'text' else col, q, limit, offset)
 
+    latin_present = bool(re.search('[a-zA-Z]', q))
+    if mode == 'auto' and is_gurmukhi and latin_present:
+        ms = mixed_search(q, limit, offset)
+        if ms: return {'mode': 'mixed-script', 'results': ms}
+        q_lat = ' '.join(t for t in toks if not GURMUKHI.search(t))
+        if q_lat:
+            sub = do_search(q_lat, 'auto', limit, offset)   # drop Gurmukhi tokens, retry
+            if sub.get('results'):
+                sub['mode'] = 'mixed-script (latin part: ' + sub['mode'] + ')'
+                return sub
     # explicit modes
     if mode == 'gurmukhi':
         res = run('text'); used = 'gurmukhi'
@@ -202,17 +216,42 @@ def do_search(q, mode, limit, offset):
             if not res:                                   # English layer before fold:
                 res = search_en(q, limit, offset)         # 'mercy' must hit translations,
                 used = 'english-translation'              # not fold-collide with ਮੋਰਚਾ
+            if not res:                                   # hallucinated honorifics: retry early
+                kept = [t for t in toks if t.lower() not in
+                        {'ji','jee','jeo','jio','sahib','maharaj','maharaaj','shri','shree','sri','baba','guru','dev','waale','wale'}]
+                if 2 <= len(kept) < len(toks):
+                    sub = do_search(' '.join(kept), 'auto', limit, offset)
+                    if sub.get('results'):
+                        sub['mode'] = sub['mode'] + ' (honorifics dropped)'
+                        return sub
+            if not res and len(toks) >= 3:                # quote spans ॥ lines —
+                ps = passage_search(q, limit, offset)     # shabad-level AND is more
+                if ps: return {'mode': 'passage-match (quote spans lines)', 'results': ps}   # precise than per-line fold
             if not res and HAVE_FTS:
                 strong = ' '.join(t for t in roman_norm(q).split() if len(t) >= 2)
                 if strong:
                     res = search_fts('translit_norm', strong, False, limit, offset)
                     used = 'roman-spelling-tolerant'
-            if not res and len(toks) >= 3:                # quote spans ॥ lines
-                ps = passage_search(q, limit, offset)
-                if ps: return {'mode': 'passage-match (quote spans lines)', 'results': ps}
+            if not res:
+                bl = blob_search(q, limit, offset)        # keyboard smash / spaceless
+                if bl: return {'mode': 'skeleton-blob', 'results': attach_translations(bl)}
             if not res and len(toks) == 1:
                 t = theme_search(q, limit, offset)
                 if t['results']: return t
+    HONORIFICS = {'ji', 'jee', 'jeo', 'sahib', 'maharaj', 'maharaaj', 'shri', 'shree',
+                  'sri', 'baba', 'guru', 'dev', 'waale', 'wale', 'jio'}
+    if len(res) < 3 and mode == 'auto':
+        kept = [t for t in toks if t.lower() not in HONORIFICS]
+        if len(kept) >= 2 and len(kept) < len(toks):
+            sub = do_search(' '.join(kept), 'auto', limit, offset)
+            if sub.get('results'):
+                seen = {r['id'] for r in res}
+                merged = [r for r in sub['results'] if r['id'] not in seen]
+                if not res:
+                    sub['mode'] = sub['mode'] + ' (honorifics dropped)'
+                    return sub
+                res = (res + merged)[:limit]
+                used = used + ' + honorific-dropped'
     out = {'mode': used, 'results': res}
     if is_gurmukhi:
         rel = term_concepts(toks)
@@ -246,6 +285,13 @@ def variant_search(q, limit, offset):
                 rs = lookup(t[:-1])                  # dropped/extra terminal vowel
             if not rs and len(t) > 3 and t[-1] in 'nm' and t[-2] in 'aeiou':
                 rs = lookup(t[:-1])                  # user-added nasal: main -> mai
+            base_sfx = None
+            if not rs:
+                for suf in ('ing', 'ed', 'es', 'er', 's'):   # English morphology: boling -> bol
+                    if t.endswith(suf) and len(t) > len(suf) + 2:
+                        base_sfx = t[:-len(suf)]
+                        rs = lookup(base_sfx)
+                        if rs: break
             for r in rs:
                 alts.append(f'translit: "{r[0]}"')
             def is_canon(tok):
@@ -253,7 +299,7 @@ def variant_search(q, limit, offset):
                     return db().execute('SELECT 1 FROM canon_tokens WHERE token = ?', (tok,)).fetchone()
                 except sqlite3.OperationalError:
                     return db().execute('SELECT 1 FROM variants WHERE translit = ? LIMIT 1', (tok,)).fetchone()
-            for cand in (t, t[:-1] if len(t) > 3 and t[-1] in 'aeiounm' else None):
+            for cand in (t, t[:-1] if len(t) > 3 and t[-1] in 'aeiounm' else None, base_sfx):
                 if cand and is_canon(cand):
                     alts.append(f'translit: "{cand}"')
             if t[-1] in 'aiu':                       # ki~kee, jo~joo, sada~sadaa
@@ -284,6 +330,44 @@ def variant_search(q, limit, offset):
     except sqlite3.OperationalError:
         return None
 
+def mixed_search(q, limit, offset):
+    """Bilingual blender: Gurmukhi tokens match the text column; latin tokens
+    resolve through variants/lexicon/fold — all in one AND expression."""
+    toks = q.split()
+    if len(toks) > 10: return None
+    groups = []
+    try:
+        for t in toks:
+            if GURMUKHI.search(t):
+                clean = t.replace('"', '')
+                groups.append(f'(text: "{clean}")')
+                continue
+            t = t.lower()
+            if not t.isalnum(): continue
+            alts = []
+            rs = db().execute('SELECT DISTINCT translit FROM variants WHERE variant = ? '
+                              'ORDER BY freq * score DESC LIMIT 3', (t,)).fetchall()
+            for r in rs: alts.append(f'translit: "{r[0]}"')
+            try:
+                if db().execute('SELECT 1 FROM canon_tokens WHERE token = ?', (t,)).fetchone():
+                    alts.append(f'translit: "{t}"')
+            except sqlite3.OperationalError: pass
+            lx = SEEKER_LEXICON.get(t)
+            if lx and lx[0] == 'translit':
+                for term in lx[1][:2]: alts.append(f'translit: "{term}"')
+            fn = roman_norm(t)
+            if fn and len(fn) >= 2: alts.append(f'translit_norm: "{fn}"')
+            if alts: groups.append('(' + ' OR '.join(alts) + ')')
+        if len(groups) < 2: return None
+        expr = ' AND '.join(groups)
+        sql = (f"SELECT {LINE_COLS} FROM lines JOIN "
+               f"(SELECT rowid, bm25(fts, 10.0, 5.0, 4.0, 3.0, 3.0, 1.0) AS rk "
+               f" FROM fts WHERE fts MATCH ?) m ON lines.id = m.rowid "
+               f"ORDER BY m.rk, lines.id LIMIT ? OFFSET ?")
+        return attach_translations(rows_to_list(db().execute(sql, (expr, limit, offset)).fetchall())) or None
+    except sqlite3.OperationalError:
+        return None
+
 def passage_search(q, limit, offset):
     """Cross-line passage tier: user quotes a couplet spanning ॥ boundaries
     (ਜੀਵਤ ਜੋ ਮਰੈ ਹਾਂ ॥ ਦੁਤਰੁ ਸੋ ਤਰੈ ਹਾਂ ॥ is TWO corpus lines). Folded tokens
@@ -293,10 +377,18 @@ def passage_search(q, limit, offset):
     if len(toks) < 3: return None
     m = ' AND '.join(f'"{t}"' for t in toks)
     try:
-        cids = [r[0] for r in db().execute(
-            'SELECT comp_id FROM fts_shabad WHERE fts_shabad MATCH ? '
-            'ORDER BY rank LIMIT 3', (m,)).fetchall()]
-        if not cids: return None
+        cand = db().execute(
+            'SELECT comp_id, tnorm, rank FROM fts_shabad WHERE fts_shabad MATCH ? '
+            'ORDER BY rank LIMIT 25', (m,)).fetchall()
+        if not cand: return None
+        seq = re.compile(r'\b' + r'\b.*?\b'.join(re.escape(t) for t in toks) + r'\b')
+        all_folds = [t for t in (roman_norm(x) for x in q.lower().split()) if t]
+        def density(tnorm):
+            words = (tnorm or '').split()
+            return sum(sum(1 for w in words if w.startswith(f)) for f in all_folds)
+        ranked = sorted(cand, key=lambda r: (0 if seq.search(r[1] or '') else 1,
+                                             -density(r[1]), r[2]))
+        cids = [r[0] for r in ranked[:3]]
         fold_set = set(toks)
         out = []
         for cid in cids:
@@ -312,6 +404,34 @@ def passage_search(q, limit, offset):
             for l in keep: l.pop('_hits', None)
             out += sorted(keep, key=lambda l: l['id'])
         return attach_translations(out[offset:offset + limit]) or None
+    except sqlite3.OperationalError:
+        return None
+
+def blob_search(q, limit, offset):
+    """Desperate tier: keyboard-smash / spaceless input. Collapse the whole query
+    to a fold-skeleton blob; prefilter lines by the blob's head, then fuzzy-rank."""
+    nb = ''.join(roman_norm(q).split())
+    if len(nb) < 8: return None
+    import difflib
+    try:
+        cands, seen_ids = [], set()
+        for w in (nb[:5], nb[2:7], nb[4:9]):
+            if len(w) < 4: continue
+            for r in db().execute(
+                    f"SELECT {LINE_COLS}, norm_blob FROM lines WHERE is_header=0 "
+                    f"AND norm_blob LIKE ? LIMIT 300", ('%' + w + '%',)).fetchall():
+                if r['id'] not in seen_ids:
+                    seen_ids.add(r['id']); cands.append(r)
+        scored = []
+        for r in cands:
+            ratio = difflib.SequenceMatcher(None, nb, r['norm_blob'] or '').ratio()
+            if ratio >= 0.55: scored.append((ratio, dict(r)))
+        if not scored: return None
+        scored.sort(key=lambda x: -x[0])
+        out = []
+        for _, r in scored[:max(limit, 3)]:
+            r.pop('norm_blob', None); out.append(r)
+        return out[offset:offset + limit] or None
     except sqlite3.OperationalError:
         return None
 

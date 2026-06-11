@@ -182,7 +182,7 @@ def roman_norm(translit):
         w = w.replace('w', 'v').replace('z', 'j').replace('q', 'k').replace('x', 'k')
         for dg in ('sh', 'chh', 'ch', 'kh', 'gh', 'jh', 'th', 'dh', 'bh', 'ph', 'rh', 'f'):
             w = w.replace(dg, dg[0] if dg != 'f' else 'p')
-        w = w.replace('b', 'v').replace('k', 'g')   # ਬ/ਵ + Sanskrit↔Punjabi voicing (bhakti~bhagatee)
+        w = w.replace('b', 'v').replace('k', 'g').replace('t', 'd').replace('p', 'v')   # ਬ/ਵ + Sanskrit↔Punjabi voicing (bhakti~bhagatee)
         if w.startswith('y'): w = 'j' + w[1:]
         w = w.replace('y', '')
         head = w[0] if w and w[0] in 'aeiou' else ''

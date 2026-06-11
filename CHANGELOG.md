@@ -1,5 +1,10 @@
 # Changelog — SGGS Knowledge Base
 
+## v1.9.1 — 2026-06-11 — Chaos-tested (10-agent red team + auto-fix loop)
+- 200 adversarial queries across 10 extreme behaviors (voice dictation, honorific hallucination, bilingual blending, keyboard smashing…): **36% → 80% pass** in 3 fix rounds, 13/13 core regression. Full report: `QA_Resolution_Report.md`; attack sets + per-query results: `validation/chaos/`.
+- Patches: mixed-script per-token search; early honorific-drop retry; English-suffix stripping; t/d + p/v voicing fold (column re-migration); `norm_blob` + skeleton-blob desperate tier; synonym lexicon (rabb, dard, dil…); passage tier re-ranking by in-order fold sequence + prefix density (fixes BM25 mush from voicing folds); tier order passage>fold-full.
+- Honest known limits documented: English-homophone dictation (3/20), r/l-n/m acoustic swaps (rejected as precision-destroying), >40%-corrupted smashes.
+
 ## v1.9.0 — 2026-06-11 — Generalized Phonetic Matrix
 - **Root cause of `jeevat jo mara ha duttar so tara ha` → 0: the quote is a COUPLET spanning two ॥-lines (Ang 410)** — no per-line AND could ever match it. New **passage tier**: shabad-level FTS (4,703 shabads) catches quotes crossing line boundaries and returns the relevant lines of the top shabads. Both tuks now surface together.
 - **Generalized rules** R17 (terminal ai→a: marai→mara) and R18 (nasal-anchor strip: haan→haa→ha), +9k variants → **79,666 total**; 2-char veto exemption for refrain particles.
