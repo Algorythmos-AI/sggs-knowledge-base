@@ -22,14 +22,22 @@ GURMUKHI = re.compile('[਀-੿]')
 _local = threading.local()
 
 def roman_norm(s):
-    """Spelling-tolerant Roman normal form: 'waheguru' & 'vaahiguroo' -> 'vhgr'."""
+    """Phonetic-fold Roman normal form, applied to BOTH the index column and the
+    query: 'waheguru'/'vaahiguroo' -> 'vhgr'; 'yashoda'/'jasodaa' -> 'jsd';
+    'krishna'/'krisan' -> 'krsn'; 'gyan'/'giaan' -> 'gn'.
+    KEEP IN SYNC with pipeline/sggs_pipeline.py:roman_norm()."""
     out = []
     for w in s.lower().split():
-        w = w.replace('w', 'v').replace('f', 'ph')
-        head = w[0] if w[0] in 'aeiou' else ''
+        w = w.replace('w', 'v').replace('z', 'j').replace('q', 'k').replace('x', 'k')
+        for dg in ('sh', 'chh', 'ch', 'kh', 'gh', 'jh', 'th', 'dh', 'bh', 'ph', 'rh', 'f'):
+            w = w.replace(dg, dg[0] if dg != 'f' else 'p')
+        if w.startswith('y'): w = 'j' + w[1:]
+        w = w.replace('y', '')                       # medial glide: gyan ~ giaan
+        head = w[0] if w and w[0] in 'aeiou' else ''
         body = re.sub('[aeiou]', '', w)
+        body = re.sub(r'(.)\1+', r'\1', body)        # collapse doubles
         out.append((head + body) if (head + body) else w)
-    return ' '.join(out)
+    return ' '.join(o for o in out if o)
 
 def db():
     if not hasattr(_local, 'con'):
@@ -71,6 +79,40 @@ def search_fts(col, q, phrase, limit, offset):
         sql = (f"SELECT {LINE_COLS} FROM lines WHERE id IN "
                f"(SELECT rowid FROM fts WHERE {col} MATCH ?) ORDER BY id LIMIT ? OFFSET ?")
         return rows_to_list(db().execute(sql, (m, limit, offset)).fetchall())
+
+# Curated seeker lexicon: what people type -> how the corpus says it.
+# Values: ('theme', concept_key) or ('translit', [terms tried in order]).
+SEEKER_LEXICON = {
+    'ego': ('theme', 'haumai'), 'truth': ('theme', 'sach'), 'liberation': ('theme', 'mukti'),
+    'moksha': ('theme', 'mukti'), 'salvation': ('theme', 'mukti'), 'love': ('theme', 'prem_pyar'),
+    'mercy': ('translit', ['daiaa', 'kirapaa']), 'compassion': ('translit', ['daiaa']),
+    'grace': ('translit', ['nadar', 'kirapaa']), 'peace': ('translit', ['saant', 'sukh']),
+    'death': ('translit', ['kaal', 'maran']), 'bliss': ('translit', ['anand']),
+    'fear': ('translit', ['bhau']), 'fearless': ('translit', ['nirabhau']),
+    'soul': ('translit', ['aatam', 'jeeo']), 'light': ('translit', ['jot']),
+    'mind': ('translit', ['man']), 'word': ('translit', ['sabad']),
+    'karma': ('translit', ['karam']), 'bhakti': ('translit', ['bhagat']),
+    'dhyan': ('translit', ['dhiaan']), 'gyan': ('translit', ['giaan']),
+    'farid': ('translit', ['phareed', 'phareedaa']), 'krishna': ('translit', ['krisan']),
+    'sita': ('translit', ['seetaa']), 'dhru': ('translit', ['dhroo']),
+    'prahlad': ('translit', ['prahilaad', 'prahalaad']), 'ravan': ('translit', ['raavan']),
+    'brahma': ('translit', ['brahamaa']), 'shiva': ('translit', ['siv']), 'shiv': ('translit', ['siv']),
+    'indra': ('translit', ['indr', 'ind']), 'yashoda': ('translit', ['jasodaa', 'jasudaa']),
+    'yamuna': ('translit', ['jamunaa']), 'waheguru': ('translit', ['vaahiguroo']),
+    'allah': ('translit', ['alah']), 'khuda': ('translit', ['khudaa', 'khudaae']),
+}
+
+def lexicon_search(q, limit, offset):
+    entry = SEEKER_LEXICON.get(q.strip().lower())
+    if not entry: return None
+    kind, val = entry
+    if kind == 'theme':
+        t = theme_search(val, limit, offset)
+        return t if t['results'] else None
+    for term in val:
+        res = search_fts('translit', term, False, limit, offset)
+        if res: return {'mode': f'seeker-lexicon ({term})', 'results': res}
+    return None
 
 _TERM2CONCEPT = None
 def term_concepts(tokens):
@@ -119,6 +161,8 @@ def do_search(q, mode, limit, offset):
         res = run(col, phrase=True); used = 'first-letters'
     elif mode == 'theme':
         return theme_search(q, limit, offset)
+    elif mode == 'english':
+        res = search_en(q, limit, offset); used = 'english'
     else:  # auto
         if is_gurmukhi:
             single_letters = all(len(t) == 1 for t in toks) and len(toks) >= 2
@@ -139,6 +183,12 @@ def do_search(q, mode, limit, offset):
                     res = run('translit'); used = 'roman'
             else:
                 res = run('translit'); used = 'roman'
+            if not res:                                   # curated seeker words
+                lx = lexicon_search(q, limit, offset)
+                if lx: return lx
+            if not res:                                   # English layer before fold:
+                res = search_en(q, limit, offset)         # 'mercy' must hit translations,
+                used = 'english-translation'              # not fold-collide with ਮੋਰਚਾ
             if not res and HAVE_FTS:
                 res = search_fts('translit_norm', roman_norm(q), False, limit, offset)
                 used = 'roman-spelling-tolerant'
@@ -150,6 +200,20 @@ def do_search(q, mode, limit, offset):
         rel = term_concepts(toks)
         if rel: out['related_themes'] = rel[:3]
     return out
+
+def search_en(q, limit, offset):
+    """Search the labeled English translation layer (Dr. Sant Singh Khalsa)."""
+    m = fts_query(q.split())
+    if not m: return []
+    try:
+        rs = db().execute(
+            f"SELECT {LINE_COLS}, e.text AS en FROM "
+            f"(SELECT line_id, text, bm25(fts_en) AS rk FROM fts_en WHERE fts_en MATCH ?) e "
+            f"JOIN lines ON lines.id = e.line_id ORDER BY e.rk LIMIT ? OFFSET ?",
+            (m, limit, offset)).fetchall()
+        return rows_to_list(rs)
+    except sqlite3.OperationalError:
+        return []
 
 def theme_search(q, limit, offset):
     ql = q.strip().lower()

@@ -173,16 +173,22 @@ def skeleton(line):
     return re.sub('[ਾਿੀੁੂੇੈੋੌੰਂ੍ਃ]', '', line)
 
 def roman_norm(translit):
-    """Spelling-tolerant normal form of a Roman string (query or index side).
-    'waheguru' and 'vaahiguroo' both -> 'vhgr'. Word-by-word consonant skeleton:
-    unify w->v, f->ph; keep a single leading vowel if the word starts with one."""
+    """Phonetic-fold Roman normal form (index AND query side). Folds the Indic
+    romanization variants seekers actually type: y/j (yashoda~jasodaa), sh/s,
+    aspirate digraphs (kh gh ch jh th dh bh ph rh), z/j, w/v, f/ph, glide y.
+    KEEP IN SYNC with webapp/serve.py:roman_norm()."""
     out = []
     for w in translit.lower().split():
-        w = w.replace('w', 'v').replace('f', 'ph')
-        head = w[0] if w[0] in 'aeiou' else ''
+        w = w.replace('w', 'v').replace('z', 'j').replace('q', 'k').replace('x', 'k')
+        for dg in ('sh', 'chh', 'ch', 'kh', 'gh', 'jh', 'th', 'dh', 'bh', 'ph', 'rh', 'f'):
+            w = w.replace(dg, dg[0] if dg != 'f' else 'p')
+        if w.startswith('y'): w = 'j' + w[1:]
+        w = w.replace('y', '')
+        head = w[0] if w and w[0] in 'aeiou' else ''
         body = re.sub('[aeiou]', '', w)
+        body = re.sub(r'(.)\1+', r'\1', body)
         out.append((head + body) if (head + body) else w)
-    return ' '.join(out)
+    return ' '.join(o for o in out if o)
 
 # ------------------------------------------------------------- PDF extraction
 def page_content(doc, pno):

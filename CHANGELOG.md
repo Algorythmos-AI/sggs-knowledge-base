@@ -1,5 +1,11 @@
 # Changelog — SGGS Knowledge Base
 
+## v1.6.1 — 2026-06-11 — seeker-grade search (SME-validated)
+- **Any natural word now resolves professionally.** SME battery of 73 seeker queries found 18 failures (yashoda→nothing, mercy→ਮੋਰਚਾ "rust", krishna→ਕਿਰਸਾਣੁ "farmer"…); all 18 fixed, zero regressions (26-check suite).
+- **Phonetic-fold v2** on the Roman tier, both index and query: y/j (yashoda≡jasodaa), sh/s, aspirate digraphs (kh gh ch jh th dh bh ph rh), z/j, glide-y (gyan≡giaan), w/v.
+- **English-translation search tier** (`fts_en` over all 58,039 SSK lines) + explicit "English" mode — meaning-search like *compassion mercy* now works.
+- **Curated seeker lexicon** (36 entries): common English/Hindi words route to corpus terms or themes (mercy→ਦਇਆ/ਕਿਰਪਾ, death→ਕਾਲ, ego→theme:haumai, farid→ਫਰੀਦ, sita→ਸੀਤਾ, dhru→ਧ੍ਰੂ…). Tier order: exact → lexicon → English → fold → theme (fold is last resort, killing its false positives).
+
 ## v1.6.0 — 2026-06-11 — FULL English layer
 - **Complete English translation layer: 58,039 lines (95.7% of the corpus — effectively every translatable line, headers included)** from the ShabadOS open database (release 4.8.7, `database.sqlite`, gitignored), Dr. Sant Singh Khalsa's translation. Replaces the partial v1.5.0 API ingest; Anand Sahib and Sukhmani gaps fully closed (918: 36/36, 920: 35/35, 296: 49/51).
 - New `pipeline/shabados_ingest.py`: AnmolLipi-ASCII → Unicode converter (vowel composition, vishraam stripping, nukta folding, sihari reordering) validated at **97.26% character-exact** against our corpus — doubling as a second-source cross-verification of our extraction. Alignment: 96.9% exact/skeleton, 1,318 fuzzy, only 102 unmatched (their two-tuks-per-line liturgy variants).
