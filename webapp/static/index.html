@@ -9,7 +9,7 @@
   --bg:#faf6ee; --card:#ffffff; --ink:#2b2316; --soft:#6b5d49;
   --accent:#1a3a6b; --accent-soft:#eaf0fa; --saffron:#d97916; --gold:#9a7b1c;
   --line:#e8dfd0; --rahao:#9a3412; --rahao-bg:#fdf0e8; --chip:#f1e9da;
-  --shadow:0 4px 18px rgba(40,30,10,.07); --gsize:22px;
+  --shadow:0 4px 18px rgba(40,30,10,.07); --gsize:22px; --nav-h:56px;
 }
 @media (prefers-color-scheme: dark){
   :root{
@@ -74,7 +74,7 @@ main{max-width:900px; margin:0 auto; padding:18px 16px 90px}
 
 /* ---------- reader ---------- */
 .toolbar{display:flex; align-items:center; justify-content:space-between; gap:10px; flex-wrap:wrap;
-  position:sticky; top:54px; z-index:25; background:var(--card);
+  position:sticky; top:calc(var(--nav-h) + 4px); z-index:25; background:var(--card);
   background:color-mix(in srgb,var(--card) 92%,transparent);
   backdrop-filter:blur(12px); -webkit-backdrop-filter:blur(12px);
   border:1px solid var(--line); border-radius:16px; padding:9px 12px; margin:4px 0 14px; box-shadow:var(--shadow)}
@@ -155,7 +155,12 @@ body.hide-t .t{display:none}
 .panel.on{display:flex}
 .panel .inner{background:var(--bg); max-width:780px; width:100%; border-radius:18px;
   padding:24px 26px 30px; position:relative; box-shadow:0 18px 60px rgba(0,0,0,.35)}
-.panel .x{position:absolute; top:12px; right:16px; font-size:24px; cursor:pointer; color:var(--soft); background:none; border:none}
+.panel .x{position:absolute; top:8px; right:10px; font-size:24px; cursor:pointer; color:var(--soft);
+  background:none; border:none; width:44px; height:44px; display:flex; align-items:center; justify-content:center; border-radius:10px}
+.panel .x:hover{background:var(--chip)}
+.skip-link{position:absolute; left:-9999px; top:auto; z-index:100; background:var(--accent); color:#fff;
+  padding:8px 16px; border-radius:0 0 10px 0; font-size:14px}
+.skip-link:focus{left:0; top:0}
 .panel h3{font-size:13px; color:var(--soft); font-weight:600; margin-bottom:12px; text-transform:uppercase; letter-spacing:.6px}
 
 footer{position:fixed; bottom:0; left:0; right:0; background:var(--card);
@@ -184,14 +189,18 @@ footer{position:fixed; bottom:0; left:0; right:0; background:var(--card);
 }
 @media(max-width:620px){
   .shabad{padding:14px 16px 16px}
-  .toolbar{top:50px}
   :root{--gsize:20px}
+  /* WCAG 2.5.5 touch targets on phones */
+  nav button{min-height:44px}
+  .modes span{min-height:38px; display:inline-flex; align-items:center}
+  .searchbar button{min-height:44px}
 }
 </style>
 </head>
 <body>
-<header>
-  <div class="onkar gm">ੴ</div>
+<a href="#v-search" class="skip-link">Skip to search</a>
+<header lang="en">
+  <div class="onkar gm" aria-hidden="true">ੴ</div>
   <h1>Sri Guru Granth Sahib — Knowledge Base</h1>
   <p>1430 Angs · verbatim Gurmukhi · searchable by word, sound, first letters &amp; theme</p>
 </header>
@@ -208,14 +217,14 @@ footer{position:fixed; bottom:0; left:0; right:0; background:var(--card);
       <input id="q" class="gm" placeholder="ਨਾਮੁ · waheguru · saadh sangat · ਧ ਧ ਰ ਗ · dh dh r g …" autofocus>
       <button onclick="go(0)">Search</button>
     </div>
-    <div class="modes" id="modes">
+    <div class="modes" id="modes" role="radiogroup" aria-label="Search mode">
       <span data-m="auto" class="on">Auto</span><span data-m="gurmukhi">Gurmukhi</span>
       <span data-m="roman">Roman</span><span data-m="english">English</span>
       <span data-m="first">First letters</span><span data-m="theme">Theme</span>
       <span data-m="verify">Verify quote</span>
     </div>
     <div class="hint">Roman search is spelling-tolerant — <i>waheguru</i>, <i>satgur kirpa</i>, <i>gobind</i> all work. Type word first-letters (<span class="gm">ਧ ਧ ਰ ਗ</span> / <i>dh dh r g</i>) for a line you half-remember, or a theme (<i>naam, hukam, haumai</i>…). <b>Verify quote</b> checks any claimed line against the canonical corpus (add <i>@ang</i> to also check the Ang, e.g. <i>… @8</i>).</div>
-    <div id="results"></div>
+    <div id="results" aria-live="polite" aria-atomic="false"></div>
   </section>
 
   <section id="v-ang" style="display:none">
@@ -223,6 +232,7 @@ footer{position:fixed; bottom:0; left:0; right:0; background:var(--card);
       <div class="nav">
         <button onclick="ang(curAng-1)" title="← key">‹</button>
         <input id="angIn" type="number" min="1" max="1430" value="1"
+               aria-label="Ang number, 1 to 1430"
                onchange="ang(parseInt(this.value)||1)">
         <span class="of">of 1430</span>
         <button onclick="ang(curAng+1)" title="→ key">›</button>
@@ -254,9 +264,9 @@ footer{position:fixed; bottom:0; left:0; right:0; background:var(--card);
 </main>
 
 <div id="toast" role="status"></div>
-<div class="panel" id="panel" role="dialog" aria-modal="true">
+<div class="panel" id="panel" role="dialog" aria-modal="true" aria-labelledby="ptitle">
   <div class="inner">
-    <button class="x" onclick="closePanel()">×</button>
+    <button class="x" onclick="closePanel()" aria-label="Close">×</button>
     <h3 id="ptitle"></h3>
     <div id="pbody"></div>
   </div>
@@ -264,18 +274,39 @@ footer{position:fixed; bottom:0; left:0; right:0; background:var(--card);
 <footer>Scripture is shown verbatim from your edition with its Ang. Transliteration is a mechanical reading aid, not the scripture. · <span class="gm">ਧੁਰ ਕੀ ਬਾਣੀ</span><span id="ver"></span></footer>
 
 <script>
-const $=s=>document.querySelector(s); const esc=s=>(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;');
+const $=s=>document.querySelector(s);
+const esc=s=>(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 let mode='auto', curAng=1, META=null, curView='search', raagCtx=null;
 const store={get:(k,d)=>{try{return localStorage.getItem(k)??d}catch(e){return d}},
              set:(k,v)=>{try{localStorage.setItem(k,v)}catch(e){}}};
 
 document.querySelectorAll('nav button').forEach(b=>b.onclick=()=>nav(b.dataset.v));
 function nav(v){
-  document.querySelectorAll('nav button').forEach(x=>x.classList.toggle('on',x.dataset.v===v));
+  document.querySelectorAll('nav button').forEach(x=>{
+    const on=x.dataset.v===v; x.classList.toggle('on',on);
+    x.setAttribute('aria-current', on?'page':'false');
+  });
   view(v);
 }
-document.querySelectorAll('#modes span').forEach(s=>s.onclick=()=>{mode=s.dataset.m;
-  document.querySelectorAll('#modes span').forEach(x=>x.classList.toggle('on',x===s)); if($('#q').value) go(0);});
+// mode chips: keep the chip UI + `mode` in sync; usable by click, keyboard, and code paths
+function syncMode(m){
+  mode=m;
+  document.querySelectorAll('#modes span').forEach(x=>{
+    const on=x.dataset.m===m; x.classList.toggle('on',on);
+    x.setAttribute('aria-checked', on); x.setAttribute('tabindex', on?'0':'-1');
+  });
+}
+document.querySelectorAll('#modes span').forEach(s=>{
+  s.setAttribute('role','radio');
+  s.setAttribute('aria-checked', s.classList.contains('on'));
+  s.setAttribute('tabindex', s.classList.contains('on')?'0':'-1');
+  s.onclick=()=>{ syncMode(s.dataset.m); if($('#q').value) go(0); };
+  s.onkeydown=e=>{
+    if(e.key==='Enter'||e.key===' '){ e.preventDefault(); syncMode(s.dataset.m); if($('#q').value) go(0); }
+    else if(e.key==='ArrowRight'||e.key==='ArrowDown'){ e.preventDefault(); (s.nextElementSibling||s.parentElement.firstElementChild).focus(); }
+    else if(e.key==='ArrowLeft'||e.key==='ArrowUp'){ e.preventDefault(); (s.previousElementSibling||s.parentElement.lastElementChild).focus(); }
+  };
+});
 $('#q').addEventListener('keydown',e=>{if(e.key==='Enter')go(0)});
 document.addEventListener('keydown',e=>{
   if(e.key==='Escape'){closePanel(); return;}
@@ -331,29 +362,42 @@ function lineCard(l){
   if(l.author) chips.push(`<span>${esc(l.author)}</span>`);
   if(l.is_rahao) chips.push(`<span class="rahao">ਰਹਾਉ · refrain</span>`);
   if(l.matched_term) chips.push(`<span class="gm">term: ${esc(l.matched_term)}</span>`);
-  return `<div class="card" onclick="shabad(${l.comp_id},${l.id})">
+  return `<div class="card" role="button" tabindex="0" aria-label="Open composition at Ang ${l.ang}" onclick="shabad(${l.comp_id},${l.id})">
     <div class="g gm">${hl(esc(l.gurmukhi))}</div><div class="t">${hl(esc(l.translit))}</div>
-    ${l.en?`<div class="en">${esc(l.en)}</div>`:''}
+    ${l.en?`<div class="en" lang="en">${esc(l.en)}</div>`:''}
     <div class="meta">${chips.join('')}</div></div>`;
 }
+let searchReq=0;
 async function go(off){
   const q=$('#q').value.trim(); if(!q) return;
   if(mode==='verify') return doVerify(q);
+  const myReq=++searchReq;
   $('#results').innerHTML='<div class="hint">Searching…</div>';
   hlToks=q.split(/\s+/).filter(t=>t.length>1);
   const d=await api(`search?q=${encodeURIComponent(q)}&mode=${mode}&limit=50&offset=${off}`);
+  if(myReq!==searchReq) return;          // a newer search was fired; drop this stale result
   let h='';
   if(d.related_themes && d.related_themes.length)
     h+=`<div class="count">Related themes: ${d.related_themes.map(t=>
-      `<a href="#" onclick="event.preventDefault();$('#q').value='${t}';mode='theme';go(0)" style="color:var(--saffron)">${esc(t)}</a>`).join(' · ')}</div>`;
+      `<a href="#" class="rel-theme" data-theme="${esc(t)}" style="color:var(--saffron)">${esc(t)}</a>`).join(' · ')}</div>`;
   if(d.concept) h+=`<div class="themedesc"><b>${esc(d.concept.name)}</b> — ${esc(d.concept.description)}<br>
       terms: <span class="gm">${d.concept.terms.map(esc).join(' · ')}</span> — ${d.concept.total} lines</div>`;
-  h+=`<div class="count">${d.results.length}${d.results.length===50?'+':''} result(s) · interpreted as <b>${d.mode}</b>${off?` · from #${off+1}`:''}</div>`;
+  h+=`<div class="count">${d.results.length}${d.results.length===50?'+':''} result(s) · interpreted as <b>${esc(d.mode)}</b>${off?` · from #${off+1}`:''}</div>`;
   h+=d.results.map(lineCard).join('');
   if(d.results.length===50) h+=`<button class="more" onclick="go(${off+50})">More ›</button>`;
   if(!d.results.length) h+=`<div class="hint">Nothing found. Try fewer words, first-letters mode, or a theme (<i>naam, hukam, haumai</i>).</div>`;
   $('#results').innerHTML=h; window.scrollTo({top:0});
 }
+// delegated handlers for #results — keyboard activation of cards + related-theme links
+// (no user/server data is ever interpolated into an inline handler).
+$('#results').addEventListener('click',e=>{
+  const a=e.target.closest('.rel-theme');
+  if(a){ e.preventDefault(); $('#q').value=a.dataset.theme; syncMode('theme'); go(0); return; }
+});
+$('#results').addEventListener('keydown',e=>{
+  const c=e.target.closest('.card');
+  if(c && (e.key==='Enter'||e.key===' ')){ e.preventDefault(); c.click(); }
+});
 
 /* ---------------- verify ---------------- */
 async function doVerify(q){
@@ -371,7 +415,7 @@ async function doVerify(q){
         'Close match found — compare carefully below.'}</div></div>`;
   if(d.gurmukhi){
     h+=`<div class="count">Canonical line:</div>
-    <div class="card" onclick="nav('ang');ang(${d.ang})">
+    <div class="card" role="button" tabindex="0" aria-label="Open Ang ${d.ang}" onclick="nav('ang');ang(${d.ang})">
       <div class="g gm">${esc(d.gurmukhi)}</div>
       <div class="meta"><span class="ang">Ang ${d.ang}</span>
         ${d.raag?`<span class="gm">${esc(d.raag)}</span>`:''}
@@ -398,6 +442,7 @@ let angReq=0;
 async function ang(n){
   curAng=Math.max(1,Math.min(1430,n)); $('#angIn').value=curAng;
   const myReq=++angReq;
+  $('#angOut').innerHTML='<div class="hint">Loading Ang '+curAng+'…</div>';
   const d=await api('ang/'+curAng);
   if(myReq!==angReq) return;            // a newer page was requested meanwhile
   // context chips
@@ -424,11 +469,12 @@ async function ang(n){
         <div class="t">${g.headers.map(x=>esc(x.translit)).join(' · ')}</div></div>`;
     h+=g.body.map(l=>`<div class="sline ${l.is_rahao?'rahao':''}">
         <div class="g gm">${esc(l.gurmukhi)}</div><div class="t">${esc(l.translit)}</div>
-        ${l.en?`<div class="en">${esc(l.en)}</div>`:''}</div>`).join('');
+        ${l.en?`<div class="en" lang="en">${esc(l.en)}</div>`:''}</div>`).join('');
     h+='</div>';
   }
-  h+=`<div class="endnav"><button onclick="ang(${curAng-1})">‹ Ang ${curAng-1||''}</button>
-      <button onclick="ang(${curAng+1})">Ang ${curAng<1430?curAng+1:''} ›</button></div>`;
+  const prevL=curAng>1?`‹ Ang ${curAng-1}`:'‹ Beginning', nextL=curAng<1430?`Ang ${curAng+1} ›`:'End ›';
+  h+=`<div class="endnav"><button onclick="ang(${curAng-1})" ${curAng<=1?'disabled':''}>${prevL}</button>
+      <button onclick="ang(${curAng+1})" ${curAng>=1430?'disabled':''}>${nextL}</button></div>`;
   $('#angOut').innerHTML=h;
   window.scrollTo({top:0});
 }
@@ -524,7 +570,7 @@ function panelLines(lines){
   return lines.map(l=>`<div class="sline ${l.is_rahao?'rahao':''}">
       <div class="g gm ${l.is_header&&l.gurmukhi.startsWith('ੴ')?'invoc':''}" style="${l.is_header?'color:var(--gold);font-weight:600;text-align:center':''}">${esc(l.gurmukhi)}</div>
       <div class="t" style="${l.is_header?'text-align:center':''}">${esc(l.translit)}</div>
-      ${l.en?`<div class="en">${esc(l.en)}</div>`:''}</div>`).join('');
+      ${l.en?`<div class="en" lang="en">${esc(l.en)}</div>`:''}</div>`).join('');
 }
 // Synthesize a composition title from the metadata every line carries — robust for ALL
 // shabads, even when the section's title header (e.g. ਸਲੋਕ ਮਹਲਾ ੪) sits outside the unit.
@@ -534,7 +580,10 @@ function compTitle(lines){
   // raag or section only — comp_type is unreliable in the source (Japji mislabeled ਰੁਤੀ,
   // shabads mislabeled ਪਉੜੀ), so we never surface it as a title.
   const main = b.raag || b.section || '';
-  const sub = [b.author, ang ? ('Ang '+ang) : ''].filter(Boolean).join('  ·  ');
+  // Japji carries no author field in the source, but it is wholly Guru Nanak Dev Ji — show it
+  // rather than leaving the title's byline blank.
+  const author = b.author || (b.section==='ਜਪੁ' ? 'Guru Nanak Dev Ji (M1)' : '');
+  const sub = [author, ang ? ('Ang '+ang) : ''].filter(Boolean).join('  ·  ');
   return {main, sub, ang};
 }
 function titleBlock(lines){
@@ -544,25 +593,50 @@ function titleBlock(lines){
     ${t.main?`<div class="gm" style="color:var(--gold);font-size:20px;font-weight:600">${esc(t.main)}</div>`:''}
     ${t.sub?`<div style="color:var(--soft);font-size:12.5px;margin-top:4px">${esc(t.sub)}</div>`:''}</div>`;
 }
+let _panelTrigger=null;
+function openPanel(){
+  _panelTrigger=document.activeElement;            // remember where focus was
+  $('#panel').classList.add('on');
+  setTimeout(()=>{const x=$('#panel .x'); if(x) x.focus();},0);   // move focus into the dialog
+}
+function closePanel(){
+  $('#panel').classList.remove('on');
+  if(_panelTrigger && _panelTrigger.focus) _panelTrigger.focus();  // return focus to the trigger
+  _panelTrigger=null;
+}
 async function shabad(cid, hi){
+  openPanel();
+  $('#ptitle').textContent='Loading…'; $('#pbody').innerHTML='<div class="hint">Loading composition…</div>';
   const d=await api('shabad/'+cid);
   $('#ptitle').textContent=`Composition · Ang ${d.lines[0]?.ang||''}`;
   $('#pbody').innerHTML=titleBlock(d.lines)+panelLines(d.lines)
     +`<div class="endnav" style="margin-top:16px"><span></span>
       <button onclick="closePanel();nav('ang');ang(${d.lines[0]?.ang||1})">Open Ang ${d.lines[0]?.ang||''} ›</button></div>`;
-  if(hi){ /* subtle highlight */ }
-  $('#panel').classList.add('on');
 }
+let randomLoading=false;
 async function randomShabad(){
-  const d=await api('random');
-  $('#ptitle').textContent=`Hukam-style random · Ang ${d.lines[0]?.ang||''}`;
-  $('#pbody').innerHTML=titleBlock(d.lines)+panelLines(d.lines)
-    +`<div class="endnav" style="margin-top:16px"><button onclick="randomShabad()">Another ↻</button>
-      <button onclick="closePanel();nav('ang');ang(${d.lines[0]?.ang||1})">Open Ang ${d.lines[0]?.ang||''} ›</button></div>`;
-  $('#panel').classList.add('on');
+  if(randomLoading) return;                          // ignore rapid 'Another' taps
+  randomLoading=true;
+  openPanel();
+  $('#ptitle').textContent='Loading…'; $('#pbody').innerHTML='<div class="hint">Drawing a composition…</div>';
+  try{
+    const d=await api('random');
+    $('#ptitle').textContent=`Hukam-style random · Ang ${d.lines[0]?.ang||''}`;
+    $('#pbody').innerHTML=titleBlock(d.lines)+panelLines(d.lines)
+      +`<div class="endnav" style="margin-top:16px"><button onclick="randomShabad()">Another ↻</button>
+        <button onclick="closePanel();nav('ang');ang(${d.lines[0]?.ang||1})">Open Ang ${d.lines[0]?.ang||''} ›</button></div>`;
+  } finally { randomLoading=false; }
 }
-function closePanel(){$('#panel').classList.remove('on')}
 $('#panel').addEventListener('click',e=>{if(e.target.id==='panel')closePanel()});
+// focus trap: keep Tab inside the dialog while it is open (WCAG 2.1.2)
+$('#panel').addEventListener('keydown',e=>{
+  if(e.key!=='Tab' || !$('#panel').classList.contains('on')) return;
+  const f=[...$('#panel .inner').querySelectorAll('button,[href],input,[tabindex]:not([tabindex="-1"])')].filter(el=>el.offsetParent!==null);
+  if(!f.length) return;
+  const first=f[0], last=f[f.length-1];
+  if(e.shiftKey && document.activeElement===first){ e.preventDefault(); last.focus(); }
+  else if(!e.shiftKey && document.activeElement===last){ e.preventDefault(); first.focus(); }
+});
 
 /* ---------------- init ---------------- */
 go=guard(go); ang=guard(ang); raags=guard(raags); themes=guard(themes);
@@ -579,6 +653,10 @@ shabad=guard(shabad); randomShabad=guard(randomShabad);   // no silent broken vi
       $('#ver').textContent+=' · EN: Dr. Sant Singh Khalsa (via BaniDB)';
   }).catch(()=>{});
 })();
+// keep the sticky reader toolbar below the (wrapping) nav on narrow screens
+function syncToolbarTop(){const n=document.querySelector('nav'); if(n) document.documentElement.style.setProperty('--nav-h', n.getBoundingClientRect().height+'px');}
+window.addEventListener('resize', syncToolbarTop);
+syncToolbarTop();
 view('search');
 </script>
 </body>
