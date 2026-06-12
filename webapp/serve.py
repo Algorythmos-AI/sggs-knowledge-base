@@ -18,7 +18,7 @@ PORT = int(os.environ.get('SGGS_PORT', '7777'))
 # doesn't force an 86 MB DB re-commit. /api/meta and /api/health prefer these; the
 # DB meta row is the fallback. Bump on every search-logic release so the UI footer
 # (which reads /api/meta) reflects the running build.
-APP_VERSION = '1.9.5'
+APP_VERSION = '2.0.0'
 APP_BUILT = '2026-06-12'
 
 import sys as _sys
@@ -85,7 +85,8 @@ def have_fts():
 
 HAVE_FTS = None
 LINE_COLS = ('id, ang, raag, section, author, comp_type, comp_id, line_no, '
-             'is_rahao, is_header, gurmukhi, translit')
+             'is_rahao, is_header, gurmukhi, translit, '
+             'stanza_index, pada_total, source_category')   # v2.0 structural metadata
 
 def rows_to_list(rs):
     return [dict(r) for r in rs]
