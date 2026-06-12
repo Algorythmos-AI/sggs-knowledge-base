@@ -18,7 +18,7 @@ PORT = int(os.environ.get('SGGS_PORT', '7777'))
 # doesn't force an 86 MB DB re-commit. /api/meta and /api/health prefer these; the
 # DB meta row is the fallback. Bump on every search-logic release so the UI footer
 # (which reads /api/meta) reflects the running build.
-APP_VERSION = '2.0.1'
+APP_VERSION = '2.0.2'
 APP_BUILT = '2026-06-12'
 
 import sys as _sys
@@ -614,6 +614,65 @@ def attach_translations(lines):
         pass                                   # older DB without translations table
     return lines
 
+def hukam_package(seed=None):
+    """A COMPLETE Hukamnama unit, never a comp_id fragment. comp_id splits shabads and
+    isolates a Vaar's saloks from its pauri (the v2.0 checksum finding), so a random seed
+    is expanded to its full structural unit:
+      • Vaar  -> the concluding Pauri + every Salok that precedes it (back to the prior Pauri)
+      • shabad -> all padas + Rehao (expanded across comps if the shabad was split, bounded
+        by the ॥N॥M॥ shabad terminal)
+    Standalone saloks (Salok M9 etc.) and self-contained shabads return their own comp. A
+    ±9-comp window bounds the scan so a malformed structure can never run away."""
+    if seed is None:
+        seed = db().execute('SELECT comp_id FROM lines WHERE is_header=0 ORDER BY RANDOM() LIMIT 1').fetchone()['comp_id']
+    win = rows_to_list(db().execute(
+        f'SELECT {LINE_COLS}, markers FROM lines WHERE comp_id BETWEEN ? AND ? ORDER BY id',
+        (seed - 9, seed + 9)).fetchall())
+    comps = {}
+    for l in win: comps.setdefault(l['comp_id'], []).append(l)
+    order = list(comps.keys())
+    SAL, PAU = {'ਸਲੋਕ', 'ਸਲੋਕੁ'}, 'ਪਉੜੀ'
+    def dtype(ls):
+        body = [x for x in ls if not x['is_header']] or ls
+        cnt = {}
+        for x in body: cnt[x['comp_type']] = cnt.get(x['comp_type'], 0) + 1
+        return max(cnt, key=cnt.get)
+    def multi_end(ls):
+        body = [x for x in ls if not x['is_header']]
+        if not body: return False
+        try: mk = json.loads(body[-1].get('markers') or '[]')
+        except Exception: mk = []
+        return sum(1 for x in mk if isinstance(x, str) and x and all('੦' <= c <= '੯' for c in x)) >= 2
+    typ = {cid: dtype(ls) for cid, ls in comps.items()}
+    mend = {cid: multi_end(ls) for cid, ls in comps.items()}
+    if seed not in comps:                                  # defensive fallback
+        rs = db().execute(f'SELECT {LINE_COLS} FROM lines WHERE comp_id=? ORDER BY id', (seed,)).fetchall()
+        return {'comp_id': seed, 'comp_ids': [seed], 'lines': rows_to_list(rs)}
+    i = order.index(seed)
+    # Expansion is VAAR-ONLY by design: a Salok-in-Vaar attaches to its concluding Pauri,
+    # and a Pauri gathers its preceding Saloks. Every other composition is a self-contained
+    # comp (a standard shabad already holds all padas + Rehao in one comp; long composite
+    # banis — Gatha, Patti, Dakhni Onkar, cumulative saloks — must NOT be merged across
+    # comps, which would over-collect). This makes a runaway scan structurally impossible.
+    if typ[seed] in SAL:                                   # salok -> attach following Pauri if a Vaar
+        j = i
+        while j + 1 < len(order) and typ[order[j]] in SAL and not mend[order[j]] and typ[order[j + 1]] in SAL:
+            j += 1
+        end = j + 1 if (j + 1 < len(order) and typ[order[j + 1]] == PAU) else i
+    else:
+        end = i                                            # pauri or self-contained shabad/composition
+    if typ[order[end]] == PAU:                             # Vaar: prepend the Pauri's preceding Saloks
+        s = end
+        while s - 1 >= 0 and typ[order[s - 1]] in SAL:
+            s -= 1
+        start = s
+    else:
+        start = i                                          # everything else: the seed comp alone
+    unit = set(order[start:end + 1])
+    lines = [l for l in win if l['comp_id'] in unit]       # already id-ordered
+    for l in lines: l.pop('markers', None)
+    return {'comp_id': seed, 'comp_ids': sorted(unit), 'lines': lines}
+
 def api(path, qs):
     p = [x for x in path.split('/') if x][1:]   # drop 'api'
     if p[0] == 'meta':
@@ -681,9 +740,7 @@ def api(path, qs):
             h['translations_en'] = 0
         return h
     if p[0] == 'random':
-        row = db().execute('SELECT comp_id FROM lines WHERE is_header = 0 ORDER BY RANDOM() LIMIT 1').fetchone()
-        rs = db().execute(f'SELECT {LINE_COLS} FROM lines WHERE comp_id = ? ORDER BY id', (row['comp_id'],)).fetchall()
-        return {'comp_id': row['comp_id'], 'lines': rows_to_list(rs)}
+        return hukam_package()                  # complete structural unit, not a comp fragment
     if p[0] == 'verify':
         q = qs.get('q', [''])[0].strip()
         if not q: raise ValueError('empty claim')

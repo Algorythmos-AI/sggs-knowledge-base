@@ -1,5 +1,14 @@
 # Changelog — SGGS Knowledge Base
 
+## v2.0.2 — 2026-06-12 — Hukamnama returns complete structural units (endpoint refactor; DB unchanged)
+- **Reported flaw — "Hukam-style random" returned fragments** (e.g. on Ang 951, a lone `Salok Mahala 3` ending `॥੧॥` with no Pauri). Root cause: `/api/random` fetched a single random `comp_id`, but — exactly as the v2.0 checksum audit found — `comp_id` isolates a Vaar's Saloks from its concluding Pauri.
+- **Fix:** new `hukam_package()` expands a random seed to its **complete liturgical unit**:
+  - *Vaar* — a Salok attaches to its concluding **Pauri**, and a Pauri gathers all the **Saloks that precede it** (back to the prior Pauri, never across it). Ang 951 now returns the full Salok(s) + Pauri ending `॥੧੦॥`.
+  - *Standard shabad* — already one `comp_id` holding all Padas + Rehao, returned whole (verified: Sukhmani/Asatpadi/Anand shabads return every pada and the Rehao, with no cross-shabad bleed).
+  - *Composite banis* (Gatha, Patti, Dakhni Onkar, Sahaskriti, Salok M9, Thitee) — deliberately **not** merged across comps; each returns its own comp, so the scan can never run away. A ±9-comp window hard-bounds expansion.
+- **Validation:** corpus-wide over all 5,380 comps — 1,447 multi-comp units, **0 over-merges, 0 fragmented Vaar Saloks, 0 crashes**; 500+ vaar-salok seeds all include their Pauri; search/FTS/DB untouched (isolated to `/api/random`). Three SME passes (structural analysis, implementation, fresh-eyes QA — verdict SHIP). Footer → 2.0.2.
+- Known pre-existing DB-encoding quirk (not a regression): a few `ਸਲੋਕੁ`-typed comps at Ang 141–143 embed a Pauri section, yielding one larger (but theologically coherent) Vaar unit; 0.15% of comps.
+
 ## v2.0.1 — 2026-06-12 — Themes page: theological exploration hub (frontend; DB unchanged)
 - The Themes view was a flat alphabetical grid of raw DB keys (`akal_kaal`, `ik_onkar`). Rebuilt into a categorized hub:
   - **Human-readable Title Case** — `akal_kaal` → "Akal Kaal", `ik_onkar` → "Ik Onkar" (underscores stripped, each word capitalized).
