@@ -82,14 +82,15 @@ def _fts_or(tokens: list, column: str = "") -> str:
 
 def _fetch_line(cur: sqlite3.Cursor, rowid: int) -> Optional[dict]:
     cur.execute(
-        "SELECT id, ang, gurmukhi, translit, translit_norm, raag, author "
+        "SELECT id, ang, gurmukhi, translit, translit_norm, raag, author, comp_id, section "
         "FROM lines WHERE id = ?",
         (rowid,),
     )
     row = cur.fetchone()
     if row is None:
         return None
-    return dict(zip(("id", "ang", "gurmukhi", "translit", "translit_norm", "raag", "author"), row))
+    return dict(zip(("id", "ang", "gurmukhi", "translit", "translit_norm", "raag", "author",
+                     "comp_id", "section"), row))
 
 
 def _fts_query(cur: sqlite3.Cursor, q: str, limit: int = 10) -> list:
@@ -320,6 +321,8 @@ def verify(claim: str, ang: Optional[int] = None, db_path: str = DB_PATH) -> dic
         result["gurmukhi"] = best_row["gurmukhi"] if best_row else None
         result["raag"]     = best_row["raag"]     if best_row else None
         result["author"]   = best_row["author"]   if best_row else None
+        result["comp_id"]  = best_row["comp_id"]  if best_row else None   # lets the UI open
+        result["section"]  = best_row["section"]  if best_row else None   # the full shabad
 
         return result
 

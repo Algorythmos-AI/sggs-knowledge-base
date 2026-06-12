@@ -84,6 +84,7 @@ def have_fts():
         return False
 
 HAVE_FTS = None
+_META_CACHE = None        # /api/meta is read-only and changes only on DB rebuild -> cache it
 LINE_COLS = ('id, ang, raag, section, author, comp_type, comp_id, line_no, '
              'is_rahao, is_header, gurmukhi, translit, '
              'stanza_index, pada_total, source_category')   # v2.0 structural metadata
@@ -723,9 +724,10 @@ def api(path, qs):
         raise ValueError('missing endpoint')
     if p[0] in ('ang', 'shabad') and len(p) < 2:
         raise ValueError(f'/api/{p[0]} requires an id')
-    global HAVE_FTS                              # ensure FTS detection for EVERY endpoint
+    global HAVE_FTS, _META_CACHE                 # ensure FTS detection for EVERY endpoint
     if HAVE_FTS is None: HAVE_FTS = have_fts()   # (not just /api/search) — /api/word needs it
     if p[0] == 'meta':
+        if _META_CACHE is not None: return _META_CACHE   # built once; ~50ms join avoided per load
         m = {r['key']: r['value'] for r in db().execute('SELECT * FROM meta')}
         m['db_version'] = m.get('version')          # honest record of the DB build
         m['version'] = APP_VERSION or m.get('version')   # footer shows the running code build
@@ -740,6 +742,7 @@ def api(path, qs):
             'SELECT c.concept, c.description, COUNT(cl.line_id) AS n_lines '
             'FROM concepts c LEFT JOIN concept_lines cl ON cl.concept = c.concept '
             'GROUP BY c.concept, c.description ORDER BY c.concept'))
+        _META_CACHE = m
         return m
     if p[0] == 'search':
         q = qs.get('q', [''])[0]
@@ -747,7 +750,10 @@ def api(path, qs):
         # dump); a negative offset is silently treated as 0. Bound them to a sane window.
         limit = max(0, min(int(qs.get('limit', ['50'])[0]), 200))
         offset = max(0, int(qs.get('offset', ['0'])[0]))
-        return do_search(q, qs.get('mode', ['auto'])[0], limit, offset)
+        out = do_search(q, qs.get('mode', ['auto'])[0], limit, offset)
+        attach_translations(out.get('results'))     # en for EVERY mode (FTS/variant/theme tiers
+        out.setdefault('related_themes', [])         # skipped it); uniform contract for the UI
+        return out
     if p[0] == 'ang':
         ang = max(1, min(1430, int(p[1])))
         rs = rows_to_list(db().execute(f'SELECT {LINE_COLS} FROM lines WHERE ang = ? ORDER BY id', (ang,)).fetchall())
