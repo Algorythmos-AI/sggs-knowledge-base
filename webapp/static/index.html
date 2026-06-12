@@ -139,6 +139,15 @@ body.hide-t .t{display:none}
 .tile .n{font-size:19px; font-weight:600; margin-top:1px}
 .tile .r{font-size:12px; color:var(--saffron); font-style:italic}
 .tile .s{font-size:11.5px; color:var(--soft); margin-top:5px}
+/* themes: theological sections + clickable cards with a line-count cue */
+#themesOut .gridtitle{margin:26px 0 11px; font-size:13.5px; color:var(--ink); opacity:.92}
+#themesOut .gridtitle:first-child{margin-top:6px}
+#themesOut .gridtitle .ct{color:var(--soft); font-weight:500; text-transform:none; letter-spacing:0; font-size:12px}
+.theme-tile{display:flex; flex-direction:column; cursor:pointer}
+.theme-tile .s{flex:1 1 auto}
+.theme-tile .explore{margin-top:10px; font-size:11px; font-weight:600; color:var(--saffron);
+  letter-spacing:.2px; transition:transform .15s}
+.theme-tile:hover .explore, .theme-tile:focus-visible .explore{transform:translateX(2px)}
 
 /* ---------- panel ---------- */
 .panel{position:fixed; inset:0; background:rgba(15,10,2,.5); display:none;
@@ -239,8 +248,8 @@ footer{position:fixed; bottom:0; left:0; right:0; background:var(--card);
   </section>
 
   <section id="v-themes" style="display:none">
-    <div class="hint">A theme returns the verbatim lines in which its corpus-verified Gurmukhi terms occur.</div>
-    <div class="grid" id="themesOut"></div>
+    <div class="hint">A theme returns the verbatim lines in which its corpus-verified Gurmukhi terms occur. Grouped by theological theme — tap any to explore.</div>
+    <div id="themesOut"></div>
   </section>
 </main>
 
@@ -454,11 +463,42 @@ async function raags(){
     </div>`).join('');
 }
 function openRaag(r){ raagCtx=r; nav('ang'); ang(r.first_ang); }
+const titleCase = k => k.split('_').map(w=>w.charAt(0).toUpperCase()+w.slice(1)).join(' ');
+// theological grouping of the 53 corpus concepts (every key assigned; leftover -> "More")
+const THEME_CATS = [
+  ['The Divine Reality', 'God, the Names, and the cosmic Word',
+    ['ik_onkar','vahiguru','karta','akal_kaal','hukam','naam','shabad','bani','jot','anhad','patit_pavan']],
+  ['The Human Condition & Illusions', 'Ego, mind, attachment, and the wheel of birth–death',
+    ['haumai','maya','man','sansar','janam_maran','avagavan','manmukh','bharam','dukh_sukh','garab','trishna','bhavjal','jam']],
+  ['The Five Vices', 'The panj chor that rob the soul',
+    ['kaam','krodh','lobh','moh','ahankar']],
+  ['The Path & Praxis', 'The Guru, the Sangat, and the daily practice',
+    ['satguru','gurmukh','simran','bhagti','seva','sangat','sant_sadh','sifat_salah','darshan','charan','marag_panth']],
+  ['Virtues & Divine Attributes', 'The qualities the gurmukh cultivates and the Lord embodies',
+    ['prem_pyar','daya','nimrata','santokh','bhau','bhana','karam_nadar']],
+  ['Spiritual States', 'The fruits of the path — poise, bliss, liberation',
+    ['anand','sahaj','sach','mukti','amrit','maran_jeevan']],
+];
 async function themes(){
   const m=await meta();
-  $('#themesOut').innerHTML=m.concepts.map((c,i)=>`
-    <div class="tile" data-concept="${i}" role="button" tabindex="0">
-      <div class="n">${esc(c.concept)}</div><div class="s">${esc(c.description)}</div></div>`).join('');
+  const idx={}; m.concepts.forEach((c,i)=>idx[c.concept]=i);
+  const placed=new Set();
+  const card=i=>{ const c=m.concepts[i]; placed.add(c.concept);
+    const n=(c.n_lines||0).toLocaleString();
+    return `<div class="tile theme-tile" data-concept="${i}" role="button" tabindex="0"
+      aria-label="${esc(titleCase(c.concept))} — explore ${n} lines">
+      <div class="n">${esc(titleCase(c.concept))}</div>
+      <div class="s">${esc(c.description)}</div>
+      <div class="explore">Explore ${n} lines →</div></div>`; };
+  let html='';
+  for(const [cat,sub,keys] of THEME_CATS){
+    const cards=keys.filter(k=>k in idx).map(k=>card(idx[k])).join('');
+    if(cards) html+=`<div class="gridtitle" role="heading" aria-level="3">${esc(cat)} <span class="ct">· ${esc(sub)}</span></div><div class="grid">${cards}</div>`;
+  }
+  const leftover=m.concepts.filter(c=>!placed.has(c.concept));   // safety: never drop a theme
+  if(leftover.length) html+=`<div class="gridtitle">More Themes</div><div class="grid">`+
+    leftover.map(c=>card(idx[c.concept])).join('')+`</div>`;
+  $('#themesOut').innerHTML=html;
 }
 // delegated tile activation — no data ever interpolated into handlers
 function tileActivate(t){

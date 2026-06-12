@@ -18,7 +18,7 @@ PORT = int(os.environ.get('SGGS_PORT', '7777'))
 # doesn't force an 86 MB DB re-commit. /api/meta and /api/health prefer these; the
 # DB meta row is the fallback. Bump on every search-logic release so the UI footer
 # (which reads /api/meta) reflects the running build.
-APP_VERSION = '2.0.0'
+APP_VERSION = '2.0.1'
 APP_BUILT = '2026-06-12'
 
 import sys as _sys
@@ -627,7 +627,10 @@ def api(path, qs):
             m['raags'] = rows_to_list(db().execute('SELECT * FROM raags ORDER BY first_ang'))
         m['sections'] = rows_to_list(db().execute('SELECT * FROM sections ORDER BY first_ang'))
         m['authors'] = rows_to_list(db().execute('SELECT * FROM authors ORDER BY n_lines DESC'))
-        m['concepts'] = rows_to_list(db().execute('SELECT concept, description FROM concepts ORDER BY concept'))
+        m['concepts'] = rows_to_list(db().execute(
+            'SELECT c.concept, c.description, COUNT(cl.line_id) AS n_lines '
+            'FROM concepts c LEFT JOIN concept_lines cl ON cl.concept = c.concept '
+            'GROUP BY c.concept, c.description ORDER BY c.concept'))
         return m
     if p[0] == 'search':
         q = qs.get('q', [''])[0]
