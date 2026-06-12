@@ -18,8 +18,8 @@ PORT = int(os.environ.get('SGGS_PORT', '7777'))
 # doesn't force an 86 MB DB re-commit. /api/meta and /api/health prefer these; the
 # DB meta row is the fallback. Bump on every search-logic release so the UI footer
 # (which reads /api/meta) reflects the running build.
-APP_VERSION = '1.9.4'
-APP_BUILT = '2026-06-11'
+APP_VERSION = '1.9.5'
+APP_BUILT = '2026-06-12'
 
 import sys as _sys
 _sys.path.insert(0, HERE)
@@ -48,16 +48,27 @@ def roman_norm(s):
     return ' '.join(o for o in out if o)
 
 def fold_match_alts(fn):
-    """Exact-fold FTS clauses for a query token's fold, plus one initial-vowel-confusion
-    twin. roman_norm keeps the leading vowel, and canonical long oo/ee fold to head o/e —
-    but users type the short u/i (oopar~upar, seet~sit, ootam~utam). So add the
-    head-swapped fold (o<->u, e<->i) as an alternative. Exact (never prefix) so it can't
-    over-match: it only reaches words whose whole skeleton matches but for the lead vowel."""
+    """Exact-fold FTS clauses for a query token's fold, plus the casual-spelling twins a
+    user is most likely to produce. All EXACT (never prefix) so they can't over-match — a
+    twin only reaches words whose whole skeleton matches but for that one feature, and the
+    multi-token AND + BM25 keep precision.
+      • initial-vowel: roman_norm keeps the lead vowel and canonical long oo/ee fold to
+        head o/e, but users type short u/i (oopar~upar, ootam~utam) -> swap o<->u, e<->i.
+      • subjoined-h aspiration: the index keeps it (ਤੁਮ੍ਹ tumh->'dmh', ਚੀਨ੍ਹੇ cheenhe->'cnh')
+        but casual typing drops it (tum->'dm', chine->'cn'). Insert an h after a nasal/l so
+        the short query fold reaches the aspirated index fold (the one-directional gap —
+        the index always carries the aspiration the user omits)."""
     if not fn or len(fn) < 2: return []
-    clauses = [f'translit_norm: "{fn}"']
+    variants = [fn]
     swap = {'o': 'u', 'u': 'o', 'e': 'i', 'i': 'e'}.get(fn[0])
-    if swap: clauses.append(f'translit_norm: "{swap + fn[1:]}"')
-    return clauses
+    if swap: variants.append(swap + fn[1:])
+    for i, ch in enumerate(fn):                       # subjoined-h reinsertion
+        if ch in 'mnl' and (i + 1 >= len(fn) or fn[i + 1] != 'h'):
+            variants.append(fn[:i + 1] + 'h' + fn[i + 1:])
+    seen, uniq = set(), []
+    for v in variants:
+        if v not in seen: seen.add(v); uniq.append(v)
+    return [f'translit_norm: "{v}"' for v in uniq[:5]]
 
 def db():
     if not hasattr(_local, 'con'):
@@ -134,6 +145,11 @@ SEEKER_LEXICON = {
     'liya': ('translit', ['leeo', 'leeaa']), 'lia': ('translit', ['leeo', 'leeaa']),
     'bhaya': ('translit', ['bhaio', 'bhaiaa']), 'bhaia': ('translit', ['bhaio', 'bhaiaa']),
     'paya': ('translit', ['paaio', 'paaiaa']), 'paaya': ('translit', ['paaio', 'paaiaa']),
+    # casual short renderings that otherwise resolve to the WRONG canonical and poison the
+    # AND: 'sai' is a rare word, but the user means ਸਾਈ saaee / ਸਾਈਂ saaeen (Lord/Master).
+    'sai': ('translit', ['saaee', 'saaeen']), 'sain': ('translit', ['saaeen', 'saaee']),
+    'saeen': ('translit', ['saaeen', 'saaee']), 'saai': ('translit', ['saaee', 'saaeen']),
+    'karoh': ('translit', ['karah']), 'karo': ('translit', ['karah', 'kar']),
     'farid': ('translit', ['phareed', 'phareedaa']), 'krishna': ('translit', ['krisan']),
     'sita': ('translit', ['seetaa']), 'dhru': ('translit', ['dhroo']),
     'prahlad': ('translit', ['prahilaad', 'prahalaad']), 'ravan': ('translit', ['raavan']),
@@ -372,7 +388,36 @@ def variant_search(q, limit, offset):
                f" FROM fts WHERE fts MATCH ?) m ON lines.id = m.rowid "
                f"ORDER BY m.rk, lines.id LIMIT ? OFFSET ?")
         res = rows_to_list(db().execute(sql, (expr, limit, offset)).fetchall())
-        return res or None
+        if res: return res
+        # GRACEFUL ALL-BUT-ONE FALLBACK. The strict AND above is brittle: if any single
+        # token resolves to the wrong canonical (e.g. a casual short form we don't cover)
+        # it zeroes out the whole multi-word query and the user is dumped into a worse
+        # tier. Only when the strict AND found NOTHING, re-rank candidates by HOW MANY
+        # groups they satisfy and accept lines matching all-but-one. A line matching every
+        # token still wins (highest count); precision holds because we required ≥N-1.
+        if len(groups) >= 3:
+            or_rows = db().execute(
+                f"SELECT {LINE_COLS}, translit_norm FROM lines JOIN "
+                f"(SELECT rowid, bm25(fts, 10.0, 5.0, 4.0, 3.0, 3.0, 1.0) AS rk "
+                f" FROM fts WHERE fts MATCH ?) m ON lines.id = m.rowid "
+                f"ORDER BY m.rk LIMIT 150", (' OR '.join(groups),)).fetchall()
+            gterms = [re.findall(r'(\w+): "([^"]+)"', g) for g in groups]
+            need = len(groups) - 1
+            scored = []
+            for r in or_rows:
+                d = dict(r)
+                tw = set((d.get('translit') or '').split())
+                nw = set((d.pop('translit_norm') or '').split())
+                # a multi-word translit target (e.g. satnam -> "sat naam") matches when
+                # all its words are present, not as a single set member
+                hits = sum(1 for terms in gterms
+                           if any((all(x in tw for x in t.split())) if c == 'translit'
+                                  else (t in nw) for c, t in terms))
+                if hits >= need: scored.append((hits, d))
+            if scored:
+                scored.sort(key=lambda x: -x[0])      # most tokens matched first; stable on bm25
+                return [d for _, d in scored[offset:offset + limit]]
+        return None
     except sqlite3.OperationalError:
         return None
 

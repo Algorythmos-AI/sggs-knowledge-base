@@ -39,12 +39,16 @@ def ang_bucket(a):
 
 def perturb_word(w):
     """Simulate casual modern Hindi/Punjabi romanization of a canonical reader word:
-    verb perfective endings (-io/-iaa -> -ya), long vowels shortened, -ai -> -e."""
+    drop subjoined-h aspiration (tumh->tum), verb perfective endings (-io/-iaa -> -ya),
+    collapse aaee->ai (saaee->sai), long vowels shortened, -ai -> -e."""
+    import re as _re
+    w = _re.sub(r'([mnl])h', r'\1', w)             # subjoined-h: tumh->tum, baanh->baan
     if len(w) > 3:
         if w.endswith('io'):    w = w[:-2] + 'ya'
         elif w.endswith('iaa'): w = w[:-3] + 'ya'
         elif w.endswith('aa'):  w = w[:-2] + 'a'
         elif w.endswith('ai'):  w = w[:-2] + 'e'
+    w = w.replace('aaee', 'ai').replace('aae', 'ai')   # saaee->sai, paae->pai
     return w.replace('oo', 'u').replace('ee', 'i')
 
 
