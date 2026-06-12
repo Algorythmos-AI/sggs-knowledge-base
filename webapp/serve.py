@@ -18,7 +18,7 @@ PORT = int(os.environ.get('SGGS_PORT', '7777'))
 # doesn't force an 86 MB DB re-commit. /api/meta and /api/health prefer these; the
 # DB meta row is the fallback. Bump on every search-logic release so the UI footer
 # (which reads /api/meta) reflects the running build.
-APP_VERSION = '1.9.3'
+APP_VERSION = '1.9.4'
 APP_BUILT = '2026-06-11'
 
 import sys as _sys
@@ -46,6 +46,18 @@ def roman_norm(s):
         body = re.sub(r'(.)\1+', r'\1', body)        # collapse doubles
         out.append((head + body) if (head + body) else w)
     return ' '.join(o for o in out if o)
+
+def fold_match_alts(fn):
+    """Exact-fold FTS clauses for a query token's fold, plus one initial-vowel-confusion
+    twin. roman_norm keeps the leading vowel, and canonical long oo/ee fold to head o/e —
+    but users type the short u/i (oopar~upar, seet~sit, ootam~utam). So add the
+    head-swapped fold (o<->u, e<->i) as an alternative. Exact (never prefix) so it can't
+    over-match: it only reaches words whose whole skeleton matches but for the lead vowel."""
+    if not fn or len(fn) < 2: return []
+    clauses = [f'translit_norm: "{fn}"']
+    swap = {'o': 'u', 'u': 'o', 'e': 'i', 'i': 'e'}.get(fn[0])
+    if swap: clauses.append(f'translit_norm: "{swap + fn[1:]}"')
+    return clauses
 
 def db():
     if not hasattr(_local, 'con'):
@@ -106,6 +118,22 @@ SEEKER_LEXICON = {
     # to their canonical translit so these two most-searched terms resolve cleanly.
     'darshan': ('translit', ['darasan']), 'darshana': ('translit', ['darasan']),
     'sewa': ('translit', ['sevaa']), 'seva': ('translit', ['sevaa']), 'sewaa': ('translit', ['sevaa']),
+    # Modern spoken Hindi/Punjabi verb perfectives -> Gurbani canonical forms. The variant
+    # engine emits -iaa/-aaiaa but misses the -io ending (gaya->gaiaa but not gaio), so a
+    # remembered line like 'kanthe rah gaya ram' (ਕਾਂਠੈ ਰਹਿ ਗਇਓ ਰਾਮੁ) failed to resolve.
+    # Each maps to its two commonest canonical spellings (the per-token cap is 2).
+    'gaya': ('translit', ['gaio', 'gaiaa']), 'gaiya': ('translit', ['gaio', 'gaiaa']),
+    'gayi': ('translit', ['gaee', 'gaiaa']), 'gayee': ('translit', ['gaee', 'gaiaa']),
+    'hua': ('translit', ['hoaa', 'hoiaa']), 'hoya': ('translit', ['hoaa', 'hoiaa']),
+    'raha': ('translit', ['rahio', 'rahiaa']), 'rahaa': ('translit', ['rahio', 'rahiaa']),
+    'kaha': ('translit', ['kahio', 'kahiaa']), 'kahaa': ('translit', ['kahio', 'kahiaa']),
+    'kiya': ('translit', ['keeaa', 'keeo']), 'kia': ('translit', ['keeaa', 'keeo']),
+    'kiaa': ('translit', ['keeaa', 'keeo']), 'keeya': ('translit', ['keeaa', 'keeo']),
+    'aaya': ('translit', ['aaio', 'aaiaa']), 'aya': ('translit', ['aaio', 'aaiaa']),
+    'diya': ('translit', ['deeo', 'deeaa']), 'dia': ('translit', ['deeo', 'deeaa']),
+    'liya': ('translit', ['leeo', 'leeaa']), 'lia': ('translit', ['leeo', 'leeaa']),
+    'bhaya': ('translit', ['bhaio', 'bhaiaa']), 'bhaia': ('translit', ['bhaio', 'bhaiaa']),
+    'paya': ('translit', ['paaio', 'paaiaa']), 'paaya': ('translit', ['paaio', 'paaiaa']),
     'farid': ('translit', ['phareed', 'phareedaa']), 'krishna': ('translit', ['krisan']),
     'sita': ('translit', ['seetaa']), 'dhru': ('translit', ['dhroo']),
     'prahlad': ('translit', ['prahilaad', 'prahalaad']), 'ravan': ('translit', ['raavan']),
@@ -323,15 +351,14 @@ def variant_search(q, limit, offset):
                 for term in lx[1][:2]:
                     alts.append(f'translit: "{term}"')
             fn = roman_norm(t)
-            if fn and len(fn) >= 2:
-                # EXACT fold, not prefix. A prefix wildcard on a short fold-skeleton
-                # over-matches catastrophically: query 'dhara'->'dr' would prefix-match
-                # 'teerath'->'drd', so `hamra dhara har` wrongly surfaced Ang 1142 above
-                # the true Ang 366 (whose 'dharhaa' folds to exactly 'dr'). Typo-tail
-                # recall is carried by the curated layers above (variants, canon_tokens,
-                # long-vowel twins, nasal-trim, suffix-strip, lexicon) — not by a blunt
-                # wildcard that fabricates matches across unrelated roots.
-                alts.append(f'translit_norm: "{fn}"')
+            # EXACT folds, never prefix. A prefix wildcard on a short fold-skeleton
+            # over-matches catastrophically: query 'dhara'->'dr' would prefix-match
+            # 'teerath'->'drd', so `hamra dhara har` wrongly surfaced Ang 1142 above the
+            # true Ang 366 (whose 'dharhaa' folds to exactly 'dr'). fold_match_alts adds
+            # only the exact fold + its initial-vowel twin (oopar~upar). Typo-tail recall
+            # is carried by the curated layers above (variants, canon_tokens, long-vowel
+            # twins, nasal-trim, suffix-strip, lexicon) — not by a blunt wildcard.
+            alts += fold_match_alts(fn)
             if alts:
                 groups.append('(' + ' OR '.join(alts) + ')')
             elif fn:                                 # only a 1-char fold: weak token
@@ -375,7 +402,7 @@ def mixed_search(q, limit, offset):
             if lx and lx[0] == 'translit':
                 for term in lx[1][:2]: alts.append(f'translit: "{term}"')
             fn = roman_norm(t)
-            if fn and len(fn) >= 2: alts.append(f'translit_norm: "{fn}"')   # exact fold (see variant_search)
+            alts += fold_match_alts(fn)                                      # exact fold + vowel twin
             if alts: groups.append('(' + ' OR '.join(alts) + ')')
         if len(groups) < 2: return None
         expr = ' AND '.join(groups)
@@ -444,14 +471,26 @@ def passage_search(q, limit, offset):
             lines = rows_to_list(db().execute(
                 f'SELECT {LINE_COLS}, translit_norm FROM lines '
                 f'WHERE comp_id = ? AND is_header = 0 ORDER BY id', (cid,)).fetchall())
-            # surface the lines that actually carry the quoted words
+            # BUBBLE the matched line(s) to the absolute top. A long Salok block is one
+            # comp_id spanning dozens of lines; returning them chronologically buried the
+            # real hit (e.g. ਕਾਂਠੈ ਰਹਿ ਗਇਓ ਰਾਮੁ was #6 under 5 preceding verses). Rank:
+            #   1. the line that carries the full in-order quote (_seq) — the exact answer
+            #   2. then by how many query folds the line carries (_hits)
+            #   3. then reading order (id)
+            # Non-matching lines follow as context in reading order. A true cross-line
+            # couplet has _seq=0 on every single line (the match spans two) but _hits>0 on
+            # both tuks, so both still lead, in order.
             for l in lines:
-                l['_hits'] = sum(1 for w in (l.pop('translit_norm') or '').split() if w in fold_set)
-            lines.sort(key=lambda l: (-l['_hits'], l['id']))
+                tn = l.pop('translit_norm') or ''
+                l['_hits'] = sum(1 for w in tn.split() if w in fold_set)
+                l['_seq'] = 1 if seq.search(tn) else 0
+            matched = [l for l in lines if l['_hits'] > 0]
+            matched.sort(key=lambda l: (-l['_seq'], -l['_hits'], l['id']))
+            context = sorted((l for l in lines if l['_hits'] == 0), key=lambda l: l['id'])
             per_comp = max(2, limit // max(len(cids), 1))   # every top shabad surfaces
-            keep = lines[:per_comp]
-            for l in keep: l.pop('_hits', None)
-            out += sorted(keep, key=lambda l: l['id'])
+            keep = (matched + context)[:per_comp]
+            for l in keep: l.pop('_hits', None); l.pop('_seq', None)
+            out += keep                                     # matched line(s) first, no re-sort
         return attach_translations(out[offset:offset + limit]) or None
     except sqlite3.OperationalError:
         return None
