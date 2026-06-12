@@ -108,20 +108,26 @@ def fts_query(tokens, phrase=False):
     if phrase: return '"' + ' '.join(toks) + '"'
     return ' AND '.join(f'"{t}"' for t in toks)
 
-def search_fts(col, q, phrase, limit, offset):
+def search_fts(col, q, phrase, limit, offset, no_headers=False):
     if col not in _FTS_COLS: raise ValueError(f'invalid column: {col}')
     m = fts_query(q.split(), phrase)
     if not m: return []
+    # no_headers: the phonetic-fold tier (translit_norm) collapses distinct words to the
+    # same skeleton (bihaagarhaa->'vhgr'==vaahiguroo), so raag/author HEADER lines that
+    # never carry the real word still fold-match and pollute the results. Exclude headers
+    # from this tier only — a seeker wants scripture lines, not metadata captions.
+    wh = ' WHERE lines.is_header = 0' if no_headers else ''
     # BM25 relevance ranking; column weights: text, translit, translit_norm, fl_g, fl_r, skeleton
     sql = (f"SELECT {LINE_COLS} FROM lines JOIN "
            f"(SELECT rowid, bm25(fts, 10.0, 5.0, 4.0, 3.0, 3.0, 1.0) AS rk "
-           f" FROM fts WHERE {col} MATCH ?) m ON lines.id = m.rowid "
+           f" FROM fts WHERE {col} MATCH ?) m ON lines.id = m.rowid{wh} "
            f"ORDER BY m.rk, lines.id LIMIT ? OFFSET ?")
     try:
         return rows_to_list(db().execute(sql, (m, limit, offset)).fetchall())
     except sqlite3.OperationalError:      # very old SQLite without bm25(): fall back
+        hf = ' AND is_header = 0' if no_headers else ''
         sql = (f"SELECT {LINE_COLS} FROM lines WHERE id IN "
-               f"(SELECT rowid FROM fts WHERE {col} MATCH ?) ORDER BY id LIMIT ? OFFSET ?")
+               f"(SELECT rowid FROM fts WHERE {col} MATCH ?){hf} ORDER BY id LIMIT ? OFFSET ?")
         return rows_to_list(db().execute(sql, (m, limit, offset)).fetchall())
 
 # Curated seeker lexicon: what people type -> how the corpus says it.
@@ -172,6 +178,14 @@ SEEKER_LEXICON = {
     'allah': ('translit', ['alah']), 'khuda': ('translit', ['khudaa', 'khudaae']),
     'satnam': ('translit', ['sat naam', 'satinaam']), 'satguru': ('translit', ['satigur']),
     'satnam waheguru': ('translit', ['vaahiguroo', 'sat naam']),
+    # 'baba'/'sheikh' is a honorific before Farid; alone 'baba' drops to 1 token (no
+    # honorific-drop) and 'farid' folds weakly, so the bigram resolved to a vrata line.
+    # Anchor the whole phrase to the canonical 'phareed'. 'sheikh farid' already works.
+    'baba farid': ('translit', ['phareed', 'phareedaa']),
+    'baba fareed': ('translit', ['phareed', 'phareedaa']),
+    # Hindi/Sanskrit spellings whose roman_norm collapses to a 1-char weak fold (maaya->'m',
+    # kya->'g'), dropping the distinctive token; anchor to the Gurbani canonical form.
+    'maaya': ('translit', ['maaiaa']), 'kya': ('translit', ['kiaa', 'kia']),
     'onkar': ('translit', ['oankaar']), 'ikonkar': ('translit', ['oankaar']),
     'rabb': ('translit', ['har', 'raam']), 'rab': ('translit', ['har', 'raam']),
     'dard': ('translit', ['dukh']), 'dil': ('translit', ['man']),
@@ -255,7 +269,7 @@ def do_search(q, mode, limit, offset):
         if not res and HAVE_FTS:
             strong = ' '.join(t for t in roman_norm(q).split() if len(t) >= 2)
             if strong:
-                res = search_fts('translit_norm', strong, False, limit, offset)
+                res = search_fts('translit_norm', strong, False, limit, offset, no_headers=True)
                 used = 'roman-spelling-tolerant'
     elif mode == 'first':
         col = 'fl_g' if is_gurmukhi else 'fl_r'
@@ -307,7 +321,7 @@ def do_search(q, mode, limit, offset):
             if not res and HAVE_FTS:
                 strong = ' '.join(t for t in roman_norm(q).split() if len(t) >= 2)
                 if strong:
-                    res = search_fts('translit_norm', strong, False, limit, offset)
+                    res = search_fts('translit_norm', strong, False, limit, offset, no_headers=True)
                     used = 'roman-spelling-tolerant'
             if not res and len(toks) <= 14:               # blob targets short/spaceless smash; only an
                 bl = blob_search(q, limit, offset)        # absurd 15+ token paste can't collapse to one
@@ -402,6 +416,14 @@ def variant_search(q, limit, offset):
                 weak_skipped += 1                    # (jo/so/ha — skip, don't poison)
             else:
                 return None
+        # Dedupe identical OR-groups. A repeated mantra ("satnam waheguru satnam waheguru")
+        # otherwise inflates len(groups) AND the all-but-one threshold (need=N-1), so no line
+        # can clear it and the query crashes into the blob tier with junk. Collapse to uniques.
+        seen_g, uniq_g = set(), []
+        for g in groups:
+            if g not in seen_g: seen_g.add(g); uniq_g.append(g)
+        had_repeat = len(uniq_g) < len(groups)
+        groups = uniq_g
         if not groups or (weak_skipped and len(groups) < 2): return None
         expr = ' AND '.join(groups)
         sql = (f"SELECT {LINE_COLS} FROM lines JOIN "
@@ -416,7 +438,7 @@ def variant_search(q, limit, offset):
         # tier. Only when the strict AND found NOTHING, re-rank candidates by HOW MANY
         # groups they satisfy and accept lines matching all-but-one. A line matching every
         # token still wins (highest count); precision holds because we required ≥N-1.
-        if len(groups) >= 3:
+        if len(groups) >= 3 or (had_repeat and len(groups) >= 2):
             or_rows = db().execute(
                 f"SELECT {LINE_COLS}, translit_norm FROM lines JOIN "
                 f"(SELECT rowid, bm25(fts, 10.0, 5.0, 4.0, 3.0, 3.0, 1.0) AS rk "
