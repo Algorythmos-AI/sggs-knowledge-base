@@ -18,8 +18,8 @@ PORT = int(os.environ.get('SGGS_PORT', '7777'))
 # doesn't force an 86 MB DB re-commit. /api/meta and /api/health prefer these; the
 # DB meta row is the fallback. Bump on every search-logic release so the UI footer
 # (which reads /api/meta) reflects the running build.
-APP_VERSION = '2.0.3'
-APP_BUILT = '2026-06-12'
+APP_VERSION = '2.0.4'
+APP_BUILT = '2026-06-13'
 
 import sys as _sys
 _sys.path.insert(0, HERE)
@@ -91,13 +91,25 @@ LINE_COLS = ('id, ang, raag, section, author, comp_type, comp_id, line_no, '
 def rows_to_list(rs):
     return [dict(r) for r in rs]
 
+# Columns that may be interpolated into FTS5 SQL by name. Every call site passes a
+# string literal from this set, so this is a defensive allowlist (a future refactor that
+# ever lets user input reach `col` would otherwise be a structural injection point).
+_FTS_COLS = frozenset({'text', 'translit', 'translit_norm', 'fl_g', 'fl_r', 'skeleton'})
+
+def _fts_clean(s):
+    """Strip the two characters that carry FTS5 operator meaning inside a quoted phrase:
+    a stray " closes the phrase (syntax error / injection), and a trailing * silently
+    turns an exact term into a prefix match. Tokens are otherwise passed verbatim."""
+    return str(s).replace('"', '').replace('*', '')
+
 def fts_query(tokens, phrase=False):
-    toks = [t.replace('"', '') for t in tokens if t.replace('"', '')]
+    toks = [_fts_clean(t) for t in tokens if _fts_clean(t)]
     if not toks: return None
     if phrase: return '"' + ' '.join(toks) + '"'
     return ' AND '.join(f'"{t}"' for t in toks)
 
 def search_fts(col, q, phrase, limit, offset):
+    if col not in _FTS_COLS: raise ValueError(f'invalid column: {col}')
     m = fts_query(q.split(), phrase)
     if not m: return []
     # BM25 relevance ranking; column weights: text, translit, translit_norm, fl_g, fl_r, skeleton
@@ -180,14 +192,21 @@ def lexicon_search(q, limit, offset):
     return None
 
 _TERM2CONCEPT = None
+_concept_lock = threading.Lock()
 def term_concepts(tokens):
     """Map any query token to its theme(s) — the corpus-verified concept index."""
     global _TERM2CONCEPT
     if _TERM2CONCEPT is None:
-        _TERM2CONCEPT = {}
-        for name, terms in db().execute('SELECT concept, gurmukhi_terms FROM concepts'):
-            for t in json.loads(terms):
-                _TERM2CONCEPT.setdefault(t, []).append(name)
+        # Double-checked lock: ThreadingHTTPServer can race two first-requests here, and
+        # building into the module global directly would let a second thread observe a
+        # half-built dict (silently missing concept hits). Build a local, publish atomically.
+        with _concept_lock:
+            if _TERM2CONCEPT is None:
+                d = {}
+                for name, terms in db().execute('SELECT concept, gurmukhi_terms FROM concepts'):
+                    for t in json.loads(terms):
+                        d.setdefault(t, []).append(name)
+                _TERM2CONCEPT = d
     hits = []
     for t in tokens:
         for c in _TERM2CONCEPT.get(t, ()):
@@ -195,6 +214,7 @@ def term_concepts(tokens):
     return hits
 
 def search_like(col, q, limit, offset):
+    if col not in _FTS_COLS: raise ValueError(f'invalid column: {col}')
     pat = '%' + '%'.join(q.split()) + '%'
     sql = f"SELECT {LINE_COLS} FROM lines WHERE {col} LIKE ? ORDER BY id LIMIT ? OFFSET ?"
     return rows_to_list(db().execute(sql, (pat, limit, offset)).fetchall())
@@ -289,9 +309,9 @@ def do_search(q, mode, limit, offset):
                 if strong:
                     res = search_fts('translit_norm', strong, False, limit, offset)
                     used = 'roman-spelling-tolerant'
-            if not res:
-                bl = blob_search(q, limit, offset)        # keyboard smash / spaceless
-                if bl: return {'mode': 'skeleton-blob', 'results': attach_translations(bl)}
+            if not res and len(toks) <= 14:               # blob targets short/spaceless smash; only an
+                bl = blob_search(q, limit, offset)        # absurd 15+ token paste can't collapse to one
+                if bl: return {'mode': 'skeleton-blob', 'results': attach_translations(bl)}  # blob line — skip just those
             if not res and len(toks) == 1:
                 t = theme_search(q, limit, offset)
                 if t['results']: return t
@@ -350,7 +370,7 @@ def variant_search(q, limit, offset):
                         rs = lookup(base_sfx)
                         if rs: break
             for r in rs:
-                alts.append(f'translit: "{r[0]}"')
+                alts.append(f'translit: "{_fts_clean(r[0])}"')
             def is_canon(tok):
                 try:
                     return db().execute('SELECT 1 FROM canon_tokens WHERE token = ?', (tok,)).fetchone()
@@ -439,7 +459,7 @@ def mixed_search(q, limit, offset):
             alts = []
             rs = db().execute('SELECT DISTINCT translit FROM variants WHERE variant = ? '
                               'ORDER BY freq * score DESC LIMIT 3', (t,)).fetchall()
-            for r in rs: alts.append(f'translit: "{r[0]}"')
+            for r in rs: alts.append(f'translit: "{_fts_clean(r[0])}"')
             try:
                 if db().execute('SELECT 1 FROM canon_tokens WHERE token = ?', (t,)).fetchone():
                     alts.append(f'translit: "{t}"')
@@ -624,7 +644,9 @@ def hukam_package(seed=None):
     Standalone saloks (Salok M9 etc.) and self-contained shabads return their own comp. A
     ±9-comp window bounds the scan so a malformed structure can never run away."""
     if seed is None:
-        seed = db().execute('SELECT comp_id FROM lines WHERE is_header=0 ORDER BY RANDOM() LIMIT 1').fetchone()['comp_id']
+        row = db().execute('SELECT comp_id FROM lines WHERE is_header=0 ORDER BY RANDOM() LIMIT 1').fetchone()
+        if row is None: raise ValueError('corpus is empty')
+        seed = row['comp_id']
     win = rows_to_list(db().execute(
         f'SELECT {LINE_COLS}, markers FROM lines WHERE comp_id BETWEEN ? AND ? ORDER BY id',
         (seed - 9, seed + 9)).fetchall())
@@ -675,6 +697,12 @@ def hukam_package(seed=None):
 
 def api(path, qs):
     p = [x for x in path.split('/') if x][1:]   # drop 'api'
+    if not p:
+        raise ValueError('missing endpoint')
+    if p[0] in ('ang', 'shabad') and len(p) < 2:
+        raise ValueError(f'/api/{p[0]} requires an id')
+    global HAVE_FTS                              # ensure FTS detection for EVERY endpoint
+    if HAVE_FTS is None: HAVE_FTS = have_fts()   # (not just /api/search) — /api/word needs it
     if p[0] == 'meta':
         m = {r['key']: r['value'] for r in db().execute('SELECT * FROM meta')}
         m['db_version'] = m.get('version')          # honest record of the DB build
@@ -693,8 +721,11 @@ def api(path, qs):
         return m
     if p[0] == 'search':
         q = qs.get('q', [''])[0]
-        return do_search(q, qs.get('mode', ['auto'])[0],
-                         min(int(qs.get('limit', ['50'])[0]), 200), int(qs.get('offset', ['0'])[0]))
+        # clamp both ends: a negative limit is `LIMIT -1` in SQLite = no limit (full-corpus
+        # dump); a negative offset is silently treated as 0. Bound them to a sane window.
+        limit = max(0, min(int(qs.get('limit', ['50'])[0]), 200))
+        offset = max(0, int(qs.get('offset', ['0'])[0]))
+        return do_search(q, qs.get('mode', ['auto'])[0], limit, offset)
     if p[0] == 'ang':
         ang = max(1, min(1430, int(p[1])))
         rs = rows_to_list(db().execute(f'SELECT {LINE_COLS} FROM lines WHERE ang = ? ORDER BY id', (ang,)).fetchall())
@@ -748,7 +779,7 @@ def api(path, qs):
         ang_n = int(ang_q) if ang_q else None
         return verify_claim(q, ang=ang_n, db_path=DB)
     if p[0] == 'word':
-        w = qs.get('w', [''])[0].strip()
+        w = _fts_clean(qs.get('w', [''])[0].strip())   # a bare " in MATCH -> OperationalError 500
         n = db().execute('SELECT n FROM word_freq WHERE word = ?', (w,)).fetchone()
         rs = db().execute(f"SELECT {LINE_COLS} FROM lines WHERE id IN "
                           f"(SELECT rowid FROM fts WHERE text MATCH ?) ORDER BY id LIMIT 100",
