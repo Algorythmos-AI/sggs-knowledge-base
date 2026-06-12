@@ -1,5 +1,11 @@
 # Changelog — SGGS Knowledge Base
 
+## v2.0.3 — 2026-06-12 — Shabad modals show a real composition title (frontend; DB unchanged)
+- **Reported flaw — the random/Hukam modal showed "Random shabad · Ang N" and the invocation but no composition title.** The actual title header (e.g. ਸਲੋਕ ਮਹਲਾ ੪) sits at a section's start, outside the seed unit, so it isn't in the returned package.
+- **Fix:** a `compTitle()` helper synthesizes a title from the metadata every line already carries — works for ALL shabads regardless of whether a title header is in the unit. The random modal and the composition modal now lead with a styled header: **Gurmukhi descriptor** (raag, e.g. ਧਨਾਸਰੀ / ਆਸਾ / ਗਉੜੀ; or the section, e.g. ਸਲੋਕ ਵਾਰਾਂ ਤੇ ਵਧੀਕ / ਜਪੁ) above a **muted line** of author + Ang (e.g. "Guru Arjan Dev Ji (M5) · Ang 673").
+- `comp_type` is deliberately excluded from the title — the source mislabels it for some compositions (Japji as ਰੁਤੀ, shabads as ਪਉੜੀ), so surfacing it would print wrong forms. Raag/section + author are reliable.
+- Frontend only (`index.html`); no API/DB change. Footer → 2.0.3.
+
 ## v2.0.2 — 2026-06-12 — Hukamnama returns complete structural units (endpoint refactor; DB unchanged)
 - **Reported flaw — "Hukam-style random" returned fragments** (e.g. on Ang 951, a lone `Salok Mahala 3` ending `॥੧॥` with no Pauri). Root cause: `/api/random` fetched a single random `comp_id`, but — exactly as the v2.0 checksum audit found — `comp_id` isolates a Vaar's Saloks from its concluding Pauri.
 - **Fix:** new `hukam_package()` expands a random seed to its **complete liturgical unit**:

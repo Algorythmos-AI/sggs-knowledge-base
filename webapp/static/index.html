@@ -526,10 +526,28 @@ function panelLines(lines){
       <div class="t" style="${l.is_header?'text-align:center':''}">${esc(l.translit)}</div>
       ${l.en?`<div class="en">${esc(l.en)}</div>`:''}</div>`).join('');
 }
+// Synthesize a composition title from the metadata every line carries — robust for ALL
+// shabads, even when the section's title header (e.g. ਸਲੋਕ ਮਹਲਾ ੪) sits outside the unit.
+function compTitle(lines){
+  const b = lines.find(l=>!l.is_header) || lines[0] || {};
+  const ang = (lines[0]||{}).ang || b.ang || '';
+  // raag or section only — comp_type is unreliable in the source (Japji mislabeled ਰੁਤੀ,
+  // shabads mislabeled ਪਉੜੀ), so we never surface it as a title.
+  const main = b.raag || b.section || '';
+  const sub = [b.author, ang ? ('Ang '+ang) : ''].filter(Boolean).join('  ·  ');
+  return {main, sub, ang};
+}
+function titleBlock(lines){
+  const t = compTitle(lines);
+  if(!t.main && !t.sub) return '';
+  return `<div style="text-align:center;margin:0 0 18px;padding-bottom:14px;border-bottom:1px solid var(--line)">
+    ${t.main?`<div class="gm" style="color:var(--gold);font-size:20px;font-weight:600">${esc(t.main)}</div>`:''}
+    ${t.sub?`<div style="color:var(--soft);font-size:12.5px;margin-top:4px">${esc(t.sub)}</div>`:''}</div>`;
+}
 async function shabad(cid, hi){
   const d=await api('shabad/'+cid);
   $('#ptitle').textContent=`Composition · Ang ${d.lines[0]?.ang||''}`;
-  $('#pbody').innerHTML=panelLines(d.lines)
+  $('#pbody').innerHTML=titleBlock(d.lines)+panelLines(d.lines)
     +`<div class="endnav" style="margin-top:16px"><span></span>
       <button onclick="closePanel();nav('ang');ang(${d.lines[0]?.ang||1})">Open Ang ${d.lines[0]?.ang||''} ›</button></div>`;
   if(hi){ /* subtle highlight */ }
@@ -537,8 +555,8 @@ async function shabad(cid, hi){
 }
 async function randomShabad(){
   const d=await api('random');
-  $('#ptitle').textContent=`Random shabad · Ang ${d.lines[0]?.ang||''}`;
-  $('#pbody').innerHTML=panelLines(d.lines)
+  $('#ptitle').textContent=`Hukam-style random · Ang ${d.lines[0]?.ang||''}`;
+  $('#pbody').innerHTML=titleBlock(d.lines)+panelLines(d.lines)
     +`<div class="endnav" style="margin-top:16px"><button onclick="randomShabad()">Another ↻</button>
       <button onclick="closePanel();nav('ang');ang(${d.lines[0]?.ang||1})">Open Ang ${d.lines[0]?.ang||''} ›</button></div>`;
   $('#panel').classList.add('on');
