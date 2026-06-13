@@ -251,6 +251,8 @@ footer{position:fixed; bottom:0; left:0; right:0; background:var(--card);
   </section>
 
   <section id="v-raags" style="display:none">
+    <div class="gridtitle">Major Compositions — Quick Access</div>
+    <div class="grid" id="quickOut"></div>
     <div class="gridtitle">The 31 Raags — in the order of Sri Guru Granth Sahib</div>
     <div class="grid" id="raagsOut"></div>
     <div class="gridtitle">Banis &amp; closing sections</div>
@@ -276,7 +278,7 @@ footer{position:fixed; bottom:0; left:0; right:0; background:var(--card);
 <script>
 const $=s=>document.querySelector(s);
 const esc=s=>(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
-let mode='auto', curAng=1, META=null, curView='search', raagCtx=null;
+let mode='auto', curAng=1, META=null, curView='search', raagCtx=null, SECTIONS=null;
 const store={get:(k,d)=>{try{return localStorage.getItem(k)??d}catch(e){return d}},
              set:(k,v)=>{try{localStorage.setItem(k,v)}catch(e){}}};
 
@@ -448,7 +450,12 @@ async function ang(n){
   // context chips
   const chips=[];
   if(d.raag) chips.push(`<span class="raagchip gm">${esc(d.raag)}</span>`);
-  if(d.section) chips.push(`<span class="gm">${esc(d.section)}</span>`);
+  // closing-section correction (same data fix as the Raags grid): the corpus tags Angs
+  // 1364–1384 as ਚਉਬੋਲੇ, but they are the standalone Salok Bhagat Kabir Ji / Farid Ji
+  // sections (header at 1364 / 1377). Show the right name so the chip matches the grid.
+  const sec = (curAng>=1364 && curAng<=1376) ? 'ਸਲੋਕ ਭਗਤ ਕਬੀਰ ਜੀ'
+            : (curAng>=1377 && curAng<=1384) ? 'ਸਲੋਕ ਭਗਤ ਫਰੀਦ ਜੀ' : d.section;
+  if(sec) chips.push(`<span class="gm">${esc(sec)}</span>`);
   (d.authors||[]).forEach(a=>chips.push(`<span>${esc(a)}</span>`));
   $('#angCtx').innerHTML=chips.join('');
   // raag banner while inside a raag opened from the grid
@@ -493,8 +500,45 @@ function fontSize(d){
 }
 
 /* ---------------- raags & themes ---------------- */
+// Most-sought compositions live structurally INSIDE a raag, so they aren't "closing
+// sections"; this Quick-Access layer routes straight to each one's starting Ang (every
+// Ang verified against the section-header line in the corpus).
+const QUICK_ACCESS = [
+  {gm:'ਸੁਖਮਨੀ ਸਾਹਿਬ', roman:'Sukhmani Sahib',  ang:262, where:'Raag Gauri'},
+  {gm:'ਆਸਾ ਕੀ ਵਾਰ',   roman:'Asa Ki Vaar',     ang:462, where:'Raag Asa'},
+  {gm:'ਅਨੰਦੁ ਸਾਹਿਬ',  roman:'Anand Sahib',     ang:917, where:'Raag Ramkali'},
+  {gm:'ਬਾਵਨ ਅਖਰੀ',   roman:'Bavan Akhri',     ang:250, where:'Raag Gauri'},
+  {gm:'ਸਿਧ ਗੋਸਟਿ',    roman:'Sidh Gosht',      ang:938, where:'Raag Ramkali'},
+  {gm:'ਓਅੰਕਾਰੁ',      roman:'Dakhni Oankaar',  ang:929, where:'Raag Ramkali'},
+];
+// The corpus `sections` table carries "ਚਉਬੋਲੇ" forward across the two standalone
+// Bhagat-Salok sections — their section-header lines (ਸਲੋਕ ਭਗਤ ਕਬੀਰ ਜੀਉ ਕੇ at Ang 1364,
+// ਸਲੋਕ ਸੇਖ ਫਰੀਦ ਕੇ at Ang 1377) ARE present and correct in the text, but the section
+// metadata column wasn't reset at the boundary, so one row swallowed all three. Split it
+// back at the display layer (line counts ground-truthed against the header-bounded ranges).
+const CLOSING_FIX = {
+  'ਚਉਬੋਲੇ': [
+    {name:'ਚਉਬੋਲੇ',              first_ang:1363, last_ang:1364, n_lines:24},
+    {name:'ਸਲੋਕ ਭਗਤ ਕਬੀਰ ਜੀ', first_ang:1364, last_ang:1377, n_lines:494},
+    {name:'ਸਲੋਕ ਭਗਤ ਫਰੀਦ ਜੀ', first_ang:1377, last_ang:1384, n_lines:298},
+  ],
+};
+function fixSections(sections){
+  const out=[];
+  for(const s of sections){
+    if(CLOSING_FIX[s.name]) out.push(...CLOSING_FIX[s.name]);
+    else out.push(s);
+  }
+  return out;
+}
 async function raags(){
   const m=await meta();
+  $('#quickOut').innerHTML=QUICK_ACCESS.map(c=>`
+    <div class="tile" data-ang="${c.ang}" role="button" tabindex="0" aria-label="${esc(c.roman)} — open Ang ${c.ang}">
+      <div class="n gm">${esc(c.gm)}</div>
+      <div class="r">${esc(c.roman)}</div>
+      <div class="s">Ang ${c.ang} · ${esc(c.where)}</div>
+    </div>`).join('');
   $('#raagsOut').innerHTML=m.raags.map((r,i)=>`
     <div class="tile" data-raag="${i}" role="button" tabindex="0">
       <div class="seq">RAAG ${r.seq||''}</div>
@@ -502,7 +546,8 @@ async function raags(){
       <div class="r">${esc(r.roman||'')}</div>
       <div class="s">Angs ${r.first_ang}–${r.last_ang} · ${r.n_shabads??'—'} compositions · ${r.n_lines} lines</div>
     </div>`).join('');
-  $('#sectionsOut').innerHTML=m.sections.map((s,i)=>`
+  SECTIONS=fixSections(m.sections);          // corrected closing-section list (also used by the click handler)
+  $('#sectionsOut').innerHTML=SECTIONS.map((s,i)=>`
     <div class="tile" data-section="${i}" role="button" tabindex="0">
       <div class="n gm">${esc(s.name)}</div>
       <div class="s">Angs ${s.first_ang}–${s.last_ang} · ${s.n_lines} lines</div>
@@ -549,14 +594,15 @@ async function themes(){
 // delegated tile activation — no data ever interpolated into handlers
 function tileActivate(t){
   if(t.dataset.raag!==undefined) openRaag(META.raags[+t.dataset.raag]);
-  else if(t.dataset.section!==undefined){ nav('ang'); ang(META.sections[+t.dataset.section].first_ang); }
+  else if(t.dataset.ang!==undefined){ raagCtx=null; nav('ang'); ang(+t.dataset.ang); }   // Quick Access → Ang
+  else if(t.dataset.section!==undefined){ raagCtx=null; nav('ang'); ang((SECTIONS||META.sections)[+t.dataset.section].first_ang); }
   else if(t.dataset.concept!==undefined){
     $('#q').value=META.concepts[+t.dataset.concept].concept;
     mode='theme'; nav('search'); go(0);
   }
 }
 document.addEventListener('click',e=>{
-  const t=e.target.closest('.tile[data-raag],.tile[data-section],.tile[data-concept]');
+  const t=e.target.closest('.tile[data-raag],.tile[data-section],.tile[data-concept],.tile[data-ang]');
   if(t) tileActivate(t);
 });
 document.addEventListener('keydown',e=>{
