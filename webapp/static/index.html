@@ -207,7 +207,7 @@ footer{position:fixed; bottom:0; left:0; right:0; background:var(--card);
 <nav>
   <button data-v="search" class="on">Search</button>
   <button data-v="ang">Reader</button>
-  <button data-v="raags">Raags</button>
+  <button data-v="raags">Index</button>
   <button data-v="themes">Themes</button>
   <button data-v="random">Hukam-style random</button>
 </nav>
@@ -251,12 +251,23 @@ footer{position:fixed; bottom:0; left:0; right:0; background:var(--card);
   </section>
 
   <section id="v-raags" style="display:none">
-    <div class="gridtitle">Major Compositions — Quick Access</div>
-    <div class="grid" id="quickOut"></div>
-    <div class="gridtitle">The 31 Raags — in the order of Sri Guru Granth Sahib</div>
-    <div class="grid" id="raagsOut"></div>
-    <div class="gridtitle">Banis &amp; closing sections</div>
-    <div class="grid" id="sectionsOut"></div>
+    <div class="modes" id="raagTabs" role="tablist" aria-label="Index sections">
+      <span id="rtab-major" data-tab="major" class="on" role="tab" aria-selected="true" tabindex="0" aria-controls="tab-major">Major Compositions</span>
+      <span id="rtab-raags" data-tab="raags" role="tab" aria-selected="false" tabindex="-1" aria-controls="tab-raags">The 31 Raags</span>
+      <span id="rtab-sections" data-tab="sections" role="tab" aria-selected="false" tabindex="-1" aria-controls="tab-sections">Banis &amp; Sections</span>
+    </div>
+    <div id="tab-major" role="tabpanel" aria-labelledby="rtab-major">
+      <div class="gridtitle">Major Compositions — Quick Access</div>
+      <div class="grid" id="quickOut"></div>
+    </div>
+    <div id="tab-raags" role="tabpanel" aria-labelledby="rtab-raags" style="display:none">
+      <div class="gridtitle">The 31 Raags — in the order of Sri Guru Granth Sahib</div>
+      <div class="grid" id="raagsOut"></div>
+    </div>
+    <div id="tab-sections" role="tabpanel" aria-labelledby="rtab-sections" style="display:none">
+      <div class="gridtitle">Banis &amp; closing sections</div>
+      <div class="grid" id="sectionsOut"></div>
+    </div>
   </section>
 
   <section id="v-themes" style="display:none">
@@ -554,6 +565,26 @@ async function raags(){
     </div>`).join('');
 }
 function openRaag(r){ raagCtx=r; nav('ang'); ang(r.first_ang); }
+// ---- Index sub-navigation: toggle the three panels (display-only; data/cards untouched) ----
+function showRaagTab(key){
+  const panels={major:'tab-major', raags:'tab-raags', sections:'tab-sections'};
+  for(const k in panels){ const el=$('#'+panels[k]); if(el) el.style.display=(k===key)?'':'none'; }
+  document.querySelectorAll('#raagTabs span').forEach(s=>{
+    const on=s.dataset.tab===key;
+    s.classList.toggle('on',on);
+    s.setAttribute('aria-selected', on);
+    s.setAttribute('tabindex', on?'0':'-1');
+  });
+}
+document.querySelectorAll('#raagTabs span').forEach(s=>{
+  s.onclick=()=>showRaagTab(s.dataset.tab);
+  s.onkeydown=e=>{
+    if(e.key==='Enter'||e.key===' '){ e.preventDefault(); showRaagTab(s.dataset.tab); }
+    // tabs "follow focus" (cheap — just a display toggle): arrow moves AND activates
+    else if(e.key==='ArrowRight'||e.key==='ArrowDown'){ e.preventDefault(); const n=s.nextElementSibling||s.parentElement.firstElementChild; n.focus(); showRaagTab(n.dataset.tab); }
+    else if(e.key==='ArrowLeft'||e.key==='ArrowUp'){ e.preventDefault(); const p=s.previousElementSibling||s.parentElement.lastElementChild; p.focus(); showRaagTab(p.dataset.tab); }
+  };
+});
 const titleCase = k => k.split('_').map(w=>w.charAt(0).toUpperCase()+w.slice(1)).join(' ');
 // theological grouping of the 53 corpus concepts (every key assigned; leftover -> "More")
 const THEME_CATS = [
