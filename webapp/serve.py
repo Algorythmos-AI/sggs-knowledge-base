@@ -18,7 +18,7 @@ PORT = int(os.environ.get('SGGS_PORT', '7777'))
 # doesn't force an 86 MB DB re-commit. /api/meta and /api/health prefer these; the
 # DB meta row is the fallback. Bump on every search-logic release so the UI footer
 # (which reads /api/meta) reflects the running build.
-APP_VERSION = '2.0.4'
+APP_VERSION = '2.0.5'
 APP_BUILT = '2026-06-13'
 
 import sys as _sys
@@ -187,6 +187,15 @@ SEEKER_LEXICON = {
     # Hindi/Sanskrit spellings whose roman_norm collapses to a 1-char weak fold (maaya->'m',
     # kya->'g'), dropping the distinctive token; anchor to the Gurbani canonical form.
     'maaya': ('translit', ['maaiaa']), 'kya': ('translit', ['kiaa', 'kia']),
+    # MODERN POSTPOSITION LAYER (closed class). Hindi/Punjabi का/के/की/को collapse to a weak
+    # 1-char fold (ka/ke/ki->'g', ko/kau->'g') so they drop out of the AND, AND they differ
+    # from the Gurbani spelling the line actually uses (ਕੈ kai / ਕਾ kaa / ਕੇ ke / ਕੀ kee /
+    # ਕਉ kau). Anchoring each to its canonical translit restores a STRONG exact discriminator
+    # — this is why `jamuna ka kul khel kelio` now resolves to Ang 1403 (jamunaa KAI kool khel
+    # khelio) instead of a short BM25 decoy. These five recur on tens of thousands of lines.
+    'ka': ('translit', ['kai', 'kaa']), 'ke': ('translit', ['ke', 'kai']),
+    'ki': ('translit', ['kee', 'ki']), 'kau': ('translit', ['kau', 'ko']),
+    'ko': ('translit', ['ko', 'kau']),
     'onkar': ('translit', ['oankaar']), 'ikonkar': ('translit', ['oankaar']),
     'rabb': ('translit', ['har', 'raam']), 'rab': ('translit', ['har', 'raam']),
     'dard': ('translit', ['dukh']), 'dil': ('translit', ['man']),
