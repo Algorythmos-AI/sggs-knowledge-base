@@ -18,7 +18,7 @@ PORT = int(os.environ.get('SGGS_PORT', '7777'))
 # doesn't force an 86 MB DB re-commit. /api/meta and /api/health prefer these; the
 # DB meta row is the fallback. Bump on every search-logic release so the UI footer
 # (which reads /api/meta) reflects the running build.
-APP_VERSION = '2.0.5'
+APP_VERSION = '2.0.6'
 APP_BUILT = '2026-06-13'
 
 import sys as _sys
@@ -196,6 +196,19 @@ SEEKER_LEXICON = {
     'ka': ('translit', ['kai', 'kaa']), 'ke': ('translit', ['ke', 'kai']),
     'ki': ('translit', ['kee', 'ki']), 'kau': ('translit', ['kau', 'ko']),
     'ko': ('translit', ['ko', 'kau']),
+    # MODERN PRONOUN / PARTICLE + COMPOUND + NAMED-FIGURE layer (proactive hardening, v2.0.6).
+    # Each casual form has 0 corpus lines (no hijack) and each target is canon-verified.
+    'mein': ('translit', ['mah', 'vich']), 'me': ('translit', ['mah', 'vich']),  # में/मैं -> ਮਹਿ/ਵਿਚਿ (in)
+    'ye': ('translit', ['ih', 'eh']),               # ये -> ਇਹੁ/ਏਹ (this)
+    'main': ('translit', ['mai', 'hau']),           # मैं (I) -> ਮੈ/ਹਉ (bare 'main' is ਮੈਣ wax, 2 lines)
+    'inka': ('translit', ['tin', 'tinhaa']),        # इनका -> ਤਿਨ (those/their)
+    'jivan': ('translit', ['jeevan']),              # जीवन -> ਜੀਵਨੁ ('jivan' itself: 0 corpus lines)
+    'mua': ('translit', ['mooaa', 'moaa']),         # मुआ -> ਮੂਆ (died); its fold 'm' was weak-dropped
+    'keertan': ('translit', ['keeratan']),          # ਕੀਰਤਨ ('keertan' spelling resolved empty)
+    'raidas': ('translit', ['ravidaas']),           # Bhagat ਰਵਿਦਾਸ — common alt spelling, was 0 results
+    'waheguruji': ('translit', ['vaahiguroo']),     # space-collapsed जपੁ form
+    'sachkhand': ('translit', ['sach khand']),      # ਸਚ ਖੰਡ — space-collapsed compound
+    'kirtan sohila': ('translit', ['sohilaa']),     # bani name -> ਸੋਹਿਲਾ
     'onkar': ('translit', ['oankaar']), 'ikonkar': ('translit', ['oankaar']),
     'rabb': ('translit', ['har', 'raam']), 'rab': ('translit', ['har', 'raam']),
     'dard': ('translit', ['dukh']), 'dil': ('translit', ['man']),
@@ -674,14 +687,16 @@ def hukam_package(seed=None):
       • shabad -> all padas + Rehao (expanded across comps if the shabad was split, bounded
         by the ॥N॥M॥ shabad terminal)
     Standalone saloks (Salok M9 etc.) and self-contained shabads return their own comp. A
-    ±9-comp window bounds the scan so a malformed structure can never run away."""
+    ±15-comp window bounds the scan so a malformed structure can never run away. (15 not 9:
+    one real Vaar — Maajh, comps 399-409 at Ang 141 — has a 10-comp Salok run before its
+    Pauri, so a seed at the run's head needs >9 candidates to reach the concluding Pauri.)"""
     if seed is None:
         row = db().execute('SELECT comp_id FROM lines WHERE is_header=0 ORDER BY RANDOM() LIMIT 1').fetchone()
         if row is None: raise ValueError('corpus is empty')
         seed = row['comp_id']
     win = rows_to_list(db().execute(
         f'SELECT {LINE_COLS}, markers FROM lines WHERE comp_id BETWEEN ? AND ? ORDER BY id',
-        (seed - 9, seed + 9)).fetchall())
+        (seed - 15, seed + 15)).fetchall())
     comps = {}
     for l in win: comps.setdefault(l['comp_id'], []).append(l)
     order = list(comps.keys())
