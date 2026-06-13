@@ -18,7 +18,7 @@ PORT = int(os.environ.get('SGGS_PORT', '7777'))
 # doesn't force an 86 MB DB re-commit. /api/meta and /api/health prefer these; the
 # DB meta row is the fallback. Bump on every search-logic release so the UI footer
 # (which reads /api/meta) reflects the running build.
-APP_VERSION = '2.0.8'
+APP_VERSION = '2.1.0'
 APP_BUILT = '2026-06-13'
 
 import sys as _sys
@@ -837,6 +837,80 @@ def api(path, qs):
                           f"(SELECT rowid FROM fts WHERE text MATCH ?) ORDER BY id LIMIT 100",
                           (f'"{w}"',)).fetchall() if HAVE_FTS else []
         return {'word': w, 'count': n['n'] if n else 0, 'lines': rows_to_list(rs)}
+    # ---- Insight Engine (v2.1.0): pure cached SELECTs over the offline-precomputed analytics
+    # tables. Additive — these never touch the search path. Each degrades gracefully if the
+    # analytics tables are absent (an older DB build). NEVER a ranking/judgement of scripture.
+    if p[0] == 'themes' and len(p) >= 2 and p[1] == 'network':
+        concept = qs.get('concept', [None])[0]
+        min_ppmi = float(qs.get('min_ppmi', ['0'])[0])
+        lim = max(1, min(int(qs.get('limit', ['200'])[0]), 1000))
+        try:
+            if concept:
+                rows = db().execute(
+                    "SELECT source, target, shabad_count, ppmi, jaccard FROM theme_network "
+                    "WHERE source=? AND ppmi>=? ORDER BY ppmi DESC, jaccard DESC LIMIT ?",
+                    (concept, min_ppmi, lim)).fetchall()
+            else:
+                rows = db().execute(
+                    "SELECT source, target, shabad_count, ppmi, jaccard FROM theme_network "
+                    "WHERE source < target AND ppmi>=? ORDER BY ppmi DESC LIMIT ?",
+                    (min_ppmi, lim)).fetchall()
+            return {'concept': concept, 'edges': rows_to_list(rows), 'metric': 'ppmi+jaccard',
+                    'note': 'theme co-occurrence within shabads; PPMI controls base-rate bias'}
+        except sqlite3.OperationalError:
+            return {'edges': [], 'note': 'analytics tables not present in this DB build'}
+    if p[0] == 'analytics' and len(p) >= 2 and p[1] == 'author':
+        author = qs.get('author', [None])[0]
+        try:
+            if not author:
+                rows = db().execute(
+                    "SELECT author, n_lines, n_shabads, n_raags, mattr_100, avg_words_line, "
+                    "is_reliable FROM author_analytics ORDER BY n_lines DESC").fetchall()
+                return {'authors': rows_to_list(rows)}
+            st = db().execute("SELECT * FROM author_analytics WHERE author=?", (author,)).fetchone()
+            out = dict(st) if st else {}
+            if out.get('top_themes'):
+                try: out['top_themes'] = json.loads(out['top_themes'])
+                except Exception: pass
+            fp = db().execute("SELECT concept, n_tagged, entity_rate, corpus_rate, lift FROM theme_fingerprint "
+                              "WHERE entity_type='author' AND entity_id=? ORDER BY lift DESC LIMIT 12", (author,)).fetchall()
+            dt = db().execute("SELECT term, z_score, rank FROM author_distinctive_terms "
+                              "WHERE author=? ORDER BY rank LIMIT 12", (author,)).fetchall()
+            return {'author': author, 'stylometry': out, 'theme_fingerprint': rows_to_list(fp),
+                    'distinctive_terms': rows_to_list(dt),
+                    'note': 'theme emphasis = lift vs corpus baseline; stylometry on the English '
+                            'translation; descriptive only, never a ranking of scripture'}
+        except sqlite3.OperationalError:
+            return {'author': author, 'note': 'analytics tables not present in this DB build'}
+    if p[0] == 'analytics' and len(p) >= 2 and p[1] == 'raag':
+        raag = qs.get('raag', [None])[0]
+        try:
+            if not raag:
+                return {'raags': rows_to_list(db().execute(
+                    "SELECT * FROM raag_analytics ORDER BY n_lines DESC").fetchall())}
+            st = db().execute("SELECT * FROM raag_analytics WHERE raag=?", (raag,)).fetchone()
+            out = dict(st) if st else {}
+            if out.get('top_themes'):
+                try: out['top_themes'] = json.loads(out['top_themes'])
+                except Exception: pass
+            fp = db().execute("SELECT concept, lift, n_tagged FROM theme_fingerprint "
+                              "WHERE entity_type='raag' AND entity_id=? ORDER BY lift DESC LIMIT 12", (raag,)).fetchall()
+            return {'raag': raag, 'analytics': out, 'theme_fingerprint': rows_to_list(fp)}
+        except sqlite3.OperationalError:
+            return {'raag': raag, 'note': 'analytics tables not present in this DB build'}
+    if p[0] == 'related':                                   # /api/related?comp_id=N
+        cid = int(qs.get('comp_id', ['0'])[0])
+        try:
+            rows = db().execute(
+                "SELECT n.neighbor_comp_id AS comp_id, n.rank, n.score, "
+                "(SELECT ang FROM lines WHERE comp_id=n.neighbor_comp_id ORDER BY id LIMIT 1) AS ang, "
+                "(SELECT raag FROM lines WHERE comp_id=n.neighbor_comp_id AND raag IS NOT NULL LIMIT 1) AS raag, "
+                "(SELECT gurmukhi FROM lines WHERE comp_id=n.neighbor_comp_id AND is_header=0 ORDER BY id LIMIT 1) AS first_line "
+                "FROM shabad_neighbors n WHERE n.comp_id=? ORDER BY n.rank", (cid,)).fetchall()
+            return {'comp_id': cid, 'related': rows_to_list(rows),
+                    'note': 'shabads with the most similar theme profile (corpus-verified themes)'}
+        except sqlite3.OperationalError:
+            return {'comp_id': cid, 'related': [], 'note': 'analytics tables not present in this DB build'}
     raise ValueError('unknown endpoint')
 
 class H(BaseHTTPRequestHandler):
