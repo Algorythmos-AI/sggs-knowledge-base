@@ -1,6 +1,6 @@
 // reader.ts — the Reader page (/reader) : the Ang-by-Ang viewer.
 // Ported 1:1 from the original; deep-links via ?ang=<n>&raag=<name>.
-import { $, esc, api, guard, meta, store } from './core';
+import { $, esc, api, guard, meta, store, syncToolbarTop } from './core';
 
 let curAng = 1;
 let raagCtx: any = null;
@@ -79,13 +79,24 @@ function fontSize(d: number) {
   store.set('gsize', next);
 }
 
-// arrow-key paging (skip while the modal is open or while typing in a field)
+// Sehaj — calm focus reading: collapse the chrome, widen the leading, soften the ground.
+function sehaj() {
+  const on = document.body.classList.toggle('focus-mode');
+  const b = $('#sehajBtn');
+  if (b) { b.classList.toggle('on', on); b.setAttribute('aria-pressed', String(on)); }
+  store.set('sehaj', on ? '1' : '0');
+  syncToolbarTop();                          // nav is hidden in focus mode → re-measure sticky offset
+}
+
+// arrow-key paging + Esc to leave focus mode (skip while the modal is open or while typing)
 document.addEventListener('keydown', (e: any) => {
+  if (e.key === 'Escape' && document.body.classList.contains('focus-mode') && !$('#panel')?.classList.contains('on')) { sehaj(); return; }
   if ($('#panel')?.classList.contains('on')) return;
   if (e.target.tagName === 'INPUT') return;
   if (e.key === 'ArrowRight') step(1);
   if (e.key === 'ArrowLeft') step(-1);
 });
+(window as any).sehaj = sehaj;
 
 /* ---------------- Related Verses (Phase 2 semantic) ----------------
    Click a line → reveal an inline drawer of the semantically closest verses
@@ -137,6 +148,11 @@ $('#angOut')?.addEventListener('keydown', (e: any) => {
   const on = !document.body.classList.contains('hide-t');     // applyPrefs() already ran in core
   $('#tglT')?.classList.toggle('on', on);
   $('#tglT')?.setAttribute('aria-checked', String(on));
+  if (store.get('sehaj', '0') === '1') {                       // restore calm focus mode
+    document.body.classList.add('focus-mode');
+    $('#sehajBtn')?.classList.add('on'); $('#sehajBtn')?.setAttribute('aria-pressed', 'true');
+    syncToolbarTop();
+  }
   const p = new URLSearchParams(location.search);
   const n = Math.max(1, Math.min(1430, parseInt(p.get('ang') || '1') || 1));
   const raagName = p.get('raag');

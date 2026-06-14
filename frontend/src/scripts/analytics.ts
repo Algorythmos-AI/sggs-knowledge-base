@@ -260,6 +260,61 @@ async function resonanceChord() {
   draw();
 }
 
+/* ============================ D3 raag theme-progression streamgraph ============================ */
+const STREAM_PAL = ['#ff9933', '#ffd24a', '#5b8cff', '#23b3a1', '#b07cff', '#ff6b6b', '#7ed957', '#48c6ef', '#f78fb3', '#c9a227'];
+async function ribbonStream() {
+  const host = $('#stream'); if (!host) return;
+  const sel = $('#progRaag') as HTMLSelectElement | null;
+  const m = await meta();
+  const raags = (m.raags || []).filter((r: any) => r.n_lines >= 200).sort((a: any, b: any) => b.n_lines - a.n_lines);
+  if (sel && !sel.dataset.filled) {
+    sel.innerHTML = raags.map((r: any) => `<option value="${esc(r.name)}">${esc(r.roman || r.name)} · ${r.n_lines.toLocaleString()} lines</option>`).join('');
+    sel.dataset.filled = '1';
+  }
+  const tip = d3.select(host).append('div').attr('class', 'viz-tip').style('opacity', 0);
+  const color = (i: number) => STREAM_PAL[i % STREAM_PAL.length];
+
+  async function draw() {
+    const raag = sel ? sel.value : raags[0]?.name;
+    if (!raag) return;
+    const d = await api(`analytics/progression?raag=${encodeURIComponent(raag)}&bins=40&top=7`);
+    const concepts: string[] = d.concepts || []; const series = d.series || {};
+    host.querySelectorAll('svg').forEach((s) => s.remove());
+    if (!concepts.length) { host.insertAdjacentHTML('beforeend', '<div class="hint">No theme data for this raag.</div>'); return; }
+    const B = d.bins;
+    const data = Array.from({ length: B }, (_, b) => {
+      const o: any = { i: b, ang: d.ang_axis[b] }; concepts.forEach((c) => o[c] = series[c][b]); return o;
+    });
+    const W = host.clientWidth || 820, H = 360, pad = { t: 14, r: 14, b: 28, l: 14 };
+    const svg = d3.select(host).append('svg').attr('viewBox', `0 0 ${W} ${H}`).attr('width', '100%').attr('height', H);
+    const layers = d3.stack().keys(concepts).offset(d3.stackOffsetWiggle).order(d3.stackOrderInsideOut)(data);
+    const x = d3.scaleLinear().domain([0, B - 1]).range([pad.l, W - pad.r]);
+    const yMin = d3.min(layers, (l: any) => d3.min(l, (p: any) => p[0])) as number;
+    const yMax = d3.max(layers, (l: any) => d3.max(l, (p: any) => p[1])) as number;
+    const y = d3.scaleLinear().domain([yMin, yMax]).range([H - pad.b, pad.t]);
+    const area = d3.area().x((p: any) => x(p.data.i)).y0((p: any) => y(p[0])).y1((p: any) => y(p[1])).curve(d3.curveBasis);
+
+    const paths = svg.append('g').selectAll('path').data(layers).join('path')
+      .attr('d', area as any).attr('fill', (_l: any, i: number) => color(i)).attr('opacity', 0.85)
+      .attr('stroke', cssVar('--bg')).attr('stroke-width', 0.5).style('cursor', 'pointer')
+      .on('mouseover', (_ev: any, l: any) => { tip.html(`<b>${esc(titleCase(l.key))}</b>`).style('opacity', 1); paths.attr('opacity', (z: any) => z === l ? 1 : 0.22); })
+      .on('mousemove', (ev: any) => { const r = host.getBoundingClientRect(); tip.style('left', (ev.clientX - r.left + 12) + 'px').style('top', (ev.clientY - r.top + 12) + 'px'); })
+      .on('mouseout', () => { tip.style('opacity', 0); paths.attr('opacity', 0.85); });
+
+    const ticks = 6, ax = svg.append('g').attr('fill', cssVar('--soft')).attr('font-size', 10);
+    for (let t = 0; t < ticks; t++) {
+      const b = Math.round(t * (B - 1) / (ticks - 1));
+      ax.append('text').attr('x', x(b)).attr('y', H - 9)
+        .attr('text-anchor', t === 0 ? 'start' : (t === ticks - 1 ? 'end' : 'middle')).text('Ang ' + d.ang_axis[b]);
+    }
+    const lg = $('#streamLegend');
+    if (lg) lg.innerHTML = concepts.map((c, i) => `<span><i class="lg" style="background:${color(i)}"></i>${esc(titleCase(c))}</span>`).join('');
+  }
+  if (sel) sel.onchange = draw;
+  draw();
+}
+
 themeNetwork();
 authorRadar();
 resonanceChord();
+ribbonStream();

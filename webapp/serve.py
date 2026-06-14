@@ -27,7 +27,7 @@ PORT = int(os.environ.get('SGGS_PORT', '7777'))
 # doesn't force an 86 MB DB re-commit. /api/meta and /api/health prefer these; the
 # DB meta row is the fallback. Bump on every search-logic release so the UI footer
 # (which reads /api/meta) reflects the running build.
-APP_VERSION = '2.5.0'
+APP_VERSION = '2.6.0'
 APP_BUILT = '2026-06-14'
 
 import sys as _sys
@@ -913,6 +913,43 @@ def api(path, qs):
             return {'raag': raag, 'analytics': out, 'theme_fingerprint': rows_to_list(fp)}
         except sqlite3.OperationalError:
             return {'raag': raag, 'note': 'analytics tables not present in this DB build'}
+    if p[0] == 'analytics' and len(p) >= 2 and p[1] == 'progression':  # /api/analytics/progression?raag=X
+        raag = qs.get('raag', [None])[0]
+        bins = max(8, min(int(qs.get('bins', ['36'])[0]), 80))
+        top = max(2, min(int(qs.get('top', ['7'])[0]), 10))
+        if not raag:
+            raise ValueError('progression requires a raag')
+        try:
+            ordered = db().execute(
+                "SELECT id, ang FROM lines WHERE raag=? ORDER BY ang, id", (raag,)).fetchall()
+            M = len(ordered)
+            if M == 0:
+                return {'raag': raag, 'concepts': [], 'series': {}, 'bins': 0, 'note': 'no lines in this raag'}
+            bins = min(bins, M)
+            pos = {r['id']: i for i, r in enumerate(ordered)}
+            angs = [r['ang'] for r in ordered]
+            # the raag's most-present concepts (volume → readable bands)
+            concepts = [r[0] for r in db().execute(
+                "SELECT cl.concept, COUNT(*) c FROM concept_lines cl JOIN lines l ON l.id=cl.line_id "
+                "WHERE l.raag=? GROUP BY cl.concept ORDER BY c DESC LIMIT ?", (raag, top)).fetchall()]
+            series = {c: [0] * bins for c in concepts}
+            cset = set(concepts)
+            for lid, concept in db().execute(
+                    "SELECT cl.line_id, cl.concept FROM concept_lines cl JOIN lines l ON l.id=cl.line_id "
+                    "WHERE l.raag=?", (raag,)):
+                if concept in cset and lid in pos:
+                    series[concept][min(bins - 1, pos[lid] * bins // M)] += 1
+            lines_per_bin = [0] * bins
+            for i in range(M):
+                lines_per_bin[min(bins - 1, i * bins // M)] += 1
+            ang_axis = [angs[min(M - 1, int((b + 0.5) * M / bins))] for b in range(bins)]
+            roman = db().execute("SELECT roman FROM raags WHERE name=?", (raag,)).fetchone()
+            return {'raag': raag, 'roman': (roman[0] if roman else ''), 'n_lines': M, 'bins': bins,
+                    'concepts': concepts, 'series': series, 'lines_per_bin': lines_per_bin,
+                    'ang_axis': ang_axis,
+                    'note': 'concept-tag density along the raag in reading order; descriptive only'}
+        except sqlite3.OperationalError:
+            return {'raag': raag, 'concepts': [], 'series': {}, 'note': 'analytics tables not present'}
     if p[0] == 'analytics' and len(p) >= 2 and p[1] == 'resonance':   # /api/analytics/resonance
         min_lines = max(1, int(qs.get('min_lines', ['250'])[0]))
         min_lift = float(qs.get('min_lift', ['1.0'])[0])

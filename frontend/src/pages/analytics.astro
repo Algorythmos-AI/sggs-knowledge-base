@@ -54,6 +54,18 @@ import Base from '../layouts/Base.astro';
         <span><i class="lg" style="background:#23b3a1"></i>Gursikh</span>
       </div>
     </div>
+
+    <div class="viz-card">
+      <div class="viz-head">
+        <div>
+          <div class="viz-title">Raag Theme-Progression</div>
+          <div class="viz-sub">Reading a raag from its first Ang to its last, how do its themes ebb and flow? Each band's thickness is that concept's tag-density in that stretch — the emotional arc of the raag's Bani. Hover a band to isolate it.</div>
+        </div>
+        <select id="progRaag" class="viz-sel" aria-label="Raag"></select>
+      </div>
+      <div id="stream" class="viz-stage stream-stage"></div>
+      <div id="streamLegend" class="chord-legend"></div>
+    </div>
   </section>
   <script>import '../scripts/analytics';</script>
 </Base>
