@@ -26,18 +26,19 @@ const { title = 'ੴ Sri Guru Granth Sahib — Knowledge Base' } = Astro.props;
 </head>
 <body>
   <a href="#main" class="skip-link">Skip to content</a>
-  <header lang="en">
+  <header class="site" lang="en">
+    <div class="glow" aria-hidden="true"></div>
     <div class="onkar gm" aria-hidden="true">ੴ</div>
     <h1>Sri Guru Granth Sahib — Knowledge Base</h1>
     <p>1430 Angs · verbatim Gurmukhi · searchable by word, sound, first letters &amp; theme</p>
     <button id="themeBtn" class="themebtn" type="button" aria-label="Theme" title="Theme">◐</button>
   </header>
-  <nav>
+  <nav class="site">
     <a href="/" data-path="/">Search</a>
     <a href="/reader" data-path="/reader">Reader</a>
     <a href="/browse" data-path="/browse">Index</a>
     <a href="/themes" data-path="/themes">Themes</a>
-    <button id="randomBtn" type="button">Hukam-style random</button>
+    <button id="randomBtn" type="button">✦ Hukam-style random</button>
   </nav>
   <main id="main">
     <slot />
@@ -51,7 +52,7 @@ const { title = 'ੴ Sri Guru Granth Sahib — Knowledge Base' } = Astro.props;
       <div id="pbody"></div>
     </div>
   </div>
-  <footer>Scripture is shown verbatim from your edition with its Ang. Transliteration is a mechanical reading aid, not the scripture. · <span class="gm">ਧੁਰ ਕੀ ਬਾਣੀ</span><span id="ver"></span></footer>
+  <footer class="site">Scripture is shown verbatim from your edition with its Ang. Transliteration is a mechanical reading aid, not the scripture. · <span class="gm">ਧੁਰ ਕੀ ਬਾਣੀ</span><span id="ver"></span></footer>
 
   <script>
     import '../scripts/core';

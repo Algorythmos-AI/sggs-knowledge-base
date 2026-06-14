@@ -1,5 +1,6 @@
 // @ts-check
 import { defineConfig } from 'astro/config';
+import tailwindcss from '@tailwindcss/vite';   // Tailwind v4 — compiles at build time, fully offline
 
 // SGGS Knowledge Base — Path A (Offline Monolith).
 // Astro compiles to STATIC files (output:'static') served by the local stdlib
@@ -16,5 +17,6 @@ export default defineConfig({
   // MPA: emit reader.html (not reader/index.html); serve.py maps /reader -> reader.html.
   trailingSlash: 'never',
   // Keep things bundled + offline; inline tiny assets to avoid extra local requests.
-  vite: { build: { assetsInlineLimit: 4096 } },
+  // Tailwind v4 runs as a Vite plugin (no tailwind.config.js — v4 is CSS-first via @theme).
+  vite: { plugins: [tailwindcss()], build: { assetsInlineLimit: 4096 } },
 });
