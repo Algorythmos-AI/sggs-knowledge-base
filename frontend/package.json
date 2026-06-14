@@ -1,0 +1,16 @@
+{
+  "name": "sggs-frontend",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "astro dev --port 4321",
+    "build": "astro build",
+    "sync": "node scripts/sync-to-webapp.mjs",
+    "rollback": "node scripts/sync-to-webapp.mjs --rollback",
+    "build:deploy": "astro build && node scripts/sync-to-webapp.mjs"
+  },
+  "dependencies": {
+    "astro": "^6.4.6"
+  }
+}

@@ -1,0 +1,28 @@
+---
+import Base from '../layouts/Base.astro';
+---
+<Base title="ੴ Sri Guru Granth Sahib — Reader">
+  <section id="v-ang">
+    <div class="toolbar">
+      <div class="nav">
+        <button onclick="step(-1)" title="← key">‹</button>
+        <input id="angIn" type="number" min="1" max="1430" value="1"
+               aria-label="Ang number, 1 to 1430"
+               onchange="ang(parseInt(this.value)||1)" />
+        <span class="of">of 1430</span>
+        <button onclick="step(1)" title="→ key">›</button>
+      </div>
+      <div class="right">
+        <div class="tgl" id="tglT" onclick="toggleT()" role="switch" tabindex="0" aria-checked="true"
+             aria-label="show transliteration" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();toggleT()}">
+          <span class="sw"></span> transliteration</div>
+        <button onclick="fontSize(-1)" title="smaller text" aria-label="smaller text">ਅ−</button>
+        <button onclick="fontSize(1)" title="larger text" aria-label="larger text">ਅ+</button>
+      </div>
+    </div>
+    <div id="raagBanner"></div>
+    <div class="ctx" id="angCtx"></div>
+    <div id="angOut"></div>
+  </section>
+  <script>import '../scripts/reader';</script>
+</Base>

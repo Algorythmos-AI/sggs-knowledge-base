@@ -6,3 +6,6 @@ __pycache__/
 /tmp/
 *.log
 /database.sqlite
+# Astro frontend build sync backups (local rollback only — never committed)
+webapp/static.bak/
+webapp/static.broken/

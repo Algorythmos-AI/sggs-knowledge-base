@@ -1,0 +1,25 @@
+---
+import Base from '../layouts/Base.astro';
+---
+<Base title="ੴ Sri Guru Granth Sahib — Index">
+  <section id="v-raags">
+    <div class="modes" id="raagTabs" role="tablist" aria-label="Index sections">
+      <span id="rtab-major" data-tab="major" class="on" role="tab" aria-selected="true" tabindex="0" aria-controls="tab-major">Major Compositions</span>
+      <span id="rtab-raags" data-tab="raags" role="tab" aria-selected="false" tabindex="-1" aria-controls="tab-raags">The 31 Raags</span>
+      <span id="rtab-sections" data-tab="sections" role="tab" aria-selected="false" tabindex="-1" aria-controls="tab-sections">Banis &amp; Sections</span>
+    </div>
+    <div id="tab-major" role="tabpanel" aria-labelledby="rtab-major">
+      <div class="gridtitle">Major Compositions — Quick Access</div>
+      <div class="grid" id="quickOut"></div>
+    </div>
+    <div id="tab-raags" role="tabpanel" aria-labelledby="rtab-raags" style="display:none">
+      <div class="gridtitle">The 31 Raags — in the order of Sri Guru Granth Sahib</div>
+      <div class="grid" id="raagsOut"></div>
+    </div>
+    <div id="tab-sections" role="tabpanel" aria-labelledby="rtab-sections" style="display:none">
+      <div class="gridtitle">Banis &amp; closing sections</div>
+      <div class="grid" id="sectionsOut"></div>
+    </div>
+  </section>
+  <script>import '../scripts/browse';</script>
+</Base>

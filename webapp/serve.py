@@ -6,11 +6,20 @@ Zero dependencies: Python 3 standard library only.
 
 Run:   python3 serve.py        then open  http://localhost:7777
 """
-import json, os, re, sqlite3, random, sys, threading, webbrowser
+import json, os, re, sqlite3, random, sys, threading, webbrowser, mimetypes
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from urllib.parse import urlparse, parse_qs
 
 HERE = os.path.dirname(os.path.abspath(__file__))
+# Static frontend (Astro MPA build) lives under ./static. realpath here so the
+# path-traversal guard in H._resolve_static compares fully-resolved prefixes.
+STATIC_ROOT = os.path.realpath(os.path.join(HERE, 'static'))
+# Some platforms' mimetypes tables miss types this offline build serves; pin them.
+for _ext, _ct in (('.js', 'text/javascript'), ('.mjs', 'text/javascript'),
+                   ('.css', 'text/css'), ('.svg', 'image/svg+xml'),
+                   ('.json', 'application/json'), ('.woff2', 'font/woff2'),
+                   ('.woff', 'font/woff'), ('.webmanifest', 'application/manifest+json')):
+    mimetypes.add_type(_ct, _ext)
 DB = os.path.join(HERE, '..', 'db', 'sggs.sqlite')
 PORT = int(os.environ.get('SGGS_PORT', '7777'))
 
@@ -18,8 +27,8 @@ PORT = int(os.environ.get('SGGS_PORT', '7777'))
 # doesn't force an 86 MB DB re-commit. /api/meta and /api/health prefer these; the
 # DB meta row is the fallback. Bump on every search-logic release so the UI footer
 # (which reads /api/meta) reflects the running build.
-APP_VERSION = '2.1.0'
-APP_BUILT = '2026-06-13'
+APP_VERSION = '2.2.0'
+APP_BUILT = '2026-06-14'
 
 import sys as _sys
 _sys.path.insert(0, HERE)
@@ -925,6 +934,57 @@ class H(BaseHTTPRequestHandler):
         if self.command != 'HEAD':
             self.wfile.write(body)
 
+    # ---- static-file serving (Astro MPA build under ./static) ----
+    _TEXTY = ('text/html', 'text/css', 'text/javascript', 'application/javascript',
+              'application/json', 'application/manifest+json', 'image/svg+xml')
+
+    def _static_error(self, code):
+        msg = {403: b'403 Forbidden', 404: b'404 Not Found'}.get(code, b'error')
+        self.send_response(code)
+        self.send_header('Content-Type', 'text/plain; charset=utf-8')
+        self.send_header('Content-Length', str(len(msg)))
+        self.send_header('Cache-Control', 'no-store')
+        self.end_headers()
+        if self.command != 'HEAD':
+            self.wfile.write(msg)
+
+    def _resolve_static(self, url_path):
+        """Map a URL path to a real file under STATIC_ROOT, or None.
+        Resolves MPA routes (/reader -> reader/index.html, / -> index.html) and
+        guards against path traversal by requiring the realpath to stay inside
+        STATIC_ROOT (the os.sep test avoids a /static-sibling prefix false match;
+        realpath defeats '..' and symlink escapes; %-encoded dots are never decoded
+        here, so they simply fail to resolve)."""
+        rel = url_path.lstrip('/')
+        cands = ['index.html'] if rel == '' else [rel, os.path.join(rel, 'index.html')]
+        for c in cands:
+            full = os.path.realpath(os.path.join(STATIC_ROOT, c))
+            if full != STATIC_ROOT and not full.startswith(STATIC_ROOT + os.sep):
+                continue                                   # outside the jail — reject
+            if os.path.isfile(full):
+                return full
+        return None
+
+    def _serve_static(self, url_path):
+        full = self._resolve_static(url_path)
+        if not full:
+            return self._static_error(404)
+        ct = mimetypes.guess_type(full)[0] or 'application/octet-stream'
+        if ct in self._TEXTY:
+            ct += '; charset=utf-8'
+        # hashed build assets are content-addressed -> cache forever; HTML must revalidate
+        rel = os.path.relpath(full, STATIC_ROOT)
+        cache = 'public, max-age=31536000, immutable' if rel.split(os.sep)[0] == '_astro' else 'no-store'
+        with open(full, 'rb') as f:
+            body = f.read()
+        self.send_response(200)
+        self.send_header('Content-Type', ct)
+        self.send_header('Content-Length', str(len(body)))
+        self.send_header('Cache-Control', cache)
+        self.end_headers()
+        if self.command != 'HEAD':
+            self.wfile.write(body)
+
     def _handle(self):
         u = urlparse(self.path)
         if u.path == '/favicon.ico':
@@ -933,8 +993,7 @@ class H(BaseHTTPRequestHandler):
             if u.path.startswith('/api/'):
                 body = json.dumps(api(u.path, parse_qs(u.query)), ensure_ascii=False).encode()
                 return self._respond(200, body, 'application/json; charset=utf-8')
-            with open(os.path.join(HERE, 'static', 'index.html'), 'rb') as f:
-                return self._respond(200, f.read(), 'text/html; charset=utf-8')
+            return self._serve_static(u.path)
         except (ValueError, IndexError) as e:           # bad ang/shabad/params
             msg = json.dumps({'error': 'invalid request: ' + str(e)}).encode()
             return self._respond(400, msg, 'application/json')
