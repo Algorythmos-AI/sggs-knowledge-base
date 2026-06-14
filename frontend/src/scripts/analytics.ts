@@ -181,5 +181,85 @@ async function authorRadar() {
   draw();
 }
 
+/* ============================ D3 cross-contributor resonance chord ============================ */
+async function resonanceChord() {
+  const host = $('#chord'); if (!host) return;
+  const sel = $('#resVoices') as HTMLSelectElement | null;
+  const lift = $('#resLift') as HTMLInputElement | null;
+  const liftOut = $('#resLiftVal');
+
+  let kinds: Record<string, string> = {};
+  try {
+    const cj = await fetch('/contributors.json').then((r) => r.json());
+    (cj.contributors || []).forEach((c: any) => { kinds[c.name] = c.kind; });
+  } catch {}
+  const KCOL: Record<string, string> = { guru: cssVar('--accent') || '#ff9933', bhagat: '#5b8cff', bhatt: '#b07cff', gursikh: '#23b3a1' };
+  const colorOf = (name: string) => KCOL[kinds[name]] || (cssVar('--accent') || '#ff9933');
+  const short = (s: string) => s.split(' (')[0].replace('Bhagat ', '').replace('Guru ', '').replace(' Ji', '');
+  const tip = d3.select(host).append('div').attr('class', 'viz-tip').style('opacity', 0);
+
+  async function draw() {
+    const minLines = sel ? sel.value : '250';
+    const minLift = lift ? lift.value : '1.0';
+    if (liftOut && lift) liftOut.textContent = (+lift.value).toFixed(1) + '×';
+    const d = await api(`analytics/resonance?min_lines=${minLines}&min_lift=${minLift}&min_edges=8`);
+    const names: string[] = (d.nodes || []).map((n: any) => n.author);
+    const idx: Record<string, number> = {}; names.forEach((n, i) => idx[n] = i);
+    const N = names.length;
+    const matrix = Array.from({ length: N }, () => new Array(N).fill(0));
+    const meta: Record<string, any> = {};
+    (d.edges || []).forEach((e: any) => {
+      if (e.source in idx && e.target in idx) matrix[idx[e.source]][idx[e.target]] = e.lift;
+      meta[e.source + '>' + e.target] = e;
+    });
+
+    host.querySelectorAll('svg').forEach((s) => s.remove());
+    if (N < 2) { host.insertAdjacentHTML('beforeend', '<div class="hint">No resonances at this threshold.</div>'); return; }
+    const W = 560, outerR = W * 0.5 - 96, innerR = outerR - 12;
+    const svg = d3.select(host).append('svg').attr('viewBox', `${-W / 2} ${-W / 2} ${W} ${W}`).attr('width', '100%').attr('height', 540);
+    const chord = d3.chordDirected().padAngle(0.05).sortSubgroups(d3.descending)(matrix);
+    const arc = d3.arc().innerRadius(innerR).outerRadius(outerR);
+    const ribbon = (d3 as any).ribbonArrow ? (d3 as any).ribbonArrow().radius(innerR - 1) : d3.ribbon().radius(innerR - 1);
+    const bg = cssVar('--bg') || '#070b16';
+
+    const grp = svg.append('g').selectAll('g').data(chord.groups).join('g');
+    grp.append('path').attr('d', arc as any)
+      .attr('fill', (g: any) => colorOf(names[g.index])).attr('stroke', bg)
+      .attr('opacity', 0.92).style('cursor', 'default')
+      .on('mouseover', (_e: any, g: any) => fadeNode(g.index)).on('mouseout', () => fadeNode(null));
+    grp.append('text').each((g: any) => { g.a = (g.startAngle + g.endAngle) / 2; })
+      .attr('dy', '.35em')
+      .attr('transform', (g: any) => `rotate(${g.a * 180 / Math.PI - 90}) translate(${outerR + 8}) ${g.a > Math.PI ? 'rotate(180)' : ''}`)
+      .attr('text-anchor', (g: any) => g.a > Math.PI ? 'end' : 'start')
+      .attr('font-size', 11).attr('font-weight', 600).attr('fill', cssVar('--ink'))
+      .attr('paint-order', 'stroke').attr('stroke', bg).attr('stroke-width', 3)
+      .text((g: any) => short(names[g.index]));
+
+    const ribs = svg.append('g').attr('fill-opacity', 0.6).selectAll('path').data(chord).join('path')
+      .attr('class', 'res-ribbon').attr('d', ribbon as any)
+      .attr('fill', (c: any) => colorOf(names[c.source.index])).attr('stroke', bg).attr('stroke-width', 0.4)
+      .on('mouseover', (ev: any, c: any) => {
+        const a = names[c.source.index], b = names[c.target.index];
+        const ab = meta[a + '>' + b] || {}, ba = meta[b + '>' + a] || {};
+        tip.html(`<b>${esc(short(a))} ↔ ${esc(short(b))}</b>`
+          + `<br><span>${esc(short(a))} → ${esc(short(b))}: lift ${(matrix[c.source.index][c.target.index] || 0).toFixed(2)}×</span>`
+          + `<br><span>${esc(short(b))} → ${esc(short(a))}: lift ${(matrix[c.target.index][c.source.index] || 0).toFixed(2)}×</span>`
+          + `<br><span>${(ab.edges || 0) + (ba.edges || 0)} shared neighbour links</span>`).style('opacity', 1);
+        ribs.transition().duration(100).attr('fill-opacity', (x: any) => x === c ? 0.92 : 0.06);
+      })
+      .on('mousemove', (ev: any) => { const r = host.getBoundingClientRect(); tip.style('left', (ev.clientX - r.left + 12) + 'px').style('top', (ev.clientY - r.top + 12) + 'px'); })
+      .on('mouseout', () => { tip.style('opacity', 0); ribs.transition().duration(120).attr('fill-opacity', 0.6); });
+
+    function fadeNode(i: number | null) {
+      ribs.transition().duration(120).attr('fill-opacity', (c: any) =>
+        i === null ? 0.6 : (c.source.index === i || c.target.index === i ? 0.85 : 0.06));
+    }
+  }
+  if (sel) sel.onchange = draw;
+  if (lift) lift.oninput = draw;
+  draw();
+}
+
 themeNetwork();
 authorRadar();
+resonanceChord();

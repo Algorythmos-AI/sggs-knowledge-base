@@ -27,7 +27,7 @@ PORT = int(os.environ.get('SGGS_PORT', '7777'))
 # doesn't force an 86 MB DB re-commit. /api/meta and /api/health prefer these; the
 # DB meta row is the fallback. Bump on every search-logic release so the UI footer
 # (which reads /api/meta) reflects the running build.
-APP_VERSION = '2.4.0'
+APP_VERSION = '2.5.0'
 APP_BUILT = '2026-06-14'
 
 import sys as _sys
@@ -913,6 +913,28 @@ def api(path, qs):
             return {'raag': raag, 'analytics': out, 'theme_fingerprint': rows_to_list(fp)}
         except sqlite3.OperationalError:
             return {'raag': raag, 'note': 'analytics tables not present in this DB build'}
+    if p[0] == 'analytics' and len(p) >= 2 and p[1] == 'resonance':   # /api/analytics/resonance
+        min_lines = max(1, int(qs.get('min_lines', ['250'])[0]))
+        min_lift = float(qs.get('min_lift', ['1.0'])[0])
+        min_edges = max(1, int(qs.get('min_edges', ['8'])[0]))
+        try:
+            nodes = rows_to_list(db().execute(
+                "SELECT name AS author, n_lines, first_ang FROM authors WHERE n_lines >= ? "
+                "ORDER BY n_lines DESC", (min_lines,)).fetchall())
+            names = [n['author'] for n in nodes]
+            if not names:
+                return {'nodes': [], 'edges': [], 'note': 'no voices meet the size threshold'}
+            ph = ','.join('?' * len(names))
+            edges = rows_to_list(db().execute(
+                f"SELECT src_author AS source, dst_author AS target, edges, mean_score, lift "
+                f"FROM author_resonance WHERE src_author <> dst_author AND lift >= ? AND edges >= ? "
+                f"AND src_author IN ({ph}) AND dst_author IN ({ph}) ORDER BY lift DESC",
+                [min_lift, min_edges] + names + names).fetchall())
+            return {'nodes': nodes, 'edges': edges, 'metric': 'lift',
+                    'note': 'how often a voice’s lines land semantically nearest another voice’s, '
+                            'relative to corpus share (lift); descriptive, never a ranking of scripture'}
+        except sqlite3.OperationalError:
+            return {'nodes': [], 'edges': [], 'note': 'resonance table not present in this DB build'}
     if p[0] == 'related':                                   # /api/related?comp_id=N
         cid = int(qs.get('comp_id', ['0'])[0])
         try:
