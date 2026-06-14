@@ -104,7 +104,8 @@ document.addEventListener('keydown', (e) => {
 const rb = document.getElementById('randomBtn');
 if (rb) rb.onclick = () => randomShabad();
 
-// expose for inline onclick in dynamically-rendered HTML
+// expose for inline onclick in dynamically-rendered HTML + cross-page modal reuse
 (window as any).shabad = shabad;
 (window as any).randomShabad = randomShabad;
 (window as any).closePanel = closePanel;
+(window as any).openPanel = openPanel;       // lineage page reuses the shared modal (focus save/restore)

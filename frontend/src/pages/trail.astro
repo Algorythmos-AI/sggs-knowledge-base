@@ -1,0 +1,21 @@
+---
+import Base from '../layouts/Base.astro';
+---
+<Base title="ੴ Sri Guru Granth Sahib — Semantic Trail">
+  <section id="v-trail">
+    <div class="trail-top">
+      <div>
+        <div class="trail-title">Semantic Trail</div>
+        <div class="trail-sub">Begin at any verse and walk, step by step, to the verses closest to it in meaning — across raags, authors and centuries. A quiet path through the Granth's echoes.</div>
+      </div>
+      <button id="trailRandom" class="now-btn ghost" type="button">✦ Random start</button>
+    </div>
+    <div id="trailCrumbs" class="trail-crumbs" aria-label="Your path"></div>
+    <div id="trailNow" class="trail-now"></div>
+    <div class="trail-stones-wrap">
+      <div id="trailStonesHead" class="gridtitle">Continue the trail</div>
+      <div id="trailStones" class="trail-stones"></div>
+    </div>
+  </section>
+  <script>import '../scripts/trail';</script>
+</Base>

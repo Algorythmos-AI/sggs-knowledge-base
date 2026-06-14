@@ -27,7 +27,7 @@ PORT = int(os.environ.get('SGGS_PORT', '7777'))
 # doesn't force an 86 MB DB re-commit. /api/meta and /api/health prefer these; the
 # DB meta row is the fallback. Bump on every search-logic release so the UI footer
 # (which reads /api/meta) reflects the running build.
-APP_VERSION = '2.3.0'
+APP_VERSION = '2.4.0'
 APP_BUILT = '2026-06-14'
 
 import sys as _sys
@@ -929,6 +929,9 @@ def api(path, qs):
     if p[0] == 'neighbors':                                  # /api/neighbors?line_id=N  (Phase 2: semantic)
         lid = int(qs.get('line_id', ['0'])[0])
         lim = max(1, min(int(qs.get('limit', ['10'])[0]), 50))
+        srow = db().execute("SELECT id, ang, raag, author, comp_id, gurmukhi, translit "
+                            "FROM lines WHERE id=?", (lid,)).fetchone()
+        src_line = attach_translations([dict(srow)])[0] if srow else None   # the queried verse itself
         try:                                                 # preferred: line-level embedding neighbours
             rows = db().execute(
                 "SELECT n.neighbor_id AS id, n.score, l.ang, l.raag, l.author, l.comp_id, "
@@ -938,7 +941,7 @@ def api(path, qs):
                 src = db().execute(
                     "SELECT value FROM analytics_meta WHERE key='line_neighbors_source'").fetchone()
                 return {'line_id': lid, 'level': 'line', 'source': (src[0] if src else 'unknown'),
-                        'neighbors': attach_translations(rows_to_list(rows)),
+                        'line': src_line, 'neighbors': attach_translations(rows_to_list(rows)),
                         'note': 'lines whose English meaning is closest by embedding cosine; '
                                 'descriptive, never a ranking of scripture'}
         except sqlite3.OperationalError:
@@ -955,11 +958,11 @@ def api(path, qs):
                 "(SELECT gurmukhi FROM lines WHERE comp_id=n.neighbor_comp_id AND is_header=0 ORDER BY id LIMIT 1) AS gurmukhi "
                 "FROM shabad_neighbors n WHERE n.comp_id=? ORDER BY n.rank LIMIT ?", (cid, lim)).fetchall()
             return {'line_id': lid, 'level': 'composition', 'source': 'shabad-theme-profile',
-                    'neighbors': rows_to_list(rows),
+                    'line': src_line, 'neighbors': rows_to_list(rows),
                     'note': 'line-level semantic vectors not built yet — showing compositions with the '
                             'closest theme profile. Run pipeline/build_semantic_vectors.py for line-level results'}
         except sqlite3.OperationalError:
-            return {'line_id': lid, 'level': 'none', 'neighbors': []}
+            return {'line_id': lid, 'level': 'none', 'line': src_line, 'neighbors': []}
     raise ValueError('unknown endpoint')
 
 class H(BaseHTTPRequestHandler):

@@ -110,7 +110,9 @@ const loadRelated = guard(async (sline: HTMLElement) => {
   const d = await api('neighbors?line_id=' + id + '&limit=6');
   const items = d.neighbors || [];
   const lvl = d.level === 'composition' ? 'closest compositions' : (d.level === 'line' ? 'closest verses' : 'related');
-  drawer.innerHTML = `<div class="rel-head"><b>✦ Related · ${lvl}</b><button class="rel-x" aria-label="Close">×</button></div>`
+  drawer.innerHTML = `<div class="rel-head"><b>✦ Related · ${lvl}</b>
+      <span class="rel-actions"><a class="rel-trail" href="/trail?line_id=${id}">walk a trail →</a>
+      <button class="rel-x" aria-label="Close">×</button></span></div>`
     + (items.length ? items.map(relCard).join('') : `<div class="rel-loading">No related verses found.</div>`);
 });
 // delegate on the stable #angOut node (its innerHTML is replaced per Ang, the node is not)
