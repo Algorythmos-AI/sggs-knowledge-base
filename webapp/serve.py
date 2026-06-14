@@ -27,7 +27,7 @@ PORT = int(os.environ.get('SGGS_PORT', '7777'))
 # doesn't force an 86 MB DB re-commit. /api/meta and /api/health prefer these; the
 # DB meta row is the fallback. Bump on every search-logic release so the UI footer
 # (which reads /api/meta) reflects the running build.
-APP_VERSION = '2.2.0'
+APP_VERSION = '2.3.0'
 APP_BUILT = '2026-06-14'
 
 import sys as _sys
@@ -83,6 +83,11 @@ def db():
     if not hasattr(_local, 'con'):
         _local.con = sqlite3.connect(f'file:{DB}?mode=ro&immutable=1', uri=True)
         _local.con.row_factory = sqlite3.Row
+        # read-only tuning (pure stdlib PRAGMAs — no extensions): mmap the whole DB so
+        # the growing analytics/neighbor tables stay zero-copy in the page cache.
+        for pragma in ('mmap_size=268435456', 'cache_size=-32768', 'query_only=ON'):
+            try: _local.con.execute('PRAGMA ' + pragma)
+            except sqlite3.OperationalError: pass
     return _local.con
 
 def have_fts():
@@ -881,8 +886,9 @@ def api(path, qs):
             if out.get('top_themes'):
                 try: out['top_themes'] = json.loads(out['top_themes'])
                 except Exception: pass
+            fp_lim = 60 if qs.get('full', [None])[0] else 12   # full=1 -> every concept (for radar axes)
             fp = db().execute("SELECT concept, n_tagged, entity_rate, corpus_rate, lift FROM theme_fingerprint "
-                              "WHERE entity_type='author' AND entity_id=? ORDER BY lift DESC LIMIT 12", (author,)).fetchall()
+                              "WHERE entity_type='author' AND entity_id=? ORDER BY lift DESC LIMIT ?", (author, fp_lim)).fetchall()
             dt = db().execute("SELECT term, z_score, rank FROM author_distinctive_terms "
                               "WHERE author=? ORDER BY rank LIMIT 12", (author,)).fetchall()
             return {'author': author, 'stylometry': out, 'theme_fingerprint': rows_to_list(fp),
@@ -920,6 +926,40 @@ def api(path, qs):
                     'note': 'shabads with the most similar theme profile (corpus-verified themes)'}
         except sqlite3.OperationalError:
             return {'comp_id': cid, 'related': [], 'note': 'analytics tables not present in this DB build'}
+    if p[0] == 'neighbors':                                  # /api/neighbors?line_id=N  (Phase 2: semantic)
+        lid = int(qs.get('line_id', ['0'])[0])
+        lim = max(1, min(int(qs.get('limit', ['10'])[0]), 50))
+        try:                                                 # preferred: line-level embedding neighbours
+            rows = db().execute(
+                "SELECT n.neighbor_id AS id, n.score, l.ang, l.raag, l.author, l.comp_id, "
+                "l.gurmukhi, l.translit FROM line_neighbors n JOIN lines l ON l.id = n.neighbor_id "
+                "WHERE n.line_id = ? ORDER BY n.score DESC LIMIT ?", (lid, lim)).fetchall()
+            if rows:
+                src = db().execute(
+                    "SELECT value FROM analytics_meta WHERE key='line_neighbors_source'").fetchone()
+                return {'line_id': lid, 'level': 'line', 'source': (src[0] if src else 'unknown'),
+                        'neighbors': attach_translations(rows_to_list(rows)),
+                        'note': 'lines whose English meaning is closest by embedding cosine; '
+                                'descriptive, never a ranking of scripture'}
+        except sqlite3.OperationalError:
+            pass
+        try:                                                 # fallback: composition-level theme profile
+            row = db().execute("SELECT comp_id FROM lines WHERE id=?", (lid,)).fetchone()
+            if not row:
+                return {'line_id': lid, 'level': 'none', 'neighbors': []}
+            cid = row[0]
+            rows = db().execute(
+                "SELECT n.neighbor_comp_id AS comp_id, n.rank, n.score, "
+                "(SELECT ang FROM lines WHERE comp_id=n.neighbor_comp_id ORDER BY id LIMIT 1) AS ang, "
+                "(SELECT raag FROM lines WHERE comp_id=n.neighbor_comp_id AND raag IS NOT NULL LIMIT 1) AS raag, "
+                "(SELECT gurmukhi FROM lines WHERE comp_id=n.neighbor_comp_id AND is_header=0 ORDER BY id LIMIT 1) AS gurmukhi "
+                "FROM shabad_neighbors n WHERE n.comp_id=? ORDER BY n.rank LIMIT ?", (cid, lim)).fetchall()
+            return {'line_id': lid, 'level': 'composition', 'source': 'shabad-theme-profile',
+                    'neighbors': rows_to_list(rows),
+                    'note': 'line-level semantic vectors not built yet — showing compositions with the '
+                            'closest theme profile. Run pipeline/build_semantic_vectors.py for line-level results'}
+        except sqlite3.OperationalError:
+            return {'line_id': lid, 'level': 'none', 'neighbors': []}
     raise ValueError('unknown endpoint')
 
 class H(BaseHTTPRequestHandler):

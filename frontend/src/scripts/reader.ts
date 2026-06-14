@@ -52,7 +52,7 @@ const ang = guard(async (n: number) => {
     if (g.headers.length) h += `<div class="hdr gm">${g.headers.map((x: any) =>
       `<div class="${x.gurmukhi.startsWith('ੴ') ? 'invoc' : ''}">${esc(x.gurmukhi)}</div>`).join('')}
         <div class="t">${g.headers.map((x: any) => esc(x.translit)).join(' · ')}</div></div>`;
-    h += g.body.map((l: any) => `<div class="sline ${l.is_rahao ? 'rahao' : ''}">
+    h += g.body.map((l: any) => `<div class="sline tap ${l.is_rahao ? 'rahao' : ''}" data-line-id="${l.id}" title="Tap for related verses">
         <div class="g gm">${esc(l.gurmukhi)}</div><div class="t">${esc(l.translit)}</div>
         ${l.en ? `<div class="en" lang="en">${esc(l.en)}</div>` : ''}</div>`).join('');
     h += '</div>';
@@ -85,6 +85,43 @@ document.addEventListener('keydown', (e: any) => {
   if (e.target.tagName === 'INPUT') return;
   if (e.key === 'ArrowRight') step(1);
   if (e.key === 'ArrowLeft') step(-1);
+});
+
+/* ---------------- Related Verses (Phase 2 semantic) ----------------
+   Click a line → reveal an inline drawer of the semantically closest verses
+   (line-level when the embedding table is built, else closest compositions). */
+function relCard(n: any): string {
+  const t = n.translit ? `<div class="t">${esc(n.translit)}</div>` : '';
+  const e = n.en ? `<div class="e">${esc(n.en)}</div>` : '';
+  const score = (n.score != null) ? `<span class="sc">${Math.round(n.score * 100)}%</span>` : '';
+  const m = [`Ang ${n.ang}`, n.raag ? esc(n.raag) : '', n.author ? esc(n.author) : ''].filter(Boolean).join(' · ');
+  return `<div class="relcard" onclick="goReader(${n.ang || 1})" role="button" tabindex="0" aria-label="Open Ang ${n.ang}">
+      <div class="g gm">${esc(n.gurmukhi || '')}</div>${t}${e}
+      <div class="rm">${score}<span>${m}</span></div></div>`;
+}
+const loadRelated = guard(async (sline: HTMLElement) => {
+  const id = sline.getAttribute('data-line-id'); if (!id) return;
+  const sib = sline.nextElementSibling;
+  if (sib && sib.classList.contains('related')) { sib.remove(); return; }   // toggle off
+  const drawer = document.createElement('div'); drawer.className = 'related';
+  drawer.innerHTML = `<div class="rel-head"><b>✦ Related verses</b><button class="rel-x" aria-label="Close">×</button></div>
+    <div class="rel-loading">Finding semantically similar verses…</div>`;
+  sline.after(drawer);
+  const d = await api('neighbors?line_id=' + id + '&limit=6');
+  const items = d.neighbors || [];
+  const lvl = d.level === 'composition' ? 'closest compositions' : (d.level === 'line' ? 'closest verses' : 'related');
+  drawer.innerHTML = `<div class="rel-head"><b>✦ Related · ${lvl}</b><button class="rel-x" aria-label="Close">×</button></div>`
+    + (items.length ? items.map(relCard).join('') : `<div class="rel-loading">No related verses found.</div>`);
+});
+// delegate on the stable #angOut node (its innerHTML is replaced per Ang, the node is not)
+$('#angOut')?.addEventListener('click', (e: any) => {
+  const x = e.target.closest('.rel-x'); if (x) { x.closest('.related')?.remove(); return; }
+  if (e.target.closest('.relcard')) return;                 // inline goReader handles it
+  const sl = e.target.closest('.sline.tap'); if (sl) loadRelated(sl);
+});
+$('#angOut')?.addEventListener('keydown', (e: any) => {
+  const card = e.target.closest('.relcard');
+  if (card && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); card.click(); }
 });
 
 // expose for the toolbar + generated inline handlers

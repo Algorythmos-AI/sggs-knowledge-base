@@ -281,6 +281,46 @@ body.hide-t .t { display:none; }
   box-shadow:0 12px 34px rgba(0,0,0,.4); opacity:0; pointer-events:none; transition:opacity .25s, transform .25s; }
 #toast.on { opacity:1; transform:translateX(-50%) translateY(0); }
 
+/* ============================== insights dashboard ============================== */
+.viz-card { background:var(--card); border:1px solid var(--line); border-radius:22px; padding:20px 22px; margin-bottom:18px; box-shadow:var(--shadow); }
+.viz-head { display:flex; align-items:flex-start; justify-content:space-between; gap:16px; flex-wrap:wrap; margin-bottom:14px; }
+.viz-title { font-size:17px; font-weight:700; letter-spacing:-.01em; }
+.viz-title::before { content:''; display:inline-block; width:9px; height:9px; border-radius:50%; margin-right:9px; vertical-align:middle;
+  background:linear-gradient(135deg, var(--accent-2), var(--accent)); box-shadow:0 0 10px var(--glow); }
+.viz-sub { font-size:12.5px; color:var(--soft); margin-top:4px; max-width:62ch; line-height:1.55; }
+.viz-ctl { display:flex; align-items:center; gap:9px; font-size:12px; color:var(--soft); flex-wrap:wrap; }
+.viz-val { font-weight:700; color:var(--accent); min-width:2.2em; }
+.viz-ctl input[type=range] { accent-color:var(--accent); cursor:pointer; }
+.viz-sel { font:inherit; font-size:13px; color:var(--ink); background:var(--card); border:1px solid var(--line);
+  border-radius:11px; padding:7px 11px; cursor:pointer; max-width:230px; }
+.viz-sel:focus { outline:none; border-color:var(--accent); box-shadow:0 0 0 3px var(--glow); }
+.viz-stage { position:relative; width:100%; min-height:560px; border-radius:14px; overflow:hidden;
+  background:radial-gradient(800px 400px at 50% 40%, color-mix(in srgb, var(--accent) 5%, transparent), transparent 70%); }
+.viz-tip { position:absolute; z-index:5; pointer-events:none; max-width:260px; font-size:12px; line-height:1.5;
+  background:var(--bg-2); color:var(--ink); border:1px solid var(--line-strong); border-radius:12px; padding:9px 12px; box-shadow:var(--shadow); transition:opacity .12s; }
+.viz-tip b { color:var(--accent); }
+.viz-tip span { color:var(--soft); }
+.radar-wrap { position:relative; height:440px; max-width:560px; margin:4px auto 0; }
+.viz-foot { font-size:11.5px; color:var(--soft); margin-top:10px; text-align:center; line-height:1.5; }
+
+/* ============================== reader: related verses ============================== */
+.sline { border-radius:10px; transition:background .15s; }
+.sline.tap { cursor:pointer; }
+.sline.tap:hover { background:color-mix(in srgb, var(--accent) 7%, transparent); }
+.related { margin:8px 0 6px; border-left:2px solid color-mix(in srgb, var(--accent) 45%, transparent); padding:4px 0 4px 14px; }
+.related .rel-head { display:flex; align-items:center; justify-content:space-between; gap:10px; font-size:11.5px; color:var(--soft); margin:2px 0 8px; }
+.related .rel-head b { color:var(--accent); font-weight:700; letter-spacing:.3px; text-transform:uppercase; font-size:10.5px; }
+.related .rel-x { background:none; border:none; color:var(--soft); cursor:pointer; font-size:16px; line-height:1; padding:2px 6px; border-radius:8px; }
+.related .rel-x:hover { background:var(--chip); color:var(--ink); }
+.relcard { background:var(--bg-2); border:1px solid var(--line); border-radius:12px; padding:10px 13px; margin-bottom:7px; cursor:pointer; transition:all .15s; }
+.relcard:hover { border-color:color-mix(in srgb, var(--accent) 45%, transparent); transform:translateX(2px); }
+.relcard .g { font-size:calc(var(--gsize) - 4px); line-height:1.7; }
+.relcard .t { font-size:12px; color:var(--soft); font-style:italic; }
+.relcard .e { font-size:12px; color:var(--accent); margin-top:2px; }
+.relcard .rm { display:flex; gap:7px; flex-wrap:wrap; margin-top:6px; font-size:10.5px; color:var(--soft); }
+.relcard .rm .sc { color:var(--gold); font-weight:600; }
+.rel-loading { font-size:12px; color:var(--soft); padding:4px 0; }
+
 @media (prefers-reduced-motion: reduce) { *{ transition:none !important; scroll-behavior:auto !important; } }
 @media (max-width:620px) {
   :root, :root[data-theme] { --gsize:20px; }
