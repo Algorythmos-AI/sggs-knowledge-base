@@ -1,6 +1,7 @@
 // reader.ts — the Reader page (/reader) : the Ang-by-Ang viewer.
 // Ported 1:1 from the original; deep-links via ?ang=<n>&raag=<name>.
 import { $, esc, api, guard, meta, store, syncToolbarTop } from './core';
+import { pinButtonHTML } from './store';
 
 let curAng = 1;
 let raagCtx: any = null;
@@ -52,7 +53,8 @@ const ang = guard(async (n: number) => {
     if (g.headers.length) h += `<div class="hdr gm">${g.headers.map((x: any) =>
       `<div class="${x.gurmukhi.startsWith('ੴ') ? 'invoc' : ''}">${esc(x.gurmukhi)}</div>`).join('')}
         <div class="t">${g.headers.map((x: any) => esc(x.translit)).join(' · ')}</div></div>`;
-    h += g.body.map((l: any) => `<div class="sline tap ${l.is_rahao ? 'rahao' : ''}" data-line-id="${l.id}" title="Tap for related verses">
+    h += g.body.map((l: any) => `<div class="sline tap haspin ${l.is_rahao ? 'rahao' : ''}" data-line-id="${l.id}" title="Tap for related verses">
+        ${pinButtonHTML(l.id, curAng, l.comp_id)}
         <div class="g gm">${esc(l.gurmukhi)}</div><div class="t">${esc(l.translit)}</div>
         ${l.en ? `<div class="en" lang="en">${esc(l.en)}</div>` : ''}</div>`).join('');
     h += '</div>';

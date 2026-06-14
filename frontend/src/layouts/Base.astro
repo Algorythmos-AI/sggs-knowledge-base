@@ -57,9 +57,30 @@ const { title = 'ੴ Sri Guru Granth Sahib — Knowledge Base' } = Astro.props;
   </div>
   <footer class="site">Scripture is shown verbatim from your edition with its Ang. Transliteration is a mechanical reading aid, not the scripture. · <span class="gm">ਧੁਰ ਕੀ ਬਾਣੀ</span><span id="ver"></span></footer>
 
+  <!-- Study Trail: a persistent, ML-aware cross-reference collection (every page) -->
+  <button id="trailFab" class="trail-fab" type="button" aria-label="Open study trail">
+    <span class="trail-fab-i" aria-hidden="true">📌</span><span id="trailFabN" class="trail-fab-n">0</span>
+  </button>
+  <div id="trailScrim" class="trail-scrim" aria-hidden="true"></div>
+  <aside id="trailDrawer" class="trail-drawer" aria-label="Study Trail">
+    <div class="trail-dhead">
+      <div class="trail-dtitle">✦ Study Trail</div>
+      <button id="trailClose" class="trail-close" type="button" aria-label="Close study trail">×</button>
+    </div>
+    <div id="trailTabs" class="trail-tabs" role="tablist" aria-label="Study Trail views">
+      <button data-tab="pinned" class="on" role="tab" aria-selected="true" type="button">Pinned Verses</button>
+      <button data-tab="insights" role="tab" aria-selected="false" type="button">AI Insights</button>
+    </div>
+    <div class="trail-dbody">
+      <div id="tab-pinned" role="tabpanel"></div>
+      <div id="tab-insights" role="tabpanel" style="display:none"></div>
+    </div>
+  </aside>
+
   <script>
     import '../scripts/core';
     import '../scripts/panel';
+    import '../scripts/studytrail';
   </script>
 </body>
 </html>

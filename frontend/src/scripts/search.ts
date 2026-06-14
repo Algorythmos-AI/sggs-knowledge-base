@@ -1,6 +1,7 @@
 // search.ts — the Search page (/) : word/sound/first-letter/theme search + Verify-quote.
 // Ported 1:1 from the original; in-page nav()/ang() calls are replaced by MPA goReader().
 import { $, esc, api, guard, goReader } from './core';
+import { pinButtonHTML } from './store';
 
 let mode = 'auto';
 
@@ -44,7 +45,8 @@ function lineCard(l: any): string {
   if (l.author) chips.push(`<span>${esc(l.author)}</span>`);
   if (l.is_rahao) chips.push(`<span class="rahao">ਰਹਾਉ · refrain</span>`);
   if (l.matched_term) chips.push(`<span class="gm">term: ${esc(l.matched_term)}</span>`);
-  return `<div class="card" role="button" tabindex="0" aria-label="Open composition at Ang ${l.ang}" onclick="shabad(${l.comp_id},${l.id})">
+  return `<div class="card haspin" role="button" tabindex="0" aria-label="Open composition at Ang ${l.ang}" onclick="shabad(${l.comp_id},${l.id})">
+    ${pinButtonHTML(l.id, l.ang, l.comp_id)}
     <div class="g gm">${hl(esc(l.gurmukhi))}</div><div class="t">${hl(esc(l.translit))}</div>
     ${l.en ? `<div class="en" lang="en">${esc(l.en)}</div>` : ''}
     <div class="meta">${chips.join('')}</div></div>`;
