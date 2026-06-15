@@ -336,6 +336,17 @@ body.hide-t .t { display:none; }
 .vp-no { flex:0 0 auto; width:28px; height:28px; border-radius:50%; display:flex; align-items:center; justify-content:center;
   font-size:12px; font-weight:800; color:#fff; background:var(--c); box-shadow:0 0 10px color-mix(in srgb, var(--c) 55%, transparent); }
 
+/* ---- Concept Constellation ---- */
+.constel-stage { min-height:640px; display:block; position:relative; }
+.constel-stage circle:focus-visible { outline:2px solid var(--gold); outline-offset:2px; }
+.constel-list { list-style:none; margin:14px 0 0; padding:14px 0 0; border-top:1px solid var(--line);
+  columns:2; column-gap:28px; font-size:12.5px; }
+.constel-list li { break-inside:avoid; margin:0 0 8px; line-height:1.5; }
+.constel-list .cl-n { color:var(--soft); }
+.constel-list a { color:var(--accent); text-decoration:none; }
+.constel-list a:hover, .constel-list a:focus-visible { text-decoration:underline; }
+@media (max-width:640px){ .constel-list { columns:1; } }
+
 /* ============================== reader: related verses ============================== */
 .sline { border-radius:10px; transition:background .15s; }
 .sline.tap { cursor:pointer; }

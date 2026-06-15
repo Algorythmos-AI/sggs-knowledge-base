@@ -27,7 +27,7 @@ PORT = int(os.environ.get('SGGS_PORT', '7777'))
 # doesn't force an 86 MB DB re-commit. /api/meta and /api/health prefer these; the
 # DB meta row is the fallback. Bump on every search-logic release so the UI footer
 # (which reads /api/meta) reflects the running build.
-APP_VERSION = '2.8.1'
+APP_VERSION = '2.9.0'
 APP_BUILT = '2026-06-15'
 
 import sys as _sys
@@ -1003,6 +1003,37 @@ def api(path, qs):
                             'pauris are the famous cross-voice editorial structure'}
         except sqlite3.OperationalError:
             return {'vaar': None, 'units': []}
+    if p[0] == 'analytics' and len(p) >= 2 and p[1] == 'constellation':   # Concept Constellation
+        # No ?concept= → the dropdown list (every concept + its verse count).
+        # ?concept=X → X's verses grouped into sub-constellations by each verse's co-themes.
+        # Purely read-only over the existing concepts / concept_lines tables; capped (top-k).
+        c = qs.get('concept', [''])[0].strip()
+        try:
+            if not c:
+                rows = rows_to_list(db().execute(
+                    "SELECT concept, n FROM ("
+                    "  SELECT concept, COUNT(DISTINCT line_id) n FROM concept_lines GROUP BY concept"
+                    ") ORDER BY n DESC"))
+                return {'concepts': rows, 'note': 'corpus-verified theme tags; counts are descriptive only'}
+            total = db().execute("SELECT COUNT(DISTINCT line_id) FROM concept_lines WHERE concept=?", (c,)).fetchone()[0]
+            if not total:
+                return {'concept': c, 'total': 0, 'clusters': []}
+            MAX_CLUSTERS, PER = 9, 40
+            rows = db().execute(
+                "SELECT co.concept co, l.id, l.ang, l.comp_id, l.gurmukhi "
+                "FROM concept_lines cl JOIN concept_lines co ON co.line_id=cl.line_id AND co.concept<>cl.concept "
+                "JOIN lines l ON l.id=cl.line_id WHERE cl.concept=? ORDER BY co.concept, l.id", (c,)).fetchall()
+            buckets = {}
+            for r in rows:
+                buckets.setdefault(r['co'], []).append(
+                    {'id': r['id'], 'ang': r['ang'], 'comp_id': r['comp_id'], 'gurmukhi': r['gurmukhi']})
+            clusters = sorted(({'co': k, 'n': len(v), 'verses': v[:PER]} for k, v in buckets.items()),
+                              key=lambda x: x['n'], reverse=True)[:MAX_CLUSTERS]
+            return {'concept': c, 'total': total, 'clusters': clusters,
+                    'note': 'verses carrying this theme, grouped by the other theme they most often share; '
+                            'descriptive structure, never a ranking of scripture'}
+        except sqlite3.OperationalError:
+            return {'concepts': [], 'clusters': [], 'note': 'concept tables not present in this DB build'}
     if p[0] == 'related':                                   # /api/related?comp_id=N
         cid = int(qs.get('comp_id', ['0'])[0])
         try:

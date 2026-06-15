@@ -138,11 +138,13 @@ def main():
 
     def mk_unit(kind, verse):
         au = collections.Counter(l['author'] for l in verse if l['author'])
-        pno = None
+        mno = None                               # the closing ॥N॥ marker number (for the gap self-check)
         if kind == 'pauri':
             m = NUM_MARK.search(verse[-1]['gurmukhi'] or '')
-            pno = gnum(m.group(1)) if m else None
-        return dict(kind=kind, cid=verse[0]['comp_id'], n_lines=len(verse), pno=pno,
+            mno = gnum(m.group(1)) if m else None
+        # pno (the DISPLAYED pauri number) is assigned later as the sequential ordinal — the raw
+        # marker is unreliable in some Vaars (Maru-M5 'Dakhne' pauris all close ॥੧॥ → 'Pauri 1 ×17').
+        return dict(kind=kind, cid=verse[0]['comp_id'], n_lines=len(verse), pno=None, mno=mno,
                     author=(au.most_common(1)[0][0] if au else None),
                     first_line_id=verse[0]['id'], ang=min(l['ang'] for l in verse),
                     line_ids=[l['id'] for l in verse])
@@ -220,16 +222,19 @@ def main():
         roman = rr['roman'] if rr else (raag or '')
         P = [u for u in units if u['kind'] == 'pauri']
         S = [u for u in units if u['kind'] == 'salok']
-        # Per-Vaar gap self-check. A GENUINE shortfall = fewer pauri units than the highest
-        # pauri number (len(P) < maxPno → some pauris dropped/merged, e.g. Majh-before: 23<26).
-        # We deliberately do NOT flag mere pno-VALUE anomalies (duplicates / stanza-markers) as
-        # seen in the Maru-M5 'Dakhne' structure, where pauris close with ॥੧॥ rather than a
-        # running number — there len(P) >= maxPno and the COUNT is sound even if display pnos
-        # are unreliable. That display quirk is tracked separately, not a dropped-pauri bug.
-        pns = [u['pno'] for u in P if u['pno'] is not None]
-        if pns and len(P) < max(pns):
-            missing = sorted(set(range(1, max(pns) + 1)) - set(pns))
-            log(f"  ⚠ GAP {roman}@{t['ang']}: {len(P)} pauris but maxPno={max(pns)} "
+        # Assign the DISPLAYED pauri number by sequential ordinal (1..N) in reading order. This
+        # is robust for every Vaar and fixes the Maru-M5 'Dakhne' display (pauris all close ॥੧॥).
+        for i, u in enumerate(P, 1):
+            u['pno'] = i
+        # Per-Vaar gap self-check runs on the raw closing-MARKER numbers (mno), not the ordinals.
+        # A GENUINE shortfall = fewer pauri units than the highest marker number (len(P) < maxMno
+        # → pauris dropped/merged, e.g. Majh-before: 23<26). We do NOT flag mere marker-VALUE
+        # anomalies (duplicates/stanza-markers) — the Maru-M5 Dakhne case has len(P) >= maxMno, so
+        # its count is sound even though the raw markers are unreliable.
+        mns = [u['mno'] for u in P if u['mno'] is not None]
+        if mns and len(P) < max(mns):
+            missing = sorted(set(range(1, max(mns) + 1)) - set(mns))
+            log(f"  ⚠ GAP {roman}@{t['ang']}: {len(P)} pauris but maxMarker={max(mns)} "
                 f"→ dropped pauri #{missing}")
         pauri_author = collections.Counter(u['author'] for u in P if u['author']).most_common(1)[0][0] if P else None
         salok_auths = sorted({u['author'] for u in S if u['author']})

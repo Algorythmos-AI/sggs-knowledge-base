@@ -1,0 +1,20 @@
+---
+import Base from '../layouts/Base.astro';
+---
+<Base title="ੴ Sri Guru Granth Sahib — Concept Constellation">
+  <section id="v-constel">
+    <div class="hint">Pick a theme to see its verses as a <i>constellation</i> — grouped into sub-clusters by the other theme each verse most shares. Built from corpus-verified theme tags; the structure is <i>descriptive</i>, never a ranking of scripture. Tap any star (or an Ang link) to open the verse in the Reader.</div>
+
+    <div class="viz-card">
+      <div class="viz-head">
+        <div>
+          <div class="viz-title">Concept Constellation</div>
+          <div class="viz-sub" id="conHead">Loading…</div>
+        </div>
+        <select id="conSel" class="viz-sel" aria-label="Concept"></select>
+      </div>
+      <div id="constel" class="viz-stage constel-stage"></div>
+    </div>
+  </section>
+  <script>import '../scripts/constellation';</script>
+</Base>

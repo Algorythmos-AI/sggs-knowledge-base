@@ -84,6 +84,20 @@ async function themeNetwork() {
       })
       .on('mouseout', (ev: any) => { tip.style('opacity', 0); d3.select(ev.currentTarget).attr('stroke-opacity', 0.5).attr('stroke-width', 1); })
       .on('click', (_ev: any, d: any) => { location.href = '/?q=' + encodeURIComponent(d.id) + '&mode=theme'; })
+      // keyboard operability: each node is a focusable button; Enter/Space searches its theme,
+      // focus mirrors the hover highlight + tooltip (positioned at the node).
+      .attr('tabindex', 0).attr('role', 'button')
+      .attr('aria-label', (d: any) => `${titleCase(d.id)}, ${(size[d.id] || 0).toLocaleString()} lines. Press Enter to search this theme.`)
+      .on('keydown', (ev: any, d: any) => {
+        if (ev.key === 'Enter' || ev.key === ' ') { ev.preventDefault(); location.href = '/?q=' + encodeURIComponent(d.id) + '&mode=theme'; }
+      })
+      .on('focus', (ev: any, d: any) => {
+        const r = host.getBoundingClientRect(), b = ev.currentTarget.getBoundingClientRect();
+        tip.html(`<b>${esc(titleCase(d.id))}</b><br><span>${(size[d.id] || 0).toLocaleString()} lines</span><br>${esc(desc[d.id] || '')}`)
+          .style('opacity', 1).style('left', (b.left - r.left + 14) + 'px').style('top', (b.top - r.top + 12) + 'px');
+        d3.select(ev.currentTarget).attr('stroke-opacity', 1).attr('stroke-width', 2.5);
+      })
+      .on('blur', (ev: any) => { tip.style('opacity', 0); d3.select(ev.currentTarget).attr('stroke-opacity', 0.5).attr('stroke-width', 1); })
       .call(d3.drag<any, any>()
         .on('start', (ev, d: any) => { if (!ev.active) sim.alphaTarget(0.3).restart(); d.fx = d.x; d.fy = d.y; })
         .on('drag', (ev, d: any) => { d.fx = ev.x; d.fy = ev.y; })
