@@ -5,8 +5,24 @@
 import { $, esc } from './core';
 import {
   getPins, count, isPinned, togglePin, removePin, clearPins, subscribe, mostRecent,
-  enrichThemes, centerOfGravity, label, toJSON, toText, type Pin,
+  enrichThemes, centerOfGravity, label, toJSON, toText, MAX_PINS, type Pin,
 } from './store';
+
+/* ---------- transient toast (self-contained, no CSS dependency) ---------- */
+function toast(msg: string) {
+  let t = document.getElementById('sggs-toast') as HTMLDivElement | null;
+  if (!t) {
+    t = document.createElement('div'); t.id = 'sggs-toast';
+    t.setAttribute('role', 'status'); t.setAttribute('aria-live', 'polite');
+    t.style.cssText = 'position:fixed;left:50%;bottom:30px;transform:translateX(-50%);z-index:9999;'
+      + 'background:rgba(20,22,30,.95);color:#fff;padding:10px 16px;border-radius:10px;font-size:13px;'
+      + 'max-width:80vw;text-align:center;box-shadow:0 10px 34px rgba(0,0,0,.45);opacity:0;transition:opacity .2s;';
+    document.body.appendChild(t);
+  }
+  t.textContent = msg; t.style.opacity = '1';
+  clearTimeout((t as any)._h);
+  (t as any)._h = setTimeout(() => { if (t) t.style.opacity = '0'; }, 3400);
+}
 
 /* ---------- pin-button capture delegate (verse cards keep their own click intact) ---------- */
 document.addEventListener('click', (e: any) => {
@@ -17,9 +33,17 @@ document.addEventListener('click', (e: any) => {
   const card = btn.closest('.card, .sline, .relcard, .stone, .pl');
   const gEl = card ? card.querySelector('.g') : null;
   const gm = gEl ? (gEl.textContent || '').trim() : '';
-  const nowPinned = togglePin({ line_id: id, gm, ang, comp_id: cid });
-  btn.classList.toggle('pinned', nowPinned);
-  btn.setAttribute('aria-pressed', String(nowPinned));
+  const r = togglePin({ line_id: id, gm, ang, comp_id: cid });
+  if (r === 'cap' || r === 'quota') {            // save failed → keep the button truthful + tell the user
+    btn.classList.remove('pinned'); btn.setAttribute('aria-pressed', 'false');
+    toast(r === 'cap'
+      ? `Study trail is full (max ${MAX_PINS}) — unpin a verse to add more.`
+      : 'Could not save — your browser storage is full.');
+    return;
+  }
+  const on = r === 'pinned';
+  btn.classList.toggle('pinned', on);
+  btn.setAttribute('aria-pressed', String(on));
 }, true);
 
 // reflect pinned state on every pin button currently in the DOM

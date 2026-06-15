@@ -10,11 +10,20 @@ export function pinButtonHTML(id: number, ang: number, cid: number): string {
   return `<button class="pin-btn" data-id="${id}" data-ang="${ang}" data-cid="${cid}" type="button" aria-label="Pin to study trail" title="Pin to study trail">📌</button>`;
 }
 const KEY = 'sggs_pins';
+export const MAX_PINS = 500;                    // hard cap so the pin set can't outgrow the localStorage quota
+export type ToggleResult = 'pinned' | 'unpinned' | 'cap' | 'quota';
 type Cb = () => void;
 const subs = new Set<Cb>();
 
 function read(): Pin[] { try { return JSON.parse(localStorage.getItem(KEY) || '[]'); } catch { return []; } }
-function write(p: Pin[]) { try { localStorage.setItem(KEY, JSON.stringify(p)); } catch {} emit(); }
+// Returns false if the write was rejected (e.g. QuotaExceededError) so callers can surface the
+// failure instead of falsely reporting a pin as saved. Always emits so the UI reflects the TRUE
+// persisted state, never an optimistic one.
+function write(p: Pin[]): boolean {
+  let ok = true;
+  try { localStorage.setItem(KEY, JSON.stringify(p)); } catch { ok = false; }
+  emit(); return ok;
+}
 function emit() { subs.forEach((cb) => { try { cb(); } catch {} }); }
 
 export function getPins(): Pin[] { return read().sort((a, b) => b.ts - a.ts); }
@@ -22,14 +31,22 @@ export function count(): number { return read().length; }
 export function isPinned(id: number): boolean { return read().some((p) => p.line_id === id); }
 export function subscribe(cb: Cb): () => void { subs.add(cb); return () => subs.delete(cb); }
 
-export function addPin(p: Omit<Pin, 'ts'>) {
-  const a = read(); if (a.some((x) => x.line_id === p.line_id)) return;
-  a.push({ ...p, ts: Date.now() }); write(a);
+// Each mutation re-reads localStorage fresh (it is shared + synchronous across tabs), so two
+// tabs pinning different verses no longer clobber each other's writes.
+export function addPin(p: Omit<Pin, 'ts'>): boolean {
+  const a = read();
+  if (a.some((x) => x.line_id === p.line_id)) return true;   // already pinned → success
+  if (a.length >= MAX_PINS) return false;                    // cap reached → not added
+  a.push({ ...p, ts: Date.now() });
+  return write(a);                                           // false on quota failure
 }
 export function removePin(id: number) { write(read().filter((p) => p.line_id !== id)); }
-export function togglePin(p: Omit<Pin, 'ts'>): boolean {
-  if (isPinned(p.line_id)) { removePin(p.line_id); return false; }
-  addPin(p); return true;
+export function togglePin(p: Omit<Pin, 'ts'>): ToggleResult {
+  if (isPinned(p.line_id)) { removePin(p.line_id); return 'unpinned'; }
+  const a = read();
+  if (a.length >= MAX_PINS) return 'cap';
+  a.push({ ...p, ts: Date.now() });
+  return write(a) ? 'pinned' : 'quota';
 }
 export function clearPins() { write([]); }
 export function mostRecent(): Pin | null {
@@ -51,8 +68,12 @@ export async function enrichThemes(): Promise<Pin[]> {
         const d = await fetch('/api/line_concepts?ids=' + slice.join(',')).then((r) => r.json());
         Object.assign(map, d.concepts || {});
       }
-      a.forEach((p) => { if (!p.themes) p.themes = map[String(p.line_id)] || []; });
-      write(a);                                  // persist enrichment so we only fetch once
+      // Re-read AFTER the await: another tab — or a pin added during the fetch window — may
+      // have changed the set. Merge themes into the FRESH list so we never clobber new pins
+      // with the stale snapshot taken before the network round-trip.
+      const fresh = read(); let changed = false;
+      fresh.forEach((p) => { if (!p.themes) { p.themes = map[String(p.line_id)] || []; changed = true; } });
+      if (changed) write(fresh);                 // persist enrichment so we only fetch once
     } catch { /* offline / endpoint missing → leave themes undefined, UI degrades gracefully */ }
   }
   return read();

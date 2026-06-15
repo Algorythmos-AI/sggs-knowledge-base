@@ -31,6 +31,8 @@ async function themeNetwork() {
   host.innerHTML = '';
   const svg = d3.select(host).append('svg')
     .attr('viewBox', `0 0 ${W} ${H}`).attr('width', '100%').attr('height', H)
+    .attr('role', 'img')
+    .attr('aria-label', 'Theme co-occurrence network: an interactive graph of how scriptural themes appear together. The same relationships are summarised in the caption above; each theme is also searchable.')
     .style('cursor', 'grab');
   const g = svg.append('g');
   svg.call(d3.zoom<SVGSVGElement, unknown>().scaleExtent([0.3, 4]).on('zoom', (ev) => g.attr('transform', ev.transform)) as any);
@@ -216,7 +218,8 @@ async function resonanceChord() {
     host.querySelectorAll('svg').forEach((s) => s.remove());
     if (N < 2) { host.insertAdjacentHTML('beforeend', '<div class="hint">No resonances at this threshold.</div>'); return; }
     const W = 560, outerR = W * 0.5 - 96, innerR = outerR - 12;
-    const svg = d3.select(host).append('svg').attr('viewBox', `${-W / 2} ${-W / 2} ${W} ${W}`).attr('width', '100%').attr('height', 540);
+    const svg = d3.select(host).append('svg').attr('viewBox', `${-W / 2} ${-W / 2} ${W} ${W}`).attr('width', '100%').attr('height', 540)
+      .attr('role', 'img').attr('aria-label', 'Cross-contributor resonance chord diagram, showing how strongly different voices echo each other in meaning. Summarised in the caption above.');
     const chord = d3.chordDirected().padAngle(0.05).sortSubgroups(d3.descending)(matrix);
     const arc = d3.arc().innerRadius(innerR).outerRadius(outerR);
     const ribbon = (d3 as any).ribbonArrow ? (d3 as any).ribbonArrow().radius(innerR - 1) : d3.ribbon().radius(innerR - 1);
@@ -286,7 +289,8 @@ async function ribbonStream() {
       const o: any = { i: b, ang: d.ang_axis[b] }; concepts.forEach((c) => o[c] = series[c][b]); return o;
     });
     const W = host.clientWidth || 820, H = 360, pad = { t: 14, r: 14, b: 28, l: 14 };
-    const svg = d3.select(host).append('svg').attr('viewBox', `0 0 ${W} ${H}`).attr('width', '100%').attr('height', H);
+    const svg = d3.select(host).append('svg').attr('viewBox', `0 0 ${W} ${H}`).attr('width', '100%').attr('height', H)
+      .attr('role', 'img').attr('aria-label', 'Raag theme-progression streamgraph: how a raag\'s themes ebb and flow from its first Ang to its last. Summarised in the caption above.');
     const layers = d3.stack().keys(concepts).offset(d3.stackOffsetWiggle).order(d3.stackOrderInsideOut)(data);
     const x = d3.scaleLinear().domain([0, B - 1]).range([pad.l, W - pad.r]);
     const yMin = d3.min(layers, (l: any) => d3.min(l, (p: any) => p[0])) as number;

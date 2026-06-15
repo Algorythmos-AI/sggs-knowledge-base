@@ -31,18 +31,17 @@ The earlier "±1 anomaly" worry is now **resolved by live data**: Maru-M5 (22) a
 
 ## 2. MODERATE — hardening, schedule into the v2.8.x pass
 
-### M1. FTS5 operator injection → 500 instead of 400 (`serve.py`, search path) — **query-side, touches sacred search core**
-**Evidence (Agent 2):** `_fts_clean` (≈L114) only strips `"` and `*`. A crafted query — `q=AND`, `q=NEAR(a b)`, `q=col:`, leading `-`/`^` — reaches `text MATCH ?` and raises `sqlite3.OperationalError`. The primary `search_fts` retry (≈L140-146) can re-throw the same error uncaught → top-level **500**. Affects `/api/search` and `/api/word`.
-**Severity rationale:** the top-level handler still returns valid JSON and resets the DB handle (no crash), but a user-facing 500 on bad input should be a graceful 400/empty. **This is search-core territory — any change must be query-side only and validated against the full search regression set (do-no-harm gate).**
-**Fix direction:** broaden `_fts_clean` to neutralize bare FTS5 operators / leading specials, OR wrap the primary path to fall back to a plain-token query and return empty on `OperationalError`. No index/schema change.
+### M1. FTS5 operator injection → 500 — ❌ **VERIFIED NON-ISSUE (2026-06-15), no change made**
+**Original concern (Agent 2):** `_fts_clean` (≈L114) only strips `"` and `*`, so a crafted query (`q=AND`, `q=NEAR(a b)`, `q=col:`, leading `-`/`^`) was theorized to reach `text MATCH ?` and raise `sqlite3.OperationalError` → 500.
+**Resolution — refuted empirically.** Tracing `fts_query` (L120-124) shows every token is wrapped in double quotes (`"AND"`, `"NEAR"`, `"col:"`) before `MATCH`, which makes all FTS5 operators **literal terms**, not operators. The only char that can escape a quoted phrase is `"`, which `_fts_clean` strips. Live battery of 16 adversarial inputs (`AND`, `OR`, `NOT`, `NEAR(a b)`, `col:`, `text:guru`, `^foo`, `-foo`, `(`, `a)`, `*`, `"`, `a AND b`, `{text}:x`, …) against both `/api/search` and `/api/word`: **all returned HTTP 200 with the valid `{mode,results,related_themes}` contract** (e.g. `AND`→2 literal matches, `NEAR(a b)`→50). Agent 2's read missed the quote-wrapping. **No code change — the search core is already correctly defended.**
 
 ### M2. Interior Bhagat-salok attribution is unguarded (latent, **not currently realized**)
 **Evidence:** Agent 1 noted the trailing-salok trim (`units[:last_p+1]`) only defends the *tail*; an interior salok by a non-Guru could still be attributed into an M1/M2 Vaar. **Live check result: NOT happening today** — the only non-Guru salok authors in the data are **Bhai Mardana in Bihagra** (legitimate — Mardana's saloks really are there) and Satta/Balwand in their own Vaar. So this is a **latent robustness gap**, not an active contamination.
 **Fix direction (optional hardening):** when computing `salok_authors`/`cross_author`, keep the data as-is (it's correct) but consider a build-time warning if an interior salok's lineage is neither the Vaar's Guru-line nor a known associated author. Low urgency.
 
-### M3. `sync-to-webapp.mjs` fallback path diverges from `rsync --delete`
-**Evidence (Agent 2):** if `rsync` is absent, the `cpSync` fallback (≈L39) does **not** delete stale files, so old hashed `_astro/*.js` chunks linger in `webapp/static/` and can be served alongside new ones. Backup is also single-slot and the rollback is a non-atomic two-step rename.
-**Fix direction:** clear `webapp/static/` before the `cpSync` copy (match `--delete`); optionally make rollback transactional.
+### M3. `sync-to-webapp.mjs` cpSync fallback — ❌ **VERIFIED NON-ISSUE (2026-06-15), no change made**
+**Original concern (Agent 2):** the `cpSync` fallback (L39) doesn't delete stale files, so old hashed `_astro/*.js` chunks could linger in `webapp/static/`.
+**Resolution — refuted by full read.** Step 1 (L28-30) renames `STATIC → BACKUP` *before* the sync, so by L36/L39 `webapp/static/` does not exist; `mkdirSync` (L38) creates it empty and `cpSync` fills it solely from `dist/`. Both the `rsync --delete` path and the `cpSync` fallback therefore write into a **freshly-emptied** directory — no stale chunks can survive in either path. Agent 2 read L39 without the preceding rename. The single-slot backup + two-step rollback rename are minor (same-filesystem renames are effectively atomic); not worth changing working deploy tooling. **No change.**
 
 ### M4. Visualizations are not screen-reader / keyboard accessible (`analytics.ts`, `analytics.astro`)
 **Evidence (Agent 3):** the D3 `<svg>`s (themeNetwork L32, resonanceChord L219, ribbonStream L289) and the Chart.js `<canvas>` (analytics.astro L30) have **no `role`/`aria-label`/`aria-hidden`** — a screen reader hits unnamed graphics. Network nodes/chord arcs/stream bands are **click/hover-only**, not keyboard-operable.
