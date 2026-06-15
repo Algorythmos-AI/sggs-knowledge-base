@@ -310,6 +310,32 @@ body.hide-t .t { display:none; }
 .chord-legend .lg { width:11px; height:11px; border-radius:50%; display:inline-block; }
 .stream-stage { min-height:360px; display:block; }
 
+/* ---- Vaar Anatomy Strip ---- */
+.vaar-stage { min-height:120px; }
+.vaar-meta { display:flex; align-items:center; justify-content:space-between; gap:14px; flex-wrap:wrap;
+  padding:12px 14px; margin-bottom:14px; border-radius:14px; border:1px solid var(--line);
+  background:linear-gradient(135deg, color-mix(in srgb, var(--pc, var(--accent)) 12%, transparent), transparent); }
+.vaar-stats { display:flex; gap:8px; flex-wrap:wrap; }
+.vstat { font-size:11.5px; font-weight:650; color:var(--soft); background:var(--chip); padding:3px 11px; border-radius:999px; }
+.vaar-cross { font-size:12.5px; color:var(--soft); }
+.vaar-ladder { position:relative; padding-left:6px; }
+.vg { position:relative; padding:4px 0 4px 22px; margin-bottom:4px; }
+.vaar-ladder::before { content:''; position:absolute; left:6px; top:6px; bottom:6px; width:2px; background:var(--line-strong); border-radius:2px; }
+.vg-saloks { display:flex; flex-direction:column; gap:5px; margin-bottom:6px; }
+.vu { display:flex; align-items:center; gap:9px; width:100%; text-align:left; cursor:pointer; font:inherit;
+  border:1px solid var(--line); border-left:3px solid var(--c); border-radius:11px; background:var(--card);
+  color:var(--ink); padding:8px 12px; transition:transform .13s, box-shadow .13s, border-color .13s; }
+.vu:hover { transform:translateX(3px); box-shadow:0 8px 22px color-mix(in srgb, var(--c) 22%, transparent); }
+.vu-t { font-size:12.5px; }
+.vu-salok { background:color-mix(in srgb, var(--card) 80%, transparent); }
+.vu-salok .vu-dot { width:9px; height:9px; border-radius:50%; background:var(--c); flex:0 0 auto; }
+.vu-salok.cross { border-color:color-mix(in srgb, var(--gold) 55%, transparent); box-shadow:0 0 0 1px color-mix(in srgb, var(--gold) 30%, transparent); }
+.vx { color:var(--gold); font-weight:700; font-size:10.5px; margin-left:4px; }
+.vu-pauri { background:color-mix(in srgb, var(--c) 12%, var(--card)); border-left-width:4px; font-weight:500; }
+.vu-pauri .vu-t b { color:var(--ink); }
+.vp-no { flex:0 0 auto; width:28px; height:28px; border-radius:50%; display:flex; align-items:center; justify-content:center;
+  font-size:12px; font-weight:800; color:#fff; background:var(--c); box-shadow:0 0 10px color-mix(in srgb, var(--c) 55%, transparent); }
+
 /* ============================== reader: related verses ============================== */
 .sline { border-radius:10px; transition:background .15s; }
 .sline.tap { cursor:pointer; }

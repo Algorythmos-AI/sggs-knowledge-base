@@ -27,8 +27,8 @@ PORT = int(os.environ.get('SGGS_PORT', '7777'))
 # doesn't force an 86 MB DB re-commit. /api/meta and /api/health prefer these; the
 # DB meta row is the fallback. Bump on every search-logic release so the UI footer
 # (which reads /api/meta) reflects the running build.
-APP_VERSION = '2.7.0'
-APP_BUILT = '2026-06-14'
+APP_VERSION = '2.8.0'
+APP_BUILT = '2026-06-15'
 
 import sys as _sys
 _sys.path.insert(0, HERE)
@@ -972,6 +972,37 @@ def api(path, qs):
                             'relative to corpus share (lift); descriptive, never a ranking of scripture'}
         except sqlite3.OperationalError:
             return {'nodes': [], 'edges': [], 'note': 'resonance table not present in this DB build'}
+    if p[0] == 'analytics' and len(p) >= 2 and p[1] == 'vaars':      # /api/analytics/vaars (list)
+        try:
+            rows = rows_to_list(db().execute(
+                "SELECT vaar_id, raag, roman, first_ang, last_ang, n_pauris, n_saloks, "
+                "pauri_author, salok_authors, cross_author, title FROM vaars ORDER BY first_ang"))
+            for r in rows:
+                try: r['salok_authors'] = json.loads(r['salok_authors'] or '[]')
+                except Exception: r['salok_authors'] = []
+            return {'vaars': rows,
+                    'note': 'the Vaars — heroic ballads of numbered pauris with flanking saloks; '
+                            'structural metadata only, never a ranking of scripture'}
+        except sqlite3.OperationalError:
+            return {'vaars': [], 'note': 'vaar tables not present in this DB build'}
+    if p[0] == 'analytics' and len(p) >= 2 and p[1] == 'vaar':       # /api/analytics/vaar?id=N (anatomy)
+        try: vid = int(qs.get('id', ['0'])[0])
+        except (TypeError, ValueError): return {'vaar': None, 'units': []}
+        try:
+            head = db().execute("SELECT * FROM vaars WHERE vaar_id=?", (vid,)).fetchone()
+            if not head:
+                return {'vaar': None, 'units': []}
+            head = dict(head)
+            try: head['salok_authors'] = json.loads(head['salok_authors'] or '[]')
+            except Exception: head['salok_authors'] = []
+            units = rows_to_list(db().execute(
+                "SELECT seq, kind, author, n_lines, pauri_no, first_line_id, ang, theme "
+                "FROM vaar_units WHERE vaar_id=? ORDER BY seq", (vid,)))
+            return {'vaar': head, 'units': units,
+                    'note': 'salok + pauri anatomy in reading order; saloks by a different Guru than the '
+                            'pauris are the famous cross-voice editorial structure'}
+        except sqlite3.OperationalError:
+            return {'vaar': None, 'units': []}
     if p[0] == 'related':                                   # /api/related?comp_id=N
         cid = int(qs.get('comp_id', ['0'])[0])
         try:

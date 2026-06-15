@@ -314,7 +314,61 @@ async function ribbonStream() {
   draw();
 }
 
+/* ============================ Vaar Anatomy Strip ============================ */
+const AUTHOR_COL: Record<string, string> = { M1: '#5b8cff', M2: '#23b3a1', M3: '#b07cff', M4: '#7ed957', M5: 'var(--accent)', M9: '#f78fb3' };
+const mahala = (a: string) => { const m = (a || '').match(/\(M(\d)\)/); return m ? 'M' + m[1] : ''; };
+const authColor = (a: string) => AUTHOR_COL[mahala(a)] || '#8a92a8';
+const authShort = (a: string) => (a || '?').split(' (')[0].replace('Guru ', '').replace('Bhagat ', '').replace(' Ji', '');
+
+async function vaarAnatomy() {
+  const host = $('#vaar'); if (!host) return;
+  const sel = $('#vaarSel') as HTMLSelectElement | null;
+  const list = await api('analytics/vaars');
+  const vaars = list.vaars || [];
+  if (sel && !sel.dataset.filled) {
+    if (!vaars.length) { host.innerHTML = '<div class="hint">Vaar anatomy not built in this DB. Run pipeline/build_vaars.py.</div>'; return; }
+    sel.innerHTML = vaars.map((v: any) => `<option value="${v.vaar_id}">${esc(v.roman)} · Angs ${v.first_ang}–${v.last_ang} · ${v.n_pauris} pauris${v.cross_author ? ' · cross-voice' : ''}</option>`).join('');
+    sel.dataset.filled = '1';
+  }
+  async function draw() {
+    const vid = sel ? sel.value : (vaars[0]?.vaar_id);
+    if (vid == null) return;
+    host.innerHTML = '<div class="rel-loading">Tracing the Vaar…</div>';
+    const d = await api('analytics/vaar?id=' + vid);
+    const v = d.vaar, units = d.units || [];
+    if (!v) { host.innerHTML = '<div class="hint">No anatomy for this Vaar.</div>'; return; }
+    const pCol = authColor(v.pauri_author);
+    const crossNote = v.cross_author
+      ? `<b style="color:var(--gold)">Cross-voice:</b> pauris by ${esc(authShort(v.pauri_author))}, saloks also by ${esc((v.salok_authors || []).filter((a: string) => a !== v.pauri_author).map(authShort).join(', ') || '—')}`
+      : `Saloks and pauris share one voice (${esc(authShort(v.pauri_author))}).`;
+
+    // group: saloks accumulate, then their pauri rung
+    const groups: any[] = []; let bucket: any[] = [];
+    for (const u of units) { if (u.kind === 'pauri') { groups.push({ saloks: bucket, pauri: u }); bucket = []; } else bucket.push(u); }
+    if (bucket.length) groups.push({ saloks: bucket, pauri: null });
+
+    const salokHTML = (s: any) => {
+      const cross = mahala(s.author) !== mahala(v.pauri_author);
+      return `<button class="vu vu-salok${cross ? ' cross' : ''}" style="--c:${authColor(s.author)}" onclick="goReader(${s.ang})" title="Salok by ${esc(s.author || '')} — open Ang ${s.ang}">
+        <span class="vu-dot"></span><span class="vu-t">Salok · ${esc(authShort(s.author))} · ${s.n_lines} ln${cross ? ' <span class="vx">✦ cross-voice</span>' : ''}</span></button>`;
+    };
+    const pauriHTML = (pp: any) => `<button class="vu vu-pauri" style="--c:${authColor(pp.author)}" onclick="goReader(${pp.ang})" title="Pauri ${pp.pauri_no} by ${esc(pp.author || '')} — open Ang ${pp.ang}">
+        <span class="vp-no">${pp.pauri_no ?? ''}</span>
+        <span class="vu-t"><b>Pauri ${pp.pauri_no ?? ''}</b> · ${esc(authShort(pp.author))} · ${pp.n_lines} ln${pp.theme ? ' · ' + esc(titleCase(pp.theme)) : ''}</span></button>`;
+
+    host.innerHTML = `<div class="vaar-meta" style="--pc:${pCol}">
+        <div class="vaar-stats"><span class="vstat">${v.n_pauris} pauris</span><span class="vstat">${v.n_saloks} saloks</span><span class="vstat">Angs ${v.first_ang}–${v.last_ang}</span></div>
+        <div class="vaar-cross">${crossNote}</div></div>
+      <div class="vaar-ladder">${groups.map((g) => `<div class="vg">
+        ${g.saloks.length ? `<div class="vg-saloks">${g.saloks.map(salokHTML).join('')}</div>` : ''}
+        ${g.pauri ? pauriHTML(g.pauri) : ''}</div>`).join('')}</div>`;
+  }
+  if (sel) sel.onchange = draw;
+  draw();
+}
+
 themeNetwork();
 authorRadar();
 resonanceChord();
 ribbonStream();
+vaarAnatomy();

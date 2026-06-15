@@ -66,6 +66,17 @@ import Base from '../layouts/Base.astro';
       <div id="stream" class="viz-stage stream-stage"></div>
       <div id="streamLegend" class="chord-legend"></div>
     </div>
+
+    <div class="viz-card">
+      <div class="viz-head">
+        <div>
+          <div class="viz-title">Vaar Anatomy</div>
+          <div class="viz-sub">A Vaar is a heroic ballad: numbered <b>pauri</b> rungs, each preceded by flanking <b>saloks</b>. Often the saloks are by a <i>different</i> Guru than the pauris — Guru Arjan's editorial architecture, made visible here. Tap any unit to read it.</div>
+        </div>
+        <select id="vaarSel" class="viz-sel" aria-label="Vaar"></select>
+      </div>
+      <div id="vaar" class="vaar-stage"></div>
+    </div>
   </section>
   <script>import '../scripts/analytics';</script>
 </Base>
