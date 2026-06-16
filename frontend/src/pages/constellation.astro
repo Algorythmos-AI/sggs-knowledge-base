@@ -11,7 +11,11 @@ import Base from '../layouts/Base.astro';
           <div class="viz-title">Concept Constellation</div>
           <div class="viz-sub" id="conHead">Loading…</div>
         </div>
-        <select id="conSel" class="viz-sel" aria-label="Concept"></select>
+        <div class="viz-ctl">
+          <select id="conSel" class="viz-sel" aria-label="Concept"></select>
+          <select id="conAuthor" class="viz-sel" aria-label="Filter by author"></select>
+          <select id="conRaag" class="viz-sel" aria-label="Filter by raag"></select>
+        </div>
       </div>
       <div id="constel" class="viz-stage constel-stage"></div>
     </div>

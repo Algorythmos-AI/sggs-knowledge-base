@@ -16,6 +16,8 @@ const openReader = (ang: number) => { const g = (window as any).goReader; if (g)
 async function constellation() {
   const host = $('#constel'); if (!host) return;
   const sel = $('#conSel') as HTMLSelectElement | null;
+  const authorSel = $('#conAuthor') as HTMLSelectElement | null;
+  const raagSel = $('#conRaag') as HTMLSelectElement | null;
   const head = $('#conHead');
   const list = await api('analytics/constellation');
   const concepts = list.concepts || [];
@@ -23,17 +25,27 @@ async function constellation() {
     if (!concepts.length) { host.innerHTML = '<div class="hint">Concept data is not available in this DB build.</div>'; return; }
     sel.innerHTML = concepts.map((c: any) => `<option value="${esc(c.concept)}">${esc(titleCase(c.concept))} · ${(c.n || 0).toLocaleString()} verses</option>`).join('');
     sel.dataset.filled = '1';
+    if (authorSel) authorSel.innerHTML = '<option value="">All authors</option>'
+      + (list.authors || []).map((a: string) => `<option value="${esc(a)}">${esc(a.replace(' Ji', ''))}</option>`).join('');
+    if (raagSel) raagSel.innerHTML = '<option value="">All raags</option>'
+      + (list.raags || []).map((r: any) => `<option value="${esc(r.name)}">${esc(r.roman || r.name)}</option>`).join('');
   }
+  const shortAuthor = (a: string) => a.replace(' Ji', '');
   const tip = d3.select(host).append('div').attr('class', 'viz-tip').style('opacity', 0);
 
   async function draw() {
     const c = sel ? sel.value : concepts[0]?.concept;
     if (!c) return;
+    const au = authorSel ? authorSel.value : '', rg = raagSel ? raagSel.value : '';
     host.querySelectorAll('svg, .constel-list').forEach((s) => s.remove());
-    const d = await api('analytics/constellation?concept=' + encodeURIComponent(c));
+    let q = 'analytics/constellation?concept=' + encodeURIComponent(c);
+    if (au) q += '&author=' + encodeURIComponent(au);
+    if (rg) q += '&raag=' + encodeURIComponent(rg);
+    const d = await api(q);
     const clusters = d.clusters || [];
-    if (head) head.textContent = `${titleCase(c)} — ${(d.total || 0).toLocaleString()} verses across ${clusters.length} thematic sub-constellations`;
-    if (!clusters.length) { host.insertAdjacentHTML('beforeend', '<div class="hint">No co-theme structure for this concept.</div>'); return; }
+    const filt = [au ? shortAuthor(au) : '', rg ? (raagSel?.selectedOptions[0]?.text || rg) : ''].filter(Boolean).join(' · ');
+    if (head) head.textContent = `${titleCase(c)}${filt ? ' (' + filt + ')' : ''} — ${(d.total || 0).toLocaleString()} verses across ${clusters.length} thematic sub-constellations`;
+    if (!clusters.length) { host.insertAdjacentHTML('beforeend', `<div class="hint">No verses of ${esc(titleCase(c))}${filt ? ' for ' + esc(filt) : ''} — try a different filter.</div>`); return; }
 
     const W = host.clientWidth || 900, H = 620, cx = W / 2, cy = H / 2;
     const svg = d3.select(host).append('svg').attr('viewBox', `0 0 ${W} ${H}`).attr('width', '100%').attr('height', H)
@@ -90,6 +102,8 @@ async function constellation() {
       a.addEventListener('click', (e: any) => { e.preventDefault(); openReader(+a.dataset.ang); }));
   }
   if (sel) sel.onchange = draw;
+  if (authorSel) authorSel.onchange = draw;
+  if (raagSel) raagSel.onchange = draw;
   draw();
 }
 constellation();
