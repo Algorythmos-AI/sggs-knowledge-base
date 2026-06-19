@@ -278,7 +278,9 @@ def build_shabad_neighbors(con, K):
     B = 512
     for start in range(0, len(comp_ids), B):
         block = M[start:start + B]
-        sims = block @ M.T                       # cosine (vectors are unit-norm)
+        with np.errstate(divide='ignore', over='ignore', invalid='ignore'):
+            sims = block @ M.T                   # cosine (rows unit-norm; zero-theme shabads aren't in M)
+        sims = np.nan_to_num(sims, nan=0.0, posinf=0.0, neginf=0.0)   # never let a stray non-finite reach argpartition
         for bi in range(block.shape[0]):
             gi = start + bi
             s = sims[bi].copy(); s[gi] = -1.0     # exclude self
