@@ -30,7 +30,7 @@ document.addEventListener('click', (e: any) => {
   if (!btn) return;
   e.stopPropagation(); e.preventDefault();                 // capture-phase: beat the card's onclick
   const id = +btn.dataset.id, ang = +btn.dataset.ang, cid = +btn.dataset.cid;
-  const card = btn.closest('.card, .sline, .relcard, .stone, .pl');
+  const card = btn.closest('.card, .sline, .relcard, .stone, .pl, .trail-now');
   const gEl = card ? card.querySelector('.g') : null;
   const gm = gEl ? (gEl.textContent || '').trim() : '';
   const r = togglePin({ line_id: id, gm, ang, comp_id: cid });

@@ -2,7 +2,8 @@
 // Walk verse → verse along semantic neighbours; each step is a real MPA navigation
 // (/trail?line_id=N) so browser back/forward work. The path is remembered in
 // sessionStorage to render a clickable breadcrumb. Data: extended /api/neighbors.
-import { $, esc, api, guard, relChip } from './core';
+import { $, esc, api, guard, relChip, toast } from './core';
+import { pinButtonHTML, isPinned } from './store';
 
 const TRAILKEY = 'sggs_trail';
 type Stop = { id: number; ang: number; gm: string; author: string };
@@ -27,11 +28,11 @@ const chip = (txt: string) => `<span class="t-chip">${esc(txt)}</span>`;
 function renderBreadcrumb(trail: Stop[], curId: number) {
   const el = $('#trailCrumbs'); if (!el) return;
   if (trail.length <= 1) { el.innerHTML = ''; return; }
-  el.innerHTML = trail.map((s, i) => {
+  el.innerHTML = '<span class="t-label">Trail</span>' + trail.map((s, i) => {
     const on = s.id === curId;
     const sep = i ? '<span class="t-sep">→</span>' : '';
-    return `${sep}<a class="t-crumb${on ? ' on' : ''}" href="/trail?line_id=${s.id}" title="Ang ${s.ang}">${i + 1}</a>`;
-  }).join('') + ` <button id="trailReset" class="t-reset" type="button">reset trail</button>`;
+    return `${sep}<a class="t-crumb${on ? ' on' : ''}" href="/trail?line_id=${s.id}" title="${on ? 'Current · ' : 'Jump back to '}Ang ${s.ang}" aria-label="Step ${i + 1} of ${trail.length}, Ang ${s.ang}${on ? ', current' : ''}">Ang ${s.ang}</a>`;
+  }).join('') + ` <button id="trailReset" class="t-reset" type="button">reset</button>`;
   ($('#trailReset') as HTMLElement | null)?.addEventListener('click', () => {
     writeTrail([]); location.href = '/trail';
   });
@@ -58,7 +59,15 @@ function renderCurrent(line: any) {
     <div class="g gm">${esc(line.gurmukhi || '')}</div>${t}${e}
     <div class="now-actions">
       <button onclick="goReader(${line.ang || 1})" class="now-btn">Open in Reader →</button>
+      ${pinButtonHTML(line.id, line.ang || 1, line.comp_id || 0)}
+      <button id="trailCopy" class="now-btn ghost" type="button">⧉ Copy verse</button>
     </div>`;
+  const pb = host.querySelector('.pin-btn');                       // reflect already-pinned state
+  if (pb && isPinned(line.id)) { pb.classList.add('pinned'); pb.setAttribute('aria-pressed', 'true'); }
+  ($('#trailCopy') as HTMLElement | null)?.addEventListener('click', () => {
+    const txt = [line.gurmukhi, line.translit, line.en, `— Ang ${line.ang}${line.author ? ', ' + line.author : ''}`].filter(Boolean).join('\n');
+    (navigator.clipboard?.writeText(txt) || Promise.reject()).then(() => toast('Verse copied'), () => toast('Copy not available in this browser'));
+  });
 }
 
 const load = guard(async (lineId: number | null) => {
@@ -78,11 +87,19 @@ const load = guard(async (lineId: number | null) => {
   if (line) renderBreadcrumb(recordVisit({ id: line.id, ang: line.ang, gm: line.gurmukhi, author: line.author }), line.id);
 
   const items = d.neighbors || [];
-  const lvl = d.level === 'composition' ? 'closest compositions (theme profile)' : 'closest verses by meaning';
-  const head = $('#trailStonesHead'); if (head) head.textContent = `Continue the trail · ${lvl}`;
+  const head = $('#trailStonesHead');
+  if (head) {
+    head.style.display = items.length ? '' : 'none';                 // no contradictory header on a dead-end
+    if (items.length) {
+      const lvl = d.level === 'composition' ? 'closest compositions (theme profile)' : 'closest verses by meaning';
+      head.textContent = `Continue the trail · ${lvl}`;
+    }
+  }
   if (stones) stones.innerHTML = items.length
     ? items.map(stoneCard).join('')
-    : '<div class="hint">This verse stands apart — no close echo was found above the relatedness floor. Try a ✦ Random start.</div>';
+    : '<div class="trail-empty">This verse stands apart — no close echo was found above the relatedness floor; it is lexically distinctive in the Granth.'
+      + '<button id="trailEmptyRandom" class="now-btn" type="button">✦ Begin a new trail</button></div>';
+  if (!items.length) ($('#trailEmptyRandom') as HTMLElement | null)?.addEventListener('click', () => { location.href = '/trail'; });
 });
 
 // bootstrap from ?line_id
