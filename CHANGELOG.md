@@ -1,5 +1,21 @@
 # Changelog — SGGS Knowledge Base
 
+## v2.9.1 — 2026-06-19 maintenance — provenance re-certified, docs/version synced, rebuild script completed
+- **Live verification pass (2026-06-19)** confirmed scripture integrity against the *running* system: `reconcile.py` char-exact (1,643,385 chars), `golden_test.py` all-pass, all 1,430 Angs gap-free, 60,658 lines, `/api/health` 6/6 green, search modes correct (Anand Sahib→Ang 917, baba farid→Ang 1377), p50 1.8 ms. The **Ang 1256 "ਵੈਦ ਨ ਭੋਲੇ ਦਾਰੂ ਲਾਇ" recurrence is a confirmed legitimate refrain** (verified in-DB — three occurrences with different end-markers — and against two external publishers); it is NOT a duplicate and must not be de-duplicated. Full report: `../SGGS-Live-Verification-2026-06-19.md`.
+- **Provenance fixed:** the shipped DB had drifted from `MANIFEST.json` (analytics/vaars built 06-14/06-15, after the 06-13 manifest). `MANIFEST.json` `db_sha256` re-certified to the on-disk DB (`2171d96e…`), `version` → 2.9.1.
+- **Version hygiene:** README badge + `MASTER-INDEX.md` synced to v2.9.1, and MASTER-INDEX's wrong "60,193" line count corrected to **60,658**; `build_db.py` now stamps `meta.version` from `webapp/serve.py:APP_VERSION` (no longer hardcoded `'1.4.0'`).
+- **Reproducible rebuild completed:** `rebuild_all.sh` now also runs the v2.0 structural enrichment (`enrich_v2.py --apply` → `stanza_index`/`pada_total`/`source_category`) and the Insight-Engine builders (`ml_analytics_builder.py`, `build_semantic_vectors_lite.py`, `build_resonance.py`, `build_vaars.py`), so a from-scratch rebuild reproduces the full shipped DB (analytics/vaars/neighbors). *Script edits passed QA review but have not been run end-to-end (no shell) — validate on the next real rebuild.*
+- **Known/deferred:** one line with empty `translit_norm` (id 35328, Ang 829 — fixes on next rebuild); source-faithful `ਓ ੁ` / isolated-matra rows in the Sahaskriti zone flagged for scholarly review (corpus is char-exact to the source PDF); analytics D3 chord/streamgraph remain mouse-only (a11y).
+
+## v2.2.0–v2.9.1 — 2026-06-14/15 — Astro UI + Insight Engine Phases 2–3 (consolidated; CHANGELOG had lagged)
+- **UI migrated to an Astro multi-page app** (offline monolith) + premium Tailwind v4 redesign + path-safe static server.
+- **v2.3.0** Phase 2: offline semantic vectors (`line_neighbors`) + Insights dashboard (D3 / Chart.js) + Related Verses.
+- **v2.4.0** Semantic Trail + Contributor Timeline (Lineage). **v2.5.0** Cross-Contributor Resonance Map (D3 chord; `author_resonance`).
+- **v2.6.0** Raag Theme-Progression streamgraph + Sehaj focus mode. **v2.7.0** AI-powered Cross-Reference Study Trail.
+- **v2.8.0** Vaar Anatomy (`vaars`/`vaar_units`) + Majh pauri fix + repo hygiene. **v2.8.1** Study-Trail localStorage + analytics a11y.
+- **v2.9.0** Concept Constellation + network-graph keyboard a11y + Maru-M5 ordinal pauri fix. **v2.9.1** Constellation filter by author + raag.
+- (Reconstructed from git history on 2026-06-19; per-release detail is in the commit log. These releases were search-untouched/additive; scripture byte-identical throughout.)
+
 ## v2.1.0 — 2026-06-13 — Insight Engine Phase 1: offline analytics (additive DB; search untouched)
 - **From search engine to insight engine** — a 3-agent SME design pass (ML methodology / domain-ethics / architecture+vector) produced a statistically rigorous, respectful analytics layer. All computation is **offline** in `pipeline/ml_analytics_builder.py`; the live server gains only cached `SELECT`s and **zero** new runtime dependencies. Full design: `ML_Analytics_Engine.md`.
 - **The data is purely additive.** The builder copies the DB, **adds 7 tables**, and asserts every existing table (`lines`, `fts*`, `variants`, `translations`, `concepts`, `concept_lines`) is **content-hash identical** — verified. `serve.py`'s search path is untouched. (This release does change `db/sggs.sqlite`: `db_sha256` → `9f629b90…`, +<0.5 MB.)

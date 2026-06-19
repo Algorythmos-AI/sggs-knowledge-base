@@ -8,15 +8,15 @@ cd "$(dirname "$0")/.."
 PDF="${1:-../Siri-Guru-Granth-Sahib-in-Gurmukhi-with-Index.pdf}"
 TMPDB="$(mktemp -d)/sggs.db"
 
-echo "── 1/7 corpus extraction"
+echo "── 1/8 corpus extraction"
 python3 pipeline/build_corpus.py "$PDF" corpus/sggs.jsonl
-echo "── 2/7 reconciliation (must be char-exact)"
+echo "── 2/8 reconciliation (must be char-exact)"
 python3 pipeline/reconcile.py "$PDF" corpus/sggs.jsonl
-echo "── 3/7 golden suite"
+echo "── 3/8 golden suite"
 python3 pipeline/golden_test.py "$PDF" >/dev/null && echo "ALL GOLDEN TESTS PASS"
-echo "── 4/7 database + FTS"
+echo "── 4/8 database + FTS"
 python3 pipeline/build_db.py corpus/sggs.jsonl "$TMPDB"
-echo "── 5/7 concepts + translations + variants"
+echo "── 5/8 concepts + translations + variants + v2 structural columns"
 python3 - "$TMPDB" <<'EOF'
 import json, sqlite3, glob, collections, sys
 con = sqlite3.connect(sys.argv[1]); cur = con.cursor()
@@ -44,7 +44,8 @@ python3 pipeline/load_translations.py "$TMPDB" --source=ssk-shabados "pipeline/t
 python3 pipeline/load_translations.py "$TMPDB" "pipeline/translations/en_0*.jsonl" "pipeline/translations/en_9*.jsonl" 2>/dev/null || true
 python3 pipeline/build_variants.py "$TMPDB"
 python3 pipeline/enrich_orchestrator.py merge "$TMPDB"
-echo "── 6/7 auxiliary indexes (english FTS, shabad passage FTS, trigram, canon tokens)"
+python3 pipeline/enrich_v2.py --db "$TMPDB" --apply                            # v2.0 structural columns: stanza_index, pada_total, source_category (serve.py LINE_COLS + build_vaars.py require these)
+echo "── 6/8 auxiliary indexes (english FTS, shabad passage FTS, trigram, canon tokens)"
 python3 - "$TMPDB" <<'EOF'
 import sqlite3, sys
 con = sqlite3.connect(sys.argv[1]); cur = con.cursor()
@@ -68,8 +69,15 @@ cur.executemany('INSERT OR IGNORE INTO canon_tokens VALUES(?)', [(t,) for t in t
 con.commit(); con.close()
 print('aux indexes built')
 EOF
-echo "── 7/7 install + manifest"
-cp "$TMPDB" db/sggs.sqlite
+echo "── 7/8 Insight Engine: analytics + semantic neighbors + resonance + vaars (additive; never alters scripture)"
+ANALYTICS_DB="$(mktemp -d)/sggs_full.db"
+python3 pipeline/ml_analytics_builder.py --db "$TMPDB" --out "$ANALYTICS_DB"   # theme_network, fingerprints, author/raag analytics, shabad_neighbors, analytics_meta
+python3 pipeline/build_semantic_vectors_lite.py --db "$ANALYTICS_DB"           # line_neighbors (tfidf-randproj-lite)
+python3 pipeline/build_resonance.py --db "$ANALYTICS_DB"                       # author_resonance (uses line_neighbors)
+python3 pipeline/build_vaars.py --db "$ANALYTICS_DB"                           # vaars + vaar_units (22 Vaars, detected by title header)
+
+echo "── 8/8 install + manifest"
+cp "$ANALYTICS_DB" db/sggs.sqlite
 python3 - <<'EOF'
 import json, hashlib, datetime, sqlite3
 def sha(p):
@@ -82,7 +90,13 @@ n_var = con.execute('SELECT count(*) FROM variants').fetchone()[0]
 n_en = con.execute("SELECT count(*) FROM translations WHERE lang='en'").fetchone()[0]
 con.close()
 m = json.load(open('MANIFEST.json'))
-m.update({'built': datetime.date.today().isoformat(), 'variants': n_var,
+av = None
+try:
+    import re
+    av = re.search(r"APP_VERSION\s*=\s*'([^']+)'", open('webapp/serve.py').read()).group(1)
+except Exception: pass
+m.update({'version': av or m.get('version'),
+          'built': datetime.date.today().isoformat(), 'variants': n_var,
           'translations_en': n_en, 'corpus_sha256': sha('corpus/sggs.jsonl'),
           'db_sha256': sha('db/sggs.sqlite')})
 json.dump(m, open('MANIFEST.json','w'), indent=2)

@@ -1,6 +1,6 @@
 # SGGS Knowledge Base — Master Index
 
-**Source:** `Siri-Guru-Granth-Sahib-in-Gurmukhi-with-Index.pdf` (1,483 pages → 1,430 Angs) · v1.3.0, built 2026-06-10 · 60,658 lines (char-for-char reconciled with the source) · 29,245 distinct words · 53 themes · per-Bhatt Swaiyye attribution · Vaar pauris correctly attributed.
+**Source:** `Siri-Guru-Granth-Sahib-in-Gurmukhi-with-Index.pdf` (1,483 pages → 1,430 Angs) · v2.9.1, built 2026-06-16 · 60,658 lines (char-for-char reconciled with the source) · 29,244 distinct words · 53 themes · per-Bhatt Swaiyye attribution · Vaar pauris correctly attributed.
 
 ## Use it
 
@@ -15,14 +15,14 @@
 |---|---|
 | `00_Build-Plan.md` | The approved plan (v1) |
 | `01_Production-Architecture.md` | Production audit + web-app architecture (v2) |
-| `pipeline/` | Reproducible build: `sggs_pipeline.py` (corrections/translit/parse), `build_corpus.py`, `build_db.py`, `golden_test.py` |
-| `corpus/` | `sggs.jsonl` (60,193 records) + `by-raag/` readable Markdown |
-| `db/sggs.sqlite` | The knowledge base: `lines`, FTS5 index, `raags`, `sections`, `authors`, `concepts`, `concept_lines`, `word_freq`, `meta` |
-| `webapp/` | `serve.py` (stdlib server) + `static/index.html` (UI) + README |
+| `pipeline/` | Reproducible build (`bash pipeline/rebuild_all.sh`): `sggs_pipeline.py`, `build_corpus.py`, `reconcile.py` (char-exact gate), `golden_test.py`, `build_db.py`, then translations/variants + Insight-Engine builders (`ml_analytics_builder.py`, `build_vaars.py`, `build_resonance.py`, `build_semantic_vectors_lite.py`) |
+| `corpus/` | `sggs.jsonl` (60,658 records) + `by-raag/` readable Markdown |
+| `db/sggs.sqlite` | The knowledge base: `lines` + FTS5 (`fts`/`fts_en`/`fts_shabad`/`fts_tri`), `translations`, `variants`, `canon_tokens`, `raags`, `sections`, `authors`, `concepts`/`concept_lines`, `word_freq`, analytics (`theme_network`, `*_analytics`, `theme_fingerprint`, `author_resonance`, `vaars`/`vaar_units`, `*_neighbors`), `meta` |
+| `webapp/` | `serve.py` (stdlib server) + `static/` (prebuilt Astro multi-page UI) + README |
 | `Answer-Protocol.md` | Faithfulness rules for answering |
 | `Validation-Report.md` | All quality gates, checks, corrections & known limits |
 
-## Line record (every one of the 60,193 lines)
+## Line record (every one of the 60,658 lines)
 
 `ang` · `raag` · `section` (bani) · `author` · `comp_type` · `comp_id` (shabad grouping) · `is_rahao` · `is_header` · `markers` (॥੧॥…) · `gurmukhi` (verbatim) · `translit` · `fl_g`/`fl_r` (first letters) · `skeleton` (matra-stripped)
 
