@@ -10,7 +10,7 @@
   "translations_en": 58039,
   "translation_source": "Dr. Sant Singh Khalsa English \u2014 full Granth (58,039 lines, 95.7%) via ShabadOS open database 4.8.7; aligned exact/skeleton/fuzzy with 102 documented unmatched edition-variant lines",
   "corpus_sha256": "72c86816fdf15eaf1e4c0e6bb16b89ddddca9567c8d050163e3730ad841f88cd",
-  "db_sha256": "e3e48dda2767bafd00975e27dfb0330a30bb2f503f4062ad3b573e254062072d",
+  "db_sha256": "cde0baa64a2afdd5af98cfb2be8b0217195099e6521f6832384a5da84f932678",
   "scripture_class": "SGGS canonical text; EN translations stored separately, labeled, never scripture",
   "verification": "pipeline/reconcile.py (char-exact) + pipeline/golden_test.py + /api/verify + /api/health",
   "cross_verification": "ShabadOS corpus vs ours: 97.26% character-exact line match (independent second-source check of the extraction)",
