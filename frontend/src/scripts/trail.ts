@@ -2,7 +2,7 @@
 // Walk verse → verse along semantic neighbours; each step is a real MPA navigation
 // (/trail?line_id=N) so browser back/forward work. The path is remembered in
 // sessionStorage to render a clickable breadcrumb. Data: extended /api/neighbors.
-import { $, esc, api, guard } from './core';
+import { $, esc, api, guard, relChip } from './core';
 
 const TRAILKEY = 'sggs_trail';
 type Stop = { id: number; ang: number; gm: string; author: string };
@@ -40,7 +40,7 @@ function renderBreadcrumb(trail: Stop[], curId: number) {
 function stoneCard(n: any): string {
   const t = n.translit ? `<div class="t">${esc(n.translit)}</div>` : '';
   const e = n.en ? `<div class="e">${esc(n.en)}</div>` : '';
-  const score = (n.score != null) ? `<span class="sc">${Math.round(n.score * 100)}%</span>` : '';
+  const score = (n.score != null) ? relChip(n.score) : '';
   const meta = [n.ang ? `Ang ${n.ang}` : '', n.raag ? esc(n.raag) : '', n.author ? esc(n.author) : ''].filter(Boolean).join(' · ');
   return `<a class="stone" href="/trail?line_id=${n.id}" aria-label="Step to Ang ${n.ang}">
       <div class="g gm">${esc(n.gurmukhi || '')}</div>${t}${e}
@@ -82,7 +82,7 @@ const load = guard(async (lineId: number | null) => {
   const head = $('#trailStonesHead'); if (head) head.textContent = `Continue the trail · ${lvl}`;
   if (stones) stones.innerHTML = items.length
     ? items.map(stoneCard).join('')
-    : '<div class="hint">No related verses found from here. Try a random start.</div>';
+    : '<div class="hint">This verse stands apart — no close echo was found above the relatedness floor. Try a ✦ Random start.</div>';
 });
 
 // bootstrap from ?line_id

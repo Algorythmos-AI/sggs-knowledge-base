@@ -1,4 +1,4 @@
-import{$ as i,g as L,a as x,e as r}from"./core.BqXgFkHn.js";import{p as C,t as j,s as H,i as w,c as D,g as E,e as B,a as q,b as O,d as N,f as U,r as z,m as I,l as J,M as F}from"./store.cCG7XMKa.js";function T(e){return e.map(t=>`<div class="sline ${t.is_rahao?"rahao":""}${t.is_header?"":" haspin"}">
+import{$ as i,g as L,a as x,e as r}from"./core.8_MfHCVb.js";import{p as C,t as j,s as H,i as w,c as D,g as E,e as B,a as q,b as O,d as N,f as U,r as z,m as I,l as J,M as F}from"./store.cCG7XMKa.js";function T(e){return e.map(t=>`<div class="sline ${t.is_rahao?"rahao":""}${t.is_header?"":" haspin"}">
       ${t.is_header?"":C(t.id,t.ang,t.comp_id)}
       <div class="g gm ${t.is_header&&t.gurmukhi.startsWith("ੴ")?"invoc":""}" style="${t.is_header?"color:var(--gold);font-weight:600;text-align:center":""}">${r(t.gurmukhi)}</div>
       <div class="t" style="${t.is_header?"text-align:center":""}">${r(t.translit)}</div>

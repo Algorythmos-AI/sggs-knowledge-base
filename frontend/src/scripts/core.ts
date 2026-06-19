@@ -31,6 +31,19 @@ export async function api(p: string): Promise<any> {
 export const guard = (fn: (...a: any[]) => Promise<any>) =>
   async (...a: any[]) => { try { return await fn(...a); } catch (e) { console.error(e); } };
 
+// relatedness band for semantic-neighbour scores (true cosine, 0–1) — used by the
+// Trail stones and the Reader's "Related Verses". Calibrated, not a raw percentage.
+export function relBand(score: number) {
+  const p = Math.round((score || 0) * 100);
+  if (score >= 0.65) return { p, label: 'Strong echo', cls: 'strong' };
+  if (score >= 0.45) return { p, label: 'Related', cls: 'mid' };
+  return { p, label: 'Faint echo', cls: 'faint' };
+}
+export const relChip = (score: number) => {
+  const b = relBand(score);
+  return `<span class="relband relband-${b.cls}"><i aria-hidden="true"></i>${b.label}<span class="pct">${b.p}%</span></span>`;
+};
+
 // META cached in sessionStorage → one /api/meta per browser session across pages.
 let META: any = null;
 export async function meta(): Promise<any> {

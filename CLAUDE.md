@@ -42,11 +42,11 @@ The server needs `db/sggs.sqlite` to exist. That DB is **~104 MiB (109 MB) and t
 bash pipeline/rebuild_all.sh [path-to-source-pdf]   # default: ../Siri-Guru-...pdf
 ```
 
-This gates on `reconcile.py` (must be char-exact) and `golden_test.py`, then builds the base DB + search/variants/English **and** (as of 2026-06-19) the Insight-Engine tables — `rebuild_all.sh` now runs `ml_analytics_builder.py`, `build_semantic_vectors_lite.py`, `build_resonance.py`, and `build_vaars.py`, so a fresh rebuild populates Insights / Lineage / Trail / Constellation / Vaar. (`build_semantic_vectors_lite.py` is the shipped tf-idf/random-projection neighbor method; full MiniLM line embeddings are a separate upgrade.)
+This gates on `reconcile.py` (must be char-exact) and `golden_test.py`, then builds the base DB + search/variants/English **and** (as of 2026-06-19) the Insight-Engine tables — `rebuild_all.sh` now runs `ml_analytics_builder.py`, `build_semantic_vectors_lite.py`, `build_resonance.py`, and `build_vaars.py`, so a fresh rebuild populates Insights / Lineage / Trail / Constellation / Vaar. (`build_semantic_vectors_lite.py` ships **exact sparse TF-IDF cosine** for `line_neighbors` — header-excluded, verbatim-twin de-duplicated, 0.30 min-cosine floor, true-cosine scores [`source='tfidf-exact-cosine-lite'`, 2026-06-19]; it needs **scipy** at build time. Full MiniLM line embeddings remain a separate upgrade. The Trail/Reader surface neighbour scores as calibrated *relatedness bands*, not a raw %.)
 
 `pipeline/build_db.py` now stamps `meta.version` from `webapp/serve.py:APP_VERSION` (no longer hardcoded `'1.4.0'`), and the install step re-syncs `MANIFEST.json` `version`/`db_sha256` to the freshly built DB. (Validated 2026-06-19 by a full `rebuild_all.sh` run: reconcile char-exact, golden all-pass, `enrich_v2` applied, vaars=22 / vaar_units=1423, additive-integrity OK.)
 
-**Toolchain:** `serve.py` = Python 3 stdlib only. The pipeline needs **PyMuPDF** (`import fitz`). The UI source is in `frontend/` (Astro + Tailwind v4, Node); its build output is synced into `webapp/static/`. `node_modules/`, `dist/`, and `webapp/static.bak/` are git-ignored.
+**Toolchain:** `serve.py` = Python 3 stdlib only. The pipeline needs **PyMuPDF** (`import fitz`); the lite semantic builder also needs **numpy + scipy**. The UI source is in `frontend/` (Astro + Tailwind v4, Node); its build output is synced into `webapp/static/`. `node_modules/`, `dist/`, and `webapp/static.bak/` are git-ignored.
 
 ---
 

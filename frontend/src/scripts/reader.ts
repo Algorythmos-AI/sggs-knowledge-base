@@ -1,6 +1,6 @@
 // reader.ts — the Reader page (/reader) : the Ang-by-Ang viewer.
 // Ported 1:1 from the original; deep-links via ?ang=<n>&raag=<name>.
-import { $, esc, api, guard, meta, store, syncToolbarTop } from './core';
+import { $, esc, api, guard, meta, store, syncToolbarTop, relChip } from './core';
 import { pinButtonHTML } from './store';
 
 let curAng = 1;
@@ -106,7 +106,7 @@ document.addEventListener('keydown', (e: any) => {
 function relCard(n: any): string {
   const t = n.translit ? `<div class="t">${esc(n.translit)}</div>` : '';
   const e = n.en ? `<div class="e">${esc(n.en)}</div>` : '';
-  const score = (n.score != null) ? `<span class="sc">${Math.round(n.score * 100)}%</span>` : '';
+  const score = (n.score != null) ? relChip(n.score) : '';
   const m = [`Ang ${n.ang}`, n.raag ? esc(n.raag) : '', n.author ? esc(n.author) : ''].filter(Boolean).join(' · ');
   return `<div class="relcard" onclick="goReader(${n.ang || 1})" role="button" tabindex="0" aria-label="Open Ang ${n.ang}">
       <div class="g gm">${esc(n.gurmukhi || '')}</div>${t}${e}

@@ -3,20 +3,28 @@ import Base from '../layouts/Base.astro';
 ---
 <Base title="ੴ Sri Guru Granth Sahib — Contributors">
   <section id="v-lineage">
-    <div class="trail-top">
-      <div>
-        <div class="trail-title">The Contributors</div>
-        <div class="trail-sub">Five centuries of voices gathered into one Granth — the Gurus, the Bhagats of the Bhakti and Sufi traditions, the court Bhatts, and the Gursikh companions. <b>Tap any voice</b> to read about them and open their Bani.<span style="display:block;margin-top:6px;font-size:.88em;opacity:.6">Dates are historical approximations; a voice's size reflects how much of its Bani is preserved here — never its importance.</span></div>
+    <div class="lin-hero">
+      <div class="lin-eyebrow">The Contributors</div>
+      <h2 class="lin-headline" id="linHeadline">The voices of the Granth</h2>
+      <p class="lin-lede">Five centuries of voices gathered into one Granth — the Gurus, the Bhagats of the Bhakti and Sufi traditions, the court Bhatts, and the Gursikh companions. <b>Tap any voice</b> for a full profile: their life, their Bani, and the themes they return to.
+        <span class="lin-lede-note">Dates are historical approximations; a voice's size reflects how much of its Bani is preserved here — never its importance.</span>
+      </p>
+      <div class="lin-stats" id="linStats"></div>
+    </div>
+
+    <div class="lin-controls">
+      <div id="tlFilter" class="lin-legend" role="group" aria-label="Filter contributors by kind"></div>
+      <div id="linGroup" class="lin-group" role="group" aria-label="Choose how to group the contributors">
+        <span class="lin-group-l">View</span>
+        <button data-g="time" class="on" type="button" aria-pressed="true">Timeline</button>
+        <button data-g="kind" type="button" aria-pressed="false">By tradition</button>
+        <button data-g="volume" type="button" aria-pressed="false">Most Bani</button>
+        <button id="cmpToggle" class="lin-cmp" type="button" aria-pressed="false">⇄ Compare</button>
       </div>
     </div>
-    <div id="tlFilter" class="modes" role="group" aria-label="Filter contributors">
-      <span data-k="all" class="on">All</span>
-      <span data-k="guru">Gurus</span>
-      <span data-k="bhagat">Bhagats</span>
-      <span data-k="bhatt">Bhatts</span>
-      <span data-k="gursikh">Gursikhs</span>
-    </div>
+
     <div id="timeline" class="timeline"></div>
+    <div id="cmpTray" class="cmp-tray" role="status" hidden></div>
   </section>
   <script>import '../scripts/lineage';</script>
 </Base>
