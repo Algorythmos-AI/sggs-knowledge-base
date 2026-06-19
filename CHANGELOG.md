@@ -1,5 +1,10 @@
 # Changelog — SGGS Knowledge Base
 
+## v2.9.3 — 2026-06-19 — Concept Constellation performance fix (live-verified in browser)
+- **Bug (found by a live browser walkthrough of all 8 tabs):** the Concept Constellation hung on "Loading…" for the **default** concept (`satguru`, 6,319 verses) — the request never returned (no error). Smaller concepts (e.g. `vahiguru`, 82 verses) rendered instantly and correctly.
+- **Root cause:** the per-concept cluster query self-joins `concept_lines` on `line_id` (`co.line_id=cl.line_id`), but `concept_lines` was indexed only on `concept` — so the join degraded to ~O(n²) on large concepts.
+- **Fix:** added `CREATE INDEX idx_cl_line ON concept_lines(line_id)` in `pipeline/build_db.py` (now baked into every `rebuild_all.sh`) and to the shipped DB. Constellation now renders `satguru` instantly into 9 thematic sub-constellations — confirmed live. All other tabs (Search, Reader, Index, Themes, Lineage, Trail, Insights) and the full ML/analytics layer (theme-network/PPMI, stylometry, resonance, raag streamgraph, Vaars, semantic neighbors) verified working.
+
 ## v2.9.2 — 2026-06-19 — post-2.9.1 maintenance: provenance re-certified, docs/version synced, rebuild script completed
 - **Live verification pass (2026-06-19)** confirmed scripture integrity against the *running* system: `reconcile.py` char-exact (1,643,385 chars), `golden_test.py` all-pass, all 1,430 Angs gap-free, 60,658 lines, `/api/health` 6/6 green, search modes correct (Anand Sahib→Ang 917, baba farid→Ang 1377), p50 1.8 ms. The **Ang 1256 "ਵੈਦ ਨ ਭੋਲੇ ਦਾਰੂ ਲਾਇ" recurrence is a confirmed legitimate refrain** (verified in-DB — three occurrences with different end-markers — and against two external publishers); it is NOT a duplicate and must not be de-duplicated. Full report: `../SGGS-Live-Verification-2026-06-19.md`.
 - **Provenance fixed:** the shipped DB had drifted from `MANIFEST.json` (analytics/vaars built 06-14/06-15, after the 06-13 manifest). `MANIFEST.json` `db_sha256` re-certified to the on-disk DB (`5be9aa…`, the freshly rebuilt DB), `version` → 2.9.2.

@@ -40,6 +40,7 @@ CREATE TABLE word_freq(word TEXT PRIMARY KEY, n INT);
 CREATE TABLE concepts(concept TEXT PRIMARY KEY, gurmukhi_terms TEXT, description TEXT);
 CREATE TABLE concept_lines(concept TEXT, line_id INT, term TEXT);
 CREATE INDEX idx_cl ON concept_lines(concept);
+CREATE INDEX idx_cl_line ON concept_lines(line_id);  -- Constellation co-theme self-join (co.line_id=cl.line_id); without it large concepts (e.g. satguru, 6319 verses) hang
 CREATE TABLE meta(key TEXT PRIMARY KEY, value TEXT);
 ''')
 GM_MARKS = 'ਾਿੀੁੂੇੈੋੌ੍ੰਂਃ਼ੱੑੵ'
