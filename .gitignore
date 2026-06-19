@@ -25,3 +25,5 @@ venv/
 *.bak
 *.sqlite-wal
 *.sqlite-shm
+
+validation/*_results.jsonl
