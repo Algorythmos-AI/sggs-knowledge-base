@@ -83,7 +83,11 @@ for f in files:
         rows.append((lid, 'en', SOURCE_ID, en, quality))
 
 cur.executemany('INSERT OR REPLACE INTO translations VALUES(?,?,?,?,?)', rows)
-cur.execute("INSERT OR REPLACE INTO meta VALUES('translations_en', ?)", (str(len(rows)),))
+# Record the TOTAL en rows in the table, not just this batch — rebuild_all.sh calls
+# load_translations twice, and writing len(rows) made the 2nd (small) call clobber the
+# count via INSERT OR REPLACE. Derive from the table so the count is always the true total.
+total_en = cur.execute("SELECT count(*) FROM translations WHERE lang='en'").fetchone()[0]
+cur.execute("INSERT OR REPLACE INTO meta VALUES('translations_en', ?)", (str(total_en),))
 con.commit(); con.close()
 print(f'loaded {len(rows)} translations | match quality: {stats}')
 for u in unmatched[:10]: print('  unmatched:', u)
