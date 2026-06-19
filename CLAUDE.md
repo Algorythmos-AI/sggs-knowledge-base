@@ -20,7 +20,7 @@ This project is a knowledge base of **Sri Guru Granth Sahib Ji**, the living Gur
 
 An **offline, "sovereign," zero-dependency** study app over the full Granth (Angs 1–1430). A reproducible pipeline extracts the PDF into a corpus, builds a SQLite/FTS5 database, and a Python stdlib server serves a prebuilt Astro multi-page UI (search, reader, themes, lineage, study trail, concept constellation, insights).
 
-- **Current build:** `APP_VERSION = 2.9.1`, `APP_BUILT = 2026-06-16` (see `webapp/serve.py`).
+- **Current build:** `APP_VERSION = 2.9.2`, `APP_BUILT = 2026-06-19` (see `webapp/serve.py`).
 - **Corpus:** 60,658 line records · 1,430 Angs · FTS5 full-text.
 - **Source of record:** the user's `Siri-Guru-Granth-Sahib-in-Gurmukhi-with-Index.pdf` (1,483 pp), which lives **one level above this repo** (`../`), not inside it.
 
@@ -44,7 +44,7 @@ bash pipeline/rebuild_all.sh [path-to-source-pdf]   # default: ../Siri-Guru-...p
 
 This gates on `reconcile.py` (must be char-exact) and `golden_test.py`, then builds the base DB + search/variants/English **and** (as of 2026-06-19) the Insight-Engine tables — `rebuild_all.sh` now runs `ml_analytics_builder.py`, `build_semantic_vectors_lite.py`, `build_resonance.py`, and `build_vaars.py`, so a fresh rebuild populates Insights / Lineage / Trail / Constellation / Vaar. (`build_semantic_vectors_lite.py` is the shipped tf-idf/random-projection neighbor method; full MiniLM line embeddings are a separate upgrade.)
 
-`pipeline/build_db.py` now stamps `meta.version` from `webapp/serve.py:APP_VERSION` (no longer hardcoded `'1.4.0'`), and the install step re-syncs `MANIFEST.json` `version`/`db_sha256` to the freshly built DB. NOTE: these rebuild-script changes were made on 2026-06-19 but have **not** been run end-to-end (no shell in that session) — validate on the next real rebuild.
+`pipeline/build_db.py` now stamps `meta.version` from `webapp/serve.py:APP_VERSION` (no longer hardcoded `'1.4.0'`), and the install step re-syncs `MANIFEST.json` `version`/`db_sha256` to the freshly built DB. (Validated 2026-06-19 by a full `rebuild_all.sh` run: reconcile char-exact, golden all-pass, `enrich_v2` applied, vaars=22 / vaar_units=1423, additive-integrity OK.)
 
 **Toolchain:** `serve.py` = Python 3 stdlib only. The pipeline needs **PyMuPDF** (`import fitz`). The UI source is in `frontend/` (Astro + Tailwind v4, Node); its build output is synced into `webapp/static/`. `node_modules/`, `dist/`, and `webapp/static.bak/` are git-ignored.
 
@@ -98,7 +98,7 @@ DB also has: `fts`/`fts_en`/`fts_shabad`/`fts_tri`, `translations`, `variants`, 
 
 - **`APP_VERSION` in `webapp/serve.py` is the source of truth** for the running build. Bump it on every search-logic/UI release.
 - The UI footer reads `/api/meta → meta.version`, which returns `APP_VERSION`. The DB's own build version is returned separately as `db_version` and is **not** shown in the UI. This decoupling is intentional: a search-only patch shouldn't force a re-commit of the ~104 MiB LFS DB.
-- Keep `MANIFEST.json`, `README.md`, `CHANGELOG.md`, and `MASTER-INDEX.md` in step when you bump (synced to 2.9.1 on 2026-06-19; `CHANGELOG.md` may still lag).
+- Keep `MANIFEST.json`, `README.md`, `CHANGELOG.md`, and `MASTER-INDEX.md` in step when you bump (synced to 2.9.2 on 2026-06-19).
 
 ---
 
@@ -127,5 +127,5 @@ DB also has: `fts`/`fts_en`/`fts_shabad`/`fts_tri`, `translations`, `variants`, 
 
 ## Current state / known issues
 
-See **`../SGGS-KnowledgeBase-Audit-2026-06-16.md`** (static audit) and **`../SGGS-Live-Verification-2026-06-19.md`** (live pass). As of the 2026-06-19 live verification, scripture integrity is **proven** (reconcile char-exact, golden all-pass, 1,430 Angs gap-free, 60,658 lines), the footer/version bug is fixed, and the **Ang 1256 "duplicate" is a confirmed legitimate refrain — do NOT de-duplicate it.** Fixed 2026-06-19: `MANIFEST.json` re-certified against the shipped DB; `version` synced to 2.9.1 across README/MASTER-INDEX/MANIFEST; `build_db.py` version no longer hardcoded; `rebuild_all.sh` now builds the analytics/vaar/semantic tables (untested end-to-end — see Rebuild note). Still open: `CHANGELOG.md`/`Validation-Report.md` lag in places, analytics-chart accessibility (mouse-only D3 charts), one line with empty `translit_norm` (id 35328, Ang 829 — fixes on next rebuild), and the source-faithful `ਓ ੁ`/isolated-matra rows (Angs ~695–699, 1354/1358/1387) flagged for scholarly review.
+See **`../SGGS-KnowledgeBase-Audit-2026-06-16.md`** (static audit) and **`../SGGS-Live-Verification-2026-06-19.md`** (live pass). As of the 2026-06-19 live verification, scripture integrity is **proven** (reconcile char-exact, golden all-pass, 1,430 Angs gap-free, 60,658 lines), the footer/version bug is fixed, and the **Ang 1256 "duplicate" is a confirmed legitimate refrain — do NOT de-duplicate it.** Released as **v2.9.2** (2026-06-19): `MANIFEST.json` re-certified against the shipped DB; `APP_VERSION`/`version` synced to 2.9.2 across serve.py/README/MASTER-INDEX/MANIFEST/CHANGELOG; `build_db.py` version no longer hardcoded; `rebuild_all.sh` now builds the analytics/vaar/semantic tables — **validated by a full green rebuild on 2026-06-19** (reconcile char-exact, golden all-pass, vaars=22). Still open: `Validation-Report.md` lags, analytics-chart accessibility (mouse-only D3 charts), one line with empty `translit_norm` (id 35328, Ang 829 — fixes on next rebuild), and the source-faithful `ਓ ੁ`/isolated-matra rows (Angs ~695–699, 1354/1358/1387) flagged for scholarly review.
 ```
