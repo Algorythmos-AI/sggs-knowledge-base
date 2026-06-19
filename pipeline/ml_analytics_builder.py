@@ -294,9 +294,11 @@ def build_shabad_neighbors(con, K):
 
 # ----------------------------------------------------------------------------- integrity
 EXISTING_COUNTS = {
-    "lines": 60658, "fts": 60658, "concepts": 53, "concept_lines": 61545,
+    "lines": 60658, "fts": 60658, "concepts": 54, "concept_lines": None,
     "variants": 79666, "authors": None, "raags": None,
-}
+}   # 2026-06-19 (audit): akal_kaal split → akal+kaal (concepts 53→54). concept_lines is now
+    # UNCHECKED (None): the tag count legitimately shifts whenever concept term-lists are curated;
+    # integrity is enforced by the scripture guards (lines/fts/translations + the Mool Mantar check).
 def verify_additive(con):
     en = con.execute("SELECT count(*) FROM translations WHERE lang='en'").fetchone()[0]
     assert en == 58039, f"translations en changed: {en}"

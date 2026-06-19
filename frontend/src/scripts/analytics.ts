@@ -11,7 +11,7 @@ const cssVar = (n: string) => getComputedStyle(document.documentElement).getProp
 /* ============================ D3 theme network ============================ */
 async function themeNetwork() {
   const host = $('#network'); if (!host) return;
-  const [m, net] = await Promise.all([meta(), api('themes/network?limit=420')]);
+  const [m, net] = await Promise.all([meta(), api('themes/network?limit=1500')]);
   const size: Record<string, number> = {};
   const desc: Record<string, string> = {};
   (m.concepts || []).forEach((c: any) => { size[c.concept] = c.n_lines || 0; desc[c.concept] = c.description || ''; });
@@ -44,7 +44,7 @@ async function themeNetwork() {
     nodeSet.clear(); edges.forEach((e: any) => { nodeSet.add(e.source); nodeSet.add(e.target); });
     return Array.from(nodeSet).map((id) => ({ id }));
   };
-  let nodes = build(0);
+  let nodes = build(0.7);   // open on the strongest links (~470); the slider reveals all ~1,255 down to 0
 
   const tip = d3.select(host).append('div').attr('class', 'viz-tip').style('opacity', 0);
   const linkSel = g.append('g').attr('class', 'links');

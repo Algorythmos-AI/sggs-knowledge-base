@@ -857,7 +857,7 @@ def api(path, qs):
     if p[0] == 'themes' and len(p) >= 2 and p[1] == 'network':
         concept = qs.get('concept', [None])[0]
         min_ppmi = float(qs.get('min_ppmi', ['0'])[0])
-        lim = max(1, min(int(qs.get('limit', ['200'])[0]), 1000))
+        lim = max(1, min(int(qs.get('limit', ['200'])[0]), 2000))
         try:
             if concept:
                 rows = db().execute(

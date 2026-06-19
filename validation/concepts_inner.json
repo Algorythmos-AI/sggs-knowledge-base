@@ -41,28 +41,25 @@
     "gurmukhi_terms": [
       "ਮੋਹ",
       "ਮੋਹੁ",
-      "ਮੋਹਿ",
       "ਮੋਹੈ",
       "ਮੋਹੇ",
       "ਮੋਹਾ"
     ],
     "description": "Worldly attachment and emotional entanglement — the sticky love for family, possessions, and transient things that binds the soul; closely paired with maya in compound phrases like ਮਾਇਆ ਮੋਹ.",
     "total_hits": 818,
-    "caveats": "ਮੋਹਨ (30 hits) is a divine epithet ('the Enchanter', a name of God/Krishna) and is excluded from this concept; lines like 'ਮੋਹਨ ਲਾਲ' clearly refer to Waheguru, not attachment."
+    "caveats": "ਮੋਹਨ (30 hits) is a divine epithet ('the Enchanter', a name of God/Krishna) and is excluded. ਮੋਹਿ (339 hits) is EXCLUDED (audit 2026-06-19): it is overwhelmingly the first-person pronoun 'me/I' (ਏਹੁ ਦਾਨੁ ਮੋਹਿ = 'give me this gift') or the verb 'entice/fascinate', not the noun 'attachment' — only the unambiguous ਮੋਹ/ਮੋਹੁ forms are indexed."
   },
   {
     "concept": "kaam",
     "gurmukhi_terms": [
       "ਕਾਮ",
       "ਕਾਮੁ",
-      "ਕਾਮਿ",
       "ਕਾਮੈ",
-      "ਕਾਮੀ",
-      "ਕਾਮਣਿ"
+      "ਕਾਮੀ"
     ],
-    "description": "Lust and sensual desire — the first of the five thieves (panj chor); ਕਾਮਣਿ (woman/beloved) is included as it frequently appears in the context of lustful distraction from the Divine.",
+    "description": "Lust and sensual desire — the first of the five thieves (panj chor).",
     "total_hits": 477,
-    "caveats": "ਕਾਮਣਿ also figures in bridal-mysticism imagery (the soul as bride longing for God), making its valence dual. Included because even in bride-imagery the word sits in the kaam semantic field. ਕਾਮੀ includes 'ਨਿਹਕਾਮੀ' (desireless) — query results should filter compound forms for precise analysis."
+    "caveats": "EXCLUDED (audit 2026-06-19): ਕਾਮਣਿ (~95% off-theme — 'soul-bride/woman' in bridal mysticism, e.g. 'ਕਾਮਣਿ ਵਡਭਾਗੀ' = 'fortunate is that bride', not lust) and ਕਾਮਿ (~58% off-theme — dominated by the idiom 'ਕਾਮਿ ਨ ਆਵੈ' = 'of no use', the work/deed sense). Only the clear lust-forms ਕਾਮ/ਕਾਮੁ/ਕਾਮੈ/ਕਾਮੀ are indexed; the whole-word matcher never matches ਨਿਹਕਾਮੀ (a different token)."
   },
   {
     "concept": "krodh",
@@ -70,11 +67,15 @@
       "ਕ੍ਰੋਧ",
       "ਕ੍ਰੋਧੁ",
       "ਕ੍ਰੋਧਿ",
-      "ਕ੍ਰੋਧੀ"
+      "ਕ੍ਰੋਧੀ",
+      "ਕਰੋਧ",
+      "ਕਰੋਧੁ",
+      "ਕਰੋਧਿ",
+      "ਕਰੋਧੀ"
     ],
     "description": "Anger and wrath — the second of the five vices; its poison destroys inner peace and burns the body-vessel, contrasted with the cool fragrance of Nam.",
     "total_hits": 211,
-    "caveats": "Variant spellings ਕੋਧ/ਕੋਧੁ checked — zero hits; all Gurbani usage is the full ਕ੍ਰੋਧ form. ਕ੍ਰੋਧਾ/ਕ੍ਰੋਧੈ also zero."
+    "caveats": "Variant spellings ਕੋਧ/ਕੋਧੁ checked — zero hits. ADDED (audit 2026-06-19): the full-vowel spelling ਕਰੋਧ/ਕਰੋਧੁ/ਕਰੋਧਿ/ਕਰੋਧੀ (without the subjoined-r) — genuine 'anger' lines previously missed; any zero-hit form adds nothing."
   },
   {
     "concept": "lobh",
