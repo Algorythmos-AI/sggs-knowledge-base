@@ -3,13 +3,13 @@ import Base from '../layouts/Base.astro';
 ---
 <Base title="ੴ Sri Guru Granth Sahib — Insights">
   <section id="v-analytics">
-    <div class="hint">Offline analytics over the corpus — theme co-occurrence and authorial style. All measures are <i>descriptive</i> (computed once, on the English translation and corpus-verified themes) and are never a ranking or judgement of scripture.</div>
+    <div class="hint">Patterns across the whole Granth — which themes appear together, how each author writes, and how the Banis unfold. These are <i>observations, never judgements</i> — nothing here ranks or rates the scripture. Every view is computed offline from the corpus's verified themes and the English translation.</div>
 
     <div class="viz-card">
       <div class="viz-head">
         <div>
           <div class="viz-title">Theme Co-occurrence Network</div>
-          <div class="viz-sub">Nodes sized by frequency · edges weighted &amp; coloured by PPMI (base-rate-corrected association). Drag nodes, scroll to zoom, click a theme to search it.</div>
+          <div class="viz-sub">Which themes tend to appear in the same hymns. Each circle is a theme — bigger means more verses carry it; a line joins two themes that recur together more than coincidence would explain, and a thicker, brighter line means a stronger bond. <b>Drag</b> a circle, <b>scroll</b> to zoom, or <b>click</b> a theme to see its verses.<span style="display:block;margin-top:6px;font-size:.88em;opacity:.6">Method · link strength is PPMI, which corrects for how common each theme is on its own.</span></div>
         </div>
         <label class="viz-ctl">min&nbsp;PPMI <input id="ppmiRange" type="range" min="0" max="3" step="0.1" value="0" /> <span id="ppmiVal" class="viz-val">0.0</span></label>
       </div>
@@ -20,7 +20,7 @@ import Base from '../layouts/Base.astro';
       <div class="viz-head">
         <div>
           <div class="viz-title">Author Theme Fingerprint</div>
-          <div class="viz-sub">Stylometric radar — each author's distinctive theme emphasis as <b>lift</b> over the corpus baseline (1.0× = average). Pick a second author to overlay a comparison.</div>
+          <div class="viz-sub">Every author has a signature — the themes they reach for more than anyone else. The further a point sits from the centre, the more this author leans into that theme versus the Granth's average (1.0 = average, 2.0 = twice as often). <b>Add a second author</b> to compare two voices.<span style="display:block;margin-top:6px;font-size:.88em;opacity:.6">Method · "lift" = the author's rate for a theme ÷ the corpus-wide rate, measured on the English translation.</span></div>
         </div>
         <div class="viz-ctl">
           <select id="authA" class="viz-sel" aria-label="Author"></select>
@@ -35,7 +35,7 @@ import Base from '../layouts/Base.astro';
       <div class="viz-head">
         <div>
           <div class="viz-title">Cross-Contributor Resonance</div>
-          <div class="viz-sub">When a verse's closest neighbours <i>in meaning</i> belong to another voice, the two resonate. Ribbons show that resonance as <b>lift</b> over what corpus size alone predicts — surfacing the tight echo among the Bhagats and across traditions. Hover a ribbon for both directions.</div>
+          <div class="viz-sub">Which voices echo each other in meaning. For every verse we find its closest matches in meaning; when those belong to a <i>different</i> author, the two "resonate". A thicker ribbon means two voices keep landing on the same ideas far more than their size alone would predict — the deep kinship among the Gurus, the Bhagats, and across traditions. <b>Hover a ribbon</b> to see it both ways.<span style="display:block;margin-top:6px;font-size:.88em;opacity:.6">Method · from each verse's nearest neighbours in meaning; ribbon width is lift over the overlap expected from corpus share.</span></div>
         </div>
         <div class="viz-ctl">
           <select id="resVoices" class="viz-sel" aria-label="Voices">
@@ -59,7 +59,7 @@ import Base from '../layouts/Base.astro';
       <div class="viz-head">
         <div>
           <div class="viz-title">Raag Theme-Progression</div>
-          <div class="viz-sub">Reading a raag from its first Ang to its last, how do its themes ebb and flow? Each band's thickness is that concept's tag-density in that stretch — the emotional arc of the raag's Bani. Hover a band to isolate it.</div>
+          <div class="viz-sub">How a raag's themes rise and fall as you read it start to finish. Going <b>left → right</b> across the Angs, each coloured band is a theme — the thicker it is at any point, the more those verses dwell on it (the emotional arc of the raag's Bani). <b>Hover a band</b> to follow one theme.<span style="display:block;margin-top:6px;font-size:.88em;opacity:.6">Method · band height = how densely that theme is tagged across each slice of the raag, in reading order.</span></div>
         </div>
         <select id="progRaag" class="viz-sel" aria-label="Raag"></select>
       </div>
@@ -71,7 +71,7 @@ import Base from '../layouts/Base.astro';
       <div class="viz-head">
         <div>
           <div class="viz-title">Vaar Anatomy</div>
-          <div class="viz-sub">A Vaar is a heroic ballad: numbered <b>pauri</b> rungs, each preceded by flanking <b>saloks</b>. Often the saloks are by a <i>different</i> Guru than the pauris — Guru Arjan's editorial architecture, made visible here. Tap any unit to read it.</div>
+          <div class="viz-sub">A Vaar is a ballad built like a ladder: numbered <b>pauri</b> rungs, each introduced by short <b>saloks</b> (couplets). Strikingly, the saloks are often by a <i>different</i> Guru than the pauris — the editorial craft of how the Granth was assembled, shown here in reading order. <b>Tap any unit</b> to open it in the Reader.<span style="display:block;margin-top:6px;font-size:.88em;opacity:.6">★ cross-voice = a salok by a different Guru than the pauris.</span></div>
         </div>
         <select id="vaarSel" class="viz-sel" aria-label="Vaar"></select>
       </div>
