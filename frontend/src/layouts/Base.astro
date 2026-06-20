@@ -23,6 +23,8 @@ const { title = 'ੴ Sri Guru Granth Sahib — Knowledge Base' } = Astro.props;
       } catch (e) {}
     })();
   </script>
+  <!-- Preload the bundled Gurmukhi scripture font for a fast swap (display layer only). -->
+  <link rel="preload" href="/fonts/SantLipi-VF.woff2" as="font" type="font/woff2" crossorigin />
 </head>
 <body>
   <a href="#main" class="skip-link">Skip to content</a>
@@ -31,6 +33,7 @@ const { title = 'ੴ Sri Guru Granth Sahib — Knowledge Base' } = Astro.props;
     <div class="onkar gm" aria-hidden="true">ੴ</div>
     <h1>Sri Guru Granth Sahib — Knowledge Base</h1>
     <p>1430 Angs · verbatim Gurmukhi · searchable by word, sound, first letters &amp; theme</p>
+    <button id="saroopBtn" class="themebtn gm" type="button" aria-pressed="false" aria-label="Traditional saroop — display only" title="Traditional saroop (display only)">ਯ</button>
     <button id="themeBtn" class="themebtn" type="button" aria-label="Theme" title="Theme">◐</button>
   </header>
   <nav class="site">
@@ -82,6 +85,7 @@ const { title = 'ੴ Sri Guru Granth Sahib — Knowledge Base' } = Astro.props;
     import '../scripts/core';
     import '../scripts/panel';
     import '../scripts/studytrail';
+    import '../scripts/saroop';
   </script>
 </body>
 </html>

@@ -13,9 +13,21 @@
 
 @theme {
   --font-sans: ui-sans-serif, -apple-system, BlinkMacSystemFont, "Inter", "Segoe UI", Roboto, sans-serif;
-  --font-gm: "Mukta Mahee", "Gurmukhi MN", "Gurmukhi Sangam MN", "Noto Sans Gurmukhi", "Raavi", sans-serif;
+  --font-gm: "Sant Lipi", "Mukta Mahee", "Gurmukhi MN", "Gurmukhi Sangam MN", "Noto Sans Gurmukhi", "Raavi", sans-serif;
   --color-saffron: #ff9933;
   --color-gold: #ffd24a;
+}
+
+/* ---------- Gurmukhi scripture webfont: Sant Lipi (SIL OFL 1.1), bundled so the Granth
+   renders identically on every device. unicode-range scopes it to the Gurmukhi block (+ dandas),
+   so transliteration/English keep the system Latin font even inside a .gm element. Display only —
+   the verbatim corpus/DB is never touched. FE00–FE0F are included so the optional, default-off
+   "traditional saroop" shaping run (Sant Lipi Variation-Selector markup) stays inside the font. */
+@font-face {
+  font-family: "Sant Lipi";
+  src: url("/fonts/SantLipi-VF.woff2") format("woff2");
+  font-weight: 100 900; font-style: normal; font-display: swap;
+  unicode-range: U+0964-0965, U+0A00-0A7F, U+200C-200D, U+FE00-FE0F;
 }
 
 /* ---------- palette: LIGHT (default) ---------- */
@@ -94,6 +106,10 @@ header.site p { position:relative; font-size:12.5px; opacity:.74; margin-top:6px
 }
 .themebtn:hover { background:rgba(255,255,255,.20); border-color:rgba(255,255,255,.4); transform:translateY(-1px); }
 .themebtn:active { transform:scale(.94); }
+/* traditional-saroop toggle — sits just left of the theme button (display-only feature) */
+#saroopBtn { right:68px; font-family:var(--font-gm); font-size:20px; font-weight:600; }
+#saroopBtn.on { background:color-mix(in srgb, var(--gold) 78%, transparent); border-color:var(--gold); color:#1c1303; }
+#saroopBtn.on:hover { background:var(--gold); }
 
 nav.site {
   position:sticky; top:0; z-index:30; display:flex; gap:8px; justify-content:center; flex-wrap:wrap;
