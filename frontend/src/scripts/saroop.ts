@@ -45,8 +45,9 @@ const isVS = (c: number) => c >= VS_LO && c <= VS_HI;
 const hasVS = (s: string) => { for (let k = 0; k < s.length; k++) if (isVS(s.charCodeAt(k))) return true; return false; };
 const stripVS = (s: string) => { let o = ''; for (const ch of s) if (!isVS(ch.codePointAt(0) as number)) o += ch; return o; };
 
-let ON = false;
-try { ON = localStorage.getItem(KEY) === '1'; } catch {}
+// Default ON — the Granth shows the traditional saroop unless the reader turns it off.
+let ON = true;
+try { if (localStorage.getItem(KEY) === '0') ON = false; } catch {}
 
 const orig = new WeakMap<Text, string>();                     // text node → verbatim original
 let busy = false;                                             // re-entrancy guard for the observer
@@ -101,19 +102,22 @@ function verbatimSelection(sel: Selection): string {
   return parts.join('');
 }
 
+function reflect(): void {
+  document.documentElement.classList.toggle('saroop-on', ON);
+  const b = document.getElementById('saroopBtn');
+  if (b) { b.classList.toggle('on', ON); b.setAttribute('aria-pressed', ON ? 'true' : 'false'); }
+  busy = true; paint(document, ON); busy = false;
+}
 function setSaroop(on: boolean): void {
   ON = on;
-  try { localStorage.setItem(KEY, on ? '1' : '0'); } catch {}
-  document.documentElement.classList.toggle('saroop-on', on);
-  const b = document.getElementById('saroopBtn');
-  if (b) { b.classList.toggle('on', on); b.setAttribute('aria-pressed', on ? 'true' : 'false'); }
-  busy = true; paint(document, on); busy = false;
+  try { localStorage.setItem(KEY, on ? '1' : '0'); } catch {}   // record the reader's explicit choice
+  reflect();
 }
 
 function init(): void {
   const b = document.getElementById('saroopBtn');
   if (b) b.addEventListener('click', () => setSaroop(!ON));
-  if (ON) setSaroop(true);
+  reflect();   // apply the initial (default-on) saroop state without persisting until the reader chooses
 
   // Re-apply to scripture rendered after load (search results, reader pages, trail, modal…).
   const target = document.getElementById('main') || document.body;
