@@ -64,11 +64,15 @@ boundary, and no retain cycles.
 ## v1.1 progress (post-v1, same branch)
 - ✅ **Semantic Trail** — `/api/neighbors` ported byte-identical (line + composition tiers, golden-tested
   on ids + cosine scores); TrailScreen with relatedness **bands** (never a raw % or ranking of scripture),
-  breadcrumb walking, pin/open. 10/10 app tests green.
+  breadcrumb walking, pin/open.
+- ✅ **Insights** — `author_analytics` / `raag_analytics` / `theme_network` ported byte-identical
+  (golden-tested on names, counts, mattr, PPMI). Native **Swift Charts**: Contributors & Raags bar
+  charts + stylometry/detail lists + Theme-connections (PPMI co-occurrence), all under More.
+  11/11 app tests green.
 
 ## Deferred to v1.1+ (logged, not bugs)
-- **Insights** (theme network / resonance chord / raag streamgraph / radar) and **Constellation**
-  visualizations; the **Lineage** depth.
+- The **Concept Constellation** force-graph and the **resonance chord / radar** visualizations
+  (native force-directed layout is the remaining heavy lift); the **Lineage** narrative depth.
 - **English translation** layer (licensing — see *NOTICE.md*; Gurmukhi-only by design for v1).
 - **Pinned SQLite via GRDBCustomSQLite** (device-fidelity hardening; the system SQLite is 3.51.0 == the
   web reference on this machine, and parity is golden-proven).
