@@ -33,7 +33,9 @@ enum LaunchIntegrity {
 
     static func run(corpus: CorpusActor) async -> IntegrityReport {
         var checks: [IntegrityReport.Check] = []
-        let sha = sha256(ofFileAt: corpus.dbPath) ?? ""
+        // Hash the 91 MB DB OFF the main thread (this is awaited from a @MainActor caller).
+        let path = corpus.dbPath
+        let sha = await Task.detached(priority: .utility) { sha256(ofFileAt: path) ?? "" }.value
         let expected = expectedSha()
         checks.append(.init(name: "db_sha256 matches manifest", passed: expected != nil && sha == expected))
 

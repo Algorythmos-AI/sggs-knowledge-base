@@ -36,3 +36,10 @@
 - SavedLine @Model in a SEPARATE writable store (never the corpus DB); modelContainer wired.
 - LineRow Save action (verbatim); SavedScreen (@Query, swipe-delete); reachable from More.
 - BUILD SUCCEEDED.
+
+## 23:38 — Phase K: self-audit + report
+- Independent adversarial review: fixed H1 (91MB hash off-main), H2 (fail-closed gate during check),
+  verify @ang range-validate, Reader/verdict a11y labels, empty-query debounce skip. Confirmed clean:
+  verbatim copy/share/save/VoiceOver, no corpus writes, actor boundary, no retain cycles.
+- Rebuilt + full test: 8/8 green. Wrote SGGS-iOS-Build-Report-2026-06-27.md.
+- v1 core COMPLETE: Search/Reader/Index/Themes/Hukam/Saved/Verify, font+saroop, integrity, offline.

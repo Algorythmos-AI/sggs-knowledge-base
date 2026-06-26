@@ -8,10 +8,17 @@ struct RootView: View {
         @Bindable var c = container
         @Bindable var router = container.router
         Group {
-            if let report = container.integrity, !report.ok {
-                IntegrityFailView(report: report)
-            } else if container.startupError != nil {
+            if container.startupError != nil {
                 IntegrityFailView(report: nil)
+            } else if container.integrity == nil {
+                // Still verifying — do NOT present scripture before the integrity check passes.
+                VStack(spacing: 14) {
+                    Text("ੴ").font(Brand.gurmukhi(64)).foregroundStyle(Brand.saffron)
+                    ProgressView()
+                    Text("Verifying scripture integrity…").font(.caption).foregroundStyle(.secondary)
+                }
+            } else if let report = container.integrity, !report.ok {
+                IntegrityFailView(report: report)
             } else {
                 TabView(selection: $router.selectedTab) {
                     SearchScreen().tabItem { Label("Search", systemImage: "magnifyingglass") }.tag(Tab.search)

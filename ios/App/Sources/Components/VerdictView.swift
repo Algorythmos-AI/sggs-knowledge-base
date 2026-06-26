@@ -22,6 +22,11 @@ struct VerdictView: View {
         default: return "Not found"
         }
     }
+    private var angA11y: String {
+        if result.verdict.contains("ANG_MATCH") { return " The cited Ang matches." }
+        if result.verdict.contains("ANG_MISMATCH") { return " The cited Ang does not match." }
+        return ""
+    }
     private var explanation: String {
         if base.hasPrefix("VERIFIED") { return "This is scripture, verified against the canonical corpus." }
         if base == "NOT_FOUND" { return "No such line found in Sri Guru Granth Sahib. Treat the quote as unverified." }
@@ -58,6 +63,6 @@ struct VerdictView: View {
         .background(RoundedRectangle(cornerRadius: 14).fill(color.opacity(0.10)))
         .overlay(RoundedRectangle(cornerRadius: 14).strokeBorder(color.opacity(0.35)))
         .accessibilityElement(children: .combine)
-        .accessibilityLabel("\(headline). \(explanation)")
+        .accessibilityLabel("\(headline). \(explanation)\(angA11y)")
     }
 }

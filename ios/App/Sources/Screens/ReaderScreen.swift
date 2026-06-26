@@ -54,11 +54,13 @@ struct ReaderScreen: View {
                 ToolbarItemGroup(placement: .bottomBar) {
                     Button { router.openAng(router.readerAng - 1) } label: { Image(systemName: "chevron.left") }
                         .disabled(router.readerAng <= 1)
+                        .accessibilityLabel("Previous Ang")
                     Spacer()
                     Button { container.activeComposition = .hukam } label: { Label("Hukam", systemImage: "sparkles") }
                     Spacer()
                     Button { router.openAng(router.readerAng + 1) } label: { Image(systemName: "chevron.right") }
                         .disabled(router.readerAng >= 1430)
+                        .accessibilityLabel("Next Ang")
                 }
             }
         }

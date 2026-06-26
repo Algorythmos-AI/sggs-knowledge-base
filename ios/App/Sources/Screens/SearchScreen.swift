@@ -25,8 +25,10 @@ final class SearchModel {
             if mode == "verify" {
                 var ang: Int? = nil
                 var claim = q
-                if let r = q.range(of: #"@(\d{1,4})\s*$"#, options: .regularExpression) {
-                    ang = Int(q[r].dropFirst().trimmingCharacters(in: .whitespaces))
+                if let r = q.range(of: #"(?:^|\s)@(\d{1,4})\s*$"#, options: .regularExpression),
+                   let n = Int(q[r].drop(while: { !$0.isNumber }).prefix(while: { $0.isNumber })),
+                   (1...1430).contains(n) {
+                    ang = n
                     claim = String(q[q.startIndex..<r.lowerBound]).trimmingCharacters(in: .whitespaces)
                 }
                 let v = try await corpus.verify(claim, ang: ang)
@@ -71,7 +73,8 @@ struct SearchScreen: View {
                 resultArea(model)
             }
             .task(id: SearchKey(q: model.query, mode: model.mode)) {
-                try? await Task.sleep(for: .milliseconds(250))
+                if model.query.trimmingCharacters(in: .whitespaces).isEmpty { model.state = .idle; model.verify = nil; return }
+                try? await Task.sleep(for: .milliseconds(250))     // debounce
                 guard !Task.isCancelled else { return }
                 await model.run()
             }
