@@ -41,3 +41,10 @@
 {"concept": null, "mode": "auto", "n": 1, "query": "jeevat marai taa sabh kichh soojhai", "related_themes": null, "result_ids": [40307], "used": "roman"}
 {"concept": null, "mode": "auto", "n": 0, "query": "nanak naam chardi kala tere bhaane sarbat da bhala", "related_themes": null, "result_ids": [], "used": "roman-spelling-tolerant"}
 {"concept": null, "mode": "auto", "n": 2, "query": "man toon jot saroop hai apnaa mool pachhaan", "related_themes": null, "result_ids": [20142, 20147], "used": "variant-match"}
+{"concept": null, "mode": "auto", "n": 0, "query": "", "related_themes": null, "result_ids": [], "used": "auto"}
+{"concept": null, "mode": "auto", "n": 0, "query": "\"", "related_themes": null, "result_ids": [], "used": "auto"}
+{"concept": null, "mode": "auto", "n": 0, "query": "*", "related_themes": null, "result_ids": [], "used": "english-translation"}
+{"concept": null, "mode": "gurmukhi", "n": 0, "query": "\"\" ** ()", "related_themes": null, "result_ids": [], "used": "gurmukhi-skeleton"}
+{"concept": null, "mode": "roman", "n": 0, "query": "naam\"* OR 1=1", "related_themes": null, "result_ids": [], "used": "roman-spelling-tolerant"}
+{"concept": null, "mode": "gurmukhi", "n": 0, "query": "ੴੴੴੴੴੴੴੴੴੴੴੴੴੴੴੴੴੴੴੴੴੴੴੴੴੴੴੴੴੴੴੴੴੴੴੴੴੴੴੴੴੴੴੴੴੴੴੴੴੴੴੴੴੴੴੴੴੴੴੴੴੴੴੴੴੴੴੴੴੴੴੴੴੴੴੴੴੴੴੴੴੴੴੴੴੴੴੴੴੴੴੴੴੴੴੴੴੴੴੴੴੴੴੴੴੴੴੴੴੴੴੴੴੴੴੴੴੴੴੴੴੴੴੴੴੴੴੴੴੴੴੴੴੴੴੴੴੴੴੴੴੴੴੴੴੴੴੴੴੴੴੴੴੴੴੴੴੴੴੴੴੴੴੴੴੴੴੴੴੴੴੴੴੴੴੴੴੴੴੴੴੴੴੴੴੴੴੴੴੴੴੴੴੴੴੴੴੴੴੴ", "related_themes": null, "result_ids": [], "used": "gurmukhi-skeleton"}
+{"concept": null, "mode": "roman", "n": 0, "query": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", "related_themes": null, "result_ids": [], "used": "roman"}

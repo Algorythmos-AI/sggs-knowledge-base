@@ -4,7 +4,7 @@
     "golden_difflib.ndjson": 49,
     "golden_reader.ndjson": 23,
     "golden_roman_norm.ndjson": 24719,
-    "golden_search.ndjson": 43,
+    "golden_search.ndjson": 50,
     "golden_verify.ndjson": 18
   },
   "generator": "pipeline/gen_golden_vectors.py",

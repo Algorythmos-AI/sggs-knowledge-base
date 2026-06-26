@@ -32,10 +32,12 @@ final class AppContainer {
         presentation = nil
     }
 
-    /// Called from RootView's sheet onDismiss: flush any queued modal.
+    /// Called from RootView's sheet onDismiss: flush any queued modal. If another modal was already
+    /// presented in the meantime (rapid taps), keep it and drop the stale queue entry.
     func flushPendingPresentation() {
         guard let pending = pendingPresentation else { return }
         pendingPresentation = nil
+        guard presentation == nil else { return }
         presentation = pending
     }
 

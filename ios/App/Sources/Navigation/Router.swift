@@ -28,7 +28,7 @@ final class Router {
         switch host {
         case "ang": if let n = Int(value) { openAng(n) }
         case "theme": if !value.isEmpty { themesPath.append(Route.theme(value)); selectedTab = .themes }
-        case "shabad": if let c = Int(value) { container.presentation = .shabad(compId: c) }
+        case "shabad": if let c = Int(value) { container.present(.shabad(compId: c)) }
         default: break
         }
     }

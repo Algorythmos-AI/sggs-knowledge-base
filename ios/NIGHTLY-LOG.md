@@ -96,3 +96,13 @@
   (ੴ on saffron). developmentLanguage pa→en. SQLite version shown in About.
 - Verified: icon on home screen; dark-mode + AX5 layout holds; 14/14 tests green (+testSettingsControls).
 - PLACEHOLDER icon flagged for reverent final art + Granthi review.
+
+## P4 (finishing-line): tests, CI & independent re-review
+- Adversarial search vectors (empty / " / * / SQL-ish / 200×ੴ / 300×a) — byte-identical to Python on the
+  vendored engine. testOverLongQueryRejected (>300 throws, =300 ok) matches serve.py. golden_search=50.
+- Launch-perf guard: streaming SHA-256 of the 91MB DB completes in 0.045s (<5s budget).
+- CI: .github/workflows/ios.yml — LFS pull → build_ios_db.py → manifest db_sha256 check → swift test on
+  the VENDORED SQLite (fidelity gate on every push/PR).
+- Independent re-review of the P1–P3 diff: found 1 real bug (LineRow "Explore related" bypassed present()
+  → dropped sheet from inside ClusterSheet) + 2 latent (double-present race, Router deeplink). All fixed.
+- Full suite 15/15 green; kit parity 6 suites.

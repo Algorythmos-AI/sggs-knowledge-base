@@ -1,0 +1,36 @@
+name: iOS fidelity gate
+
+# Proves the Swift search/verify/reader/analytics core stays byte-for-byte with the Python backend,
+# on the VENDORED SQLite 3.51.0 (the engine the app ships). Runs on every push / PR.
+
+on:
+  push:
+    branches: ["**"]
+    paths:
+      - "ios/**"
+      - "contract/**"
+      - "pipeline/build_ios_db.py"
+      - "pipeline/gen_golden_vectors.py"
+      - ".github/workflows/ios.yml"
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  parity:
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          lfs: true
+      - name: Pull the Git-LFS source DB
+        run: git lfs pull --include "db/sggs.sqlite"
+      - name: Build the Gurmukhi-only iOS DB from the source (deterministic)
+        run: python3 pipeline/build_ios_db.py
+      - name: Verify the iOS DB matches its certified manifest (db_sha256)
+        run: |
+          EXPECTED=$(python3 -c "import json;print(json.load(open('ios/Resources/sggs-ios.manifest.json'))['db_sha256'])")
+          ACTUAL=$(shasum -a 256 ios/Resources/sggs-ios.sqlite | cut -d' ' -f1)
+          echo "expected=$EXPECTED actual=$ACTUAL"
+          test "$EXPECTED" = "$ACTUAL"
+      - name: Kit parity tests on the vendored SQLite 3.51.0 (the fidelity gate)
+        run: swift test --package-path ios/Packages/GurbaniSearchKit

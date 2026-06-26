@@ -42,8 +42,8 @@ struct LineRow: View {
             if let lineId {
                 Button { save(lineId) } label: { Label("Save", systemImage: "bookmark") }
                 Button {
-                    container.presentation = .trail(TrailStart(id: lineId, gurmukhi: gurmukhi,
-                                                               translit: translit, ang: ang, compId: compId))
+                    container.present(.trail(TrailStart(id: lineId, gurmukhi: gurmukhi,
+                                                        translit: translit, ang: ang, compId: compId)))
                 } label: { Label("Explore related", systemImage: "point.3.connected.trianglepath.dotted") }
             }
         }

@@ -222,6 +222,14 @@ def search_vectors():
         ('jeevat marai taa sabh kichh soojhai', 'auto'),
         ('nanak naam chardi kala tere bhaane sarbat da bhala', 'auto'),
         ('man toon jot saroop hai apnaa mool pachhaan', 'auto'),
+        # adversarial / hostile inputs — must behave identically (no crash, FTS-clean strips "/*)
+        ('', 'auto'),
+        ('"', 'auto'),
+        ('*', 'auto'),
+        ('"" ** ()', 'gurmukhi'),
+        ('naam"* OR 1=1', 'roman'),
+        ('ੴ' * 200, 'gurmukhi'),
+        ('a' * 300, 'roman'),               # exactly at the 300-char boundary (allowed)
     ]
     out = []
     for q, mode in cases:

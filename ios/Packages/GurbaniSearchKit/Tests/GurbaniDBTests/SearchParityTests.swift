@@ -70,4 +70,15 @@ final class SearchParityTests: XCTestCase {
             XCTFail("search parity failures: \(failures.count)/\(asserted)\n" + failures.prefix(20).joined(separator: "\n"))
         }
     }
+
+    /// Mirrors serve.py do_search's `len(q) > 300 → ValueError`: the engine must reject (not process)
+    /// an over-long query. A 300-char query is allowed.
+    func testOverLongQueryRejected() throws {
+        let root = repoRoot()
+        let dbPath = root.appendingPathComponent("ios/Resources/sggs-ios.sqlite").path
+        guard FileManager.default.fileExists(atPath: dbPath) else { throw XCTSkip("DB missing") }
+        let engine = SearchEngine(source: try SQLiteCandidateSource(path: dbPath))
+        XCTAssertThrowsError(try engine.search(String(repeating: "a", count: 301), mode: "roman"))
+        XCTAssertNoThrow(try engine.search(String(repeating: "a", count: 300), mode: "roman"))
+    }
 }

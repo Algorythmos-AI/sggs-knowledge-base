@@ -1,4 +1,5 @@
 import XCTest
+import CryptoKit
 import GurbaniDB
 import GurbaniSearchKit
 
@@ -39,5 +40,21 @@ final class CorpusIntegrationTests: XCTestCase {
         let u = try db.hukamUnit(seed: 400)   // Maajh Vaar: comps 399–409
         XCTAssertEqual(u.compIds, Array(399...409))
         XCTAssertFalse(u.lines.isEmpty)
+    }
+
+    /// Guards the launch-integrity hash: streaming SHA-256 of the ~91 MB DB must stay well within a
+    /// launch budget (the hash runs off-main via Task.detached; this catches a perf regression).
+    func testDBHashWithinLaunchBudget() throws {
+        guard let path = Bundle.main.url(forResource: "sggs-ios", withExtension: "sqlite")?.path
+            ?? Bundle(for: Self.self).url(forResource: "sggs-ios", withExtension: "sqlite")?.path
+        else { throw XCTSkip("bundled DB not found") }
+        let fh = try XCTUnwrap(FileHandle(forReadingAtPath: path))
+        defer { try? fh.close() }
+        let start = Date()
+        var hasher = SHA256()
+        while case let chunk = fh.readData(ofLength: 1 << 20), !chunk.isEmpty { hasher.update(data: chunk) }
+        _ = hasher.finalize()
+        let elapsed = Date().timeIntervalSince(start)
+        XCTAssertLessThan(elapsed, 5.0, "DB hash took \(elapsed)s — launch-time budget regression")
     }
 }
