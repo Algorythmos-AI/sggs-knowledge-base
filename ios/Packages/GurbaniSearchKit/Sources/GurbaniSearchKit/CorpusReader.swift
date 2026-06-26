@@ -90,7 +90,35 @@ public struct CorpusMeta: Sendable, Equatable {
     }
 }
 
-/// Plain read endpoints (mirror serve.py's /api/ang, /shabad, /random, /meta). No fuzzy logic.
+/// One semantic neighbour (serve.py:/api/neighbors). `score` is a descriptive TF-IDF cosine, surfaced
+/// as a relatedness band — NEVER a ranking of scripture.
+public struct Neighbor: Sendable, Equatable, Identifiable {
+    public let id: Int          // neighbour line id (line level) or comp_id (composition level)
+    public let score: Double
+    public let ang: Int
+    public let raag: String?
+    public let author: String?
+    public let compId: Int
+    public let gurmukhi: String
+    public let translit: String
+    public init(id: Int, score: Double, ang: Int, raag: String?, author: String?, compId: Int,
+                gurmukhi: String, translit: String) {
+        self.id = id; self.score = score; self.ang = ang; self.raag = raag; self.author = author
+        self.compId = compId; self.gurmukhi = gurmukhi; self.translit = translit
+    }
+}
+
+public struct NeighborsResult: Sendable, Equatable {
+    public let lineId: Int
+    public let level: String     // "line" | "composition" | "none"
+    public let source: String?
+    public let neighbors: [Neighbor]
+    public init(lineId: Int, level: String, source: String?, neighbors: [Neighbor]) {
+        self.lineId = lineId; self.level = level; self.source = source; self.neighbors = neighbors
+    }
+}
+
+/// Plain read endpoints (mirror serve.py's /api/ang, /shabad, /random, /meta, /neighbors). No fuzzy logic.
 public protocol CorpusReader: Sendable {
     func fetchAng(_ n: Int) throws -> AngPage
     func fetchShabad(compId: Int) throws -> Shabad
@@ -99,4 +127,6 @@ public protocol CorpusReader: Sendable {
     /// A random seed comp_id (non-header line), for the Hukam draw.
     func randomSeedCompId() throws -> Int
     func fetchMeta() throws -> CorpusMeta
+    /// Semantic neighbours of a line (line_neighbors → shabad_neighbors fallback). Trail surface.
+    func neighbors(lineId: Int, limit: Int) throws -> NeighborsResult
 }

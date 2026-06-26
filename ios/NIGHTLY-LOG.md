@@ -43,3 +43,8 @@
   verbatim copy/share/save/VoiceOver, no corpus writes, actor boundary, no retain cycles.
 - Rebuilt + full test: 8/8 green. Wrote SGGS-iOS-Build-Report-2026-06-27.md.
 - v1 core COMPLETE: Search/Reader/Index/Themes/Hukam/Saved/Verify, font+saroop, integrity, offline.
+
+## 03:23 — Phase L (v1.1): Semantic Trail
+- Ported /api/neighbors (line_neighbors line-tier -> shabad_neighbors composition fallback) into kit+DB+actor.
+- golden_reader +5 neighbor vectors (both tiers); ReaderParityTests asserts ids+cosine scores: BYTE-IDENTICAL.
+- TrailScreen: relatedness BANDS (not raw 

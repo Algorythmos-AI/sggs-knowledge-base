@@ -26,6 +26,11 @@ final class ReaderParityTests: XCTestCase {
         let seed: Int?
         let comp_id: Int?
         let comp_ids: [Int]?
+        let level: String?
+        let source: String?
+        let line_id: Int?
+        let neighbor_ids: [Int]?
+        let scores: [Double]?
     }
 
     func testReaderParity() throws {
@@ -51,6 +56,16 @@ final class ReaderParityTests: XCTestCase {
                 if page.raag != v.raag { failures.append("ang \(n): raag \(String(describing: page.raag)) != \(String(describing: v.raag))") }
                 if page.section != v.section { failures.append("ang \(n): section differs") }
                 if page.authors != (v.authors ?? []) { failures.append("ang \(n): authors \(page.authors) != \(String(describing: v.authors))") }
+            } else if v.kind == "neighbors", let lid = v.line_id {
+                asserted += 1
+                let r = try db.neighbors(lineId: lid, limit: 12)
+                if r.level != v.level { failures.append("neighbors \(lid): level \(r.level) != \(v.level ?? "?")") }
+                if r.source != v.source { failures.append("neighbors \(lid): source differs") }
+                if r.neighbors.map({ $0.id }) != (v.neighbor_ids ?? []) { failures.append("neighbors \(lid): ids differ") }
+                let gotScores = r.neighbors.map { ($0.score * 1e6).rounded() / 1e6 }
+                if zip(gotScores, v.scores ?? []).contains(where: { abs($0 - $1) > 1e-5 }) || gotScores.count != (v.scores?.count ?? -1) {
+                    failures.append("neighbors \(lid): scores differ")
+                }
             } else if v.kind == "hukam", let seed = v.seed {
                 asserted += 1
                 let u = try db.hukamUnit(seed: seed)

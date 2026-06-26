@@ -10,6 +10,7 @@ final class AppContainer {
     var startupError: String?
     var integrity: IntegrityReport?
     var activeComposition: CompositionPresentation?
+    var activeTrail: TrailStart?
     var meta: CorpusMeta?
 
     init() {
@@ -33,6 +34,15 @@ enum CompositionPresentation: Identifiable, Hashable {
     case shabad(compId: Int)
     case hukam
     var id: String { switch self { case .shabad(let c): return "shabad-\(c)"; case .hukam: return "hukam" } }
+}
+
+/// A verse the Semantic Trail starts (or steps to). Carries verbatim text so the Trail can pin it.
+struct TrailStart: Identifiable, Hashable {
+    let id: Int            // line id
+    let gurmukhi: String
+    let translit: String
+    let ang: Int
+    let compId: Int
 }
 
 /// Generic async load state for screen models.

@@ -35,5 +35,6 @@ actor CorpusActor {
     func shabad(compId: Int) throws -> Shabad { try db.fetchShabad(compId: compId) }
     func randomHukam() throws -> HukamUnit { try db.hukamUnit(seed: db.randomSeedCompId()) }
     func meta() throws -> CorpusMeta { try db.fetchMeta() }
+    func neighbors(lineId: Int, limit: Int = 12) throws -> NeighborsResult { try db.neighbors(lineId: lineId, limit: limit) }
     func theme(_ name: String) throws -> ThemeSearchResult { try db.themeSearch(name, limit: 200, offset: 0) }
 }

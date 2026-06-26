@@ -17,6 +17,7 @@ struct LineRow: View {
     var onTap: (() -> Void)? = nil
 
     @Environment(\.modelContext) private var modelContext
+    @Environment(AppContainer.self) private var container
 
     var body: some View {
         VStack(alignment: .leading, spacing: 6) {
@@ -39,6 +40,10 @@ struct LineRow: View {
             ShareLink(item: gurmukhi) { Label("Share", systemImage: "square.and.arrow.up") }
             if let lineId {
                 Button { save(lineId) } label: { Label("Save", systemImage: "bookmark") }
+                Button {
+                    container.activeTrail = TrailStart(id: lineId, gurmukhi: gurmukhi,
+                                                       translit: translit, ang: ang, compId: compId)
+                } label: { Label("Explore related", systemImage: "point.3.connected.trianglepath.dotted") }
             }
         }
     }

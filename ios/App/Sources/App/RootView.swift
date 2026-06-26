@@ -28,6 +28,7 @@ struct RootView: View {
                     MoreScreen().tabItem { Label("More", systemImage: "ellipsis") }.tag(Tab.more)
                 }
                 .sheet(item: $c.activeComposition) { ShabadSheet(presentation: $0) }
+                .sheet(item: $c.activeTrail) { TrailScreen(start: $0) }
             }
         }
         .tint(Brand.saffron)

@@ -38,4 +38,39 @@ final class SGGSUITests: XCTestCase {
         XCTAssertTrue(app.navigationBars.element.waitForExistence(timeout: 15))
         XCTAssertTrue(app.buttons["Hukam"].waitForExistence(timeout: 10))
     }
+
+    func testTrailFromSearch() {
+        let app = XCUIApplication(); app.launch()
+        let field = app.searchFields.firstMatch
+        XCTAssertTrue(field.waitForExistence(timeout: 20))
+        field.tap(); field.typeText("naam")
+        let firstCell = app.cells.firstMatch
+        XCTAssertTrue(firstCell.waitForExistence(timeout: 20))
+        firstCell.press(forDuration: 1.1)                 // long-press → context menu
+        let explore = app.buttons["Explore related"]
+        XCTAssertTrue(explore.waitForExistence(timeout: 8))
+        explore.tap()
+        XCTAssertTrue(app.navigationBars["Related verses"].waitForExistence(timeout: 12),
+                      "Trail did not open")
+    }
+
+    /// Captures reference screenshots to the scratchpad (not an assertion gate).
+    func testCaptureScreens() {
+        let dir = "/private/tmp/claude-501/-Users-samkalaliya-ppt-universe-SGGS-KnowledgeBase/27b4d30a-a6e1-40cf-9daa-9a74b9b8b00a/scratchpad"
+        let app = XCUIApplication(); app.launch()
+        func shot(_ name: String) {
+            try? app.screenshot().pngRepresentation.write(to: URL(fileURLWithPath: "\(dir)/\(name).png"))
+        }
+        let field = app.searchFields.firstMatch
+        if field.waitForExistence(timeout: 20) { field.tap(); field.typeText("naam") }
+        _ = app.cells.firstMatch.waitForExistence(timeout: 20)
+        shot("v11_search_results")
+        app.tabBars.buttons["Reader"].tap()
+        _ = app.buttons["Hukam"].waitForExistence(timeout: 12)
+        _ = app.staticTexts.element(boundBy: 0).waitForExistence(timeout: 8)
+        shot("v11_reader_ang1")
+        app.tabBars.buttons["Themes"].tap()
+        _ = app.navigationBars["Themes"].waitForExistence(timeout: 8)
+        shot("v11_themes")
+    }
 }

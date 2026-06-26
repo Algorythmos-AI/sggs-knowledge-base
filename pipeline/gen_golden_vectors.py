@@ -258,6 +258,12 @@ def reader_vectors():
                         'comp_ids': h['comp_ids'], 'line_ids': [l['id'] for l in h['lines']]})
         except Exception as e:
             out.append({'kind': 'hukam', 'seed': seed, 'error': type(e).__name__})
+    for lid in (5, 100, 1000, 5000, 50000):
+        r = serve.api('/api/neighbors', {'line_id': [str(lid)], 'limit': ['12']})
+        out.append({'kind': 'neighbors', 'line_id': lid, 'level': r['level'],
+                    'source': r.get('source'),
+                    'neighbor_ids': [n.get('id', n.get('comp_id')) for n in r['neighbors']],
+                    'scores': [round(n['score'], 6) for n in r['neighbors']]})
     return out
 
 

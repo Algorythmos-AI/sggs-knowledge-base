@@ -131,6 +131,46 @@ extension SQLiteCandidateSource: CorpusReader {
         return HukamUnit(compId: seed, compIds: unit.sorted(), lines: lines)
     }
 
+    public func neighbors(lineId: Int, limit: Int) throws -> NeighborsResult {
+        let lim = max(1, min(limit, 50))
+        // Tier 1: line-level embedding neighbours (line_neighbors), exact TF-IDF cosine.
+        var line: [Neighbor] = []
+        _ = try? prepareEach(
+            "SELECT n.neighbor_id, n.score, l.ang, l.raag, l.author, l.comp_id, l.gurmukhi, l.translit "
+            + "FROM line_neighbors n JOIN lines l ON l.id = n.neighbor_id "
+            + "WHERE n.line_id = \(lineId) ORDER BY n.score DESC LIMIT \(lim)") { s in
+            line.append(Neighbor(
+                id: int(s, 0), score: sqlite3_column_double(s, 1), ang: int(s, 2),
+                raag: col(s, 3), author: col(s, 4), compId: int(s, 5),
+                gurmukhi: col(s, 6) ?? "", translit: col(s, 7) ?? ""))
+        }
+        if !line.isEmpty {
+            var source: String? = nil
+            _ = try? prepareEach("SELECT value FROM analytics_meta WHERE key='line_neighbors_source'") { s in
+                source = col(s, 0)
+            }
+            return NeighborsResult(lineId: lineId, level: "line", source: source, neighbors: line)
+        }
+        // Tier 2: composition-level theme profile (shabad_neighbors).
+        var compId: Int? = nil
+        _ = try? prepareEach("SELECT comp_id FROM lines WHERE id=\(lineId)") { s in compId = int(s, 0) }
+        guard let cid = compId else { return NeighborsResult(lineId: lineId, level: "none", source: nil, neighbors: []) }
+        var comp: [Neighbor] = []
+        _ = try? prepareEach(
+            "SELECT n.neighbor_comp_id, n.score, "
+            + "(SELECT ang FROM lines WHERE comp_id=n.neighbor_comp_id ORDER BY id LIMIT 1), "
+            + "(SELECT raag FROM lines WHERE comp_id=n.neighbor_comp_id AND raag IS NOT NULL LIMIT 1), "
+            + "(SELECT gurmukhi FROM lines WHERE comp_id=n.neighbor_comp_id AND is_header=0 ORDER BY id LIMIT 1) "
+            + "FROM shabad_neighbors n WHERE n.comp_id=\(cid) ORDER BY n.rank LIMIT \(lim)") { s in
+            comp.append(Neighbor(
+                id: int(s, 0), score: sqlite3_column_double(s, 1), ang: int(s, 2),
+                raag: col(s, 3), author: nil, compId: int(s, 0),
+                gurmukhi: col(s, 4) ?? "", translit: ""))
+        }
+        return NeighborsResult(lineId: lineId, level: comp.isEmpty ? "none" : "composition",
+                               source: comp.isEmpty ? nil : "shabad-theme-profile", neighbors: comp)
+    }
+
     public func fetchMeta() throws -> CorpusMeta {
         var raags: [RaagRow] = []
         _ = try? prepareEach("SELECT name, roman, first_ang, last_ang, n_lines, n_shabads, seq FROM raags ORDER BY seq") { s in
