@@ -191,14 +191,48 @@ def verify_vectors():
     return out
 
 
+# ---------------------------------------------------------------------------
+# 4. search vectors — drive the REAL do_search for the EXPLICIT modes (the auto
+#    waterfall's exotic fallback tiers are ported in a later phase). Records the
+#    ordered result line-ids + the resolved 'used' mode (+ concept / related_themes).
+# ---------------------------------------------------------------------------
+def search_vectors():
+    serve.DB = DB
+    serve.HAVE_FTS = None  # force re-probe against this DB
+    cases = [
+        ('ਨਾਮੁ', 'gurmukhi'), ('ਸਤਿ ਨਾਮੁ', 'gurmukhi'), ('ਹਰਿ ਹਰਿ', 'gurmukhi'),
+        ('ਸੋਚੈ ਸੋਚਿ', 'gurmukhi'), ('ਆਦਿ ਸਚੁ', 'gurmukhi'),
+        ('naam', 'roman'), ('satgur', 'roman'), ('waheguru', 'roman'),
+        ('har har', 'roman'), ('gobind', 'roman'), ('saadh sangat', 'roman'),
+        ('ਸ ਨ ਕ', 'first'), ('s n k', 'first'), ('dh dh r g', 'first'),
+        ('naam', 'theme'), ('hukam', 'theme'), ('haumai', 'theme'), ('simran', 'theme'),
+        ('', 'gurmukhi'), ('   ॥  ', 'gurmukhi'),   # empty / punctuation-only
+    ]
+    out = []
+    for q, mode in cases:
+        r = serve.do_search(q, mode, 50, 0)
+        results = r.get('results', [])
+        out.append({
+            'query': q, 'mode': mode,
+            'used': r.get('mode'),
+            'result_ids': [x['id'] for x in results],
+            'n': len(results),
+            'concept': (r.get('concept') or {}).get('name') if r.get('concept') else None,
+            'related_themes': r.get('related_themes'),
+        })
+    return out
+
+
 def main():
     db_hash = sha256(DB) if os.path.exists(DB) else None
     rn = roman_norm_vectors()
     dl = difflib_vectors()
     vv = verify_vectors()
+    sv = search_vectors()
     p1, n1 = write_ndjson('golden_roman_norm.ndjson', rn)
     p2, n2 = write_ndjson('golden_difflib.ndjson', dl)
     p3, n3 = write_ndjson('golden_verify.ndjson', vv)
+    p4, n4 = write_ndjson('golden_search.ndjson', sv)
     meta = {
         'generator': 'pipeline/gen_golden_vectors.py',
         'db_sha256': db_hash,
@@ -210,6 +244,7 @@ def main():
             'golden_roman_norm.ndjson': n1,
             'golden_difflib.ndjson': n2,
             'golden_verify.ndjson': n3,
+            'golden_search.ndjson': n4,
         },
     }
     with open(os.path.join(OUT, '_meta.json'), 'w', encoding='utf-8') as f:
@@ -218,6 +253,7 @@ def main():
     print(f'roman_norm vectors: {n1}  -> {p1}')
     print(f'difflib   vectors: {n2}  -> {p2}')
     print(f'verify    vectors: {n3}  -> {p3}')
+    print(f'search    vectors: {n4}  -> {p4}')
     print(f'db_sha256={db_hash}  python={meta["tool_versions"]["python"]}  sqlite={meta["tool_versions"]["sqlite"]}')
 
 
