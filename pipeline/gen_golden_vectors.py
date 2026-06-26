@@ -273,6 +273,13 @@ def reader_vectors():
     tn = serve.api('/api/themes/network', {'min_ppmi': ['0.7'], 'limit': ['40']})['edges']
     out.append({'kind': 'theme_net', 'pairs': [f"{e['source']}~{e['target']}" for e in tn],
                 'ppmi': [round(e['ppmi'], 6) for e in tn]})
+    for con in ('naam', 'hukam', 'seva'):
+        r = serve.api('/api/analytics/constellation', {'concept': [con]})
+        top = r['clusters'][0]['verses'] if r.get('clusters') else []
+        out.append({'kind': 'constellation', 'concept': con, 'total': r['total'],
+                    'cluster_cos': [c['co'] for c in r.get('clusters', [])],
+                    'cluster_ns': [c['n'] for c in r.get('clusters', [])],
+                    'top_verse_ids': [v['id'] for v in top]})
     return out
 
 

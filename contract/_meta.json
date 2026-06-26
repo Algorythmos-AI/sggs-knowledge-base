@@ -2,7 +2,7 @@
   "db_sha256": "3ec779a5ad9608314b98410a0b6f2a1f60296dd9cc5f50f793f2d7f1dde96f33",
   "files": {
     "golden_difflib.ndjson": 49,
-    "golden_reader.ndjson": 20,
+    "golden_reader.ndjson": 23,
     "golden_roman_norm.ndjson": 24719,
     "golden_search.ndjson": 43,
     "golden_verify.ndjson": 18

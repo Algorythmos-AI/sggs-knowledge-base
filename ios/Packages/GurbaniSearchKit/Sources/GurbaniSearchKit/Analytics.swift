@@ -48,6 +48,24 @@ public struct ThemeEdge: Sendable, Equatable, Identifiable {
     }
 }
 
+public struct ConstellationVerse: Sendable, Equatable, Identifiable {
+    public let id: Int; public let ang: Int; public let compId: Int; public let gurmukhi: String
+    public init(id: Int, ang: Int, compId: Int, gurmukhi: String) {
+        self.id = id; self.ang = ang; self.compId = compId; self.gurmukhi = gurmukhi
+    }
+}
+public struct ConstellationCluster: Sendable, Equatable, Identifiable {
+    public let co: String; public let n: Int; public let verses: [ConstellationVerse]
+    public var id: String { co }
+    public init(co: String, n: Int, verses: [ConstellationVerse]) { self.co = co; self.n = n; self.verses = verses }
+}
+public struct ConstellationResult: Sendable, Equatable {
+    public let concept: String; public let total: Int; public let clusters: [ConstellationCluster]
+    public init(concept: String, total: Int, clusters: [ConstellationCluster]) {
+        self.concept = concept; self.total = total; self.clusters = clusters
+    }
+}
+
 public protocol AnalyticsSource: Sendable {
     /// `SELECT author,n_lines,n_shabads,n_raags,mattr_100,avg_words_line,is_reliable FROM author_analytics ORDER BY n_lines DESC`.
     func authorAnalytics() throws -> [AuthorStat]
@@ -55,4 +73,6 @@ public protocol AnalyticsSource: Sendable {
     func raagAnalytics() throws -> [RaagStat]
     /// `SELECT source,target,shabad_count,ppmi,jaccard FROM theme_network WHERE source<target AND ppmi>=? ORDER BY ppmi DESC LIMIT ?`.
     func themeNetwork(minPPMI: Double, limit: Int) throws -> [ThemeEdge]
+    /// A concept's verses grouped by their most-shared co-theme (top-9 clusters). serve.py constellation.
+    func constellation(concept: String, author: String?, raag: String?) throws -> ConstellationResult
 }

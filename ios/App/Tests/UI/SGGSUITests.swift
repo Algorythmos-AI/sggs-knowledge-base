@@ -66,6 +66,18 @@ final class SGGSUITests: XCTestCase {
         try? app.screenshot().pngRepresentation.write(to: URL(fileURLWithPath: "\(dir)/v11_insights.png"))
     }
 
+    func testConstellation() {
+        let dir = "/private/tmp/claude-501/-Users-samkalaliya-ppt-universe-SGGS-KnowledgeBase/27b4d30a-a6e1-40cf-9daa-9a74b9b8b00a/scratchpad"
+        let app = XCUIApplication(); app.launch()
+        app.tabBars.buttons["More"].tap()
+        let cons = app.buttons["Concept Constellation"]
+        XCTAssertTrue(cons.waitForExistence(timeout: 12))
+        cons.tap()
+        XCTAssertTrue(app.navigationBars["Constellation"].waitForExistence(timeout: 12), "Constellation did not open")
+        _ = app.staticTexts.element(boundBy: 2).waitForExistence(timeout: 8)   // let the map render
+        try? app.screenshot().pngRepresentation.write(to: URL(fileURLWithPath: "\(dir)/v11_constellation.png"))
+    }
+
     /// Captures reference screenshots to the scratchpad (not an assertion gate).
     func testCaptureScreens() {
         let dir = "/private/tmp/claude-501/-Users-samkalaliya-ppt-universe-SGGS-KnowledgeBase/27b4d30a-a6e1-40cf-9daa-9a74b9b8b00a/scratchpad"

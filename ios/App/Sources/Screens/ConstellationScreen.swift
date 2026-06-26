@@ -1,0 +1,138 @@
+import SwiftUI
+import GurbaniSearchKit
+
+/// Concept Constellation: pick a theme; its verses cluster around the OTHER themes they most share.
+/// Rendered as a deterministic radial map (centre = the theme, orbiting bubbles = co-theme clusters
+/// sized by verse count). Descriptive structure — never a ranking of scripture.
+struct ConstellationScreen: View {
+    @Environment(AppContainer.self) private var container
+    @State private var concept = "naam"
+    @State private var result: ConstellationResult?
+    @State private var selected: ConstellationCluster?
+    @State private var loading = false
+
+    private var concepts: [ConceptRow] { container.meta?.concepts ?? [] }
+
+    var body: some View {
+        VStack(spacing: 12) {
+            Menu {
+                ForEach(concepts) { c in
+                    Button(c.concept.capitalized) { concept = c.concept }
+                }
+            } label: {
+                HStack {
+                    Text("Theme: \(concept.capitalized)").font(.headline)
+                    Image(systemName: "chevron.up.chevron.down").font(.caption)
+                }
+            }
+            .padding(.top, 8)
+
+            if let result {
+                Text("\(result.total) verses carry this theme · grouped by their closest companion theme")
+                    .font(.caption).foregroundStyle(.secondary)
+                    .multilineTextAlignment(.center).padding(.horizontal)
+                if result.clusters.isEmpty {
+                    ContentUnavailableView("No companion themes", systemImage: "circle.dotted")
+                } else {
+                    ConstellationMap(center: concept, clusters: result.clusters) { selected = $0 }
+                        .padding()
+                }
+            } else {
+                ProgressView().frame(maxWidth: .infinity, maxHeight: .infinity)
+            }
+            Spacer(minLength: 0)
+        }
+        .navigationTitle("Constellation")
+        .navigationBarTitleDisplayMode(.inline)
+        .task { await container.loadMeta() }
+        .task(id: concept) { await load() }
+        .sheet(item: $selected) { ClusterSheet(center: concept, cluster: $0) }
+    }
+
+    private func load() async {
+        guard let corpus = container.corpus else { return }
+        loading = true; result = nil
+        result = try? await corpus.constellation(concept: concept)
+        loading = false
+    }
+}
+
+/// Deterministic radial layout: centre node + co-theme bubbles on a ring, sized by √(verse count).
+private struct ConstellationMap: View {
+    let center: String
+    let clusters: [ConstellationCluster]
+    var onSelect: (ConstellationCluster) -> Void
+
+    var body: some View {
+        GeometryReader { geo in
+            let w = geo.size.width, h = geo.size.height
+            let c = CGPoint(x: w / 2, y: h / 2)
+            let ring = min(w, h) * 0.36
+            let maxN = Double(clusters.map(\.n).max() ?? 1)
+            ZStack {
+                // connecting lines (the "constellation")
+                Path { p in
+                    for (i, _) in clusters.enumerated() {
+                        p.move(to: c); p.addLine(to: point(i, c, ring))
+                    }
+                }
+                .stroke(Brand.gold.opacity(0.25), lineWidth: 1)
+
+                // centre node
+                bubble(label: center.capitalized, sub: nil, diameter: 84, fill: Brand.saffron)
+                    .position(c)
+                    .accessibilityHidden(true)
+
+                // co-theme bubbles
+                ForEach(Array(clusters.enumerated()), id: \.element.id) { i, cl in
+                    let d = 44 + CGFloat((Double(cl.n).squareRoot() / maxN.squareRoot())) * 52
+                    Button { onSelect(cl) } label: {
+                        bubble(label: cl.co.capitalized, sub: "\(cl.n)", diameter: d, fill: Brand.gold)
+                    }
+                    .buttonStyle(.plain)
+                    .position(point(i, c, ring))
+                    .accessibilityLabel("\(cl.co), \(cl.n) verses shared with \(center)")
+                }
+            }
+        }
+        .frame(minHeight: 360)
+    }
+
+    private func point(_ i: Int, _ c: CGPoint, _ r: CGFloat) -> CGPoint {
+        let a = 2 * Double.pi * Double(i) / Double(max(clusters.count, 1)) - Double.pi / 2
+        return CGPoint(x: c.x + r * CGFloat(cos(a)), y: c.y + r * CGFloat(sin(a)))
+    }
+
+    private func bubble(label: String, sub: String?, diameter: CGFloat, fill: Color) -> some View {
+        VStack(spacing: 1) {
+            Text(label).font(.caption2.weight(.semibold)).lineLimit(1).minimumScaleFactor(0.6)
+            if let sub { Text(sub).font(.caption2).opacity(0.85) }
+        }
+        .foregroundStyle(.white)
+        .frame(width: diameter, height: diameter)
+        .background(Circle().fill(fill.gradient))
+    }
+}
+
+private struct ClusterSheet: View {
+    let center: String
+    let cluster: ConstellationCluster
+    @Environment(AppContainer.self) private var container
+    @Environment(\.dismiss) private var dismiss
+
+    var body: some View {
+        NavigationStack {
+            List(cluster.verses) { v in
+                LineRow(gurmukhi: v.gurmukhi, translit: "", meta: "Ang \(v.ang)",
+                        lineId: v.id, ang: v.ang, compId: v.compId) {
+                    container.activeComposition = .shabad(compId: v.compId)
+                }
+                .listRowSeparator(.hidden)
+            }
+            .listStyle(.plain)
+            .navigationTitle("\(center.capitalized) + \(cluster.co.capitalized)")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar { ToolbarItem(placement: .topBarTrailing) { Button("Done") { dismiss() } } }
+        }
+    }
+}

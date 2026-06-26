@@ -17,6 +17,7 @@ struct MoreScreen: View {
                 }
                 Section {
                     NavigationLink { InsightsScreen() } label: { Label("Insights", systemImage: "chart.bar.xaxis") }
+                    NavigationLink { ConstellationScreen() } label: { Label("Concept Constellation", systemImage: "circle.hexagongrid") }
                     NavigationLink { SavedScreen() } label: { Label("Saved verses", systemImage: "bookmark") }
                     NavigationLink { AboutScreen() } label: { Label("About & credits", systemImage: "info.circle") }
                 }

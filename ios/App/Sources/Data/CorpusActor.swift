@@ -39,5 +39,8 @@ actor CorpusActor {
     func authorAnalytics() throws -> [AuthorStat] { try db.authorAnalytics() }
     func raagAnalytics() throws -> [RaagStat] { try db.raagAnalytics() }
     func themeNetwork(minPPMI: Double = 0.7, limit: Int = 40) throws -> [ThemeEdge] { try db.themeNetwork(minPPMI: minPPMI, limit: limit) }
+    func constellation(concept: String, author: String? = nil, raag: String? = nil) throws -> ConstellationResult {
+        try db.constellation(concept: concept, author: author, raag: raag)
+    }
     func theme(_ name: String) throws -> ThemeSearchResult { try db.themeSearch(name, limit: 200, offset: 0) }
 }

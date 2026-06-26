@@ -36,6 +36,11 @@ final class ReaderParityTests: XCTestCase {
         let mattr: [Double]?
         let pairs: [String]?
         let ppmi: [Double]?
+        let concept: String?
+        let total: Int?
+        let cluster_cos: [String]?
+        let cluster_ns: [Int]?
+        let top_verse_ids: [Int]?
     }
 
     private func eqDoubles(_ a: [Double], _ b: [Double]) -> Bool {
@@ -91,6 +96,15 @@ final class ReaderParityTests: XCTestCase {
                 let e = try db.themeNetwork(minPPMI: 0.7, limit: 40)
                 if e.map({ "\($0.source)~\($0.target)" }) != (v.pairs ?? []) { failures.append("theme_net: pairs differ") }
                 if !eqDoubles(e.map { ($0.ppmi * 1e6).rounded() / 1e6 }, v.ppmi ?? []) { failures.append("theme_net: ppmi differ") }
+            } else if v.kind == "constellation", let concept = v.concept {
+                asserted += 1
+                let r = try db.constellation(concept: concept, author: nil, raag: nil)
+                if r.total != v.total { failures.append("constellation \(concept): total \(r.total) != \(v.total ?? -1)") }
+                if r.clusters.map({ $0.co }) != (v.cluster_cos ?? []) { failures.append("constellation \(concept): cluster cos differ") }
+                if r.clusters.map({ $0.n }) != (v.cluster_ns ?? []) { failures.append("constellation \(concept): cluster ns differ") }
+                if let top = r.clusters.first?.verses.map({ $0.id }), top != (v.top_verse_ids ?? []) {
+                    failures.append("constellation \(concept): top cluster verse ids differ")
+                }
             } else if v.kind == "hukam", let seed = v.seed {
                 asserted += 1
                 let u = try db.hukamUnit(seed: seed)

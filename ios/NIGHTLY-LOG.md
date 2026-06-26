@@ -60,3 +60,11 @@
 - InsightsScreen (More tab): Contributors + Raags bar charts (Swift Charts) + stylometry/detail lists +
   Theme connections (PPMI co-occurrence). "Descriptive, never a ranking" captions; a11y labels.
 - Clean build + full test: 11/11 green (added testInsights). Insights screenshot verified.
+
+## Phase N (v1.1): Concept Constellation
+- Ported /api/analytics/constellation (parameterized concept+author+raag; co-theme bucketing; stable top-9).
+- golden_reader +3 constellation vectors (naam/hukam/seva): total + cluster co-themes + counts + top-cluster
+  verse ids — BYTE-IDENTICAL incl. the stable sort order.
+- ConstellationScreen: native deterministic RADIAL MAP (centre theme + co-theme bubbles sized by sqrt(n),
+  connecting lines), theme menu picker, tap bubble -> cluster verses sheet. "Descriptive, never a ranking."
+- Clean build + full test: 12/12 green (added testConstellation). Screenshot verified (naam: simran 682…).

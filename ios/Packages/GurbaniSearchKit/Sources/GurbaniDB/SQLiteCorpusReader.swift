@@ -235,6 +235,53 @@ extension SQLiteCandidateSource: CorpusReader, AnalyticsSource {
         return out
     }
 
+    public func constellation(concept: String, author: String?, raag: String?) throws -> ConstellationResult {
+        let au = (author?.isEmpty == false) ? author : nil
+        let rg = (raag?.isEmpty == false) ? raag : nil
+        var whereClause = "cl.concept=?"
+        var binds: [String] = [concept]
+        if let au { whereClause += " AND l.author=?"; binds.append(au) }
+        if let rg { whereClause += " AND l.raag=?"; binds.append(rg) }
+        func bindAll(_ s: OpaquePointer?) { for (i, b) in binds.enumerated() {
+            sqlite3_bind_text(s, Int32(i + 1), b, -1, SQLiteCandidateSource.transientDtor) } }
+
+        var total = 0
+        var st: OpaquePointer?
+        if sqlite3_prepare_v2(handle, "SELECT COUNT(DISTINCT cl.line_id) FROM concept_lines cl "
+            + "JOIN lines l ON l.id=cl.line_id WHERE \(whereClause)", -1, &st, nil) == SQLITE_OK {
+            bindAll(st)
+            if sqlite3_step(st) == SQLITE_ROW { total = Int(sqlite3_column_int64(st, 0)) }
+        }
+        sqlite3_finalize(st)
+        if total == 0 { return ConstellationResult(concept: concept, total: 0, clusters: []) }
+
+        let rowsSQL = "SELECT co.concept, l.id, l.ang, l.comp_id, l.gurmukhi "
+            + "FROM concept_lines cl JOIN concept_lines co ON co.line_id=cl.line_id AND co.concept<>cl.concept "
+            + "JOIN lines l ON l.id=cl.line_id WHERE \(whereClause) ORDER BY co.concept, l.id"
+        var st2: OpaquePointer?
+        guard sqlite3_prepare_v2(handle, rowsSQL, -1, &st2, nil) == SQLITE_OK else {
+            throw DBError.prepare(String(cString: sqlite3_errmsg(handle)))
+        }
+        defer { sqlite3_finalize(st2) }
+        bindAll(st2)
+        var order: [String] = []                         // co insertion order (= alphabetical co)
+        var buckets: [String: [ConstellationVerse]] = [:]
+        while sqlite3_step(st2) == SQLITE_ROW {
+            let co = col(st2, 0) ?? ""
+            if buckets[co] == nil { order.append(co) }
+            buckets[co, default: []].append(ConstellationVerse(
+                id: int(st2, 1), ang: int(st2, 2), compId: int(st2, 3), gurmukhi: col(st2, 4) ?? ""))
+        }
+        // top-9 by n, stable on insertion order (Python sorted(reverse=True) is stable); verses[:40]
+        let top = order.enumerated().sorted { a, b in
+            let na = buckets[a.element]!.count, nb = buckets[b.element]!.count
+            return na != nb ? na > nb : a.offset < b.offset
+        }.prefix(9)
+        let clusters = top.map { ConstellationCluster(
+            co: $0.element, n: buckets[$0.element]!.count, verses: Array(buckets[$0.element]!.prefix(40))) }
+        return ConstellationResult(concept: concept, total: total, clusters: clusters)
+    }
+
     // small helpers
     private func col(_ s: OpaquePointer?, _ c: Int32) -> String? {
         sqlite3_column_type(s, c) == SQLITE_NULL ? nil : (sqlite3_column_text(s, c).map { String(cString: $0) })
