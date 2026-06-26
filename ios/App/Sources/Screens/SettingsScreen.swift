@@ -47,6 +47,7 @@ struct AboutScreen: View {
                             .foregroundStyle(c.passed ? .green : .red)
                     }
                     Text("db_sha256 \(report.dbSha256.prefix(16))…").font(.caption2).foregroundStyle(.tertiary)
+                    Text("SQLite (pinned) \(report.sqliteVersion)").font(.caption2).foregroundStyle(.tertiary)
                 }
             }
             Section("Credits") {

@@ -11,6 +11,8 @@ actor CorpusActor {
     private let verifyEngine: VerifyEngine
     /// Bundle path of the corpus DB (read-only; safe to read off the actor for the integrity hash).
     nonisolated let dbPath: String
+    /// The linked (pinned) SQLite version — provenance, safe to read off-actor.
+    nonisolated var sqliteVersion: String { SQLiteCandidateSource.sqliteVersion }
 
     enum CorpusError: LocalizedError {
         case databaseMissing

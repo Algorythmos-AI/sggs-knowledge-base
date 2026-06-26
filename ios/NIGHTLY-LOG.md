@@ -68,3 +68,11 @@
 - ConstellationScreen: native deterministic RADIAL MAP (centre theme + co-theme bubbles sized by sqrt(n),
   connecting lines), theme menu picker, tap bubble -> cluster verses sheet. "Descriptive, never a ranking."
 - Clean build + full test: 12/12 green (added testConstellation). Screenshot verified (naam: simran 682…).
+
+## P1 (finishing-line): PIN SQLite 3.51.0 — device-fidelity loophole closed
+- Vendored official SQLite 3.51.0 amalgamation as a CSQLite C target (SQLITE_ENABLE_FTS5 + flags);
+  removed linkedLibrary("sqlite3"); repointed GurbaniDB import SQLite3 -> import CSQLite.
+- PROOF: all 5 kit parity suites byte-identical on the vendored engine (search bm25 order, verify,
+  reader, neighbors, analytics, constellation) + app unit integration tests green. FTS5/unicode61/bm25
+  now identical on every device, not the host system SQLite. sqlite version surfaced in About.
+- App UI test run hit a sim-only flake ("Timed out loading Accessibility", unrelated) — rebooting sim.

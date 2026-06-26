@@ -9,6 +9,7 @@ struct IntegrityReport: Sendable {
     let ok: Bool
     let dbSha256: String
     let expectedSha256: String?
+    let sqliteVersion: String
     let checks: [Check]
     struct Check: Sendable, Identifiable { let name: String; let passed: Bool; var id: String { name } }
 }
@@ -53,6 +54,6 @@ enum LaunchIntegrity {
         checks.append(.init(name: "Verify engine sane", passed: verdict.hasPrefix("VERIFIED_EXACT")))
 
         return IntegrityReport(ok: checks.allSatisfy { $0.passed }, dbSha256: sha,
-                               expectedSha256: expected, checks: checks)
+                               expectedSha256: expected, sqliteVersion: corpus.sqliteVersion, checks: checks)
     }
 }

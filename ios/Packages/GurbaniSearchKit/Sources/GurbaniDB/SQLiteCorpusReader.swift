@@ -1,5 +1,5 @@
 import Foundation
-import SQLite3
+import CSQLite
 import GurbaniSearchKit
 
 /// Plain corpus-read endpoints over the read-only DB — the exact serve.py SQL/logic for

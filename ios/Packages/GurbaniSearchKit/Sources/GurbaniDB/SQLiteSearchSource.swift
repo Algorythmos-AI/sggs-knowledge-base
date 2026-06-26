@@ -1,5 +1,5 @@
 import Foundation
-import SQLite3
+import CSQLite
 import GurbaniSearchKit
 
 /// SearchSource over the read-only corpus DB — the exact serve.py SQL (BM25 weights,

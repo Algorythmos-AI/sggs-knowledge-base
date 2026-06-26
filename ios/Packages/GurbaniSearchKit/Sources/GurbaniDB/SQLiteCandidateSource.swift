@@ -1,17 +1,21 @@
 import Foundation
-import SQLite3
+import CSQLite
 import GurbaniSearchKit
 
 /// Read-only SQLite implementation of the verify `CandidateSource` (and, via an extension,
 /// the `SearchSource`), querying the bundled corpus DB exactly as `webapp/serve.py` does:
 /// opened `mode=ro&immutable=1` with `query_only=ON`, FTS rowids in rank order, line rows by id.
-/// (In the iOS app this is wrapped by GRDB with a pinned SQLite; for the parity test the macOS
-/// system SQLite is 3.51.0 — the same version as the web reference.)
+/// Links the VENDORED SQLite (CSQLite target, amalgamation 3.51.0 with FTS5) — the exact engine that
+/// built the corpus index + the golden vectors — so unicode61 tokenization + bm25 ordering are
+/// byte-identical on every device, not subject to the host iOS's system SQLite version.
 public final class SQLiteCandidateSource: CandidateSource, @unchecked Sendable {
 
     let handle: OpaquePointer
     // SQLite wants bound text to persist for the call; SQLITE_TRANSIENT makes it copy.
     static let transientDtor = unsafeBitCast(-1, to: sqlite3_destructor_type.self)
+
+    /// The linked (pinned) SQLite version — provenance for the integrity/About surface.
+    public static var sqliteVersion: String { String(cString: sqlite3_libversion()) }
 
     private let lock = NSLock()
     private var _termIndex: [String: [String]]?
