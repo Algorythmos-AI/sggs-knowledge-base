@@ -35,3 +35,8 @@ ios/**/*.xcodeproj/xcuserdata/
 ios/**/DerivedData/
 
 validation/*_results.jsonl
+
+# Xcode app: regenerable project + build output
+ios/App/build/
+ios/App/*.xcodeproj/
+ios/App/*.xcworkspace/

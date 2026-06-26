@@ -51,6 +51,9 @@ public struct SearchOutput: Sendable, Equatable {
     public let results: [SearchLine]
     public let concept: ThemeConcept?
     public let relatedThemes: [String]?
+    public init(mode: String, results: [SearchLine], concept: ThemeConcept?, relatedThemes: [String]?) {
+        self.mode = mode; self.results = results; self.concept = concept; self.relatedThemes = relatedThemes
+    }
 }
 
 /// The DB seam for search. The DB target satisfies it.

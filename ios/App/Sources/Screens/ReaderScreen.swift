@@ -1,0 +1,69 @@
+import SwiftUI
+import GurbaniSearchKit
+
+@MainActor @Observable
+final class ReaderModel {
+    var state: LoadState<AngPage> = .loading
+    private let corpus: CorpusActor?
+    init(corpus: CorpusActor?) { self.corpus = corpus }
+    func load(_ ang: Int) async {
+        guard let corpus else { state = .failed("No database"); return }
+        state = .loading
+        do { let page = try await corpus.ang(ang); state = .loaded(page) }
+        catch { state = .failed("\(error)") }
+    }
+}
+
+struct ReaderScreen: View {
+    @Environment(AppContainer.self) private var container
+    @State private var model: ReaderModel?
+
+    var body: some View {
+        @Bindable var router = container.router
+        NavigationStack {
+            Group {
+                if let model {
+                    LoadStateView(state: model.state) { page in
+                        ScrollView {
+                            LazyVStack(alignment: .leading, spacing: 14) {
+                                if let raag = page.raag {
+                                    Text(raag).font(.subheadline.weight(.semibold)).foregroundStyle(Brand.gold)
+                                }
+                                ForEach(page.lines, id: \.id) { line in
+                                    if line.isHeader {
+                                        GurmukhiText(verbatim: line.gurmukhi, size: 20, weight: .semibold)
+                                            .frame(maxWidth: .infinity, alignment: .center)
+                                            .padding(.vertical, 4)
+                                    } else {
+                                        LineRow(gurmukhi: line.gurmukhi, translit: line.translit,
+                                                meta: line.isRahao ? "ਰਹਾਉ · refrain" : "") {
+                                            container.activeComposition = .shabad(compId: line.compId)
+                                        }
+                                    }
+                                }
+                            }
+                            .padding()
+                        }
+                    }
+                } else { Color.clear }
+            }
+            .navigationTitle("Ang \(router.readerAng)")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItemGroup(placement: .bottomBar) {
+                    Button { router.openAng(router.readerAng - 1) } label: { Image(systemName: "chevron.left") }
+                        .disabled(router.readerAng <= 1)
+                    Spacer()
+                    Button { container.activeComposition = .hukam } label: { Label("Hukam", systemImage: "sparkles") }
+                    Spacer()
+                    Button { router.openAng(router.readerAng + 1) } label: { Image(systemName: "chevron.right") }
+                        .disabled(router.readerAng >= 1430)
+                }
+            }
+        }
+        .task(id: container.router.readerAng) {
+            if model == nil { model = ReaderModel(corpus: container.corpus) }
+            await model?.load(container.router.readerAng)
+        }
+    }
+}
