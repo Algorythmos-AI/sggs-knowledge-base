@@ -47,7 +47,7 @@ function lineCard(l: any): string {
   if (l.matched_term) chips.push(`<span class="gm">term: ${esc(l.matched_term)}</span>`);
   return `<div class="card haspin" role="button" tabindex="0" aria-label="Open composition at Ang ${l.ang}" onclick="shabad(${l.comp_id},${l.id})">
     ${pinButtonHTML(l.id, l.ang, l.comp_id)}
-    <div class="g gm">${hl(esc(l.gurmukhi))}</div><div class="t">${hl(esc(l.translit))}</div>
+    <div class="g gm" lang="pa">${hl(esc(l.gurmukhi))}</div><div class="t">${hl(esc(l.translit))}</div>
     ${l.en ? `<div class="en" lang="en">${esc(l.en)}</div>` : ''}
     <div class="meta">${chips.join('')}</div></div>`;
 }
@@ -69,7 +69,12 @@ const go = guard(async (off: number) => {
   h += `<div class="count">${d.results.length}${d.results.length === 50 ? '+' : ''} result(s) · interpreted as <b>${esc(d.mode)}</b>${off ? ` · from #${off + 1}` : ''}</div>`;
   h += d.results.map(lineCard).join('');
   if (d.results.length === 50) h += `<button class="more" onclick="go(${off + 50})">More ›</button>`;
-  if (!d.results.length) h += `<div class="hint">Nothing found. Try fewer words, first-letters mode, or a theme (<i>naam, hukam, haumai</i>).</div>`;
+  if (!d.results.length) h += `<div class="hint">No results for &ldquo;<b>${esc(q)}</b>&rdquo;.<br>
+      Try fewer words or first-letters mode, a theme —
+      <a href="#" class="rel-theme" data-theme="naam">naam</a> ·
+      <a href="#" class="rel-theme" data-theme="hukam">hukam</a> ·
+      <a href="#" class="rel-theme" data-theme="haumai">haumai</a> —
+      or <a href="/browse">browse the index</a>.</div>`;
   ($('#results') as HTMLElement).innerHTML = h; window.scrollTo({ top: 0 });
 });
 // delegated handlers for #results — keyboard activation of cards + related-theme links
@@ -99,7 +104,7 @@ const doVerify = guard(async (qIn: string) => {
   if (d.gurmukhi) {
     h += `<div class="count">Canonical line:</div>
     <div class="card" role="button" tabindex="0" aria-label="Open Ang ${d.ang}" onclick="goReader(${d.ang})">
-      <div class="g gm">${esc(d.gurmukhi)}</div>
+      <div class="g gm" lang="pa">${esc(d.gurmukhi)}</div>
       <div class="meta"><span class="ang">Ang ${d.ang}</span>
         ${d.raag ? `<span class="gm">${esc(d.raag)}</span>` : ''}
         ${d.author ? `<span>${esc(d.author)}</span>` : ''}</div></div>`;

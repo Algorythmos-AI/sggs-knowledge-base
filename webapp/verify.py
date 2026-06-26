@@ -67,13 +67,31 @@ def _roman_to_tn(s: str) -> str:
 # FTS query builders
 # ---------------------------------------------------------------------------
 
+def _fts_clean(tok: str) -> str:
+    """Strip FTS5 metacharacters from a single token (mirrors the intent of
+    serve.py:_fts_clean). A bare unbalanced quote or star turns a MATCH expression
+    into a parse error (SQLite OperationalError -> HTTP 500), so neutralise them."""
+    return tok.replace('"', '').replace('*', '').strip()
+
+
 def _fts_phrase(tokens: list, column: str = "", n: int = 4) -> str:
-    phrase = " ".join(tokens[: min(n, len(tokens))])
+    """Build a quoted FTS5 phrase from up to n sanitised tokens. Returns '' when no
+    usable token remains; callers (via _fts_query) then skip the MATCH entirely."""
+    words = [w for w in (_fts_clean(t) for t in tokens[: min(n, len(tokens))]) if w]
+    if not words:
+        return ""
+    phrase = " ".join(words)
     return f'{column}: "{phrase}"' if column else f'"{phrase}"'
 
 
 def _fts_or(tokens: list, column: str = "") -> str:
-    joined = " OR ".join(tokens)
+    """Build an FTS5 OR over sanitised tokens, each wrapped as a literal phrase so any
+    embedded operator is inert. Returns '' when no usable token remains. (translit_norm
+    tokens can reduce to '' after vowel-stripping — those must be dropped, not OR'd in.)"""
+    quoted = [f'"{w}"' for w in (_fts_clean(t) for t in tokens) if w]
+    if not quoted:
+        return ""
+    joined = " OR ".join(quoted)
     return f"{column}: ({joined})" if column else joined
 
 # ---------------------------------------------------------------------------
@@ -94,6 +112,8 @@ def _fetch_line(cur: sqlite3.Cursor, rowid: int) -> Optional[dict]:
 
 
 def _fts_query(cur: sqlite3.Cursor, q: str, limit: int = 10) -> list:
+    if not q:                 # empty/sanitised-away expression -> no rows (never MATCH '')
+        return []
     cur.execute(
         "SELECT rowid, rank FROM fts WHERE fts MATCH ? ORDER BY rank LIMIT ?",
         (q, limit),

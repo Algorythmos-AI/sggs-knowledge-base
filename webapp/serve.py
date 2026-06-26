@@ -6,7 +6,7 @@ Zero dependencies: Python 3 standard library only.
 
 Run:   python3 serve.py        then open  http://localhost:7777
 """
-import json, os, re, sqlite3, random, sys, threading, webbrowser, mimetypes
+import json, os, re, sqlite3, random, sys, threading, webbrowser, mimetypes, math
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from urllib.parse import urlparse, parse_qs
 
@@ -27,8 +27,8 @@ PORT = int(os.environ.get('SGGS_PORT', '7777'))
 # doesn't force an 86 MB DB re-commit. /api/meta and /api/health prefer these; the
 # DB meta row is the fallback. Bump on every search-logic release so the UI footer
 # (which reads /api/meta) reflects the running build.
-APP_VERSION = '2.10.1'
-APP_BUILT = '2026-06-20'
+APP_VERSION = '2.11.0'
+APP_BUILT = '2026-06-26'
 
 import sys as _sys
 _sys.path.insert(0, HERE)
@@ -856,7 +856,13 @@ def api(path, qs):
     # analytics tables are absent (an older DB build). NEVER a ranking/judgement of scripture.
     if p[0] == 'themes' and len(p) >= 2 and p[1] == 'network':
         concept = qs.get('concept', [None])[0]
-        min_ppmi = float(qs.get('min_ppmi', ['0'])[0])
+        try:
+            min_ppmi = float(qs.get('min_ppmi', ['0'])[0])
+        except (TypeError, ValueError):
+            min_ppmi = 0.0
+        if not math.isfinite(min_ppmi):     # NaN/inf survive max(min()) (compare False) -> clamp explicitly
+            min_ppmi = 0.0
+        min_ppmi = max(0.0, min(1.0, min_ppmi))
         lim = max(1, min(int(qs.get('limit', ['200'])[0]), 2000))
         try:
             if concept:
@@ -1116,11 +1122,20 @@ def api(path, qs):
 class H(BaseHTTPRequestHandler):
     def log_message(self, *a): pass
 
+    def _sec_headers(self):
+        # Defence-in-depth for the local app. No strict CSP on purpose: the UI relies on
+        # inline event handlers + an inline pre-paint theme script, which a strict policy
+        # would break; nosniff/frame-deny/no-referrer are safe and unconditional.
+        self.send_header('X-Content-Type-Options', 'nosniff')
+        self.send_header('X-Frame-Options', 'DENY')
+        self.send_header('Referrer-Policy', 'no-referrer')
+
     def _respond(self, status, body, ct):
         self.send_response(status)
         self.send_header('Content-Type', ct)
         self.send_header('Content-Length', str(len(body)))
         self.send_header('Cache-Control', 'no-store')
+        self._sec_headers()
         self.end_headers()
         if self.command != 'HEAD':
             self.wfile.write(body)
@@ -1130,11 +1145,27 @@ class H(BaseHTTPRequestHandler):
               'application/json', 'application/manifest+json', 'image/svg+xml')
 
     def _static_error(self, code):
+        # Prefer the styled Astro 404 page when the build provides it; fall back to plain text.
+        if code == 404:
+            page = os.path.join(STATIC_ROOT, '404.html')
+            if os.path.isfile(page):
+                with open(page, 'rb') as f:
+                    body = f.read()
+                self.send_response(404)
+                self.send_header('Content-Type', 'text/html; charset=utf-8')
+                self.send_header('Content-Length', str(len(body)))
+                self.send_header('Cache-Control', 'no-store')
+                self._sec_headers()
+                self.end_headers()
+                if self.command != 'HEAD':
+                    self.wfile.write(body)
+                return
         msg = {403: b'403 Forbidden', 404: b'404 Not Found'}.get(code, b'error')
         self.send_response(code)
         self.send_header('Content-Type', 'text/plain; charset=utf-8')
         self.send_header('Content-Length', str(len(msg)))
         self.send_header('Cache-Control', 'no-store')
+        self._sec_headers()
         self.end_headers()
         if self.command != 'HEAD':
             self.wfile.write(msg)
@@ -1172,6 +1203,7 @@ class H(BaseHTTPRequestHandler):
         self.send_header('Content-Type', ct)
         self.send_header('Content-Length', str(len(body)))
         self.send_header('Cache-Control', cache)
+        self._sec_headers()
         self.end_headers()
         if self.command != 'HEAD':
             self.wfile.write(body)
@@ -1194,7 +1226,9 @@ class H(BaseHTTPRequestHandler):
             try:                                        # drop a possibly-broken DB handle
                 if hasattr(_local, 'con'): _local.con.close(); del _local.con
             except Exception: pass
-            msg = json.dumps({'error': type(e).__name__ + ': ' + str(e)}).encode()
+            # Generic body to the client (full detail is on stderr above); don't leak
+            # exception type / internals (e.g. sqlite schema hints) over the wire.
+            msg = json.dumps({'error': 'internal server error'}).encode()
             return self._respond(500, msg, 'application/json')
 
     def do_GET(self): self._handle()

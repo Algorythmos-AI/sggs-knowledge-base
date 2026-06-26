@@ -3,7 +3,7 @@
 // All data comes from the existing offline analytics endpoints; nothing is computed client-side.
 import * as d3 from 'd3';
 import Chart from 'chart.js/auto';
-import { $, esc, api, meta } from './core';
+import { $, esc, api, meta, prefersReducedMotion } from './core';
 
 const titleCase = (k: string) => k.split('_').map((w) => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
 const cssVar = (n: string) => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
@@ -111,16 +111,24 @@ async function themeNetwork() {
       .attr('text-anchor', 'middle').attr('pointer-events', 'none')
       .attr('paint-order', 'stroke').attr('stroke', cssVar('--bg')).attr('stroke-width', 3);
 
-    sim.nodes(nodes); (sim.force('link') as any).links(edges); sim.alpha(0.8).restart();
+    sim.nodes(nodes); (sim.force('link') as any).links(edges);
+    if (prefersReducedMotion()) {
+      // reduce motion: settle the layout synchronously, then render it static (no animation loop)
+      sim.alpha(1); for (let i = 0; i < 320; i++) sim.tick(); sim.stop(); ticked();
+    } else {
+      sim.alpha(0.8).restart();
+    }
   }
-  sim.on('tick', () => {
+  function ticked() {
     linkSel.selectAll('line')
       .attr('x1', (d: any) => d.source.x).attr('y1', (d: any) => d.source.y)
       .attr('x2', (d: any) => d.target.x).attr('y2', (d: any) => d.target.y);
     nodeSel.selectAll('circle').attr('cx', (d: any) => d.x).attr('cy', (d: any) => d.y);
     labelSel.selectAll('text').attr('x', (d: any) => d.x).attr('y', (d: any) => d.y - rNode((d as any).id) - 4);
-  });
+  }
+  sim.on('tick', ticked);
   render();
+  buildNetworkTable(edgesAll, size, desc);
 
   const slider = $('#ppmiRange') as HTMLInputElement | null;
   const out = $('#ppmiVal');
@@ -128,6 +136,29 @@ async function themeNetwork() {
     const v = +slider.value; if (out) out.textContent = v.toFixed(1);
     nodes = build(v); render();
   };
+}
+
+/* Text alternative for the force-graph (documented "mouse-only chart" gap): a
+   keyboard/screen-reader-friendly table of the strongest theme co-occurrences. Additive,
+   escaped, rebuilt idempotently whenever the network (re)renders. */
+function buildNetworkTable(edgesAll: any[], _size: Record<string, number>, _desc: Record<string, string>) {
+  const host = $('#network'); if (!host) return;
+  // d3.forceLink mutates edge.source/.target from string ids to node objects once the
+  // simulation runs, so normalise to the id either way (string before layout, {id} after).
+  const id = (x: any) => (typeof x === 'string' ? x : (x && x.id) || '');
+  document.getElementById('networkTable')?.remove();
+  const top = edgesAll.slice().sort((a, b) => b.ppmi - a.ppmi).slice(0, 50);
+  const rows = top.map((e) =>
+    `<tr><td>${esc(titleCase(id(e.source)))}</td><td>${esc(titleCase(id(e.target)))}</td>` +
+    `<td>${(+e.ppmi).toFixed(2)}</td><td>${(+e.sc).toLocaleString()}</td></tr>`).join('');
+  const det = document.createElement('details');
+  det.id = 'networkTable'; det.className = 'viz-table';
+  det.innerHTML =
+    '<summary>Theme co-occurrences — data table (text alternative)</summary>' +
+    `<p class="faint">The ${top.length} strongest of ${edgesAll.length.toLocaleString()} co-occurrence links, ranked by PPMI. Each theme is searchable from the Search page.</p>` +
+    '<table><thead><tr><th scope="col">Theme</th><th scope="col">Co-occurs with</th>' +
+    '<th scope="col">PPMI</th><th scope="col">Shabads</th></tr></thead><tbody>' + rows + '</tbody></table>';
+  host.after(det);
 }
 
 /* ============================ Chart.js author radar ============================ */
@@ -262,13 +293,13 @@ async function resonanceChord() {
           + `<br><span>${esc(short(a))} → ${esc(short(b))}: lift ${(matrix[c.source.index][c.target.index] || 0).toFixed(2)}×</span>`
           + `<br><span>${esc(short(b))} → ${esc(short(a))}: lift ${(matrix[c.target.index][c.source.index] || 0).toFixed(2)}×</span>`
           + `<br><span>${(ab.edges || 0) + (ba.edges || 0)} shared neighbour links</span>`).style('opacity', 1);
-        ribs.transition().duration(100).attr('fill-opacity', (x: any) => x === c ? 0.92 : 0.06);
+        ribs.transition().duration(prefersReducedMotion() ? 0 : 100).attr('fill-opacity', (x: any) => x === c ? 0.92 : 0.06);
       })
       .on('mousemove', (ev: any) => { const r = host.getBoundingClientRect(); tip.style('left', (ev.clientX - r.left + 12) + 'px').style('top', (ev.clientY - r.top + 12) + 'px'); })
-      .on('mouseout', () => { tip.style('opacity', 0); ribs.transition().duration(120).attr('fill-opacity', 0.6); });
+      .on('mouseout', () => { tip.style('opacity', 0); ribs.transition().duration(prefersReducedMotion() ? 0 : 120).attr('fill-opacity', 0.6); });
 
     function fadeNode(i: number | null) {
-      ribs.transition().duration(120).attr('fill-opacity', (c: any) =>
+      ribs.transition().duration(prefersReducedMotion() ? 0 : 120).attr('fill-opacity', (c: any) =>
         i === null ? 0.6 : (c.source.index === i || c.target.index === i ? 0.85 : 0.06));
     }
   }

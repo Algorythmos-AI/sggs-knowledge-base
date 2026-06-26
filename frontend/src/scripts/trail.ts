@@ -44,7 +44,7 @@ function stoneCard(n: any): string {
   const score = (n.score != null) ? relChip(n.score) : '';
   const meta = [n.ang ? `Ang ${n.ang}` : '', n.raag ? esc(n.raag) : '', n.author ? esc(n.author) : ''].filter(Boolean).join(' · ');
   return `<a class="stone" href="/trail?line_id=${n.id}" aria-label="Step to Ang ${n.ang}">
-      <div class="g gm">${esc(n.gurmukhi || '')}</div>${t}${e}
+      <div class="g gm" lang="pa">${esc(n.gurmukhi || '')}</div>${t}${e}
       <div class="rm">${score}<span>${meta}</span></div>
       <div class="step">continue →</div></a>`;
 }
@@ -56,7 +56,7 @@ function renderCurrent(line: any) {
   const e = line.en ? `<div class="e">${esc(line.en)}</div>` : '';
   const meta = [line.ang ? `Ang ${line.ang}` : '', line.raag ? esc(line.raag) : '', line.author ? esc(line.author) : ''].filter(Boolean).join(' · ');
   host.innerHTML = `<div class="now-meta">${meta}</div>
-    <div class="g gm">${esc(line.gurmukhi || '')}</div>${t}${e}
+    <div class="g gm" lang="pa">${esc(line.gurmukhi || '')}</div>${t}${e}
     <div class="now-actions">
       <button onclick="goReader(${line.ang || 1})" class="now-btn">Open in Reader →</button>
       ${pinButtonHTML(line.id, line.ang || 1, line.comp_id || 0)}

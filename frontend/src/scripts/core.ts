@@ -31,6 +31,12 @@ export async function api(p: string): Promise<any> {
 export const guard = (fn: (...a: any[]) => Promise<any>) =>
   async (...a: any[]) => { try { return await fn(...a); } catch (e) { console.error(e); } };
 
+// Honour the OS "reduce motion" setting for JS-driven animation (D3 transitions / force
+// layout). The global CSS rule only covers CSS transitions; D3 runs its own animation loop.
+export const prefersReducedMotion = () => {
+  try { return matchMedia('(prefers-reduced-motion: reduce)').matches; } catch { return false; }
+};
+
 // relatedness band for semantic-neighbour scores (true cosine, 0–1) — used by the
 // Trail stones and the Reader's "Related Verses". Calibrated, not a raw percentage.
 export function relBand(score: number) {

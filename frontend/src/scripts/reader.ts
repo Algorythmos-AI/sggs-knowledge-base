@@ -50,12 +50,12 @@ const ang = guard(async (n: number) => {
   // shabad groups
   for (const g of groupShabads(d.lines)) {
     h += '<div class="shabad">';
-    if (g.headers.length) h += `<div class="hdr gm">${g.headers.map((x: any) =>
+    if (g.headers.length) h += `<div class="hdr gm" lang="pa">${g.headers.map((x: any) =>
       `<div class="${x.gurmukhi.startsWith('ੴ') ? 'invoc' : ''}">${esc(x.gurmukhi)}</div>`).join('')}
         <div class="t">${g.headers.map((x: any) => esc(x.translit)).join(' · ')}</div></div>`;
     h += g.body.map((l: any) => `<div class="sline tap haspin ${l.is_rahao ? 'rahao' : ''}" data-line-id="${l.id}" title="Tap for related verses">
         ${pinButtonHTML(l.id, curAng, l.comp_id)}
-        <div class="g gm">${esc(l.gurmukhi)}</div><div class="t">${esc(l.translit)}</div>
+        <div class="g gm" lang="pa">${esc(l.gurmukhi)}</div><div class="t">${esc(l.translit)}</div>
         ${l.en ? `<div class="en" lang="en">${esc(l.en)}</div>` : ''}</div>`).join('');
     h += '</div>';
   }
@@ -109,7 +109,7 @@ function relCard(n: any): string {
   const score = (n.score != null) ? relChip(n.score) : '';
   const m = [`Ang ${n.ang}`, n.raag ? esc(n.raag) : '', n.author ? esc(n.author) : ''].filter(Boolean).join(' · ');
   return `<div class="relcard" onclick="goReader(${n.ang || 1})" role="button" tabindex="0" aria-label="Open Ang ${n.ang}">
-      <div class="g gm">${esc(n.gurmukhi || '')}</div>${t}${e}
+      <div class="g gm" lang="pa">${esc(n.gurmukhi || '')}</div>${t}${e}
       <div class="rm">${score}<span>${m}</span></div></div>`;
 }
 const loadRelated = guard(async (sline: HTMLElement) => {

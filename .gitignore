@@ -9,6 +9,8 @@ __pycache__/
 # Astro frontend build sync backups (local rollback only — never committed)
 webapp/static.bak/
 webapp/static.broken/
+# Display-fidelity validation artifacts (PDF comparison PNGs + fidelity.html); dev-only, not shipped
+webapp/static/_cmp/
 
 # Node deps — platform-specific binaries must NOT be committed (a Linux-built
 # node_modules breaks `npm run build` on macOS). Reproduce with `npm ci`.

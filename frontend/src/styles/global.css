@@ -490,7 +490,7 @@ body.focus-mode main, body.focus-mode .toolbar { position:relative; z-index:2; }
 /* ============================== study trail (pins + drawer) ============================== */
 .haspin { position:relative; }
 .haspin .g { padding-right:30px; }
-.pin-btn { position:absolute; top:8px; right:8px; z-index:3; width:28px; height:28px; border-radius:9px;
+.pin-btn { position:absolute; top:8px; right:8px; z-index:3; width:36px; height:36px; border-radius:10px;
   border:1px solid var(--line); background:var(--card); font-size:13px; line-height:1; cursor:pointer;
   display:inline-flex; align-items:center; justify-content:center; opacity:.42; filter:grayscale(.4) saturate(.7);
   transition:opacity .15s, transform .12s, border-color .15s, background .15s; }
@@ -560,8 +560,16 @@ body.drawer-open { overflow:hidden; }
 .echo-meta .sc { color:var(--gold); font-weight:700; }
 .echo-act { margin-left:auto; display:inline-flex; gap:6px; align-items:center; }
 .echo-open { background:none; border:1px solid var(--line); color:var(--accent); font-size:11px; padding:4px 10px; border-radius:8px; cursor:pointer; }
-.echo .pin-btn { position:static; opacity:.85; width:26px; height:26px; }
+.echo .pin-btn { position:static; opacity:.85; width:32px; height:32px; }
 .trail-export { display:flex; gap:10px; margin-top:16px; }
+
+/* Chart data-table (text alternative for the D3 charts) */
+.viz-table { margin:14px 0 4px; font-size:13px; }
+.viz-table > summary { cursor:pointer; color:var(--accent); font-weight:600; padding:6px 0; }
+.viz-table p { margin:6px 0 10px; }
+.viz-table table { width:100%; border-collapse:collapse; }
+.viz-table th, .viz-table td { text-align:left; padding:5px 10px; border-bottom:1px solid var(--line); }
+.viz-table th { color:var(--soft); font-weight:600; }
 
 @media (prefers-reduced-motion: reduce) { *{ transition:none !important; scroll-behavior:auto !important; } }
 @media (max-width:620px) {

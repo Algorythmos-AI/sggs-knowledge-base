@@ -1,3 +1,8 @@
+> ⚠️ **SUPERSEDED — historical (v1.5.0, 2026-06-10).** This report is kept for the record but
+> no longer reflects the shipped build (currently **v2.11.0**). For current validation see
+> `SGGS-Apple-Grade-Audit-2026-06-26.md`, the live `/api/health` self-test, and the external
+> audit/verification docs one level up (`../SGGS-Live-Verification-2026-06-19.md` et al.).
+
 # Validation Report — SGGS Knowledge Base v1.5.0 (built 2026-06-10)
 
 **v1.5.0 (overnight):** English layer (2,587 SSK lines via BaniDB, 10-agent fleet; QA 12/12 alignment, 5/5 fidelity, 99% exact alignment); /api/health self-test; search highlighting; sources registry. Final E2E: 33/36 first pass → 3 housekeeping items fixed (manifest, changelog) → green. Known gap: Anand Sahib + Sukhmani tail EN coverage partial (API truncation) — re-pass listed for a future session.

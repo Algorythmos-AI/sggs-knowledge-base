@@ -1,6 +1,6 @@
 # SGGS Knowledge Base — Master Index
 
-**Source:** `Siri-Guru-Granth-Sahib-in-Gurmukhi-with-Index.pdf` (1,483 pages → 1,430 Angs) · v2.10.1, built 2026-06-20 · 60,658 lines (char-for-char reconciled with the source) · 29,244 distinct words · 53 themes · per-Bhatt Swaiyye attribution · Vaar pauris correctly attributed.
+**Source:** `Siri-Guru-Granth-Sahib-in-Gurmukhi-with-Index.pdf` (1,483 pages → 1,430 Angs) · v2.11.0, built 2026-06-26 · 60,658 lines (char-for-char reconciled with the source) · 29,244 distinct words · 54 themes · per-Bhatt Swaiyye attribution · Vaar pauris correctly attributed.
 
 ## Use it
 

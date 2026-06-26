@@ -1,6 +1,6 @@
-import{$ as a,g as _,a as C,e as l}from"./core.Cf5ef2bh.js";import{p as W,t as F,s as J,i as P,c as z,g as M,e as X,a as K,b as Y,d as G,f as Q,r as Z,m as tt,l as et,M as nt}from"./store.cCG7XMKa.js";function O(t){return t.map(e=>`<div class="sline ${e.is_rahao?"rahao":""}${e.is_header?"":" haspin"}">
+import{$ as a,g as _,a as C,e as l}from"./core.Cr_uxl3G.js";import{p as W,t as F,s as J,i as P,c as z,g as M,e as X,a as K,b as Y,d as G,f as Q,r as Z,m as tt,l as et,M as nt}from"./store.cCG7XMKa.js";function O(t){return t.map(e=>`<div class="sline ${e.is_rahao?"rahao":""}${e.is_header?"":" haspin"}">
       ${e.is_header?"":W(e.id,e.ang,e.comp_id)}
-      <div class="g gm ${e.is_header&&e.gurmukhi.startsWith("ੴ")?"invoc":""}" style="${e.is_header?"color:var(--gold);font-weight:600;text-align:center":""}">${l(e.gurmukhi)}</div>
+      <div class="g gm ${e.is_header&&e.gurmukhi.startsWith("ੴ")?"invoc":""}" lang="pa" style="${e.is_header?"color:var(--gold);font-weight:600;text-align:center":""}">${l(e.gurmukhi)}</div>
       <div class="t" style="${e.is_header?"text-align:center":""}">${l(e.translit)}</div>
       ${e.en?`<div class="en" lang="en">${l(e.en)}</div>`:""}</div>`).join("")}function st(t){const e=t.find(r=>!r.is_header)||t[0]||{},n=(t[0]||{}).ang||e.ang||"",i=e.raag||e.section||"",o=[e.author||(e.section==="ਜਪੁ"?"Guru Nanak Dev Ji (M1)":""),n?"Ang "+n:""].filter(Boolean).join("  ·  ");return{main:i,sub:o,ang:n}}function R(t){const e=st(t);return!e.main&&!e.sub?"":`<div style="text-align:center;margin:0 0 18px;padding-bottom:14px;border-bottom:1px solid var(--line)">
     ${e.main?`<div class="gm" style="color:var(--gold);font-size:20px;font-weight:600">${l(e.main)}</div>`:""}

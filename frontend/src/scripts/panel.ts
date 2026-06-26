@@ -8,7 +8,7 @@ import { pinButtonHTML } from './store';
 function panelLines(lines: any[]): string {
   return lines.map((l: any) => `<div class="sline ${l.is_rahao ? 'rahao' : ''}${l.is_header ? '' : ' haspin'}">
       ${l.is_header ? '' : pinButtonHTML(l.id, l.ang, l.comp_id)}
-      <div class="g gm ${l.is_header && l.gurmukhi.startsWith('ੴ') ? 'invoc' : ''}" style="${l.is_header ? 'color:var(--gold);font-weight:600;text-align:center' : ''}">${esc(l.gurmukhi)}</div>
+      <div class="g gm ${l.is_header && l.gurmukhi.startsWith('ੴ') ? 'invoc' : ''}" lang="pa" style="${l.is_header ? 'color:var(--gold);font-weight:600;text-align:center' : ''}">${esc(l.gurmukhi)}</div>
       <div class="t" style="${l.is_header ? 'text-align:center' : ''}">${esc(l.translit)}</div>
       ${l.en ? `<div class="en" lang="en">${esc(l.en)}</div>` : ''}</div>`).join('');
 }
