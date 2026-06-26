@@ -207,6 +207,16 @@ def search_vectors():
         ('ਸ ਨ ਕ', 'first'), ('s n k', 'first'), ('dh dh r g', 'first'),
         ('naam', 'theme'), ('hukam', 'theme'), ('haumai', 'theme'), ('simran', 'theme'),
         ('', 'gurmukhi'), ('   ॥  ', 'gurmukhi'),   # empty / punctuation-only
+        # --- auto mode: exercise the waterfall tiers ---
+        ('ਨਾਮੁ', 'auto'), ('ਸਤਿ ਨਾਮੁ', 'auto'), ('ਸ ਨ ਕ', 'auto'),    # gurmukhi text / single-letter
+        ('naam', 'auto'), ('gobind', 'auto'), ('har har', 'auto'),       # roman translit
+        ('haumai', 'auto'), ('hukam', 'auto'),                            # concept-exact -> theme
+        ('ego', 'auto'), ('mercy', 'auto'), ('peace', 'auto'),           # seeker lexicon (theme/translit)
+        ('waheguru', 'auto'), ('satnam waheguru', 'auto'),               # lexicon translit / bigram
+        ('darshan', 'auto'), ('seva', 'auto'),                           # lexicon anchors
+        ('s n k', 'auto'), ('dh dh r g', 'auto'),                        # roman first-letters
+        ('satgur kirpa', 'auto'),                                         # translit / fold
+        ('ਨਾਮੁ simran', 'auto'),                                         # mixed-script
     ]
     out = []
     for q, mode in cases:

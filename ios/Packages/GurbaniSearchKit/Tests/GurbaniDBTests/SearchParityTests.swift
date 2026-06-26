@@ -26,7 +26,10 @@ final class SearchParityTests: XCTestCase {
         let related_themes: [String]?
     }
 
-    private static let portedModes: Set<String> = ["gurmukhi", "roman", "first", "theme"]
+    // The only deferred tier is passage_search (recognisable by its unique resolved mode).
+    private static func isDeferred(_ usedMode: String?) -> Bool {
+        (usedMode ?? "").hasPrefix("passage-match")
+    }
 
     func testSearchParity() throws {
         let root = repoRoot()
@@ -45,7 +48,7 @@ final class SearchParityTests: XCTestCase {
 
         for row in rows {
             let v = try dec.decode(SVector.self, from: Data(row.utf8))
-            guard Self.portedModes.contains(v.mode) else { continue }  // exotic auto tiers: later phase
+            if Self.isDeferred(v.used) { continue }   // passage_search: later phase
             asserted += 1
             let out = try engine.search(v.query, mode: v.mode, limit: 50, offset: 0)
             let tag = "q=\(v.query.debugDescription) mode=\(v.mode)"

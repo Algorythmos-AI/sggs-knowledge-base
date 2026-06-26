@@ -32,6 +32,68 @@ extension SQLiteCandidateSource: SearchSource {
         return try query(sql, text: [(1, match)], ints: [(2, limit), (3, offset)])
     }
 
+    public func ftsSearchExpr(match: String, excludeHeaders: Bool, limit: Int, offset: Int) throws -> [SearchLine] {
+        if match.isEmpty { return [] }
+        let wh = excludeHeaders ? " WHERE lines.is_header = 0" : ""
+        let sql = """
+        SELECT \(Self.lineCols) FROM lines JOIN
+          (SELECT rowid, bm25(fts, 10.0, 5.0, 4.0, 3.0, 3.0, 1.0) AS rk
+           FROM fts WHERE fts MATCH ?) m ON lines.id = m.rowid\(wh)
+        ORDER BY m.rk, lines.id LIMIT ? OFFSET ?
+        """
+        return try query(sql, text: [(1, match)], ints: [(2, limit), (3, offset)])
+    }
+
+    public func ftsSearchExprWithNorm(match: String, limit: Int) throws -> [VariantRow] {
+        if match.isEmpty { return [] }
+        // NOTE: serve.py's all-but-one fallback uses ORDER BY m.rk (no lines.id tiebreak), LIMIT 150.
+        let sql = """
+        SELECT \(Self.lineCols), translit_norm FROM lines JOIN
+          (SELECT rowid, bm25(fts, 10.0, 5.0, 4.0, 3.0, 3.0, 1.0) AS rk
+           FROM fts WHERE fts MATCH ?) m ON lines.id = m.rowid
+        ORDER BY m.rk LIMIT ?
+        """
+        var stmt: OpaquePointer?
+        guard sqlite3_prepare_v2(handle, sql, -1, &stmt, nil) == SQLITE_OK else {
+            throw DBError.prepare(String(cString: sqlite3_errmsg(handle)))
+        }
+        defer { sqlite3_finalize(stmt) }
+        sqlite3_bind_text(stmt, 1, match, -1, Self.transientDtor)
+        sqlite3_bind_int(stmt, 2, Int32(limit))
+        var out: [VariantRow] = []
+        while sqlite3_step(stmt) == SQLITE_ROW {
+            let line = mapLine(stmt)
+            let tn = sqlite3_column_text(stmt, 10).map { String(cString: $0) } ?? ""  // translit_norm follows lineCols
+            out.append(VariantRow(line: line, translit: line.translit, translitNorm: tn))
+        }
+        return out
+    }
+
+    public func variantsLookup(_ token: String) throws -> [String] {
+        var stmt: OpaquePointer?
+        let sql = "SELECT DISTINCT translit FROM variants WHERE variant = ? ORDER BY freq * score DESC LIMIT 3"
+        guard sqlite3_prepare_v2(handle, sql, -1, &stmt, nil) == SQLITE_OK else {
+            throw DBError.prepare(String(cString: sqlite3_errmsg(handle)))
+        }
+        defer { sqlite3_finalize(stmt) }
+        sqlite3_bind_text(stmt, 1, token, -1, Self.transientDtor)
+        var out: [String] = []
+        while sqlite3_step(stmt) == SQLITE_ROW {
+            out.append(sqlite3_column_text(stmt, 0).map { String(cString: $0) } ?? "")
+        }
+        return out
+    }
+
+    public func isCanon(_ token: String) throws -> Bool {
+        var stmt: OpaquePointer?
+        guard sqlite3_prepare_v2(handle, "SELECT 1 FROM canon_tokens WHERE token = ?", -1, &stmt, nil) == SQLITE_OK else {
+            throw DBError.prepare(String(cString: sqlite3_errmsg(handle)))
+        }
+        defer { sqlite3_finalize(stmt) }
+        sqlite3_bind_text(stmt, 1, token, -1, Self.transientDtor)
+        return sqlite3_step(stmt) == SQLITE_ROW
+    }
+
     public func likeSearch(column: String, pattern: String, limit: Int, offset: Int) throws -> [SearchLine] {
         guard Self.ftsCols.contains(column) else { throw DBError.prepare("invalid column: \(column)") }
         let sql = "SELECT \(Self.lineCols) FROM lines WHERE \(column) LIKE ? ORDER BY id LIMIT ? OFFSET ?"
