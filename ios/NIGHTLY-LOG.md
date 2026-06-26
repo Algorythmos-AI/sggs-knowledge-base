@@ -25,3 +25,9 @@
 - CorpusActor (Sendable boundary), LaunchIntegrity (sha+invariants, fail-closed), GurmukhiText+Saroop,
   Router/deep-links, Search (7 modes, .task debounce, verdict), Reader (Ang nav+Hukam), Index, Themes,
   More/About, single root ShabadSheet. BUILD SUCCEEDED; app launches; Search renders Gurmukhi; integrity PASSED.
+
+## 23:23 — Phase F+J: functional tests GREEN
+- Fixed test-install collision: dropped the PRODUCT_BUNDLE_IDENTIFIER cmdline override (it gave the
+  embedded SwiftPM frameworks the app bundle id). Frameworks now get distinct ids.
+- xcodebuild test on iOS 26.5 sim: 8/8 pass — 4 unit (ang/hukam/theme/verify vs bundled DB) +
+  4 XCUITest (launch, Reader+Hukam, Search->shabad sheet, Verify->verdict). TEST SUCCEEDED.
