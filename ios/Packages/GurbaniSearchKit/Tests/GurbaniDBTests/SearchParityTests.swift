@@ -26,10 +26,8 @@ final class SearchParityTests: XCTestCase {
         let related_themes: [String]?
     }
 
-    // The only deferred tier is passage_search (recognisable by its unique resolved mode).
-    private static func isDeferred(_ usedMode: String?) -> Bool {
-        (usedMode ?? "").hasPrefix("passage-match")
-    }
+    // All tiers are now ported (incl. passage_search). Nothing is deferred.
+    private static func isDeferred(_ usedMode: String?) -> Bool { false }
 
     func testSearchParity() throws {
         let root = repoRoot()

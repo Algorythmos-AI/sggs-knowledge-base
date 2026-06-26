@@ -69,7 +69,17 @@ public protocol SearchSource: Sendable {
     func variantsLookup(_ token: String) throws -> [String]
     /// `SELECT 1 FROM canon_tokens WHERE token=?`.
     func isCanon(_ token: String) throws -> Bool
+    /// `SELECT comp_id, tnorm, rank FROM fts_shabad WHERE fts_shabad MATCH ? ORDER BY rank LIMIT ?`.
+    func ftsShabad(match: String, limit: Int) throws -> [ShabadCand]
+    /// translit_norm of each non-header line, grouped by comp_id (passage span scoring).
+    func shabadLineNorms(compIds: [Int]) throws -> [Int: [String]]
+    /// non-header lines of a comp_id (ORDER BY id) with their translit_norm (passage bubbling).
+    func compLines(compId: Int) throws -> [VariantRow]
 }
+
+/// A shabad-level FTS candidate (passage tier).
+public struct ShabadCand: Sendable { public let compId: Int; public let tnorm: String; public let rank: Double
+    public init(compId: Int, tnorm: String, rank: Double) { self.compId = compId; self.tnorm = tnorm; self.rank = rank } }
 
 public enum SearchError: Error { case queryTooLong }
 
@@ -346,8 +356,72 @@ public struct SearchEngine {
         return nil
     }
 
-    /// DEFERRED: cross-line passage tier (uses Python-`re` span logic) — ported in a later phase.
-    private func passageSearch(_ q: String, limit: Int, offset: Int) throws -> [SearchLine]? { nil }
+    /// Cross-line passage tier (serve.py:passage_search). Folds tokens, matches at shabad level,
+    /// ranks by the tightest in-order SPAN, then bubbles the matched line(s) to the top.
+    /// The span regex runs over ASCII translit_norm, so NSRegularExpression (ICU) ≈ Python `re`.
+    private func passageSearch(_ q: String, limit: Int, offset: Int) throws -> [SearchLine]? {
+        var toks = q.lowercased().split(separator: " ").map(String.init)
+            .filter { Self.isAlnum($0) }.map { RomanNorm.fold($0) }
+        toks = toks.filter { $0.unicodeScalars.count >= 2 }
+        if toks.count < 3 { return nil }
+
+        let m = toks.map { "\"\($0)\"" }.joined(separator: " AND ")
+        let cand = try source.ftsShabad(match: m, limit: 60)
+        if cand.isEmpty { return nil }
+
+        // seq = \b t1 \w*\b.*?\b t2 \w*\b.*?\b t3 \w*   (re.escape is identity on [a-z] folds)
+        let pattern = "\\b" + toks.joined(separator: "\\w*\\b.*?\\b") + "\\w*"
+        guard let seq = try? NSRegularExpression(pattern: pattern) else { return nil }
+        func span(_ s: String) -> Int? {
+            let r = NSRange(s.startIndex..., in: s)
+            guard let mt = seq.firstMatch(in: s, range: r) else { return nil }
+            return mt.range.length     // UTF-16 == code-point length on ASCII translit_norm
+        }
+        func matches(_ s: String) -> Bool {
+            seq.firstMatch(in: s, range: NSRange(s.startIndex..., in: s)) != nil
+        }
+
+        let lineNorms = try source.shabadLineNorms(compIds: cand.map { $0.compId })
+        // (span, rank, compId), stable on cand (rank) order
+        var scored: [(span: Int, rank: Double, cid: Int)] = []
+        for c in cand {
+            var best: Int? = nil
+            for ln in lineNorms[c.compId] ?? [] {
+                if let s = span(ln), best == nil || s < best! { best = s }
+            }
+            if best == nil, let s = span(c.tnorm) { best = s }
+            if let b = best { scored.append((b, c.rank, c.compId)) }
+        }
+        if scored.isEmpty { return nil }
+        let order = scored.enumerated().sorted {
+            $0.element.span != $1.element.span ? $0.element.span < $1.element.span
+                : ($0.element.rank != $1.element.rank ? $0.element.rank < $1.element.rank : $0.offset < $1.offset)
+        }.map { $0.element }
+        let cids = order.prefix(3).map { $0.cid }
+        let foldSet = Set(toks)
+
+        var out: [SearchLine] = []
+        for cid in cids {
+            let lines = try source.compLines(compId: cid)
+            let annotated = lines.map { row -> (line: SearchLine, hits: Int, seq: Int) in
+                let words = row.translitNorm.split(separator: " ").map(String.init)
+                let hits = words.reduce(0) { $0 + (foldSet.contains($1) ? 1 : 0) }
+                return (row.line, hits, matches(row.translitNorm) ? 1 : 0)
+            }
+            let matched = annotated.filter { $0.hits > 0 }
+                .sorted { a, b in
+                    if a.seq != b.seq { return a.seq > b.seq }
+                    if a.hits != b.hits { return a.hits > b.hits }
+                    return a.line.id < b.line.id
+                }.map { $0.line }
+            let context = annotated.filter { $0.hits == 0 }.map { $0.line }.sorted { $0.id < $1.id }
+            let perComp = max(2, limit / max(cids.count, 1))
+            out += Array((matched + context).prefix(perComp))
+        }
+        let lo = min(offset, out.count), hi = min(offset + limit, out.count)
+        let sliced = Array(out[lo..<hi])
+        return sliced.isEmpty ? nil : sliced
+    }
 
     // MARK: preprocessing + helpers (Unicode-scalar exact)
 

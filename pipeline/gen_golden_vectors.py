@@ -217,6 +217,11 @@ def search_vectors():
         ('s n k', 'auto'), ('dh dh r g', 'auto'),                        # roman first-letters
         ('satgur kirpa', 'auto'),                                         # translit / fold
         ('ਨਾਮੁ simran', 'auto'),                                         # mixed-script
+        # passage tier candidates (cross-line quotes; ≥3 tokens that fail earlier tiers)
+        ('jeevat jo marai haan dutar so tarai haan', 'auto'),
+        ('jeevat marai taa sabh kichh soojhai', 'auto'),
+        ('nanak naam chardi kala tere bhaane sarbat da bhala', 'auto'),
+        ('man toon jot saroop hai apnaa mool pachhaan', 'auto'),
     ]
     out = []
     for q, mode in cases:
