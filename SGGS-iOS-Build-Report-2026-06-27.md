@@ -61,9 +61,14 @@ boundary, and no retain cycles.
 - Fixed a test-install collision (a `PRODUCT_BUNDLE_IDENTIFIER` override had given both embedded SwiftPM
   frameworks the app's bundle id).
 
-## Deferred to v1.1 (logged, not bugs)
+## v1.1 progress (post-v1, same branch)
+- ✅ **Semantic Trail** — `/api/neighbors` ported byte-identical (line + composition tiers, golden-tested
+  on ids + cosine scores); TrailScreen with relatedness **bands** (never a raw % or ranking of scripture),
+  breadcrumb walking, pin/open. 10/10 app tests green.
+
+## Deferred to v1.1+ (logged, not bugs)
 - **Insights** (theme network / resonance chord / raag streamgraph / radar) and **Constellation**
-  visualizations; **Semantic Trail** (needs the neighbors endpoint, easy port); the **Lineage** depth.
+  visualizations; the **Lineage** depth.
 - **English translation** layer (licensing — see *NOTICE.md*; Gurmukhi-only by design for v1).
 - **Pinned SQLite via GRDBCustomSQLite** (device-fidelity hardening; the system SQLite is 3.51.0 == the
   web reference on this machine, and parity is golden-proven).

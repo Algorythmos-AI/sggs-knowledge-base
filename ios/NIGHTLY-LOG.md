@@ -48,3 +48,8 @@
 - Ported /api/neighbors (line_neighbors line-tier -> shabad_neighbors composition fallback) into kit+DB+actor.
 - golden_reader +5 neighbor vectors (both tiers); ReaderParityTests asserts ids+cosine scores: BYTE-IDENTICAL.
 - TrailScreen: relatedness BANDS (not raw 
+## Phase L (v1.1): Semantic Trail
+- Ported /api/neighbors (line_neighbors line-tier -> shabad_neighbors composition fallback) into kit+DB+actor.
+- golden_reader +5 neighbour vectors (both tiers); ReaderParityTests asserts ids + cosine scores: BYTE-IDENTICAL.
+- TrailScreen: relatedness BANDS (not a raw percentage), breadcrumb walk, pin+open, "not a ranking of scripture" note.
+  Entry via LineRow "Explore related"; second root sheet. Full test 10/10 green. Branch pushed (095b5f4).
