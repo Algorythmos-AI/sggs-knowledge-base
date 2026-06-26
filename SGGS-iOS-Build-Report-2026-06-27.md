@@ -1,7 +1,9 @@
 # SGGS iOS — v1 Build Report (overnight autonomous build)
 
-**Date:** 2026-06-27 · **Branch:** `ios-app-v1` · **Toolchain:** Xcode 26.5 / Swift 6.3 / iOS 26.5 sim ·
-**Status:** a building, running, **tested** native SwiftUI app with the full v1 core.
+**Date:** 2026-06-27 · **Branch:** `ios-app-v1` (pushed, `2f86cb4`) · **Toolchain:** Xcode 26.5 / Swift 6 /
+iOS 26.5 sim · **Status:** a running, **tested, audit-hardened** native SwiftUI app at web feature-parity,
+with the device-fidelity loophole closed (pinned SQLite). 15/15 app tests + 6 kit parity suites green.
+Engineering-complete; remaining items are **human-gated** (signing, real-device run, final icon art).
 
 > Prime directive upheld: scripture is **byte-identical & read-only**; search/verify are **byte-for-byte**
 > with the Python backend (golden-tested); `git diff -- corpus db` empty throughout.
@@ -53,6 +55,25 @@ until the check passes); the verify `@ang` parse is range-validated; Reader chev
 Ang-result got VoiceOver labels; the search debounce skips empty queries. The review **confirmed clean**:
 the verbatim copy/share/save/VoiceOver invariant, no writes to the corpus DB, the actor concurrency
 boundary, and no retain cycles.
+
+## Finishing-line hardening pass (audit-driven, P1–P4 — commits `04e857c…2f86cb4`)
+A senior-grade audit (five exploration passes, two deep-dives, two independent code reviews) then a
+four-phase fix. **Loophole-closure table:**
+
+| Loophole (real) | Severity | Fix | Proof |
+|---|---|---|---|
+| App linked the **system SQLite** → FTS5 `unicode61`/`bm25` order could drift across iOS versions | **High (fidelity)** | **Pinned** SQLite by vendoring the official **3.51.0 amalgamation** (`CSQLite` C target, `SQLITE_ENABLE_FTS5`); removed `linkedLibrary("sqlite3")` | All golden parity suites byte-identical on the vendored engine = the device guarantee |
+| Two/three competing root `.sheet`s → a sheet **dropped** when opening a shabad from inside Trail/Cluster | High | One `Presentation` enum + one `.sheet`; in-sheet opens `present()` (queue) + `onDismiss` flush | New regression UI test (Trail→Open swaps cleanly) |
+| `LineRow` **"Explore related"** still bypassed `present()` (re-review catch) | Med | Routed through `present()` | 15/15 suite |
+| Re-saving a verse hit `@unique` (swallowed by `try?`) | Med | Idempotent save (FetchDescriptor + rollback) | suite |
+| Raw `\(error)` shown to users | Med | `UserMessage` friendly copy | — |
+| Over-long / hostile queries | Low | confirmed Swift mirrors Python's `>300`/punct guards | adversarial vectors + `testOverLongQueryRejected` |
+| Misc: model-init race, missing cancellation/empty guards, NaN, hidden `continued_from`, `pa` dev-lang | Low | all fixed | suite |
+
+Also added: launch-perf guard (91 MB SHA in **0.045 s**), a **CI fidelity gate** (`.github/workflows/ios.yml`:
+LFS → build DB → manifest check → `swift test` on the vendored engine), Settings (translit / Gurmukhi-size
+/ appearance), haptics, a placeholder **ੴ App Icon** + launch screen, and About now shows the pinned SQLite
+version. **Tests: 15/15 app + 6 kit parity suites green; verified dark-mode + accessibility-XL layout.**
 
 ## Build-environment notes (resolved autonomously)
 - Disk hit 0 (ENOSPC blocked all commands) → reclaimed ~23 G of regenerable caches.
