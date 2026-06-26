@@ -16,6 +16,7 @@ struct MoreScreen: View {
                     .accessibilityIdentifier("saroopToggle")
                 }
                 Section {
+                    NavigationLink { InsightsScreen() } label: { Label("Insights", systemImage: "chart.bar.xaxis") }
                     NavigationLink { SavedScreen() } label: { Label("Saved verses", systemImage: "bookmark") }
                     NavigationLink { AboutScreen() } label: { Label("About & credits", systemImage: "info.circle") }
                 }

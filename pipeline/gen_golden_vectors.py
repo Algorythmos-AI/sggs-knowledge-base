@@ -264,6 +264,15 @@ def reader_vectors():
                     'source': r.get('source'),
                     'neighbor_ids': [n.get('id', n.get('comp_id')) for n in r['neighbors']],
                     'scores': [round(n['score'], 6) for n in r['neighbors']]})
+    # analytics (Insight Engine): author/raag lists + theme co-occurrence network
+    av = serve.api('/api/analytics/author', {})['authors']
+    out.append({'kind': 'authors', 'names': [a['author'] for a in av],
+                'n_lines': [a['n_lines'] for a in av], 'mattr': [round(a['mattr_100'], 4) for a in av]})
+    rv2 = serve.api('/api/analytics/raag', {})['raags']
+    out.append({'kind': 'raags', 'names': [r['raag'] for r in rv2], 'n_lines': [r['n_lines'] for r in rv2]})
+    tn = serve.api('/api/themes/network', {'min_ppmi': ['0.7'], 'limit': ['40']})['edges']
+    out.append({'kind': 'theme_net', 'pairs': [f"{e['source']}~{e['target']}" for e in tn],
+                'ppmi': [round(e['ppmi'], 6) for e in tn]})
     return out
 
 

@@ -54,6 +54,18 @@ final class SGGSUITests: XCTestCase {
                       "Trail did not open")
     }
 
+    func testInsights() {
+        let dir = "/private/tmp/claude-501/-Users-samkalaliya-ppt-universe-SGGS-KnowledgeBase/27b4d30a-a6e1-40cf-9daa-9a74b9b8b00a/scratchpad"
+        let app = XCUIApplication(); app.launch()
+        app.tabBars.buttons["More"].tap()
+        let insights = app.buttons["Insights"]
+        XCTAssertTrue(insights.waitForExistence(timeout: 12))
+        insights.tap()
+        XCTAssertTrue(app.buttons["Contributors"].waitForExistence(timeout: 12), "Insights did not open")
+        _ = app.staticTexts.element(boundBy: 0).waitForExistence(timeout: 6)
+        try? app.screenshot().pngRepresentation.write(to: URL(fileURLWithPath: "\(dir)/v11_insights.png"))
+    }
+
     /// Captures reference screenshots to the scratchpad (not an assertion gate).
     func testCaptureScreens() {
         let dir = "/private/tmp/claude-501/-Users-samkalaliya-ppt-universe-SGGS-KnowledgeBase/27b4d30a-a6e1-40cf-9daa-9a74b9b8b00a/scratchpad"

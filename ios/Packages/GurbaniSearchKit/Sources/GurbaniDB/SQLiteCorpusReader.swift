@@ -4,7 +4,7 @@ import GurbaniSearchKit
 
 /// Plain corpus-read endpoints over the read-only DB — the exact serve.py SQL/logic for
 /// /api/ang, /shabad, /random (hukam_package), /meta. No fuzzy logic.
-extension SQLiteCandidateSource: CorpusReader {
+extension SQLiteCandidateSource: CorpusReader, AnalyticsSource {
 
     // id, ang, raag, section, author, comp_type, comp_id, line_no, is_rahao, is_header, gurmukhi, translit, markers
     private static let readerCols =
@@ -191,6 +191,48 @@ extension SQLiteCandidateSource: CorpusReader {
             concepts.append(ConceptRow(concept: col(s, 0) ?? "", description: col(s, 1) ?? "", nLines: int(s, 2)))
         }
         return CorpusMeta(raags: raags, sections: sections, authors: authors, concepts: concepts)
+    }
+
+    public func authorAnalytics() throws -> [AuthorStat] {
+        var out: [AuthorStat] = []
+        try prepareEach("SELECT author, n_lines, n_shabads, n_raags, mattr_100, avg_words_line, is_reliable "
+                        + "FROM author_analytics ORDER BY n_lines DESC") { s in
+            out.append(AuthorStat(author: col(s, 0) ?? "", nLines: int(s, 1), nShabads: int(s, 2),
+                                  nRaags: int(s, 3), mattr100: sqlite3_column_double(s, 4),
+                                  avgWordsLine: sqlite3_column_double(s, 5), isReliable: int(s, 6) != 0))
+        }
+        return out
+    }
+
+    public func raagAnalytics() throws -> [RaagStat] {
+        var out: [RaagStat] = []
+        try prepareEach("SELECT raag, n_lines, n_shabads, n_authors, dominant_author, dominant_author_pct, n_themes "
+                        + "FROM raag_analytics ORDER BY n_lines DESC") { s in
+            out.append(RaagStat(raag: col(s, 0) ?? "", nLines: int(s, 1), nShabads: int(s, 2),
+                                nAuthors: int(s, 3), dominantAuthor: col(s, 4),
+                                dominantAuthorPct: sqlite3_column_double(s, 5), nThemes: int(s, 6)))
+        }
+        return out
+    }
+
+    public func themeNetwork(minPPMI: Double, limit: Int) throws -> [ThemeEdge] {
+        let lim = max(1, min(limit, 2000))
+        let mp = max(0.0, min(1.0, minPPMI.isFinite ? minPPMI : 0.0))
+        var stmt: OpaquePointer?
+        let sql = "SELECT source, target, shabad_count, ppmi, jaccard FROM theme_network "
+            + "WHERE source < target AND ppmi >= ? ORDER BY ppmi DESC LIMIT ?"
+        guard sqlite3_prepare_v2(handle, sql, -1, &stmt, nil) == SQLITE_OK else {
+            throw DBError.prepare(String(cString: sqlite3_errmsg(handle)))
+        }
+        defer { sqlite3_finalize(stmt) }
+        sqlite3_bind_double(stmt, 1, mp); sqlite3_bind_int(stmt, 2, Int32(lim))
+        var out: [ThemeEdge] = []
+        while sqlite3_step(stmt) == SQLITE_ROW {
+            out.append(ThemeEdge(source: col(stmt, 0) ?? "", target: col(stmt, 1) ?? "",
+                                 shabadCount: int(stmt, 2), ppmi: sqlite3_column_double(stmt, 3),
+                                 jaccard: sqlite3_column_double(stmt, 4)))
+        }
+        return out
     }
 
     // small helpers

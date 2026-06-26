@@ -31,6 +31,15 @@ final class ReaderParityTests: XCTestCase {
         let line_id: Int?
         let neighbor_ids: [Int]?
         let scores: [Double]?
+        let names: [String]?
+        let n_lines: [Int]?
+        let mattr: [Double]?
+        let pairs: [String]?
+        let ppmi: [Double]?
+    }
+
+    private func eqDoubles(_ a: [Double], _ b: [Double]) -> Bool {
+        a.count == b.count && !zip(a, b).contains { abs($0 - $1) > 1e-4 }
     }
 
     func testReaderParity() throws {
@@ -66,6 +75,22 @@ final class ReaderParityTests: XCTestCase {
                 if zip(gotScores, v.scores ?? []).contains(where: { abs($0 - $1) > 1e-5 }) || gotScores.count != (v.scores?.count ?? -1) {
                     failures.append("neighbors \(lid): scores differ")
                 }
+            } else if v.kind == "authors" {
+                asserted += 1
+                let a = try db.authorAnalytics()
+                if a.map({ $0.author }) != (v.names ?? []) { failures.append("authors: names differ") }
+                if a.map({ $0.nLines }) != (v.n_lines ?? []) { failures.append("authors: n_lines differ") }
+                if !eqDoubles(a.map { ($0.mattr100 * 1e4).rounded() / 1e4 }, v.mattr ?? []) { failures.append("authors: mattr differ") }
+            } else if v.kind == "raags" {
+                asserted += 1
+                let r = try db.raagAnalytics()
+                if r.map({ $0.raag }) != (v.names ?? []) { failures.append("raags: names differ") }
+                if r.map({ $0.nLines }) != (v.n_lines ?? []) { failures.append("raags: n_lines differ") }
+            } else if v.kind == "theme_net" {
+                asserted += 1
+                let e = try db.themeNetwork(minPPMI: 0.7, limit: 40)
+                if e.map({ "\($0.source)~\($0.target)" }) != (v.pairs ?? []) { failures.append("theme_net: pairs differ") }
+                if !eqDoubles(e.map { ($0.ppmi * 1e6).rounded() / 1e6 }, v.ppmi ?? []) { failures.append("theme_net: ppmi differ") }
             } else if v.kind == "hukam", let seed = v.seed {
                 asserted += 1
                 let u = try db.hukamUnit(seed: seed)

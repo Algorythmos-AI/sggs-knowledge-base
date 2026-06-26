@@ -53,3 +53,10 @@
 - golden_reader +5 neighbour vectors (both tiers); ReaderParityTests asserts ids + cosine scores: BYTE-IDENTICAL.
 - TrailScreen: relatedness BANDS (not a raw percentage), breadcrumb walk, pin+open, "not a ranking of scripture" note.
   Entry via LineRow "Explore related"; second root sheet. Full test 10/10 green. Branch pushed (095b5f4).
+
+## Phase M (v1.1): Insights (Swift Charts)
+- Ported analytics endpoints: author_analytics, raag_analytics, theme_network (AnalyticsSource protocol).
+- golden_reader +3 analytics vectors (authors/raags/theme_net); ReaderParityTests asserts names+counts+mattr+ppmi: BYTE-IDENTICAL.
+- InsightsScreen (More tab): Contributors + Raags bar charts (Swift Charts) + stylometry/detail lists +
+  Theme connections (PPMI co-occurrence). "Descriptive, never a ranking" captions; a11y labels.
+- Clean build + full test: 11/11 green (added testInsights). Insights screenshot verified.

@@ -36,5 +36,8 @@ actor CorpusActor {
     func randomHukam() throws -> HukamUnit { try db.hukamUnit(seed: db.randomSeedCompId()) }
     func meta() throws -> CorpusMeta { try db.fetchMeta() }
     func neighbors(lineId: Int, limit: Int = 12) throws -> NeighborsResult { try db.neighbors(lineId: lineId, limit: limit) }
+    func authorAnalytics() throws -> [AuthorStat] { try db.authorAnalytics() }
+    func raagAnalytics() throws -> [RaagStat] { try db.raagAnalytics() }
+    func themeNetwork(minPPMI: Double = 0.7, limit: Int = 40) throws -> [ThemeEdge] { try db.themeNetwork(minPPMI: minPPMI, limit: limit) }
     func theme(_ name: String) throws -> ThemeSearchResult { try db.themeSearch(name, limit: 200, offset: 0) }
 }
