@@ -150,12 +150,55 @@ def difflib_vectors():
     return out
 
 
+# ---------------------------------------------------------------------------
+# 3. verify vectors — drive the REAL verify engine (webapp/verify.py) against the
+#    shipped DB and record the full verdict. Covers every verdict + adversarial input.
+# ---------------------------------------------------------------------------
+def verify_vectors():
+    # (claim, ang)
+    claims = [
+        ("ਸੋਚੈ ਸੋਚਿ ਨ ਹੋਵਈ ਜੇ ਸੋਚੀ ਲਖ ਵਾਰ", None),       # exact Gurmukhi
+        ("ਸੋਚੈ ਸੋਚਿ ਨ ਹੋਵਈ ਜੇ ਸੋਚੀ ਲਖ ਵਾਰ", 1),          # exact + ANG_MATCH
+        ("ਸੋਚੈ ਸੋਚਿ ਨ ਹੋਵਈ ਜੇ ਸੋਚੀ ਲਖ ਵਾਰ", 999),        # exact + ANG_MISMATCH
+        ("ਸੋਚੇ ਸੋਚ ਨ ਹੋਵਈ ਜੇ ਸੋਚੀ ਲਖ ਵਾਰ", None),         # misspelled Gurmukhi
+        ("ਆਦਿ ਸਚੁ ਜੁਗਾਦਿ ਸਚੁ", None),                        # fragment of a longer line
+        ("pavan guroo paanee pitaa maataa dharat mahat", None),  # roman exact-ish
+        ("pavan guru pani pita mata dharti mahat", None),        # roman misremembered
+        ("satgur kirpa", None),                                   # short roman
+        ("ਨਾਨਕ ਸੋਨੇ ਦੀ ਚਿੜੀਆ ਉਡ ਗਈ", None),                 # fabricated -> NOT_FOUND
+        ("ਨਾਨਕ ਨਾਮ ਚੜ੍ਹਦੀ ਕਲਾ", None),                       # ardas, not in SGGS -> NOT_FOUND
+        ("waheguru", None),                                       # single roman token
+        ("ੴ ਸਤਿ ਨਾਮੁ", None),                                  # Mool Mantar fragment
+        # adversarial (must not crash; v2.11 FTS hardening)
+        ('naam"test', None), ('naam*', None), ('"', None), ('***', None), ('।॥', None), ('', None),
+    ]
+    out = []
+    for claim, ang in claims:
+        v = serve.verify_claim(claim, ang=ang, db_path=DB)
+        dd = v.get('distance_details', {})
+        out.append({
+            'claim': claim, 'ang': ang,
+            'verdict': v.get('verdict'),
+            'confidence': repr(v.get('confidence')),
+            'matched_line_id': v.get('matched_line_id'),
+            'ang_actual': v.get('ang'),
+            'best_ratio': repr(dd.get('best_ratio')) if 'best_ratio' in dd else None,
+            'second_ratio': repr(dd.get('second_ratio')) if 'second_ratio' in dd else None,
+            'gap': repr(dd.get('gap')) if 'gap' in dd else None,
+            'candidates_scored': dd.get('candidates_scored'),
+            'note': dd.get('note'),
+        })
+    return out
+
+
 def main():
     db_hash = sha256(DB) if os.path.exists(DB) else None
     rn = roman_norm_vectors()
     dl = difflib_vectors()
+    vv = verify_vectors()
     p1, n1 = write_ndjson('golden_roman_norm.ndjson', rn)
     p2, n2 = write_ndjson('golden_difflib.ndjson', dl)
+    p3, n3 = write_ndjson('golden_verify.ndjson', vv)
     meta = {
         'generator': 'pipeline/gen_golden_vectors.py',
         'db_sha256': db_hash,
@@ -166,6 +209,7 @@ def main():
         'files': {
             'golden_roman_norm.ndjson': n1,
             'golden_difflib.ndjson': n2,
+            'golden_verify.ndjson': n3,
         },
     }
     with open(os.path.join(OUT, '_meta.json'), 'w', encoding='utf-8') as f:
@@ -173,6 +217,7 @@ def main():
         f.write('\n')
     print(f'roman_norm vectors: {n1}  -> {p1}')
     print(f'difflib   vectors: {n2}  -> {p2}')
+    print(f'verify    vectors: {n3}  -> {p3}')
     print(f'db_sha256={db_hash}  python={meta["tool_versions"]["python"]}  sqlite={meta["tool_versions"]["sqlite"]}')
 
 
