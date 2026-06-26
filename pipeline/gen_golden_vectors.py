@@ -238,16 +238,41 @@ def search_vectors():
     return out
 
 
+# ---------------------------------------------------------------------------
+# 5. reader vectors — plain endpoints: /api/ang + hukam_package (deterministic by seed)
+# ---------------------------------------------------------------------------
+def reader_vectors():
+    serve.DB = DB
+    serve.HAVE_FTS = None
+    out = []
+    for n in (1, 2, 8, 100, 1430):
+        r = serve.api(f'/api/ang/{n}', {})
+        out.append({'kind': 'ang', 'n': n,
+                    'line_ids': [l['id'] for l in r['lines']],
+                    'continued_from': r['continued_from'],
+                    'raag': r['raag'], 'section': r['section'], 'authors': r['authors']})
+    for seed in (1, 5, 100, 400, 405, 1000, 1500):
+        try:
+            h = serve.hukam_package(seed=seed)
+            out.append({'kind': 'hukam', 'seed': seed, 'comp_id': h['comp_id'],
+                        'comp_ids': h['comp_ids'], 'line_ids': [l['id'] for l in h['lines']]})
+        except Exception as e:
+            out.append({'kind': 'hukam', 'seed': seed, 'error': type(e).__name__})
+    return out
+
+
 def main():
     db_hash = sha256(DB) if os.path.exists(DB) else None
     rn = roman_norm_vectors()
     dl = difflib_vectors()
     vv = verify_vectors()
     sv = search_vectors()
+    rv = reader_vectors()
     p1, n1 = write_ndjson('golden_roman_norm.ndjson', rn)
     p2, n2 = write_ndjson('golden_difflib.ndjson', dl)
     p3, n3 = write_ndjson('golden_verify.ndjson', vv)
     p4, n4 = write_ndjson('golden_search.ndjson', sv)
+    p5, n5 = write_ndjson('golden_reader.ndjson', rv)
     meta = {
         'generator': 'pipeline/gen_golden_vectors.py',
         'db_sha256': db_hash,
@@ -260,6 +285,7 @@ def main():
             'golden_difflib.ndjson': n2,
             'golden_verify.ndjson': n3,
             'golden_search.ndjson': n4,
+            'golden_reader.ndjson': n5,
         },
     }
     with open(os.path.join(OUT, '_meta.json'), 'w', encoding='utf-8') as f:
@@ -269,6 +295,7 @@ def main():
     print(f'difflib   vectors: {n2}  -> {p2}')
     print(f'verify    vectors: {n3}  -> {p3}')
     print(f'search    vectors: {n4}  -> {p4}')
+    print(f'reader    vectors: {n5}  -> {p5}')
     print(f'db_sha256={db_hash}  python={meta["tool_versions"]["python"]}  sqlite={meta["tool_versions"]["sqlite"]}')
 
 
