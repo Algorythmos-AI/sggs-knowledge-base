@@ -68,11 +68,14 @@ boundary, and no retain cycles.
 - ✅ **Insights** — `author_analytics` / `raag_analytics` / `theme_network` ported byte-identical
   (golden-tested on names, counts, mattr, PPMI). Native **Swift Charts**: Contributors & Raags bar
   charts + stylometry/detail lists + Theme-connections (PPMI co-occurrence), all under More.
-  11/11 app tests green.
+- ✅ **Concept Constellation** — `/api/analytics/constellation` ported byte-identical (total, co-theme
+  clusters, counts, top-cluster verse ids incl. the stable top-9 order). Native deterministic **radial
+  map** (centre theme + co-theme bubbles sized by √count), tap → cluster verses.
+  **12/12 app tests green**; kit parity 5 suites (incl. 23 reader/analytics golden vectors).
 
 ## Deferred to v1.1+ (logged, not bugs)
-- The **Concept Constellation** force-graph and the **resonance chord / radar** visualizations
-  (native force-directed layout is the remaining heavy lift); the **Lineage** narrative depth.
+- The **resonance chord / author-radar** visualizations and the **Lineage** narrative depth (the
+  remaining web surfaces; data endpoints are straightforward ports when prioritized).
 - **English translation** layer (licensing — see *NOTICE.md*; Gurmukhi-only by design for v1).
 - **Pinned SQLite via GRDBCustomSQLite** (device-fidelity hardening; the system SQLite is 3.51.0 == the
   web reference on this machine, and parity is golden-proven).
