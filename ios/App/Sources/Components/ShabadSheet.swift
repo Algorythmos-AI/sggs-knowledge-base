@@ -56,6 +56,6 @@ struct ShabadSheet: View {
                 openAng = h.lines.first?.ang
                 state = h.lines.isEmpty ? .empty : .loaded(h.lines)
             }
-        } catch { state = .failed("\(error)") }
+        } catch { state = .failed(UserMessage.load(error)) }
     }
 }

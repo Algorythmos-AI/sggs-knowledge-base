@@ -25,7 +25,7 @@ enum Saroop {
                     for k in i..<j { out.append(cp[k]) }     // leave plain (sihari follows)
                 } else {
                     out.append(contentsOf: VS1.unicodeScalars)
-                    out.append(Unicode.Scalar(YA)!)
+                    out.append(contentsOf: "ਯ".unicodeScalars)   // U+0A2F YAYYA — literal, no force-unwrap
                 }
                 i = j
             } else {

@@ -27,8 +27,13 @@ struct RootView: View {
                     ThemesScreen().tabItem { Label("Themes", systemImage: "circle.grid.2x2") }.tag(Tab.themes)
                     MoreScreen().tabItem { Label("More", systemImage: "ellipsis") }.tag(Tab.more)
                 }
-                .sheet(item: $c.activeComposition) { ShabadSheet(presentation: $0) }
-                .sheet(item: $c.activeTrail) { TrailScreen(start: $0) }
+                .sheet(item: $c.presentation, onDismiss: { container.flushPendingPresentation() }) { p in
+                    switch p {
+                    case .shabad, .hukam: ShabadSheet(presentation: p.composition ?? .hukam)
+                    case .trail(let start): TrailScreen(start: start)
+                    case .cluster(let center, let cluster): ClusterSheet(center: center, cluster: cluster)
+                    }
+                }
             }
         }
         .tint(Brand.saffron)

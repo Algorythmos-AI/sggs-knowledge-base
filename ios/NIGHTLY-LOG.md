@@ -76,3 +76,13 @@
   reader, neighbors, analytics, constellation) + app unit integration tests green. FTS5/unicode61/bm25
   now identical on every device, not the host system SQLite. sqlite version surfaced in About.
 - App UI test run hit a sim-only flake ("Timed out loading Accessibility", unrelated) — rebooting sim.
+
+## P2 (finishing-line): correctness & robustness
+- ONE root Presentation enum {shabad,hukam,trail,cluster} + single .sheet(item:); removed the 2 root
+  sheets + ConstellationScreen's nested sheet. In-sheet opens use present()/pendingPresentation +
+  RootView onDismiss chaining (reliable swap; presenting during a dismiss is dropped by SwiftUI).
+- Idempotent LineRow.save (FetchDescriptor existence check + rollback) — no @unique crash on re-save.
+- UserMessage helper → friendly errors everywhere (no raw \(error) leak).
+- Lifecycle: SearchModel in .task; ReaderModel cancellation guard; InsightsModel loaded-on-empty;
+  Constellation max(n,0); Saroop literal scalar (no force-unwrap); SavedScreen onDelete do/catch.
+- Reader shows "Continues from Ang N". Regression UI test (Trail→Open swaps to shabad). 13/13 green.

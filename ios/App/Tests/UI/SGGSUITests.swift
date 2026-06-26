@@ -78,6 +78,27 @@ final class SGGSUITests: XCTestCase {
         try? app.screenshot().pngRepresentation.write(to: URL(fileURLWithPath: "\(dir)/v11_constellation.png"))
     }
 
+    /// Regression for the consolidated single root sheet: opening a shabad from INSIDE the Trail must
+    /// swap the one sheet (not drop it, as two competing `.sheet(item:)` modifiers did).
+    func testTrailOpenSwapsToShabad() {
+        let app = XCUIApplication(); app.launch()
+        let field = app.searchFields.firstMatch
+        XCTAssertTrue(field.waitForExistence(timeout: 20))
+        field.tap(); field.typeText("naam")
+        let firstCell = app.cells.firstMatch
+        XCTAssertTrue(firstCell.waitForExistence(timeout: 20))
+        firstCell.press(forDuration: 1.1)
+        let explore = app.buttons["Explore related"]
+        XCTAssertTrue(explore.waitForExistence(timeout: 8)); explore.tap()
+        XCTAssertTrue(app.navigationBars["Related verses"].waitForExistence(timeout: 12))
+        let openBtn = app.buttons["Open"].firstMatch
+        XCTAssertTrue(openBtn.waitForExistence(timeout: 5), "pinned Open button missing")
+        openBtn.tap()                                              // pinned-verse Open → swap to shabad
+        // the single sheet must swap to a shabad (nav title "Ang N"), not be dropped
+        let shabadBar = app.navigationBars.matching(NSPredicate(format: "identifier BEGINSWITH %@", "Ang ")).firstMatch
+        XCTAssertTrue(shabadBar.waitForExistence(timeout: 12), "Trail→Open did not surface the shabad (dropped sheet)")
+    }
+
     /// Captures reference screenshots to the scratchpad (not an assertion gate).
     func testCaptureScreens() {
         let dir = "/private/tmp/claude-501/-Users-samkalaliya-ppt-universe-SGGS-KnowledgeBase/27b4d30a-a6e1-40cf-9daa-9a74b9b8b00a/scratchpad"

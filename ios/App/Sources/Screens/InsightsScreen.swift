@@ -11,7 +11,8 @@ final class InsightsModel {
     private let corpus: CorpusActor?
     init(corpus: CorpusActor?) { self.corpus = corpus }
     func load() async {
-        guard !loaded, let corpus else { return }
+        guard !loaded else { return }
+        guard let corpus else { loaded = true; return }   // no DB → show empty, never an endless spinner
         authors = (try? await corpus.authorAnalytics()) ?? []
         raags = (try? await corpus.raagAnalytics()) ?? []
         edges = (try? await corpus.themeNetwork(minPPMI: 0.7, limit: 40)) ?? []

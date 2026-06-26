@@ -72,7 +72,7 @@ struct TrailScreen: View {
             HStack {
                 Text("Ang \(current.ang)").font(.caption).foregroundStyle(.secondary)
                 Spacer()
-                Button { container.activeComposition = .shabad(compId: current.compId) } label: {
+                Button { container.present(.shabad(compId: current.compId)) } label: {
                     Label("Open", systemImage: "book").font(.caption)
                 }
             }
@@ -97,7 +97,7 @@ struct TrailScreen: View {
                                     ang: n.ang, compId: n.compId))
         }
         .swipeActions(edge: .trailing) {
-            Button { container.activeComposition = .shabad(compId: n.compId) } label: { Label("Open", systemImage: "book") }
+            Button { container.present(.shabad(compId: n.compId)) } label: { Label("Open", systemImage: "book") }
         }
     }
 
@@ -107,7 +107,7 @@ struct TrailScreen: View {
         do {
             let r = try await corpus.neighbors(lineId: lineId, limit: 12)
             state = r.neighbors.isEmpty ? .empty : .loaded(r)
-        } catch { state = .failed("\(error)") }
+        } catch { state = .failed(UserMessage.load(error)) }
     }
 }
 

@@ -17,13 +17,13 @@ struct SavedScreen: View {
                     ForEach(saved) { item in
                         LineRow(gurmukhi: item.gurmukhi, translit: item.translit,
                                 meta: "Ang \(item.ang)") {
-                            container.activeComposition = .shabad(compId: item.compId)
+                            container.presentation = .shabad(compId: item.compId)
                         }
                         .listRowSeparator(.hidden)
                     }
                     .onDelete { idx in
                         for i in idx { modelContext.delete(saved[i]) }
-                        try? modelContext.save()
+                        do { try modelContext.save() } catch { modelContext.rollback() }
                     }
                 }
                 .listStyle(.plain)

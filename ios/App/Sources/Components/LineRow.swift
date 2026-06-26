@@ -41,17 +41,21 @@ struct LineRow: View {
             if let lineId {
                 Button { save(lineId) } label: { Label("Save", systemImage: "bookmark") }
                 Button {
-                    container.activeTrail = TrailStart(id: lineId, gurmukhi: gurmukhi,
-                                                       translit: translit, ang: ang, compId: compId)
+                    container.presentation = .trail(TrailStart(id: lineId, gurmukhi: gurmukhi,
+                                                               translit: translit, ang: ang, compId: compId))
                 } label: { Label("Explore related", systemImage: "point.3.connected.trianglepath.dotted") }
             }
         }
     }
 
+    /// Idempotent save: a verse already bookmarked is a no-op (the @unique lineId would otherwise
+    /// throw on the second insert). Verbatim gurmukhi only — never the saroop display form.
     private func save(_ lineId: Int) {
-        let item = SavedLine(lineId: lineId, gurmukhi: gurmukhi, translit: translit, ang: ang, compId: compId)
-        modelContext.insert(item)
-        try? modelContext.save()
+        let existing = FetchDescriptor<SavedLine>(predicate: #Predicate { $0.lineId == lineId })
+        if let count = try? modelContext.fetchCount(existing), count > 0 { return }
+        modelContext.insert(SavedLine(lineId: lineId, gurmukhi: gurmukhi, translit: translit, ang: ang, compId: compId))
+        do { try modelContext.save() }
+        catch { modelContext.rollback() }     // keep the context clean on failure
     }
 }
 

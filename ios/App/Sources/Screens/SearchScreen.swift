@@ -41,7 +41,7 @@ final class SearchModel {
                 state = out.results.isEmpty ? .empty : .loaded(out)
             }
         } catch is CancellationError {
-        } catch { state = .failed("\(error)") }
+        } catch { state = .failed(UserMessage.search(error)) }
     }
 }
 
@@ -57,7 +57,7 @@ struct SearchScreen: View {
                                           set: { model?.query = $0 }),
                             prompt: "ਨਾਮੁ · waheguru · ਸ ਨ ਕ · naam")
         }
-        .onAppear { if model == nil { model = SearchModel(corpus: container.corpus) } }
+        .task { if model == nil { model = SearchModel(corpus: container.corpus) } }
     }
 
     @ViewBuilder private var content: some View {
@@ -97,7 +97,7 @@ struct SearchScreen: View {
                     ForEach(out.results, id: \.id) { line in
                         LineRow(gurmukhi: line.gurmukhi, translit: line.translit, meta: line.metaLine,
                                 lineId: line.id, ang: line.ang, compId: line.compId) {
-                            container.activeComposition = .shabad(compId: line.compId)
+                            container.presentation = .shabad(compId: line.compId)
                         }
                         .listRowSeparator(.hidden)
                     }

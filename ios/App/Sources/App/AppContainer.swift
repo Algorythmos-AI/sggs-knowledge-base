@@ -9,13 +9,34 @@ final class AppContainer {
     let router = Router()
     var startupError: String?
     var integrity: IntegrityReport?
-    var activeComposition: CompositionPresentation?
-    var activeTrail: TrailStart?
+    /// The SINGLE root modal target. One `.sheet(item:)` in RootView drives all modals; setting this
+    /// while a sheet is up swaps the content (e.g. drilling from a Trail into a shabad), so there is
+    /// never more than one sheet competing to present.
+    var presentation: Presentation?
+    /// Queued modal to present once the current sheet finishes dismissing (see `present` + RootView onDismiss).
+    var pendingPresentation: Presentation?
     var meta: CorpusMeta?
 
     init() {
         do { self.corpus = try CorpusActor() }
         catch { self.corpus = nil; self.startupError = error.localizedDescription }
+    }
+
+    /// Present a modal through the single root sheet. If a sheet is already up (e.g. opening a shabad
+    /// from inside the Trail/Cluster), queue it and dismiss the current one — RootView's sheet
+    /// `onDismiss` then presents the queued modal AFTER the dismiss animation completes (presenting
+    /// during the dismiss is dropped by SwiftUI).
+    func present(_ p: Presentation) {
+        guard presentation != nil else { presentation = p; return }
+        pendingPresentation = p
+        presentation = nil
+    }
+
+    /// Called from RootView's sheet onDismiss: flush any queued modal.
+    func flushPendingPresentation() {
+        guard let pending = pendingPresentation else { return }
+        pendingPresentation = nil
+        presentation = pending
     }
 
     func runIntegrity() async {
@@ -29,11 +50,31 @@ final class AppContainer {
     }
 }
 
-/// The shared shabad/hukam modal target (single root `.sheet(item:)`).
+/// The shared shabad/hukam modal target (passed to ShabadSheet).
 enum CompositionPresentation: Identifiable, Hashable {
     case shabad(compId: Int)
     case hukam
     var id: String { switch self { case .shabad(let c): return "shabad-\(c)"; case .hukam: return "hukam" } }
+}
+
+/// Every root modal, behind ONE `.sheet(item:)`. Identifiable only (associated values needn't be Hashable).
+enum Presentation: Identifiable {
+    case shabad(compId: Int)
+    case hukam
+    case trail(TrailStart)
+    case cluster(center: String, cluster: ConstellationCluster)
+    var id: String {
+        switch self {
+        case .shabad(let c): return "shabad-\(c)"
+        case .hukam: return "hukam"
+        case .trail(let t): return "trail-\(t.id)"
+        case .cluster(let center, let cl): return "cluster-\(center)-\(cl.co)"
+        }
+    }
+    /// The shabad/hukam subset, for ShabadSheet.
+    var composition: CompositionPresentation? {
+        switch self { case .shabad(let c): return .shabad(compId: c); case .hukam: return .hukam; default: return nil }
+    }
 }
 
 /// A verse the Semantic Trail starts (or steps to). Carries verbatim text so the Trail can pin it.

@@ -8,7 +8,6 @@ struct ConstellationScreen: View {
     @Environment(AppContainer.self) private var container
     @State private var concept = "naam"
     @State private var result: ConstellationResult?
-    @State private var selected: ConstellationCluster?
     @State private var loading = false
 
     private var concepts: [ConceptRow] { container.meta?.concepts ?? [] }
@@ -34,8 +33,10 @@ struct ConstellationScreen: View {
                 if result.clusters.isEmpty {
                     ContentUnavailableView("No companion themes", systemImage: "circle.dotted")
                 } else {
-                    ConstellationMap(center: concept, clusters: result.clusters) { selected = $0 }
-                        .padding()
+                    ConstellationMap(center: concept, clusters: result.clusters) {
+                        container.presentation = .cluster(center: concept, cluster: $0)
+                    }
+                    .padding()
                 }
             } else {
                 ProgressView().frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -46,7 +47,6 @@ struct ConstellationScreen: View {
         .navigationBarTitleDisplayMode(.inline)
         .task { await container.loadMeta() }
         .task(id: concept) { await load() }
-        .sheet(item: $selected) { ClusterSheet(center: concept, cluster: $0) }
     }
 
     private func load() async {
@@ -85,7 +85,7 @@ private struct ConstellationMap: View {
 
                 // co-theme bubbles
                 ForEach(Array(clusters.enumerated()), id: \.element.id) { i, cl in
-                    let d = 44 + CGFloat((Double(cl.n).squareRoot() / maxN.squareRoot())) * 52
+                    let d = 44 + CGFloat((Double(max(cl.n, 0)).squareRoot() / maxN.squareRoot())) * 52
                     Button { onSelect(cl) } label: {
                         bubble(label: cl.co.capitalized, sub: "\(cl.n)", diameter: d, fill: Brand.gold)
                     }
@@ -114,7 +114,7 @@ private struct ConstellationMap: View {
     }
 }
 
-private struct ClusterSheet: View {
+struct ClusterSheet: View {
     let center: String
     let cluster: ConstellationCluster
     @Environment(AppContainer.self) private var container
@@ -125,7 +125,7 @@ private struct ClusterSheet: View {
             List(cluster.verses) { v in
                 LineRow(gurmukhi: v.gurmukhi, translit: "", meta: "Ang \(v.ang)",
                         lineId: v.id, ang: v.ang, compId: v.compId) {
-                    container.activeComposition = .shabad(compId: v.compId)
+                    container.present(.shabad(compId: v.compId))
                 }
                 .listRowSeparator(.hidden)
             }

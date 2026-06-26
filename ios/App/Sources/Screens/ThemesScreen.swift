@@ -44,7 +44,7 @@ struct ThemeResultsScreen: View {
         LoadStateView(state: state) { lines in
             List(lines, id: \.id) { line in
                 LineRow(gurmukhi: line.gurmukhi, translit: line.translit, meta: line.metaLine) {
-                    container.activeComposition = .shabad(compId: line.compId)
+                    container.presentation = .shabad(compId: line.compId)
                 }
                 .listRowSeparator(.hidden)
             }
@@ -55,7 +55,7 @@ struct ThemeResultsScreen: View {
         .task(id: concept) {
             guard let corpus = container.corpus else { state = .failed("No database"); return }
             do { let t = try await corpus.theme(concept); state = t.lines.isEmpty ? .empty : .loaded(t.lines) }
-            catch { state = .failed("\(error)") }
+            catch { state = .failed(UserMessage.load(error)) }
         }
     }
 }

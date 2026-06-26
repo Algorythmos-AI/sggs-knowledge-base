@@ -9,8 +9,8 @@ final class ReaderModel {
     func load(_ ang: Int) async {
         guard let corpus else { state = .failed("No database"); return }
         state = .loading
-        do { let page = try await corpus.ang(ang); state = .loaded(page) }
-        catch { state = .failed("\(error)") }
+        do { let page = try await corpus.ang(ang); if Task.isCancelled { return }; state = .loaded(page) }
+        catch { state = .failed(UserMessage.load(error)) }
     }
 }
 
@@ -29,6 +29,10 @@ struct ReaderScreen: View {
                                 if let raag = page.raag {
                                     Text(raag).font(.subheadline.weight(.semibold)).foregroundStyle(Brand.gold)
                                 }
+                                if let from = page.continuedFrom {
+                                    Label("Continues from Ang \(from)", systemImage: "arrow.up.backward")
+                                        .font(.caption).foregroundStyle(.secondary)
+                                }
                                 ForEach(page.lines, id: \.id) { line in
                                     if line.isHeader {
                                         GurmukhiText(verbatim: line.gurmukhi, size: 20, weight: .semibold)
@@ -38,7 +42,7 @@ struct ReaderScreen: View {
                                         LineRow(gurmukhi: line.gurmukhi, translit: line.translit,
                                                 meta: line.isRahao ? "ਰਹਾਉ · refrain" : "",
                                                 lineId: line.id, ang: line.ang, compId: line.compId) {
-                                            container.activeComposition = .shabad(compId: line.compId)
+                                            container.presentation = .shabad(compId: line.compId)
                                         }
                                     }
                                 }
@@ -56,7 +60,7 @@ struct ReaderScreen: View {
                         .disabled(router.readerAng <= 1)
                         .accessibilityLabel("Previous Ang")
                     Spacer()
-                    Button { container.activeComposition = .hukam } label: { Label("Hukam", systemImage: "sparkles") }
+                    Button { container.presentation = .hukam } label: { Label("Hukam", systemImage: "sparkles") }
                     Spacer()
                     Button { router.openAng(router.readerAng + 1) } label: { Image(systemName: "chevron.right") }
                         .disabled(router.readerAng >= 1430)
