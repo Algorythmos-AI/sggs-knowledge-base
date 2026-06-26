@@ -1,0 +1,49 @@
+{"a": "", "b": "", "ratio": "1.0", "round4": "1.0"}
+{"a": "", "b": "a", "ratio": "0.0", "round4": "0.0"}
+{"a": "a", "b": "", "ratio": "0.0", "round4": "0.0"}
+{"a": "a", "b": "a", "ratio": "1.0", "round4": "1.0"}
+{"a": "a", "b": "b", "ratio": "0.0", "round4": "0.0"}
+{"a": "aaaa", "b": "aa", "ratio": "0.6666666666666666", "round4": "0.6667"}
+{"a": "aa", "b": "aaaa", "ratio": "0.6666666666666666", "round4": "0.6667"}
+{"a": "aaaaa", "b": "aaab", "ratio": "0.6666666666666666", "round4": "0.6667"}
+{"a": "abab", "b": "ab", "ratio": "0.6666666666666666", "round4": "0.6667"}
+{"a": "abxab", "b": "ab", "ratio": "0.5714285714285714", "round4": "0.5714"}
+{"a": "abcabc", "b": "abc", "ratio": "0.6666666666666666", "round4": "0.6667"}
+{"a": "xabcx", "b": "abc", "ratio": "0.75", "round4": "0.75"}
+{"a": "abxab", "b": "abyab", "ratio": "0.8", "round4": "0.8"}
+{"a": "aXbXc", "b": "abc", "ratio": "0.75", "round4": "0.75"}
+{"a": "1234512345", "b": "12345", "ratio": "0.6666666666666666", "round4": "0.6667"}
+{"a": "qqabc", "b": "qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqabcde", "ratio": "0.049019607843137254", "round4": "0.049"}
+{"a": "abcde", "b": "qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqabcde", "ratio": "0.049019607843137254", "round4": "0.049"}
+{"a": "qqabc", "b": "qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqabcde", "ratio": "0.04878048780487805", "round4": "0.0488"}
+{"a": "abcde", "b": "qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqabcde", "ratio": "0.04878048780487805", "round4": "0.0488"}
+{"a": "qqabc", "b": "qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqabcde", "ratio": "0.04854368932038835", "round4": "0.0485"}
+{"a": "abcde", "b": "qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqabcde", "ratio": "0.04854368932038835", "round4": "0.0485"}
+{"a": "vhgr", "b": "vhgr", "ratio": "1.0", "round4": "1.0"}
+{"a": "vhgr", "b": "vhgrnm", "ratio": "0.8", "round4": "0.8"}
+{"a": "sdnm", "b": "sdnmgrd", "ratio": "0.7272727272727273", "round4": "0.7273"}
+{"a": "jsd", "b": "jsdkrsn", "ratio": "0.6", "round4": "0.6"}
+{"a": "ਨਾਮੁ", "b": "ਨਾਮੁ", "ratio": "1.0", "round4": "1.0"}
+{"a": "ਨਾਮੁ", "b": "ਹਰਿ ਨਾਮੁ", "ratio": "0.6666666666666666", "round4": "0.6667"}
+{"a": "ਸਤਿ ਨਾਮੁ", "b": "ਸਤਿ ਨਾਮੁ ਕਰਤਾ", "ratio": "0.7619047619047619", "round4": "0.7619"}
+{"a": "ੴ", "b": "ੴ ਸਤਿ ਨਾਮੁ", "ratio": "0.18181818181818182", "round4": "0.1818"}
+{"a": "ਸਤਿ ਨਾਮੁ", "b": "ਸਤਿ ਨਾਮੁ", "ratio": "1.0", "round4": "1.0"}
+{"a": "abcdefghij", "b": "abcdefghix", "ratio": "0.9", "round4": "0.9"}
+{"a": "abcdefghijklmnopqrs", "b": "abcdefghijklmnopqrx", "ratio": "0.9473684210526315", "round4": "0.9474"}
+{"a": "ਆਦਿ ਸਚੁ ਜੁਗਾਦਿ ਸਚੁ ॥", "b": "ਹੈ ਭੀ ਸਚੁ ਨਾਨਕ ਹੋਸੀ ਭੀ ਸਚੁ ॥੧॥", "ratio": "0.48", "round4": "0.48"}
+{"a": "ਚੁਪੈ ਚੁਪ ਨ ਹੋਵਈ ਜੇ ਲਾਇ ਰਹਾ ਲਿਵ ਤਾਰ ॥", "b": "ਭੁਖਿਆ ਭੁਖ ਨ ਉਤਰੀ ਜੇ ਬੰਨਾ ਪੁਰੀਆ ਭਾਰ ॥", "ratio": "0.4722222222222222", "round4": "0.4722"}
+{"a": "ਸਹਸ ਸਿਆਣਪਾ ਲਖ ਹੋਹਿ ਤ ਇਕ ਨ ਚਲੈ ਨਾਲਿ ॥", "b": "ਕਿਵ ਸਚਿਆਰਾ ਹੋਈਐ ਕਿਵ ਕੂੜੈ ਤੁਟੈ ਪਾਲਿ ॥", "ratio": "0.5", "round4": "0.5"}
+{"a": "ਹੁਕਮਿ ਰਜਾਈ ਚਲਣਾ ਨਾਨਕ ਲਿਖਿਆ ਨਾਲਿ ॥੧॥", "b": "ਹੁਕਮੀ ਹੋਵਨਿ ਆਕਾਰ ਹੁਕਮੁ ਨ ਕਹਿਆ ਜਾਈ ॥", "ratio": "0.34285714285714286", "round4": "0.3429"}
+{"a": "ਹੁਕਮੀ ਹੋਵਨਿ ਜੀਅ ਹੁਕਮਿ ਮਿਲੈ ਵਡਿਆਈ ॥", "b": "ਹੁਕਮੀ ਉਤਮੁ ਨੀਚੁ ਹੁਕਮਿ ਲਿਖਿ ਦੁਖ ਸੁਖ ਪਾਈਅਹਿ ॥", "ratio": "0.5194805194805194", "round4": "0.5195"}
+{"a": "ਇਕਨਾ ਹੁਕਮੀ ਬਖਸੀਸ ਇਕਿ ਹੁਕਮੀ ਸਦਾ ਭਵਾਈਅਹਿ ॥", "b": "ਹੁਕਮੈ ਅੰਦਰਿ ਸਭੁ ਕੋ ਬਾਹਰਿ ਹੁਕਮ ਨ ਕੋਇ ॥", "ratio": "0.4155844155844156", "round4": "0.4156"}
+{"a": "ਨਾਨਕ ਹੁਕਮੈ ਜੇ ਬੁਝੈ ਤ ਹਉਮੈ ਕਹੈ ਨ ਕੋਇ ॥੨॥", "b": "ਗਾਵੈ ਕੋ ਤਾਣੁ ਹੋਵੈ ਕਿਸੈ ਤਾਣੁ ॥", "ratio": "0.3235294117647059", "round4": "0.3235"}
+{"a": "ਗਾਵੈ ਕੋ ਦਾਤਿ ਜਾਣੈ ਨੀਸਾਣੁ ॥", "b": "ਗਾਵੈ ਕੋ ਗੁਣ ਵਡਿਆਈਆ ਚਾਰ ॥", "ratio": "0.44", "round4": "0.44"}
+{"a": "ਗਾਵੈ ਕੋ ਵਿਦਿਆ ਵਿਖਮੁ ਵੀਚਾਰੁ ॥", "b": "ਗਾਵੈ ਕੋ ਸਾਜਿ ਕਰੇ ਤਨੁ ਖੇਹ ॥", "ratio": "0.5185185185185185", "round4": "0.5185"}
+{"a": "ਗਾਵੈ ਕੋ ਜੀਅ ਲੈ ਫਿਰਿ ਦੇਹ ॥", "b": "ਗਾਵੈ ਕੋ ਜਾਪੈ ਦਿਸੈ ਦੂਰਿ ॥", "ratio": "0.6530612244897959", "round4": "0.6531"}
+{"a": "ਗਾਵੈ ਕੋ ਵੇਖੈ ਹਾਦਰਾ ਹਦੂਰਿ ॥", "b": "ਕਥਨਾ ਕਥੀ ਨ ਆਵੈ ਤੋਟਿ ॥", "ratio": "0.3404255319148936", "round4": "0.3404"}
+{"a": "ਕਥਿ ਕਥਿ ਕਥੀ ਕੋਟੀ ਕੋਟਿ ਕੋਟਿ ॥", "b": "ਦੇਦਾ ਦੇ ਲੈਦੇ ਥਕਿ ਪਾਹਿ ॥", "ratio": "0.23529411764705882", "round4": "0.2353"}
+{"a": "ਜੁਗਾ ਜੁਗੰਤਰਿ ਖਾਹੀ ਖਾਹਿ ॥", "b": "ਹੁਕਮੀ ਹੁਕਮੁ ਚਲਾਏ ਰਾਹੁ ॥", "ratio": "0.3404255319148936", "round4": "0.3404"}
+{"a": "ਨਾਨਕ ਵਿਗਸੈ ਵੇਪਰਵਾਹੁ ॥੩॥", "b": "ਸਾਚਾ ਸਾਹਿਬੁ ਸਾਚੁ ਨਾਇ ਭਾਖਿਆ ਭਾਉ ਅਪਾਰੁ ॥", "ratio": "0.32786885245901637", "round4": "0.3279"}
+{"a": "ਆਖਹਿ ਮੰਗਹਿ ਦੇਹਿ ਦੇਹਿ ਦਾਤਿ ਕਰੇ ਦਾਤਾਰੁ ॥", "b": "ਫੇਰਿ ਕਿ ਅਗੈ ਰਖੀਐ ਜਿਤੁ ਦਿਸੈ ਦਰਬਾਰੁ ॥", "ratio": "0.3287671232876712", "round4": "0.3288"}
+{"a": "ਆਦਿ ਸਚੁ ਜੁਗਾਦਿ ਸਚੁ ॥", "b": "ਆਦਿ ਸਚੁ ਜੁਗਾਦਿ ਸਚੁ ॥ ਹੈ ਭੀ ਸਚੁ ਨਾਨਕ ਹੋਸੀ ਭੀ ਸਚੁ ॥੧॥ ਚੁਪੈ ਚੁਪ ਨ ਹੋਵਈ ਜੇ ਲਾਇ ਰਹਾ ਲਿਵ ਤਾਰ ॥ ਭੁਖਿਆ ਭੁਖ ਨ ਉਤਰੀ ਜੇ ਬੰਨਾ ਪੁਰੀਆ ਭਾਰ ॥ ਸਹਸ ਸਿਆਣਪਾ ਲਖ ਹੋਹਿ ਤ ਇਕ ਨ ਚਲੈ ਨਾਲਿ ॥ ਕਿਵ ਸਚਿਆਰਾ ਹੋਈਐ ਕਿਵ ਕੂੜੈ ਤੁਟੈ ਪਾਲਿ ॥ ਹੁਕਮਿ ਰਜਾਈ ਚਲਣਾ ਨਾਨਕ ਲਿਖਿਆ ਨਾਲਿ ॥੧॥ ਹੁਕਮੀ ਹੋਵਨਿ ਆਕਾਰ ਹੁਕਮੁ ਨ", "ratio": "0.14285714285714285", "round4": "0.1429"}
+{"a": "ਨਾਮੁ", "b": "ਆਦਿ ਸਚੁ ਜੁਗਾਦਿ ਸਚੁ ॥ ਹੈ ਭੀ ਸਚੁ ਨਾਨਕ ਹੋਸੀ ਭੀ ਸਚੁ ॥੧॥ ਚੁਪੈ ਚੁਪ ਨ ਹੋਵਈ ਜੇ ਲਾਇ ਰਹਾ ਲਿਵ ਤਾਰ ॥ ਭੁਖਿਆ ਭੁਖ ਨ ਉਤਰੀ ਜੇ ਬੰਨਾ ਪੁਰੀਆ ਭਾਰ ॥ ਸਹਸ ਸਿਆਣਪਾ ਲਖ ਹੋਹਿ ਤ ਇਕ ਨ ਚਲੈ ਨਾਲਿ ॥ ਕਿਵ ਸਚਿਆਰਾ ਹੋਈਐ ਕਿਵ ਕੂੜੈ ਤੁਟੈ ਪਾਲਿ ॥ ਹੁਕਮਿ ਰਜਾਈ ਚਲਣਾ ਨਾਨਕ ਲਿਖਿਆ ਨਾਲਿ ॥੧॥ ਹੁਕਮੀ ਹੋਵਨਿ ਆਕਾਰ ਹੁਕਮੁ ਨ", "ratio": "0.007575757575757576", "round4": "0.0076"}

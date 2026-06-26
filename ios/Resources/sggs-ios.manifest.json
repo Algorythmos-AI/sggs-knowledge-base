@@ -1,0 +1,18 @@
+{
+  "bytes": 91160576,
+  "db_sha256": "3ec779a5ad9608314b98410a0b6f2a1f60296dd9cc5f50f793f2d7f1dde96f33",
+  "derived_from": "db/sggs.sqlite",
+  "dropped": [
+    "translations",
+    "fts_en"
+  ],
+  "invariants": {
+    "angs": 1430,
+    "fts_ok": true,
+    "ik_onkar": 568,
+    "lines": 60658,
+    "mool_mantar": true
+  },
+  "name": "SGGS iOS DB (Gurmukhi-only)",
+  "scripture_sha256": "0eff4bae60cfcf1c63ae4ac14c2ecf255a9457edc0bebaf627aa28dedb89c84f"
+}

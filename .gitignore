@@ -28,4 +28,10 @@ venv/
 *.sqlite-wal
 *.sqlite-shm
 
+# iOS app: Swift build output + the large derived DB (reproducible via pipeline/build_ios_db.py)
+ios/**/.build/
+ios/Resources/*.sqlite
+ios/**/*.xcodeproj/xcuserdata/
+ios/**/DerivedData/
+
 validation/*_results.jsonl
