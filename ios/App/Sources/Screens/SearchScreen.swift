@@ -92,7 +92,8 @@ struct SearchScreen: View {
                             .font(.caption).foregroundStyle(Brand.gold) }
                     }
                     ForEach(out.results, id: \.id) { line in
-                        LineRow(gurmukhi: line.gurmukhi, translit: line.translit, meta: line.metaLine) {
+                        LineRow(gurmukhi: line.gurmukhi, translit: line.translit, meta: line.metaLine,
+                                lineId: line.id, ang: line.ang, compId: line.compId) {
                             container.activeComposition = .shabad(compId: line.compId)
                         }
                         .listRowSeparator(.hidden)

@@ -1,4 +1,5 @@
 import SwiftUI
+import SwiftData
 
 @main
 struct SGGSApp: App {
@@ -14,5 +15,6 @@ struct SGGSApp: App {
                 }
                 .onOpenURL { url in container.router.handle(url, container: container) }
         }
+        .modelContainer(for: SavedLine.self)
     }
 }

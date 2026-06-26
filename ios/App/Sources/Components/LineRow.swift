@@ -1,15 +1,22 @@
 import SwiftUI
 import UIKit
+import SwiftData
 import GurbaniSearchKit
 
 /// One scripture line: Gurmukhi (saroop-aware) + transliteration + metadata, with verbatim
-/// copy/share. Tapping opens the composition. Used by Search results, Reader, Themes, Trail.
+/// copy/share/save. Tapping opens the composition.
 struct LineRow: View {
     let gurmukhi: String
     let translit: String
     let meta: String
     var showTranslit = true
+    /// Provide line identity to enable the Save (bookmark) action.
+    var lineId: Int? = nil
+    var ang: Int = 0
+    var compId: Int = 0
     var onTap: (() -> Void)? = nil
+
+    @Environment(\.modelContext) private var modelContext
 
     var body: some View {
         VStack(alignment: .leading, spacing: 6) {
@@ -30,7 +37,16 @@ struct LineRow: View {
                 Label("Copy verse", systemImage: "doc.on.doc")     // verbatim — never the saroop form
             }
             ShareLink(item: gurmukhi) { Label("Share", systemImage: "square.and.arrow.up") }
+            if let lineId {
+                Button { save(lineId) } label: { Label("Save", systemImage: "bookmark") }
+            }
         }
+    }
+
+    private func save(_ lineId: Int) {
+        let item = SavedLine(lineId: lineId, gurmukhi: gurmukhi, translit: translit, ang: ang, compId: compId)
+        modelContext.insert(item)
+        try? modelContext.save()
     }
 }
 

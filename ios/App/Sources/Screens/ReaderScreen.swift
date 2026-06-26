@@ -36,7 +36,8 @@ struct ReaderScreen: View {
                                             .padding(.vertical, 4)
                                     } else {
                                         LineRow(gurmukhi: line.gurmukhi, translit: line.translit,
-                                                meta: line.isRahao ? "ਰਹਾਉ · refrain" : "") {
+                                                meta: line.isRahao ? "ਰਹਾਉ · refrain" : "",
+                                                lineId: line.id, ang: line.ang, compId: line.compId) {
                                             container.activeComposition = .shabad(compId: line.compId)
                                         }
                                     }

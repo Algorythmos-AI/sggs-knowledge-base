@@ -31,3 +31,8 @@
   embedded SwiftPM frameworks the app bundle id). Frameworks now get distinct ids.
 - xcodebuild test on iOS 26.5 sim: 8/8 pass — 4 unit (ang/hukam/theme/verify vs bundled DB) +
   4 XCUITest (launch, Reader+Hukam, Search->shabad sheet, Verify->verdict). TEST SUCCEEDED.
+
+## 23:28 — Phase H: Saved verses (SwiftData)
+- SavedLine @Model in a SEPARATE writable store (never the corpus DB); modelContainer wired.
+- LineRow Save action (verbatim); SavedScreen (@Query, swipe-delete); reachable from More.
+- BUILD SUCCEEDED.
