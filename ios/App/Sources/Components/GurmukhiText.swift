@@ -4,14 +4,19 @@ import SwiftUI
 /// VoiceOver reads the VERBATIM string (never the VS-marked display form), tagged Punjabi.
 struct GurmukhiText: View {
     let verbatim: String
+    /// Design size at the default base (24). The user's Gurmukhi-size preference scales it
+    /// proportionally, and `relativeTo: .body` then scales with Dynamic Type on top.
     var size: CGFloat = 24
     var weight: Font.Weight = .regular
     @AppStorage("sggs_saroop") private var saroop = true
+    @AppStorage("sggs_gurmukhi_size") private var userBase = 24.0
+
+    private var effective: CGFloat { size * CGFloat(userBase) / 24 }
 
     var body: some View {
         Text(saroop ? Saroop.toTraditional(verbatim) : verbatim)
-            .font(Brand.gurmukhi(size, relativeTo: .body).weight(weight))
-            .lineSpacing(size * 0.55)                       // headroom for stacked matras
+            .font(Brand.gurmukhi(effective, relativeTo: .body).weight(weight))
+            .lineSpacing(effective * 0.55)                  // headroom for stacked matras
             .accessibilityLabel(Text(punjabiLabel))
     }
 

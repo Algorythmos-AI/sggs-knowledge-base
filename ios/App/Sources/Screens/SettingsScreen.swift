@@ -2,6 +2,10 @@ import SwiftUI
 
 struct MoreScreen: View {
     @AppStorage("sggs_saroop") private var saroop = true
+    @AppStorage("sggs_translit") private var showTranslit = true
+    @AppStorage("sggs_gurmukhi_size") private var gurmukhiSize = 24.0
+    @AppStorage("sggs_appearance") private var appearance = "system"
+
     var body: some View {
         NavigationStack {
             List {
@@ -14,6 +18,23 @@ struct MoreScreen: View {
                         }
                     }
                     .accessibilityIdentifier("saroopToggle")
+
+                    Toggle("Show transliteration", isOn: $showTranslit)
+                        .accessibilityIdentifier("translitToggle")
+
+                    VStack(alignment: .leading) {
+                        HStack {
+                            Text("Gurmukhi size"); Spacer()
+                            GurmukhiText(verbatim: "ੴ", size: 24)   // scaled by the preference below
+                        }
+                        Slider(value: $gurmukhiSize, in: 18...32, step: 1)
+                            .accessibilityIdentifier("gurmukhiSizeSlider")
+                            .accessibilityValue("\(Int(gurmukhiSize)) point")
+                    }
+
+                    Picker("Appearance", selection: $appearance) {
+                        Text("System").tag("system"); Text("Light").tag("light"); Text("Dark").tag("dark")
+                    }
                 }
                 Section {
                     NavigationLink { InsightsScreen() } label: { Label("Insights", systemImage: "chart.bar.xaxis") }

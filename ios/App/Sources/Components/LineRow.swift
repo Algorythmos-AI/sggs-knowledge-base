@@ -18,11 +18,12 @@ struct LineRow: View {
 
     @Environment(\.modelContext) private var modelContext
     @Environment(AppContainer.self) private var container
+    @AppStorage("sggs_translit") private var translitPref = true
 
     var body: some View {
         VStack(alignment: .leading, spacing: 6) {
             GurmukhiText(verbatim: gurmukhi, size: 22)
-            if showTranslit && !translit.isEmpty {
+            if showTranslit && translitPref && !translit.isEmpty {
                 Text(translit).font(.subheadline).foregroundStyle(.secondary)
                     .accessibilityHidden(true)            // a reading aid, not scripture
             }
@@ -54,7 +55,7 @@ struct LineRow: View {
         let existing = FetchDescriptor<SavedLine>(predicate: #Predicate { $0.lineId == lineId })
         if let count = try? modelContext.fetchCount(existing), count > 0 { return }
         modelContext.insert(SavedLine(lineId: lineId, gurmukhi: gurmukhi, translit: translit, ang: ang, compId: compId))
-        do { try modelContext.save() }
+        do { try modelContext.save(); Haptics.success() }
         catch { modelContext.rollback() }     // keep the context clean on failure
     }
 }

@@ -60,7 +60,7 @@ struct ReaderScreen: View {
                         .disabled(router.readerAng <= 1)
                         .accessibilityLabel("Previous Ang")
                     Spacer()
-                    Button { container.presentation = .hukam } label: { Label("Hukam", systemImage: "sparkles") }
+                    Button { Haptics.tap(); container.presentation = .hukam } label: { Label("Hukam", systemImage: "sparkles") }
                     Spacer()
                     Button { router.openAng(router.readerAng + 1) } label: { Image(systemName: "chevron.right") }
                         .disabled(router.readerAng >= 1430)

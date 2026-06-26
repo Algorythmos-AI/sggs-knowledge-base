@@ -99,6 +99,18 @@ final class SGGSUITests: XCTestCase {
         XCTAssertTrue(shabadBar.waitForExistence(timeout: 12), "Trail→Open did not surface the shabad (dropped sheet)")
     }
 
+    func testSettingsControls() {
+        let app = XCUIApplication(); app.launch()
+        app.tabBars.buttons["More"].tap()
+        XCTAssertTrue(app.switches["translitToggle"].waitForExistence(timeout: 12), "translit toggle missing")
+        XCTAssertTrue(app.sliders["gurmukhiSizeSlider"].exists, "size slider missing")
+        app.switches["translitToggle"].tap()                       // hide transliteration
+        app.tabBars.buttons["Search"].tap()
+        let field = app.searchFields.firstMatch
+        XCTAssertTrue(field.waitForExistence(timeout: 12)); field.tap(); field.typeText("naam")
+        XCTAssertTrue(app.cells.firstMatch.waitForExistence(timeout: 20), "results must still render with translit hidden")
+    }
+
     /// Captures reference screenshots to the scratchpad (not an assertion gate).
     func testCaptureScreens() {
         let dir = "/private/tmp/claude-501/-Users-samkalaliya-ppt-universe-SGGS-KnowledgeBase/27b4d30a-a6e1-40cf-9daa-9a74b9b8b00a/scratchpad"

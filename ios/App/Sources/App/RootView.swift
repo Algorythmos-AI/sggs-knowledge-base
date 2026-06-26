@@ -3,6 +3,7 @@ import SwiftUI
 /// The tab shell + the single shared composition sheet + the fail-closed integrity gate.
 struct RootView: View {
     @Environment(AppContainer.self) private var container
+    @AppStorage("sggs_appearance") private var appearance = "system"
 
     var body: some View {
         @Bindable var c = container
@@ -37,6 +38,7 @@ struct RootView: View {
             }
         }
         .tint(Brand.saffron)
+        .preferredColorScheme(appearance == "light" ? .light : appearance == "dark" ? .dark : nil)
     }
 }
 

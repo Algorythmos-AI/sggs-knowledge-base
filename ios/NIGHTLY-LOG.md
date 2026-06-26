@@ -86,3 +86,13 @@
 - Lifecycle: SearchModel in .task; ReaderModel cancellation guard; InsightsModel loaded-on-empty;
   Constellation max(n,0); Saroop literal scalar (no force-unwrap); SavedScreen onDelete do/catch.
 - Reader shows "Continues from Ang N". Regression UI test (Trail→Open swaps to shabad). 13/13 green.
+
+## P3 (finishing-line): polish, a11y & placeholder brand assets
+- Settings expanded: transliteration toggle, Gurmukhi size slider (18–32, scales all scripture via
+  GurmukhiText), appearance picker (system/light/dark via root .preferredColorScheme). Wired through
+  GurmukhiText/LineRow. Verbatim-copy invariant preserved.
+- Haptics on Save (success) + Hukam (light). Reader "continues from Ang N".
+- Placeholder AppIcon (white ੴ on saffron, 1024 → all sizes) + AccentColor (saffron) + launch screen
+  (ੴ on saffron). developmentLanguage pa→en. SQLite version shown in About.
+- Verified: icon on home screen; dark-mode + AX5 layout holds; 14/14 tests green (+testSettingsControls).
+- PLACEHOLDER icon flagged for reverent final art + Granthi review.
