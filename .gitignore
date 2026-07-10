@@ -40,3 +40,4 @@ validation/*_results.jsonl
 ios/App/build/
 ios/App/*.xcodeproj/
 ios/App/*.xcworkspace/
+db/backups/
