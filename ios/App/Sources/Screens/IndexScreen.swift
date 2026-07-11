@@ -2,13 +2,12 @@ import SwiftUI
 import GurbaniSearchKit
 
 /// Browse the Granth by Raag / Section / Author (meta-driven). Tapping jumps the Reader to the
-/// first Ang of that division.
+/// first Ang of that division. Stack-less: pushed inside the Explore tab's NavigationStack.
 struct IndexScreen: View {
     @Environment(AppContainer.self) private var container
 
     var body: some View {
-        NavigationStack {
-            Group {
+        Group {
                 if let meta = container.meta {
                     List {
                         Section("Raags") {
@@ -42,9 +41,8 @@ struct IndexScreen: View {
                 } else {
                     ProgressView().frame(maxWidth: .infinity, maxHeight: .infinity)
                 }
-            }
-            .navigationTitle("Index")
         }
+        .navigationTitle("Index")
         .task { await container.loadMeta() }
     }
 }

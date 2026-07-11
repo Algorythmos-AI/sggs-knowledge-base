@@ -7,17 +7,23 @@ final class SearchModel {
     var mode = "auto"
     var state: LoadState<SearchOutput> = .idle
     var verify: VerifyResult?
+    /// English of the verified canonical line (display layer; nil when absent/public profile).
+    var verifyEn: String?
     private let corpus: CorpusActor?
     init(corpus: CorpusActor?) { self.corpus = corpus }
 
-    static let modes: [(id: String, label: String)] = [
-        ("auto", "Auto"), ("gurmukhi", "Gurmukhi"), ("roman", "Roman"),
-        ("first", "First letters"), ("theme", "Theme"), ("verify", "Verify"),
-    ]
+    /// Web pill order (index.astro): Auto · Gurmukhi · Roman · English · First letters · Theme ·
+    /// Verify. English appears only when the DB profile carries the translation layer.
+    static func modes(hasEnglish: Bool) -> [(id: String, label: String)] {
+        var m: [(id: String, label: String)] = [("auto", "Auto"), ("gurmukhi", "Gurmukhi"), ("roman", "Roman")]
+        if hasEnglish { m.append(("english", "English")) }
+        m += [("first", "First letters"), ("theme", "Theme"), ("verify", "Verify")]
+        return m
+    }
 
     func run() async {
         let q = query.trimmingCharacters(in: .whitespacesAndNewlines)
-        verify = nil
+        verify = nil; verifyEn = nil
         guard !q.isEmpty else { state = .idle; return }
         guard let corpus else { state = .failed("No database"); return }
         state = .loading
@@ -33,7 +39,11 @@ final class SearchModel {
                 }
                 let v = try await corpus.verify(claim, ang: ang)
                 if Task.isCancelled { return }
+                var en: String? = nil
+                if let lid = v.matchedLineId { en = try? await corpus.english(forLine: lid) }
+                if Task.isCancelled { return }
                 verify = v
+                verifyEn = en
                 state = .idle
             } else {
                 let out = try await corpus.search(q, mode: mode, limit: 50, offset: 0)
@@ -57,17 +67,46 @@ struct SearchScreen: View {
                                           set: { model?.query = $0 }),
                             prompt: "ਨਾਮੁ · waheguru · ਸ ਨ ਕ · naam")
         }
-        .task { if model == nil { model = SearchModel(corpus: container.corpus) } }
+        .task {
+            if model == nil { model = SearchModel(corpus: container.corpus) }
+            consumePendingQuery()
+        }
+        .onChange(of: container.router.pendingSearchQuery) { _, _ in consumePendingQuery() }
+    }
+
+    /// Deep-linked query (sggs://search?q=…) — consumed exactly once, only after the model
+    /// exists (a link landing before first render must not be dropped).
+    private func consumePendingQuery() {
+        guard let model, let q = container.router.pendingSearchQuery, !q.isEmpty else { return }
+        model.query = q
+        container.router.pendingSearchQuery = nil
     }
 
     @ViewBuilder private var content: some View {
         if let model {
+            let modes = SearchModel.modes(hasEnglish: container.corpus?.capabilities.hasEnglish == true)
             VStack(spacing: 0) {
-                Picker("Mode", selection: Binding(get: { model.mode }, set: { model.mode = $0 })) {
-                    ForEach(SearchModel.modes, id: \.id) { Text($0.label).tag($0.id) }
+                // web-style mode pills (7 modes don't fit a segmented control)
+                ScrollView(.horizontal, showsIndicators: false) {
+                    HStack(spacing: Theme.Space.s) {
+                        ForEach(modes, id: \.id) { m in
+                            let selected = model.mode == m.id
+                            Button { model.mode = m.id } label: {
+                                Text(m.label)
+                                    .font(.subheadline.weight(selected ? .semibold : .regular))
+                                    .padding(.horizontal, Theme.Space.m).padding(.vertical, 6)
+                                    .background(Capsule().fill(selected ? Theme.accent.opacity(0.18)
+                                                                        : Color(.tertiarySystemFill)))
+                                    .foregroundStyle(selected ? Theme.accent : .primary)
+                            }
+                            .buttonStyle(.plain)
+                            .accessibilityAddTraits(selected ? [.isSelected] : [])
+                            .accessibilityIdentifier("mode_\(m.id)")
+                        }
+                    }
+                    .padding(.horizontal)
                 }
-                .pickerStyle(.segmented)
-                .padding(.horizontal)
+                .padding(.bottom, Theme.Space.xs)
                 .accessibilityIdentifier("searchModePicker")
 
                 resultArea(model)
@@ -85,7 +124,7 @@ struct SearchScreen: View {
 
     @ViewBuilder private func resultArea(_ model: SearchModel) -> some View {
         if let v = model.verify {
-            ScrollView { VerdictView(result: v) { ang in container.router.openAng(ang) }.padding() }
+            ScrollView { VerdictView(result: v, en: model.verifyEn) { ang in container.router.openAng(ang) }.padding() }
         } else {
             LoadStateView(state: model.state, emptyTitle: "No matches",
                           emptyMessage: "Try fewer words, first-letters mode, or a theme (naam, hukam, haumai).") { out in
@@ -96,7 +135,7 @@ struct SearchScreen: View {
                     }
                     ForEach(out.results, id: \.id) { line in
                         LineRow(gurmukhi: line.gurmukhi, translit: line.translit, meta: line.metaLine,
-                                lineId: line.id, ang: line.ang, compId: line.compId) {
+                                en: line.en, lineId: line.id, ang: line.ang, compId: line.compId) {
                             container.presentation = .shabad(compId: line.compId)
                         }
                         .listRowSeparator(.hidden)

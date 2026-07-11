@@ -17,7 +17,7 @@ struct ShabadSheet: View {
                 List {
                     ForEach(lines, id: \.id) { line in
                         LineRow(gurmukhi: line.gurmukhi, translit: line.translit,
-                                meta: line.isRahao ? "ਰਹਾਉ · refrain" : "")
+                                meta: line.isRahao ? "ਰਹਾਉ · refrain" : "", en: line.en)
                             .listRowSeparator(.hidden)
                     }
                     if let ang = openAng {

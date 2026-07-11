@@ -56,6 +56,27 @@ extension SQLiteCandidateSource: CorpusReader, AnalyticsSource {
         return lines.map { $0.en == nil && m[$0.id] != nil ? $0.withEn(m[$0.id]) : $0 }
     }
 
+    /// The labelled English translation of one line (display layer, e.g. under a verify verdict).
+    public func english(forLine id: Int) -> String? { enMap(ids: [id])[id] }
+
+    /// Which optional layers this DB build carries (see CorpusCapabilities). One sqlite_master
+    /// probe at open; capability bits gate UI surfaces so a public/Gurmukhi-only DB degrades
+    /// to exactly today's behavior.
+    public func detectCapabilities() -> CorpusCapabilities {
+        func has(_ table: String) -> Bool {
+            var stmt: OpaquePointer?
+            guard sqlite3_prepare_v2(handle,
+                "SELECT 1 FROM sqlite_master WHERE type IN ('table','view') AND name = ?",
+                -1, &stmt, nil) == SQLITE_OK else { return false }
+            defer { sqlite3_finalize(stmt) }
+            sqlite3_bind_text(stmt, 1, table, -1, Self.transientDtor)
+            return sqlite3_step(stmt) == SQLITE_ROW
+        }
+        return CorpusCapabilities(
+            hasEnglish: has("translations") && has("fts_en"),
+            hasTiming: has("raag_timing_claims") && has("timing_sources"))
+    }
+
     private func readerRows(_ sql: String, bind: (OpaquePointer?) -> Void) throws -> [ReaderLine] {
         var stmt: OpaquePointer?
         guard sqlite3_prepare_v2(handle, sql, -1, &stmt, nil) == SQLITE_OK else {

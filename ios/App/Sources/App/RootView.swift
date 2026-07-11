@@ -25,10 +25,9 @@ struct RootView: View {
                 })
             } else {
                 TabView(selection: $router.selectedTab) {
-                    SearchScreen().tabItem { Label("Search", systemImage: "magnifyingglass") }.tag(Tab.search)
                     ReaderScreen().tabItem { Label("Reader", systemImage: "book") }.tag(Tab.reader)
-                    IndexScreen().tabItem { Label("Index", systemImage: "list.bullet") }.tag(Tab.index)
-                    ThemesScreen().tabItem { Label("Themes", systemImage: "circle.grid.2x2") }.tag(Tab.themes)
+                    SearchScreen().tabItem { Label("Search", systemImage: "magnifyingglass") }.tag(Tab.search)
+                    ExploreScreen().tabItem { Label("Explore", systemImage: "square.grid.2x2") }.tag(Tab.explore)
                     MoreScreen().tabItem { Label("More", systemImage: "ellipsis") }.tag(Tab.more)
                 }
                 .sheet(item: $c.presentation, onDismiss: { container.flushPendingPresentation() }) { p in

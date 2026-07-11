@@ -1,8 +1,10 @@
 import SwiftUI
 
 struct MoreScreen: View {
+    @Environment(AppContainer.self) private var container
     @AppStorage("sggs_saroop") private var saroop = true
     @AppStorage("sggs_translit") private var showTranslit = true
+    @AppStorage("sggs_show_english") private var showEnglish = true
     @AppStorage("sggs_gurmukhi_size") private var gurmukhiSize = 24.0
     @AppStorage("sggs_appearance") private var appearance = "system"
 
@@ -22,6 +24,17 @@ struct MoreScreen: View {
                     Toggle("Show transliteration", isOn: $showTranslit)
                         .accessibilityIdentifier("translitToggle")
 
+                    if container.corpus?.capabilities.hasEnglish == true {
+                        Toggle(isOn: $showEnglish) {
+                            VStack(alignment: .leading) {
+                                Text("Show English translation")
+                                Text("Dr. Sant Singh Khalsa (via BaniDB) — a separate labelled layer, never the scripture.")
+                                    .font(.caption).foregroundStyle(.secondary)
+                            }
+                        }
+                        .accessibilityIdentifier("englishToggle")
+                    }
+
                     VStack(alignment: .leading) {
                         HStack {
                             Text("Gurmukhi size"); Spacer()
@@ -37,8 +50,7 @@ struct MoreScreen: View {
                     }
                 }
                 Section {
-                    NavigationLink { InsightsScreen() } label: { Label("Insights", systemImage: "chart.bar.xaxis") }
-                    NavigationLink { ConstellationScreen() } label: { Label("Concept Constellation", systemImage: "circle.hexagongrid") }
+                    // Insights & Constellation moved to the Explore tab (nav restructure)
                     NavigationLink { SavedScreen() } label: { Label("Saved verses", systemImage: "bookmark") }
                     NavigationLink { AboutScreen() } label: { Label("About & credits", systemImage: "info.circle") }
                 }

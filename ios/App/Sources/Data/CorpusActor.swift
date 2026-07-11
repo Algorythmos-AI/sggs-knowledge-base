@@ -13,6 +13,10 @@ actor CorpusActor {
     nonisolated let dbPath: String
     /// The linked (pinned) SQLite version — provenance, safe to read off-actor.
     nonisolated var sqliteVersion: String { SQLiteCandidateSource.sqliteVersion }
+    /// Which optional layers this DB build carries (English/timing) — detected from
+    /// sqlite_master at init, immutable, Sendable → safe to read off-actor. UI surfaces gate
+    /// on these bits so the public (Gurmukhi-only) profile degrades to today's behavior.
+    nonisolated let capabilities: CorpusCapabilities
 
     enum CorpusError: LocalizedError {
         case databaseMissing
@@ -27,12 +31,18 @@ actor CorpusActor {
         self.db = try SQLiteCandidateSource(path: url.path)
         self.searchEngine = SearchEngine(source: db)
         self.verifyEngine = VerifyEngine(source: db)
+        self.capabilities = db.detectCapabilities()
     }
 
     func search(_ q: String, mode: String, limit: Int = 50, offset: Int = 0) throws -> SearchOutput {
-        try searchEngine.search(q, mode: mode, limit: limit, offset: offset)
+        let out = try searchEngine.search(q, mode: mode, limit: limit, offset: offset)
+        // serve.py:798 — en attaches to EVERY search mode's results (no-op on the public profile)
+        return SearchOutput(mode: out.mode, results: db.attachTranslations(out.results),
+                            concept: out.concept, relatedThemes: out.relatedThemes)
     }
     func verify(_ claim: String, ang: Int?) throws -> VerifyResult { try verifyEngine.verify(claim: claim, ang: ang) }
+    /// English of one line (display layer — e.g. under the verify verdict's canonical line).
+    func english(forLine id: Int) throws -> String? { db.english(forLine: id) }
     func ang(_ n: Int) throws -> AngPage { try db.fetchAng(n) }
     func shabad(compId: Int) throws -> Shabad { try db.fetchShabad(compId: compId) }
     func randomHukam() throws -> HukamUnit { try db.hukamUnit(seed: db.randomSeedCompId()) }
@@ -44,5 +54,8 @@ actor CorpusActor {
     func constellation(concept: String, author: String? = nil, raag: String? = nil) throws -> ConstellationResult {
         try db.constellation(concept: concept, author: author, raag: raag)
     }
-    func theme(_ name: String) throws -> ThemeSearchResult { try db.themeSearch(name, limit: 200, offset: 0) }
+    func theme(_ name: String) throws -> ThemeSearchResult {
+        let t = try db.themeSearch(name, limit: 200, offset: 0)
+        return ThemeSearchResult(concept: t.concept, lines: db.attachTranslations(t.lines))
+    }
 }

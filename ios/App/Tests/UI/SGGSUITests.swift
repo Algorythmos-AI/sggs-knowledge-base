@@ -22,8 +22,12 @@ final class SGGSUITests: XCTestCase {
 
     func testVerifyShowsVerdict() {
         let app = XCUIApplication(); app.launch()
-        XCTAssertTrue(app.buttons["Verify"].waitForExistence(timeout: 20))
-        app.buttons["Verify"].tap()
+        let verifyPill = app.buttons["mode_verify"].firstMatch
+        XCTAssertTrue(verifyPill.waitForExistence(timeout: 20))
+        // the Verify pill is last in the horizontal mode row — scroll the row, then tap
+        let from = app.buttons["mode_first"].firstMatch
+        if from.exists { from.press(forDuration: 0.05, thenDragTo: app.buttons["mode_auto"].firstMatch) }
+        verifyPill.tap()
         let field = app.searchFields.firstMatch
         XCTAssertTrue(field.waitForExistence(timeout: 10))
         field.tap(); field.typeText("pavan guroo paanee pitaa maataa dharat mahat")
@@ -55,27 +59,54 @@ final class SGGSUITests: XCTestCase {
     }
 
     func testInsights() {
-        let dir = "/private/tmp/claude-501/-Users-samkalaliya-ppt-universe-SGGS-KnowledgeBase/27b4d30a-a6e1-40cf-9daa-9a74b9b8b00a/scratchpad"
         let app = XCUIApplication(); app.launch()
-        app.tabBars.buttons["More"].tap()
-        let insights = app.buttons["Insights"]
+        app.tabBars.buttons["Explore"].tap()
+        let insights = app.buttons["Insights"].firstMatch
         XCTAssertTrue(insights.waitForExistence(timeout: 12))
         insights.tap()
         XCTAssertTrue(app.buttons["Contributors"].waitForExistence(timeout: 12), "Insights did not open")
         _ = app.staticTexts.element(boundBy: 0).waitForExistence(timeout: 6)
-        try? app.screenshot().pngRepresentation.write(to: URL(fileURLWithPath: "\(dir)/v11_insights.png"))
     }
 
     func testConstellation() {
-        let dir = "/private/tmp/claude-501/-Users-samkalaliya-ppt-universe-SGGS-KnowledgeBase/27b4d30a-a6e1-40cf-9daa-9a74b9b8b00a/scratchpad"
         let app = XCUIApplication(); app.launch()
-        app.tabBars.buttons["More"].tap()
-        let cons = app.buttons["Concept Constellation"]
+        app.tabBars.buttons["Explore"].tap()
+        let cons = app.buttons["Constellation"].firstMatch
         XCTAssertTrue(cons.waitForExistence(timeout: 12))
         cons.tap()
         XCTAssertTrue(app.navigationBars["Constellation"].waitForExistence(timeout: 12), "Constellation did not open")
         _ = app.staticTexts.element(boundBy: 2).waitForExistence(timeout: 8)   // let the map render
-        try? app.screenshot().pngRepresentation.write(to: URL(fileURLWithPath: "\(dir)/v11_constellation.png"))
+    }
+
+    /// English layer (personal profile): the English mode pill exists and returns results,
+    /// and the More-tab toggle is present. (The public profile hides both — degradation gate.)
+    func testEnglishSearchMode() {
+        let app = XCUIApplication(); app.launch()
+        // toggle first (before typing raises a keyboard over the tab bar)
+        app.tabBars.buttons["More"].tap()
+        let toggleLabel = app.staticTexts["Show English translation"]
+        XCTAssertTrue(toggleLabel.waitForExistence(timeout: 20), "English toggle missing in More")
+        app.tabBars.buttons["Search"].tap()
+        let pill = app.buttons["mode_english"].firstMatch
+        XCTAssertTrue(pill.waitForExistence(timeout: 20), "English mode pill missing (personal profile)")
+        pill.tap()
+        let field = app.searchFields.firstMatch
+        XCTAssertTrue(field.waitForExistence(timeout: 10))
+        field.tap(); field.typeText("mercy")
+        XCTAssertTrue(app.cells.firstMatch.waitForExistence(timeout: 20), "english-mode search returned nothing")
+    }
+
+    /// The Explore hub reaches every browse surface (nav-restructure gate).
+    func testExploreHubReachesEverySurface() {
+        let app = XCUIApplication(); app.launch()
+        app.tabBars.buttons["Explore"].tap()
+        for (card, marker) in [("Index", "Index"), ("Themes", "Themes")] {
+            let btn = app.buttons[card].firstMatch
+            XCTAssertTrue(btn.waitForExistence(timeout: 12), "\(card) card missing")
+            btn.tap()
+            XCTAssertTrue(app.navigationBars[marker].waitForExistence(timeout: 12), "\(card) did not open")
+            app.navigationBars.buttons.element(boundBy: 0).tap()   // back
+        }
     }
 
     /// Regression for the consolidated single root sheet: opening a shabad from INSIDE the Trail must
@@ -111,9 +142,10 @@ final class SGGSUITests: XCTestCase {
         XCTAssertTrue(app.cells.firstMatch.waitForExistence(timeout: 20), "results must still render with translit hidden")
     }
 
-    /// Captures reference screenshots to the scratchpad (not an assertion gate).
+    /// Captures reference screenshots (not an assertion gate). Written to the simulator's tmp
+    /// dir — pull with `xcrun simctl get_app_container` or read the test attachments.
     func testCaptureScreens() {
-        let dir = "/private/tmp/claude-501/-Users-samkalaliya-ppt-universe-SGGS-KnowledgeBase/27b4d30a-a6e1-40cf-9daa-9a74b9b8b00a/scratchpad"
+        let dir = NSTemporaryDirectory()
         let app = XCUIApplication(); app.launch()
         func shot(_ name: String) {
             try? app.screenshot().pngRepresentation.write(to: URL(fileURLWithPath: "\(dir)/\(name).png"))
@@ -126,7 +158,9 @@ final class SGGSUITests: XCTestCase {
         _ = app.buttons["Hukam"].waitForExistence(timeout: 12)
         _ = app.staticTexts.element(boundBy: 0).waitForExistence(timeout: 8)
         shot("v11_reader_ang1")
-        app.tabBars.buttons["Themes"].tap()
+        app.tabBars.buttons["Explore"].tap()
+        let themes = app.buttons["Themes"].firstMatch
+        if themes.waitForExistence(timeout: 8) { themes.tap() }
         _ = app.navigationBars["Themes"].waitForExistence(timeout: 8)
         shot("v11_themes")
     }

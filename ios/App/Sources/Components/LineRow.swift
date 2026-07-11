@@ -10,6 +10,10 @@ struct LineRow: View {
     let translit: String
     let meta: String
     var showTranslit = true
+    /// The labelled English translation (Khalsa layer) — a SEPARATE layer under the scripture,
+    /// never blended into the Gurmukhi. nil (2,619 lines have none, and the public DB profile
+    /// has the whole layer absent) renders nothing — no placeholder.
+    var en: String? = nil
     /// Provide line identity to enable the Save (bookmark) action.
     var lineId: Int? = nil
     var ang: Int = 0
@@ -19,6 +23,7 @@ struct LineRow: View {
     @Environment(\.modelContext) private var modelContext
     @Environment(AppContainer.self) private var container
     @AppStorage("sggs_translit") private var translitPref = true
+    @AppStorage("sggs_show_english") private var englishPref = true
 
     var body: some View {
         VStack(alignment: .leading, spacing: 6) {
@@ -26,6 +31,10 @@ struct LineRow: View {
             if showTranslit && translitPref && !translit.isEmpty {
                 Text(translit).font(.subheadline).foregroundStyle(.secondary)
                     .accessibilityHidden(true)            // a reading aid, not scripture
+            }
+            if englishPref, let en, !en.isEmpty {
+                Text(en).font(.callout).foregroundStyle(.secondary)
+                    .accessibilityLabel("English translation: \(en)")
             }
             if !meta.isEmpty {
                 Text(meta).font(.caption).foregroundStyle(.tertiary)

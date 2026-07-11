@@ -138,6 +138,20 @@ public struct NeighborsResult: Sendable, Equatable {
     }
 }
 
+/// What optional layers this DB build carries — detected from sqlite_master at open, never from
+/// compile flags: one binary degrades correctly on either profile (personal = +English, public =
+/// Gurmukhi-only), and any FUTURE additive layer (audio, commentary, …) is a new bit here + a
+/// capability-gated surface, no code fork.
+public struct CorpusCapabilities: Sendable, Equatable {
+    /// translations + fts_en present (the Khalsa English layer; personal profile only).
+    public let hasEnglish: Bool
+    /// The v2.12.0 raag-timing layer (timing_sources/raag_timing_claims/shabd_* form tables).
+    public let hasTiming: Bool
+    public init(hasEnglish: Bool, hasTiming: Bool) {
+        self.hasEnglish = hasEnglish; self.hasTiming = hasTiming
+    }
+}
+
 /// Plain read endpoints (mirror serve.py's /api/ang, /shabad, /random, /meta, /neighbors). No fuzzy logic.
 public protocol CorpusReader: Sendable {
     func fetchAng(_ n: Int) throws -> AngPage

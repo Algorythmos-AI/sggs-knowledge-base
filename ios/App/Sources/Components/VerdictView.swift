@@ -5,6 +5,8 @@ import GurbaniSearchKit
 /// confidence, and the canonical line when found.
 struct VerdictView: View {
     let result: VerifyResult
+    /// English of the canonical line (display layer; nil when absent or on the public profile).
+    var en: String? = nil
     var onOpenAng: (Int) -> Void = { _ in }
 
     private var base: String { result.verdict.components(separatedBy: "+").first ?? result.verdict }
@@ -54,7 +56,8 @@ struct VerdictView: View {
                 Divider()
                 Text("Canonical line").font(.caption).foregroundStyle(.tertiary)
                 LineRow(gurmukhi: g, translit: "",
-                        meta: ["Ang \(ang)", result.raag, result.author].compactMap { $0 }.joined(separator: " · ")) {
+                        meta: ["Ang \(ang)", result.raag, result.author].compactMap { $0 }.joined(separator: " · "),
+                        en: en) {
                     onOpenAng(ang)
                 }
             }

@@ -112,15 +112,10 @@ struct TrailScreen: View {
 }
 
 /// Calibrated relatedness band (NOT a raw %). Floor is the build's 0.30 min-cosine.
+/// Thresholds + labels come from Theme.echoBand (web core.ts relBand parity: 0.65/0.45).
 struct RelatednessBadge: View {
     let score: Double
-    private var band: (label: String, color: Color) {
-        switch score {
-        case 0.60...: return ("Strongly related", .green)
-        case 0.45..<0.60: return ("Related", Brand.gold)
-        default: return ("Loosely related", .secondary)
-        }
-    }
+    private var band: (label: String, color: Color) { Theme.echoBand(score) }
     var body: some View {
         Text(band.label)
             .font(.caption2.weight(.medium))

@@ -41,6 +41,7 @@ struct ReaderScreen: View {
                                     } else {
                                         LineRow(gurmukhi: line.gurmukhi, translit: line.translit,
                                                 meta: line.isRahao ? "ਰਹਾਉ · refrain" : "",
+                                                en: line.en,
                                                 lineId: line.id, ang: line.ang, compId: line.compId) {
                                             container.presentation = .shabad(compId: line.compId)
                                         }
