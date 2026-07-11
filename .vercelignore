@@ -1,0 +1,16 @@
+# Vercel builds only the Astro frontend (Root Directory = frontend/). Keep uploads lean by
+# excluding the backend, the ~109 MB LFS database, and other non-frontend assets. (dist/ and
+# node_modules/ are already gitignored, so Vercel rebuilds them; db/sggs.sqlite would upload only
+# as an LFS pointer anyway — this is belt-and-suspenders for faster builds.)
+db/
+database.sqlite
+webapp/
+ios/
+pipeline/
+corpus/
+concordance/
+validation/
+audit/
+contract/
+*.pdf
+*.key

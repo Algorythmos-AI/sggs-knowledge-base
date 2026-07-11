@@ -21,7 +21,7 @@ for _ext, _ct in (('.js', 'text/javascript'), ('.mjs', 'text/javascript'),
                    ('.woff', 'font/woff'), ('.webmanifest', 'application/manifest+json')):
     mimetypes.add_type(_ct, _ext)
 DB = os.path.join(HERE, '..', 'db', 'sggs.sqlite')
-PORT = int(os.environ.get('SGGS_PORT', '7777'))
+PORT = int(os.environ.get('PORT') or os.environ.get('SGGS_PORT') or '7777')
 
 # Search-logic release stamp. Lives in code (not DB meta) so a search-only patch
 # doesn't force an 86 MB DB re-commit. /api/meta and /api/health prefer these; the
@@ -1345,11 +1345,21 @@ if __name__ == '__main__':
     global_fts = None
     if not os.path.exists(DB):
         sys.exit(f'Database not found: {DB}\nRun the pipeline first (see ../01_Production-Architecture.md).')
+    # Fail-fast on a Git-LFS *pointer* file (130-byte text stub instead of the ~109 MB DB):
+    # os.path.exists() would pass but every /api query would then 500. Catch it at boot with a
+    # clear message rather than serving errors. (Real SQLite files start with "SQLite format 3\x00".)
+    with open(DB, 'rb') as _f:
+        if _f.read(16) != b'SQLite format 3\x00':
+            sys.exit(f'Not a valid SQLite file (Git-LFS pointer?): {DB}\nRun `git lfs pull` to fetch the real database.')
     HAVE_FTS = None
-    srv = ThreadingHTTPServer(('127.0.0.1', PORT), H)
+    # Bind 0.0.0.0 so the app is reachable when hosted (e.g. behind a Vercel /api rewrite);
+    # the platform's $PORT is honoured via the PORT env at the top of this file.
+    srv = ThreadingHTTPServer(('0.0.0.0', PORT), H)
     url = f'http://localhost:{PORT}'
     print(f'ੴ  SGGS Knowledge Base serving at {url}   (Ctrl-C to stop)')
-    try: threading.Timer(0.8, lambda: webbrowser.open(url)).start()
-    except Exception: pass
+    # Only pop a browser for local desktop use; never on a headless host. Opt in with SGGS_OPEN_BROWSER=1.
+    if os.environ.get('SGGS_OPEN_BROWSER') == '1':
+        try: threading.Timer(0.8, lambda: webbrowser.open(url)).start()
+        except Exception: pass
     try: srv.serve_forever()
     except KeyboardInterrupt: print('\nstopped.')
