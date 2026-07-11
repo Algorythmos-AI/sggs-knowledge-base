@@ -13,7 +13,7 @@ import {
 } from './pahar.js';
 
 const NS = 'http://www.w3.org/2000/svg';
-const C = 380, R_IN = 196, R_OUT = 306, R_SEASON_IN = 312, R_SEASON_OUT = 330, R_HOURS = 348;
+const C = 380, R_IN = 188, R_OUT = 310, R_SEASON_IN = 316, R_SEASON_OUT = 334, R_HOURS = 352;
 let CLOCK: any = null;          // /api/timing/clock payload
 let nowTimer: any = null;
 
@@ -104,8 +104,12 @@ function buildDial() {
     const variants = (CLOCK.claims.variant || []).filter((c: any) => c.pahar === p);
     const rows = [...primary.map((c: any) => ({ c, variant: false })),
                   ...variants.map((c: any) => ({ c, variant: true }))];
-    const [cx, cy] = pt(start + 90, (R_IN + R_OUT) / 2 + 4);
-    const lh = 19;
+    const [cx, cy] = pt(start + 90, (R_IN + R_OUT) / 2 + 2);
+    // density-aware type scale: the whole stack must stay inside the annulus
+    // (worst case is the bottom sectors, where the stack runs radially)
+    const n = rows.length;
+    const lh = n <= 4 ? 19 : n === 5 ? 17.5 : n === 6 ? 16 : 14.6;
+    const fs = n <= 4 ? 16 : n === 5 ? 15 : n === 6 ? 14 : 13;
     if (p === 7) {
       const q = el('text', { x: String(cx), y: String(cy), class: 'quiet-star', 'text-anchor': 'middle', tabindex: '0', role: 'button' }, '✦ quiet hours');
       q.setAttribute('aria-label', `Pahar 7, ${paharRange(7)}: deliberately no raags — the deep night is left in silence. Press Enter for the note.`);
@@ -115,9 +119,11 @@ function buildDial() {
     }
     rows.forEach((row, i) => {
       const y = cy + (i - (rows.length - 1) / 2) * lh;
+      const rowFs = row.variant ? fs - 1.5 : fs;
       const t = el('text', {
         x: String(cx), y: String(y),
         class: 'raagname gm' + (row.variant ? ' variantname' : ''),
+        style: `font-size:${rowFs}px`,
         'text-anchor': 'middle', tabindex: '0', role: 'button', lang: 'pa',
       }, row.c.raag_name + (row.variant ? ' †' : ''));
       const claimDesc = row.variant
@@ -127,7 +133,7 @@ function buildDial() {
         `${row.c.roman || row.c.raag_name}, ${paharLabel(p)}, ${paharRange(p)}, ${claimDesc}. Press Enter for details.`);
       (t as any).__raag = row.c.raag_name;
       if (row.variant) {
-        const w = 8 * (row.c.raag_name.length + 2);
+        const w = rowFs * 0.62 * (row.c.raag_name.length + 2);
         g.appendChild(el('line', {
           x1: String(cx - w / 2), y1: String(y + 4), x2: String(cx + w / 2), y2: String(y + 4),
           class: 'variantline',
@@ -138,10 +144,12 @@ function buildDial() {
     svg.appendChild(g);
   }
 
-  // seasonal outer ring: the whole circle, halved — "any time of day in season"
+  // seasonal outer ring: the whole circle, halved — "any time of day in season".
+  // Labels sit on the free diagonals (the cardinal points carry the hour marks)
+  // and are rotated to the ring's tangent, flipped where needed to stay upright.
   const seasons = [
-    { m0: 720, m1: 720 + 719, label: 'ਬਸੰਤੁ Basant — spring (Chet–Vaisakh), any time of day', short: 'Basant · spring', raag: 'ਬਸੰਤੁ' },
-    { m0: 0, m1: 719, label: 'ਮਲਾਰ Malhar — monsoon (Sawan–Bhadon), any time of day', short: 'Malhar · monsoon', raag: 'ਮਲਾਰ' },
+    { m0: 720, m1: 720 + 719, labelAt: 900, label: 'ਬਸੰਤੁ Basant — spring (Chet–Vaisakh), any time of day', short: 'Basant · spring — any time', raag: 'ਬਸੰਤੁ' },
+    { m0: 0, m1: 719, labelAt: 540, label: 'ਮਲਾਰ Malhar — monsoon (Sawan–Bhadon), any time of day', short: 'Malhar · monsoon — any time', raag: 'ਮਲਾਰ' },
   ];
   seasons.forEach((s, i) => {
     const g = el('g', { class: 'seasonseg' });
@@ -149,10 +157,10 @@ function buildDial() {
     path.setAttribute('aria-label', s.label + '. Press Enter for details.');
     (path as any).__raag = s.raag;
     g.appendChild(path);
-    // label runs along the outside of the ring, rotated to the tangent
-    const mid = ((s.m0 + s.m1) / 2) % 1440;
-    const [tx, ty] = pt(mid, R_SEASON_OUT + 11);
-    const rot = tx > C ? 90 : -90;
+    const [tx, ty] = pt(s.labelAt, R_SEASON_OUT + 12);
+    const deg = ((s.labelAt / 1440) * 360 + 90) % 360;      // same mapping as pt()
+    let rot = (deg + 90) % 360;
+    if (rot > 90 && rot < 270) rot -= 180;                  // keep text upright
     g.appendChild(el('text', {
       x: String(tx), y: String(ty), class: 'seasonlabel', 'text-anchor': 'middle',
       transform: `rotate(${rot} ${tx} ${ty})`,
@@ -168,7 +176,7 @@ function buildDial() {
 
   // the "now" hand (updated per minute; no sweep animation — just position)
   const hand = el('g', { class: 'nowhand' + (prefersReducedMotion() ? ' nomotion' : '') });
-  hand.appendChild(el('line', { x1: String(C), y1: String(C), x2: String(C), y2: String(C - R_IN + 24), class: 'handline', id: 'handLine' }));
+  hand.appendChild(el('line', { x1: String(C), y1: String(C), x2: String(C), y2: String(C - R_IN + 48), class: 'handline', id: 'handLine' }));
   hand.appendChild(el('circle', { cx: String(C), cy: String(C), r: '7', class: 'handdot' }));
   svg.appendChild(hand);
   positionHand(svg);
@@ -190,7 +198,7 @@ function activate(t: any) {
 }
 function positionHand(svg?: any) {
   const line = (svg || document).querySelector('#handLine'); if (!line) return;
-  const [x, y] = pt(minutesOf(new Date()), R_IN - 24);
+  const [x, y] = pt(minutesOf(new Date()), R_IN - 48);
   line.setAttribute('x2', String(x)); line.setAttribute('y2', String(y));
 }
 
