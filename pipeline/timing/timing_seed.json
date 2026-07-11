@@ -1,0 +1,101 @@
+{
+  "_comment": [
+    "Reviewable scholarly artifact for the raag-timing knowledge layer.",
+    "Raag keys are anglicized; seed_timing.py resolves them against raags.roman",
+    "plus an explicit alias table and HARD-FAILS on anything unresolved.",
+    "Pahar convention: 1 = 6-9 AM ... 8 = 3-6 AM (fixed-clock rendering, 6 AM anchor).",
+    "Divergence is deliberately preserved: variant rows are claims, not errors.",
+    "Provenance honesty: this claim set originates from a research conversation.",
+    "Sources that could not be tied to a specific verifiable publication are",
+    "labeled 'compiled' with notes saying exactly that — no invented citations."
+  ],
+  "sources": [
+    {
+      "name": "Gurmat Sangeet convention (compiled)",
+      "tradition": "gurmat_sangeet",
+      "url": null,
+      "notes": "Majority pahar assignments as compiled from Gurmat Sangeet teaching charts in the project's research notes. Not a single publication; recorded as the majority convention pending per-chart citation."
+    },
+    {
+      "name": "SikhRoots raag time chart",
+      "tradition": "gurmat_sangeet",
+      "url": "https://www.sikhroots.com",
+      "notes": "Community resource cited in research notes for variant placements (e.g. Gauri in the 5th pahar). Deep link pending verification."
+    },
+    {
+      "name": "Divergent Gurmat Sangeet charts (compiled)",
+      "tradition": "gurmat_sangeet",
+      "url": null,
+      "notes": "Variant placements observed across community charts (incl. Sikh Philosophy Network chart) in research notes; individual chart attribution pending verification."
+    },
+    {
+      "name": "Hindustani samay convention (compiled)",
+      "tradition": "hindustani",
+      "url": null,
+      "notes": "Classical Hindustani time-of-day (samay) assignments referenced for raags shared between traditions; compiled from standard raga-shastra references in research notes."
+    },
+    {
+      "name": "Sikh ceremonial practice (liturgy, compiled)",
+      "tradition": "gurmat_sangeet",
+      "url": null,
+      "notes": "Occasions from standard liturgical practice: Anand Karaj (Lavan in Suhi), Ghorian/Alahunian in Wadhans, Antim Sanskar, Rehras/So Dar at dusk, Kirtan Sohila at night, Asa di Var at amrit vela."
+    }
+  ],
+  "claims": [
+    { "raag": "Bilaval",      "claim_type": "primary", "pahar": 1, "source": "Gurmat Sangeet convention (compiled)", "confidence": "majority", "notes": null },
+    { "raag": "Devgandhari",  "claim_type": "primary", "pahar": 1, "source": "Gurmat Sangeet convention (compiled)", "confidence": "majority", "notes": null },
+    { "raag": "Bairari",      "claim_type": "primary", "pahar": 1, "source": "Gurmat Sangeet convention (compiled)", "confidence": "majority", "notes": null },
+
+    { "raag": "Sarang",       "claim_type": "primary", "pahar": 2, "source": "Gurmat Sangeet convention (compiled)", "confidence": "majority", "notes": null },
+    { "raag": "Suhi",         "claim_type": "primary", "pahar": 2, "source": "Gurmat Sangeet convention (compiled)", "confidence": "majority", "notes": null },
+    { "raag": "Gujri",        "claim_type": "primary", "pahar": 2, "source": "Gurmat Sangeet convention (compiled)", "confidence": "majority", "notes": null },
+    { "raag": "Gaund",        "claim_type": "primary", "pahar": 2, "source": "Gurmat Sangeet convention (compiled)", "confidence": "majority", "notes": null },
+    { "raag": "Todi",         "claim_type": "primary", "pahar": 2, "source": "Gurmat Sangeet convention (compiled)", "confidence": "majority", "notes": null },
+    { "raag": "Bilaval",      "claim_type": "primary", "pahar": 2, "source": "Gurmat Sangeet convention (compiled)", "confidence": "majority", "notes": "Extension: Bilaval continues from the 1st into the 2nd pahar." },
+
+    { "raag": "Wadhans",      "claim_type": "primary", "pahar": 3, "source": "Gurmat Sangeet convention (compiled)", "confidence": "majority", "notes": null },
+    { "raag": "Maru",         "claim_type": "primary", "pahar": 3, "source": "Gurmat Sangeet convention (compiled)", "confidence": "majority", "notes": null },
+    { "raag": "Dhanasri",     "claim_type": "primary", "pahar": 3, "source": "Gurmat Sangeet convention (compiled)", "confidence": "majority", "notes": null },
+
+    { "raag": "Maajh",        "claim_type": "primary", "pahar": 4, "source": "Gurmat Sangeet convention (compiled)", "confidence": "majority", "notes": null },
+    { "raag": "Gauri",        "claim_type": "primary", "pahar": 4, "source": "Gurmat Sangeet convention (compiled)", "confidence": "majority", "notes": null },
+    { "raag": "Tilang",       "claim_type": "primary", "pahar": 4, "source": "Gurmat Sangeet convention (compiled)", "confidence": "majority", "notes": null },
+    { "raag": "Tukhari",      "claim_type": "primary", "pahar": 4, "source": "Gurmat Sangeet convention (compiled)", "confidence": "majority", "notes": null },
+
+    { "raag": "Sri Raag",     "claim_type": "primary", "pahar": 5, "source": "Gurmat Sangeet convention (compiled)", "confidence": "majority", "notes": null },
+    { "raag": "Mali Gaura",   "claim_type": "primary", "pahar": 5, "source": "Gurmat Sangeet convention (compiled)", "confidence": "majority", "notes": null },
+    { "raag": "Jaitsri",      "claim_type": "primary", "pahar": 5, "source": "Gurmat Sangeet convention (compiled)", "confidence": "majority", "notes": null },
+    { "raag": "Kedara",       "claim_type": "primary", "pahar": 5, "source": "Gurmat Sangeet convention (compiled)", "confidence": "majority", "notes": null },
+    { "raag": "Kalyan",       "claim_type": "primary", "pahar": 5, "source": "Gurmat Sangeet convention (compiled)", "confidence": "majority", "notes": null },
+    { "raag": "Basant",       "claim_type": "primary", "pahar": 5, "source": "Gurmat Sangeet convention (compiled)", "confidence": "majority", "notes": "Off-season placement (outside Chet-Vaisakh); in season Basant may be sung at any time." },
+
+    { "raag": "Bihagra",      "claim_type": "primary", "pahar": 6, "source": "Gurmat Sangeet convention (compiled)", "confidence": "majority", "notes": null },
+    { "raag": "Nat Narayan",  "claim_type": "primary", "pahar": 6, "source": "Gurmat Sangeet convention (compiled)", "confidence": "majority", "notes": null },
+    { "raag": "Sorath",       "claim_type": "primary", "pahar": 6, "source": "Gurmat Sangeet convention (compiled)", "confidence": "majority", "notes": null },
+    { "raag": "Malhar",       "claim_type": "primary", "pahar": 6, "source": "Gurmat Sangeet convention (compiled)", "confidence": "majority", "notes": "Off-season placement (outside Sawan-Bhadon); in monsoon Malhar may be sung at any time." },
+    { "raag": "Kanra",        "claim_type": "primary", "pahar": 6, "source": "Gurmat Sangeet convention (compiled)", "confidence": "majority", "notes": null },
+    { "raag": "Jaijaiwanti",  "claim_type": "primary", "pahar": 6, "source": "Gurmat Sangeet convention (compiled)", "confidence": "majority", "notes": null },
+
+    { "raag": "Asa",          "claim_type": "primary", "pahar": 8, "source": "Gurmat Sangeet convention (compiled)", "confidence": "majority", "notes": "Amrit vela." },
+    { "raag": "Bhairo",       "claim_type": "primary", "pahar": 8, "source": "Gurmat Sangeet convention (compiled)", "confidence": "majority", "notes": null },
+    { "raag": "Ramkali",      "claim_type": "primary", "pahar": 8, "source": "Gurmat Sangeet convention (compiled)", "confidence": "majority", "notes": null },
+    { "raag": "Prabhati",     "claim_type": "primary", "pahar": 8, "source": "Gurmat Sangeet convention (compiled)", "confidence": "majority", "notes": "Amrit vela / dawn." },
+
+    { "raag": "Gauri",        "claim_type": "variant", "pahar": 5, "source": "SikhRoots raag time chart", "confidence": "disputed", "notes": "Some sources place Gauri in the 5th pahar (early evening) rather than the 4th." },
+    { "raag": "Tilang",       "claim_type": "variant", "pahar": null, "time_start": "21:00", "time_end": "24:00", "source": "Hindustani samay convention (compiled)", "confidence": "disputed", "notes": "Night raag in the Hindustani tradition; Gurmat Sangeet convention keeps it in the 4th pahar of day." },
+    { "raag": "Gaund",        "claim_type": "variant", "pahar": null, "time_start": "15:00", "time_end": "21:00", "source": "Divergent Gurmat Sangeet charts (compiled)", "confidence": "disputed", "notes": "Late afternoon / early evening in some charts, against the majority 2nd-pahar placement." },
+    { "raag": "Ramkali",      "claim_type": "variant", "pahar": 1, "source": "Divergent Gurmat Sangeet charts (compiled)", "confidence": "disputed", "notes": "Split tradition: first pahar of day vs the majority amrit-vela (8th pahar) placement." },
+    { "raag": "Kedara",       "claim_type": "variant", "pahar": 6, "source": "Hindustani samay convention (compiled)", "confidence": "disputed", "notes": "Hindustani practice sings Kedar later at night (6th pahar) than the Gurmat Sangeet 5th-pahar placement." },
+
+    { "raag": "Basant",       "claim_type": "seasonal", "season": "Chet-Vaisakh (spring)", "source": "Gurmat Sangeet convention (compiled)", "confidence": "consistent", "notes": "During spring Basant may be sung at any time of day." },
+    { "raag": "Malhar",       "claim_type": "seasonal", "season": "Sawan-Bhadon (monsoon)", "source": "Gurmat Sangeet convention (compiled)", "confidence": "consistent", "notes": "During the monsoon Malhar may be sung at any time of day." },
+
+    { "raag": "Suhi",         "claim_type": "ceremonial", "occasion": "Anand Karaj", "source": "Sikh ceremonial practice (liturgy, compiled)", "confidence": "consistent", "notes": "The Lavan (Ang 773-774, Suhi Chhant M4) are sung during the marriage ceremony." },
+    { "raag": "Wadhans",      "claim_type": "ceremonial", "occasion": "Ghorian (weddings)", "source": "Sikh ceremonial practice (liturgy, compiled)", "confidence": "consistent", "notes": "Ghorian wedding songs are set in Wadhans." },
+    { "raag": "Wadhans",      "claim_type": "ceremonial", "occasion": "Alahunian (funerals)", "source": "Sikh ceremonial practice (liturgy, compiled)", "confidence": "consistent", "notes": "Alahunian elegies are set in Wadhans." },
+    { "raag": "Maru",         "claim_type": "ceremonial", "occasion": "Antim Sanskar", "source": "Sikh ceremonial practice (liturgy, compiled)", "confidence": "consistent", "notes": "Maru is customary at funeral rites." },
+    { "raag": "Dhanasri",     "claim_type": "ceremonial", "occasion": "Rehras & Kirtan Sohila", "source": "Sikh ceremonial practice (liturgy, compiled)", "confidence": "consistent", "notes": "Dhanasri compositions appear in the evening (Rehras) and night (Kirtan Sohila) liturgies." },
+    { "raag": "Asa",          "claim_type": "ceremonial", "occasion": "Asa di Var", "time_start": "03:00", "time_end": "06:00", "source": "Sikh ceremonial practice (liturgy, compiled)", "confidence": "consistent", "notes": "Asa di Var is sung at amrit vela." },
+    { "raag": "Asa",          "claim_type": "ceremonial", "occasion": "Rehras/So Dar", "time_start": "18:00", "time_end": "21:00", "source": "Sikh ceremonial practice (liturgy, compiled)", "confidence": "consistent", "notes": "Asa at dusk (So Dar in Rehras) is canonical practice alongside its amrit-vela use — both are recorded." }
+  ]
+}

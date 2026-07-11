@@ -76,6 +76,15 @@ python3 pipeline/build_semantic_vectors_lite.py --db "$ANALYTICS_DB"           #
 python3 pipeline/build_resonance.py --db "$ANALYTICS_DB"                       # author_resonance (uses line_neighbors)
 python3 pipeline/build_vaars.py --db "$ANALYTICS_DB"                           # vaars + vaar_units (22 Vaars, detected by title header)
 
+echo "── 7b/8 raag-timing knowledge layer (additive NEW tables only; scripture untouched)"
+# --skip-baseline is sanctioned ONLY here: the fresh build is already gated by
+# reconcile.py + golden_test.py, and its derived tables legitimately differ
+# from the committed baseline. After install, re-baseline as a conscious act:
+#   python3 pipeline/timing/step0_baseline.py --force   (then commit audit/…)
+python3 pipeline/timing/apply_migration.py  --db "$ANALYTICS_DB" --allow-live --skip-baseline
+python3 pipeline/timing/seed_timing.py      --db "$ANALYTICS_DB" --skip-baseline
+python3 pipeline/timing/derive_bani_forms.py --db "$ANALYTICS_DB" --skip-baseline
+
 echo "── 8/8 install + manifest"
 cp "$ANALYTICS_DB" db/sggs.sqlite
 python3 - <<'EOF'
