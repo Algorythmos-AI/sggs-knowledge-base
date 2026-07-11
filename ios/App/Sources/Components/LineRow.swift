@@ -47,7 +47,7 @@ struct LineRow: View {
             Button { UIPasteboard.general.string = gurmukhi } label: {
                 Label("Copy verse", systemImage: "doc.on.doc")     // verbatim — never the saroop form
             }
-            ShareLink(item: gurmukhi) { Label("Share", systemImage: "square.and.arrow.up") }
+            ShareLink(item: shareText) { Label("Share", systemImage: "square.and.arrow.up") }
             if let lineId {
                 // Save needs a live SwiftData container; when even the in-memory fallback failed
                 // the action is hidden rather than crashing on \.modelContext access.
@@ -60,6 +60,60 @@ struct LineRow: View {
                 } label: { Label("Explore related", systemImage: "point.3.connected.trianglepath.dotted") }
             }
         }
+        // VoiceOver/Switch Control: ONE combined element with every context-menu action mirrored
+        // as an accessibility action (a contextMenu alone is unreachable non-visually). The label
+        // speaks the VERBATIM Gurmukhi in Punjabi, then the English layer, then the metadata —
+        // the translit stays out (redundant phonetics for a listener already hearing Punjabi).
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(Text(composedA11yLabel))
+        .accessibilityAddTraits(onTap != nil ? [.isButton] : [])
+        .accessibilityHint(onTap != nil ? "Opens the composition" : "")
+        .accessibilityAction(named: "Copy verse") { UIPasteboard.general.string = gurmukhi }
+        .accessibilityAction(named: "Share") { presentShareSheet(shareText) }
+        .accessibilityActions {
+            if let lineId {
+                if container.modelContainer != nil {
+                    Button("Save") { save(lineId) }
+                }
+                Button("Explore related") {
+                    container.present(.trail(TrailStart(id: lineId, gurmukhi: gurmukhi,
+                                                        translit: translit, ang: ang, compId: compId)))
+                }
+            }
+        }
+    }
+
+    /// Shared text carries the Ang citation (never bare scripture without its source).
+    private var shareText: String {
+        var out = gurmukhi
+        if ang > 0 { out += "\n— Sri Guru Granth Sahib, Ang \(ang)" }
+        return out
+    }
+
+    /// Gurmukhi (spoken as Punjabi) → English layer → metadata.
+    private var composedA11yLabel: AttributedString {
+        var g = AttributedString(gurmukhi)
+        g.languageIdentifier = "pa"
+        var out = g
+        if let en, !en.isEmpty {
+            out += AttributedString(". English translation: \(en)")
+        }
+        if !meta.isEmpty { out += AttributedString(". \(meta)") }
+        else if ang > 0 { out += AttributedString(". Ang \(ang)") }
+        return out
+    }
+
+    /// UIKit share fallback for the accessibility action (ShareLink can't be invoked
+    /// programmatically). Verbatim text + Ang citation only.
+    private func presentShareSheet(_ text: String) {
+        guard let scene = UIApplication.shared.connectedScenes
+            .compactMap({ $0 as? UIWindowScene }).first(where: { $0.activationState == .foregroundActive }),
+              let root = scene.keyWindow?.rootViewController else { return }
+        let vc = UIActivityViewController(activityItems: [text], applicationActivities: nil)
+        var top = root
+        while let presented = top.presentedViewController { top = presented }
+        vc.popoverPresentationController?.sourceView = top.view
+        top.present(vc, animated: true)
     }
 
     /// Idempotent save: a verse already bookmarked is a no-op (the @unique lineId would otherwise
