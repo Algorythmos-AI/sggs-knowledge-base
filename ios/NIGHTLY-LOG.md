@@ -129,3 +129,25 @@
 - CI: new `app` job — xcodegen → build-for-testing → SGGSTests + SGGSUITests on a resolved
   simulator; parity job builds BOTH profiles. Local: 18/18 app tests green (8 unit + 10 UI),
   zero app-source warnings under Swift 6 strict concurrency.
+
+## P6 (full-parity plan, Phase 2–6): nav restructure, English UI, Clock, Reader parity, Lineage/Insights/Vaars
+- Tabs → Reader · Search · Clock · Explore · More; Explore hub hosts Index/Themes/Lineage/Insights/
+  Constellation/Vaars as stack-less Routes. Theme tokens (spacing/radius/Card/StatTile) + echoBand
+  moved to WEB thresholds (0.65/0.45 — the old badge used 0.60). sggs:// grew search?q= + clock/<raag>.
+- English UI: capability-gated (CorpusCapabilities from sqlite_master) — LineRow renders the labelled
+  en under the verse (optional end-to-end; 330 verses legitimately lack it), search pills gain an
+  English mode, verify shows the canonical line's translation, More gains the toggle.
+- Raag Clock: Canvas dial (day/night arcs, current-pahar glow, beads, silent P7, now-hand) +
+  accessible pahar LIST as the content path; fixed/solar modes (opt-in CoreLocation rounded ~1km
+  on-device only + manual entry + polar fallback); per-pahar claims sheet; DivergenceScreen.
+  Injectable clock (SGGS_CLOCK_NOW) for deterministic tests.
+- Reader parity: jump-to-Ang (field+slider), swipe page-turn, reading-options menu, Sehaj focus,
+  resume-last-Ang, dashed timing chip → Clock deep link. BUG caught by boundary test: SwiftUI
+  LocalizedStringKey interpolation rendered "Ang 1,430" — all Ang interpolations now String()-wrapped.
+- Lineage: century timeline (kind filters, volume bars — "never importance" stated), full profiles
+  (stylometry StatTiles, signature themes by lift, distinctive-term chips), ⇄ compare two voices
+  (Canvas radar + accessible Grid table). Insights grew Network (seeded deterministic ForceLayout,
+  settled off-main pre-frame; list alternative always present), Resonance chord (Canvas + list),
+  Flow streamgraph (Swift Charts stacked areas per concept along the raag). VaarsScreen: 22 ballads
+  → salok/pauri anatomy (verbatim from tables; cross-voice structure explained).
+- Contract catch: author_analytics.top_themes is [{concept,lift}] not [String] — TopTheme model.

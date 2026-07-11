@@ -6,7 +6,6 @@ import GurbaniSearchKit
 final class InsightsModel {
     var authors: [AuthorStat] = []
     var raags: [RaagStat] = []
-    var edges: [ThemeEdge] = []
     var loaded = false
     private let corpus: CorpusActor?
     init(corpus: CorpusActor?) { self.corpus = corpus }
@@ -15,7 +14,6 @@ final class InsightsModel {
         guard let corpus else { loaded = true; return }   // no DB → show empty, never an endless spinner
         authors = (try? await corpus.authorAnalytics()) ?? []
         raags = (try? await corpus.raagAnalytics()) ?? []
-        edges = (try? await corpus.themeNetwork(minPPMI: 0.7, limit: 40)) ?? []
         loaded = true
     }
 }
@@ -25,18 +23,41 @@ struct InsightsScreen: View {
     @State private var model: InsightsModel?
     @State private var tab = 0
 
+    private static let views: [(id: Int, label: String)] = [
+        (0, "Contributors"), (1, "Raags"), (2, "Network"), (3, "Resonance"), (4, "Flow"),
+    ]
+
     var body: some View {
         VStack(spacing: 0) {
-            Picker("View", selection: $tab) {
-                Text("Contributors").tag(0); Text("Raags").tag(1); Text("Themes").tag(2)
+            // 5 views don't fit a segmented control — same pill pattern as Search modes
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(spacing: Theme.Space.s) {
+                    ForEach(Self.views, id: \.id) { v in
+                        let selected = tab == v.id
+                        Button { tab = v.id } label: {
+                            Text(v.label)
+                                .font(.subheadline.weight(selected ? .semibold : .regular))
+                                .padding(.horizontal, Theme.Space.m).padding(.vertical, 6)
+                                .background(Capsule().fill(selected ? Theme.accent.opacity(0.18)
+                                                                    : Color(.tertiarySystemFill)))
+                                .foregroundStyle(selected ? Theme.accent : .primary)
+                        }
+                        .buttonStyle(.plain)
+                        .accessibilityAddTraits(selected ? [.isSelected] : [])
+                        .accessibilityIdentifier("insights_\(v.label)")
+                    }
+                }
+                .padding(.horizontal)
             }
-            .pickerStyle(.segmented).padding()
+            .padding(.vertical, Theme.Space.s)
 
             if let model, model.loaded {
                 switch tab {
                 case 0: ContributorsView(authors: model.authors)
                 case 1: RaagsView(raags: model.raags)
-                default: ThemeConnectionsView(edges: model.edges)
+                case 2: ThemeNetworkSection()
+                case 3: ResonanceSection()
+                default: ProgressionSection()
                 }
             } else {
                 ProgressView().frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -108,29 +129,6 @@ private struct RaagsView: View {
                             .font(.caption).foregroundStyle(.secondary)
                     }
                 }
-            }
-        }
-    }
-}
-
-private struct ThemeConnectionsView: View {
-    let edges: [ThemeEdge]
-    var body: some View {
-        List {
-            Section {
-                ForEach(edges) { e in
-                    HStack {
-                        Text("\(e.source.capitalized) + \(e.target.capitalized)")
-                        Spacer()
-                        Text("\(e.shabadCount) shabads").font(.caption).foregroundStyle(.secondary)
-                    }
-                    .accessibilityElement(children: .combine)
-                    .accessibilityLabel("\(e.source) and \(e.target) co-occur in \(e.shabadCount) shabads")
-                }
-            } header: {
-                Text("Themes that appear together")
-            } footer: {
-                Text("Concept pairs that co-occur within shabads more than chance (PPMI ≥ 0.7). Descriptive.")
             }
         }
     }

@@ -96,6 +96,59 @@ final class SGGSUITests: XCTestCase {
         XCTAssertTrue(app.cells.firstMatch.waitForExistence(timeout: 20), "english-mode search returned nothing")
     }
 
+    /// Lineage: timeline renders, a profile opens, compare mode produces the ⇄ sheet.
+    /// Vaars: the 22 ballads list to an anatomy with pauri/salok units.
+    func testLineageAndVaars() {
+        let app = XCUIApplication(); app.launch()
+        app.tabBars.buttons["Explore"].tap()
+        let lineage = app.buttons["Lineage"].firstMatch
+        XCTAssertTrue(lineage.waitForExistence(timeout: 15)); lineage.tap()
+        XCTAssertTrue(app.staticTexts["30 voices · 12th–17th century"].waitForExistence(timeout: 15),
+                      "lineage header missing")
+        // open a profile
+        let farid = app.buttons.matching(NSPredicate(format: "label BEGINSWITH %@", "Baba Sheikh Farid")).firstMatch
+        XCTAssertTrue(farid.waitForExistence(timeout: 8)); farid.tap()
+        // "lines preserved" stat tile always renders once the profile loads (some voices,
+        // like Farid, legitimately have no signature-themes section)
+        XCTAssertTrue(app.staticTexts["lines preserved"].waitForExistence(timeout: 12), "profile did not load")
+        app.buttons["Done"].tap()
+        // compare two voices
+        app.buttons["compareVoices"].tap()
+        farid.tap()
+        // Jaidev sits in the same top century group as Farid (List rows are lazy — a
+        // far-scrolled voice wouldn't exist in the hierarchy yet)
+        let jaidev = app.buttons.matching(NSPredicate(format: "label BEGINSWITH %@", "Jaidev,")).firstMatch
+        XCTAssertTrue(jaidev.waitForExistence(timeout: 8)); jaidev.tap()
+        XCTAssertTrue(app.staticTexts["Theme emphasis (lift)"].waitForExistence(timeout: 12),
+                      "compare sheet missing")
+        app.buttons["Done"].tap()
+        app.navigationBars.buttons.element(boundBy: 0).tap()   // back to Explore
+        // vaars
+        let vaars = app.buttons["Vaars"].firstMatch
+        XCTAssertTrue(vaars.waitForExistence(timeout: 8)); vaars.tap()
+        XCTAssertTrue(app.navigationBars["Vaars"].waitForExistence(timeout: 12))
+        app.cells.firstMatch.tap()
+        XCTAssertTrue(app.staticTexts["Anatomy in reading order"].waitForExistence(timeout: 12),
+                      "vaar anatomy missing")
+    }
+
+    /// Insights completions: network + resonance + flow views render their content.
+    func testInsightsVisualizations() {
+        let app = XCUIApplication(); app.launch()
+        app.tabBars.buttons["Explore"].tap()
+        let insights = app.buttons["Insights"].firstMatch
+        XCTAssertTrue(insights.waitForExistence(timeout: 15)); insights.tap()
+        app.buttons["insights_Network"].tap()
+        XCTAssertTrue(app.staticTexts["Strongest pairs"].waitForExistence(timeout: 15), "network list missing")
+        app.buttons["insights_Resonance"].tap()
+        XCTAssertTrue(app.staticTexts["Strongest resonances"].waitForExistence(timeout: 15), "resonance missing")
+        app.buttons["insights_Flow"].tap()
+        XCTAssertTrue(app.otherElements["progressionRaagPicker"].firstMatch.waitForExistence(timeout: 15)
+                      || app.buttons["progressionRaagPicker"].firstMatch.exists
+                      || app.staticTexts["Raag"].firstMatch.waitForExistence(timeout: 5),
+                      "progression picker missing")
+    }
+
     /// Reader parity: jump-to-Ang (boundary 1430, next disabled), swipe page-turn back.
     func testReaderJumpAndSwipe() {
         let app = XCUIApplication(); app.launch()

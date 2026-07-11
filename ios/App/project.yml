@@ -29,6 +29,8 @@ targets:
         buildPhase: resources
       - path: ../Resources/sggs-ios.manifest.json
         buildPhase: resources
+      - path: ../../frontend/public/contributors.json
+        buildPhase: resources
     dependencies:
       - package: GurbaniSearchKit
         product: GurbaniSearchKit

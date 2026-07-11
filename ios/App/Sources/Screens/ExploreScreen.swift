@@ -20,10 +20,14 @@ struct ExploreScreen: View {
               caption: "Raags, sections & authors — jump anywhere", icon: "list.bullet"),
         .init(route: .themes, title: "Themes",
               caption: "54 concepts, every tagged verse", icon: "circle.grid.2x2"),
+        .init(route: .lineage, title: "Lineage",
+              caption: "30 voices across five centuries", icon: "person.2"),
         .init(route: .insights, title: "Insights",
-              caption: "Contributors, raags & theme patterns", icon: "chart.bar.xaxis"),
+              caption: "Contributors, network, resonance & flow", icon: "chart.bar.xaxis"),
         .init(route: .constellation, title: "Constellation",
               caption: "A theme's verses clustered by co-theme", icon: "circle.hexagongrid"),
+        .init(route: .vaars, title: "Vaars",
+              caption: "22 ballads — pauri & salok anatomy", icon: "list.number"),
     ]
 
     var body: some View {
@@ -61,8 +65,10 @@ struct ExploreScreen: View {
                 switch route {
                 case .index: IndexScreen()
                 case .themes: ThemesScreen()
+                case .lineage: LineageScreen()
                 case .insights: InsightsScreen()
                 case .constellation: ConstellationScreen()
+                case .vaars: VaarsScreen()
                 case .theme(let name): ThemeResultsScreen(concept: name)
                 case .raagAng: EmptyView()   // reserved (future: raag detail)
                 }

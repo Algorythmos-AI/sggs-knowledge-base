@@ -10,8 +10,10 @@ enum Tab: Hashable { case reader, search, clock, explore, more }
 enum Route: Hashable {
     case index
     case themes
+    case lineage
     case insights
     case constellation
+    case vaars
     case theme(String)
     case raagAng(name: String, ang: Int)
 }
