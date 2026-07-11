@@ -706,12 +706,14 @@ body.cmp-mode .tl-node:hover .tl-card { border-color:color-mix(in srgb, var(--ac
 .now-actions .pin-btn:hover { transform:none; background:color-mix(in srgb, var(--accent) 12%, transparent); }
 .now-actions .pin-btn.pinned { background:color-mix(in srgb, var(--accent) 18%, transparent); border-color:var(--accent); box-shadow:0 0 0 1px var(--accent), 0 0 10px var(--glow); }
 
+
 /* ======================= Raag Timing knowledge layer (v2.12) =======================
-   Metadata surfaces ONLY — the scripture render pipeline is untouched. Chip +
-   clock + divergence table use existing tokens so light/dark both look intentional. */
+   Metadata surfaces ONLY — the scripture render pipeline is untouched. Chip, clock,
+   detail panel, and claims explorer all use existing tokens so light + dark read as
+   one intentional system. */
 
 /* --- reader timing chip: unmistakably metadata, outside the Gurbani column --- */
-.ctx { min-height:30px; }                              /* reserve the row: no layout shift when chips land */
+.ctx { min-height:30px; }
 .ctx a.timechip {
   display:inline-flex; align-items:center; gap:5px; font-size:11.5px; text-decoration:none;
   background:transparent; color:var(--soft); padding:3px 11px; border-radius:999px;
@@ -722,127 +724,202 @@ body.cmp-mode .tl-node:hover .tl-card { border-color:color-mix(in srgb, var(--ac
 .timechip .tc-sep { opacity:.5; }
 body.hide-timing .timechip { display:none; }
 
-/* --- Raag Clock page --- */
-#v-clock, #v-divergence { max-width:980px; margin:0 auto; padding:22px 16px 60px; }
-.clock-head h2 { font-size:24px; font-weight:750; letter-spacing:-.02em; margin:14px 0 6px; }
-.clock-sub { color:var(--soft); font-size:13.5px; max-width:74ch; margin-bottom:18px; }
-.clock-sub a { color:var(--accent); }
+/* --- page shells --- */
+#v-clock, #v-divergence { max-width:1040px; margin:0 auto; padding:22px 16px 64px; }
+.clock-head h2 { font-size:26px; font-weight:760; letter-spacing:-.02em; margin:14px 0 6px; }
+.clock-sub { color:var(--soft); font-size:14px; max-width:78ch; margin-bottom:20px; line-height:1.6; }
+.clock-sub a, .exp-hint a { color:var(--accent); }
 #v-clock .card, #v-divergence .card {
-  background:var(--card); border:1px solid var(--line); border-radius:18px;
-  box-shadow:var(--shadow); padding:18px; margin-bottom:18px;
+  background:var(--card); border:1px solid var(--line); border-radius:20px;
+  box-shadow:var(--shadow); padding:20px; margin-bottom:20px;
 }
 
-/* now-widget */
+/* --- now widget --- */
 .now-head { display:flex; justify-content:space-between; align-items:center; gap:12px; flex-wrap:wrap; }
 .now-head h3 { font-size:16px; font-weight:700; }
 .mode-tgl { display:inline-flex; border:1px solid var(--line-strong); border-radius:999px; overflow:hidden; }
-.mode-tgl button { font-size:12px; padding:6px 14px; background:transparent; color:var(--soft); border:0; cursor:pointer; }
+.mode-tgl button { font-size:12px; padding:6px 14px; background:transparent; color:var(--soft); border:0; cursor:pointer; transition:background .15s; }
 .mode-tgl button[aria-checked="true"] { background:color-mix(in srgb, var(--accent) 16%, transparent); color:var(--accent); font-weight:650; }
-.now-pahar { font-size:19px; margin:12px 0 4px; }
+.now-pahar { font-size:20px; margin:12px 0 4px; }
 .now-pahar .now-range { font-size:12.5px; color:var(--faint); margin-left:8px; }
 .now-raags { display:flex; gap:9px; flex-wrap:wrap; margin:10px 0 4px; }
 .now-chip {
   display:inline-flex; flex-direction:column; align-items:center; gap:1px; cursor:pointer;
   font-size:calc(var(--gsize) * .82); padding:8px 16px; border-radius:14px;
   background:color-mix(in srgb, var(--accent) 10%, transparent);
-  border:1px solid color-mix(in srgb, var(--accent) 35%, transparent); color:var(--ink);
+  border:1px solid color-mix(in srgb, var(--accent) 35%, transparent); color:var(--ink); transition:background .15s, transform .12s;
 }
-.now-chip:hover { background:color-mix(in srgb, var(--accent) 18%, transparent); }
+.now-chip:hover { background:color-mix(in srgb, var(--accent) 18%, transparent); transform:translateY(-1px); }
 .now-chip .tr { font-size:11px; color:var(--faint); font-family:var(--font-sans); }
 .now-chip.season { border-style:dashed; }
 .now-next { font-size:12.5px; color:var(--soft); margin-top:8px; }
-.now-note { font-size:11.5px; color:var(--faint); margin-top:12px; max-width:80ch; }
+.now-note { font-size:11.5px; color:var(--faint); margin-top:12px; max-width:82ch; line-height:1.55; }
 .now-fallback { font-size:12px; color:var(--rahao); margin-top:6px; }
 .quiet-note { color:var(--soft); font-size:14px; margin:10px 0; }
 
-/* the dial */
-#clockWrap { display:flex; justify-content:center; }
-.raagdial { width:min(92vw, 700px); height:auto; }
-.raagdial .arc { stroke:var(--card); stroke-width:2.5; transition:filter .2s, opacity .2s; }
-.raagdial .arc-day   { fill:color-mix(in srgb, var(--accent) 14%, var(--card)); }
-.raagdial .arc-p2    { fill:color-mix(in srgb, var(--accent) 20%, var(--card)); }
-.raagdial .arc-p3    { fill:color-mix(in srgb, var(--gold) 22%, var(--card)); }
-.raagdial .arc-p4    { fill:color-mix(in srgb, var(--gold) 15%, var(--card)); }
-.raagdial .arc-night { fill:color-mix(in srgb, #4457a8 16%, var(--card)); }
-.raagdial .arc-p6    { fill:color-mix(in srgb, #4457a8 24%, var(--card)); }
-.raagdial .arc-p8    { fill:color-mix(in srgb, #4457a8 10%, var(--card)); }
-.raagdial .arc-quiet { fill:color-mix(in srgb, #0a0e1e 78%, var(--card)); }
-.raagdial .arc-now   { filter:drop-shadow(0 0 14px var(--glow)); stroke:var(--accent); stroke-width:2.5; }
-.raagdial .pnum   { font-size:17px; font-weight:750; fill:var(--soft); }
-.raagdial .prange { font-size:10.5px; fill:var(--faint); }
-.raagdial .raagname { font-size:16px; fill:var(--ink); cursor:pointer; }
-.raagdial .raagname:hover, .raagdial .raagname:focus { fill:var(--accent); }
-.raagdial .variantname { opacity:.52; font-size:14px; }
-.raagdial .variantline { stroke:var(--faint); stroke-dasharray:3 4; stroke-width:1; opacity:.6; }
-.raagdial .quiet-star { font-size:13.5px; fill:#8d97c0; cursor:pointer; }
-.raagdial .quiet-sub  { font-size:10.5px; fill:#5c6883; }
-.raagdial .arc-season0 { fill:color-mix(in srgb, #2f9e62 30%, var(--card)); cursor:pointer; }
-.raagdial .arc-season1 { fill:color-mix(in srgb, #2a7fb8 30%, var(--card)); cursor:pointer; }
-.raagdial .arc-season0:hover, .raagdial .arc-season1:hover { opacity:.85; }
-.raagdial .seasonlabel { font-size:11px; fill:var(--soft); }
-.raagdial .hourmark { font-size:10.5px; fill:var(--faint); letter-spacing:.08em; }
-.raagdial .handline { stroke:var(--accent); stroke-width:2; stroke-linecap:round; opacity:.85; }
+/* --- clock stage: dial + detail panel side by side --- */
+.clock-stage { display:grid; grid-template-columns:minmax(0,1fr) 348px; gap:22px; align-items:start; }
+@media (max-width:860px) { .clock-stage { grid-template-columns:1fr; } }
+.clock-dial { display:flex; justify-content:center; }
+.clock-dial .raagdial { width:100%; max-width:560px; height:auto; display:block; }
+
+/* dial geometry + type */
+.raagdial .arc { stroke:var(--card); stroke-width:2.5; cursor:pointer; transition:filter .18s; outline:none; }
+.raagdial .arc-day   { fill:color-mix(in srgb, var(--accent) 13%, var(--card)); }
+.raagdial .arc-p2    { fill:color-mix(in srgb, var(--accent) 19%, var(--card)); }
+.raagdial .arc-p3    { fill:color-mix(in srgb, var(--gold) 21%, var(--card)); }
+.raagdial .arc-p4    { fill:color-mix(in srgb, var(--gold) 14%, var(--card)); }
+.raagdial .arc-night { fill:color-mix(in srgb, #4a5cc0 15%, var(--card)); }
+.raagdial .arc-p6    { fill:color-mix(in srgb, #4a5cc0 24%, var(--card)); }
+.raagdial .arc-p8    { fill:color-mix(in srgb, #4a5cc0 9%, var(--card)); }
+.raagdial .arc-quiet { fill:color-mix(in srgb, #0a0e1e 80%, var(--card)); }
+.raagdial .arc:hover { filter:brightness(1.1); }
+.raagdial .arc-now   { filter:drop-shadow(0 0 13px var(--glow)); }
+.raagdial .arc-sel   { stroke:var(--accent); stroke-width:3.5; filter:drop-shadow(0 0 10px var(--glow)); }
+.raagdial .arc:focus-visible { stroke:var(--accent); stroke-width:3.5; }
+.raagdial .pnum   { font-size:24px; font-weight:750; fill:var(--ink); }
+.raagdial .prange { font-size:10.5px; fill:var(--faint); letter-spacing:.02em; }
+.raagdial .pcount { font-size:12px; font-weight:600; fill:var(--soft); }
+.raagdial .bead   { fill:var(--accent); opacity:.9; }
+.raagdial .arc-night ~ * .bead, .raagdial .bead { }
+.raagdial .bead-var { fill:none; stroke:var(--faint); stroke-width:1.4; }
+.raagdial .quiet-star { font-size:16px; fill:#8d97c0; }
+.raagdial .quiet-sub  { font-size:11px; fill:#6b769c; letter-spacing:.02em; }
+.raagdial .arc-season { cursor:pointer; transition:opacity .18s; }
+.raagdial .arc-season0 { fill:color-mix(in srgb, #2f9e62 32%, var(--card)); }
+.raagdial .arc-season1 { fill:color-mix(in srgb, #2a7fb8 32%, var(--card)); }
+.raagdial .arc-season:hover { opacity:.82; }
+.raagdial .seasonlabel { font-size:11px; fill:var(--soft); font-weight:500; }
+.raagdial .hourmark { font-size:10px; fill:var(--faint); letter-spacing:.1em; }
+.raagdial .handline { stroke:var(--accent); stroke-width:2.5; stroke-linecap:round; opacity:.9; }
 .raagdial .handdot { fill:var(--accent); }
 .raagdial .dialtitle { font-size:30px; fill:var(--gold); }
-.raagdial .dialsub { font-size:10.5px; fill:var(--faint); letter-spacing:.14em; text-transform:uppercase; }
+.raagdial .dialsub { font-size:9.5px; fill:var(--faint); letter-spacing:.16em; }
+.raagdial .dialhint { font-size:10px; fill:color-mix(in srgb, var(--accent) 80%, var(--faint)); letter-spacing:.04em; }
 
-.clock-legend { display:flex; gap:16px; flex-wrap:wrap; justify-content:center; font-size:11.5px; color:var(--soft); margin-top:14px; }
-.clock-legend .lg { display:inline-block; width:12px; height:12px; border-radius:3px; margin-right:5px; vertical-align:-1px; }
-.lg-day { background:color-mix(in srgb, var(--accent) 25%, var(--card)); }
-.lg-night { background:color-mix(in srgb, #4457a8 28%, var(--card)); }
-.lg-quiet { background:color-mix(in srgb, #0a0e1e 78%, var(--card)); }
-.lg-season { background:linear-gradient(90deg, color-mix(in srgb,#2f9e62 35%, var(--card)), color-mix(in srgb,#2a7fb8 35%, var(--card))); }
-.lg-variant { opacity:.55; font-family:var(--font-gm); }
-
-/* tooltip card under the dial */
-.clock-tip { display:none; border-top:1px solid var(--line); margin-top:14px; padding-top:14px; }
-.clock-tip.on { display:block; }
-.tip-head { display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
-.tip-head .gm { font-size:21px; }
-.tip-head .tr { color:var(--faint); font-size:13px; }
-.tipgo { margin-left:auto; font-size:12.5px; padding:7px 14px; border-radius:12px; cursor:pointer;
+/* detail panel */
+.clock-detail { background:var(--bg-2); border:1px solid var(--line); border-radius:16px; padding:16px; min-height:340px; }
+.det-head { display:flex; align-items:center; gap:12px; margin-bottom:14px; }
+.det-badge { display:inline-flex; align-items:center; justify-content:center; width:44px; height:44px; border-radius:13px;
+  font-size:15px; font-weight:750; flex:none; }
+.pbadge-day { background:color-mix(in srgb, var(--accent) 18%, transparent); color:var(--accent); }
+.pbadge-night { background:color-mix(in srgb, #4a5cc0 22%, transparent); color:#8f9ff0; }
+.pbadge-season { background:color-mix(in srgb, #2f9e62 20%, transparent); color:#3cb27a; }
+.det-title { font-size:17px; font-weight:700; }
+.det-title.gm { font-size:24px; }
+.det-sub { font-size:12px; color:var(--faint); margin-top:1px; }
+.det-cards { display:grid; gap:11px; }
+.det-foot { font-size:11.5px; color:var(--faint); margin-top:12px; line-height:1.55; }
+.raagcard { background:var(--card); border:1px solid var(--line); border-radius:13px; padding:12px 13px; transition:border-color .15s, transform .12s; }
+.raagcard:hover { border-color:var(--line-strong); }
+.raagcard.is-variant { border-style:dashed; background:transparent; }
+.rc-top { display:flex; align-items:flex-start; justify-content:space-between; gap:10px; }
+.rc-name { display:flex; align-items:baseline; gap:8px; flex-wrap:wrap; }
+.rc-name .gm { font-size:22px; line-height:1.1; }
+.rc-roman { font-size:12px; color:var(--faint); }
+.rc-read { flex:none; font-size:11.5px; padding:6px 12px; border-radius:10px; cursor:pointer;
   background:color-mix(in srgb, var(--accent) 12%, transparent); color:var(--accent);
-  border:1px solid color-mix(in srgb, var(--accent) 40%, transparent); }
-.tipgo:hover { background:color-mix(in srgb, var(--accent) 20%, transparent); }
-.tip-claims { list-style:none; margin-top:10px; display:grid; gap:8px; }
-.tip-claims .claim { font-size:13px; }
+  border:1px solid color-mix(in srgb, var(--accent) 34%, transparent); transition:background .15s; }
+.rc-read:hover { background:color-mix(in srgb, var(--accent) 22%, transparent); }
+.rc-meta { display:flex; align-items:center; gap:6px; flex-wrap:wrap; margin:9px 0 5px; }
+.rc-src { font-size:11.5px; color:var(--soft); }
+.rc-src a { color:var(--accent); }
+.rc-note { font-size:11.5px; color:var(--faint); margin-top:6px; line-height:1.5; }
+.rc-occ { font-size:11px; color:var(--faint); margin-top:8px; display:flex; align-items:center; gap:6px; flex-wrap:wrap; }
+.rc-occ-l { opacity:.8; }
+.occhip { display:inline-block; padding:2px 9px; border-radius:999px; background:color-mix(in srgb, var(--gold) 16%, transparent); color:var(--gold); font-size:10.5px; }
+.det-quiet { text-align:center; padding:22px 12px; }
+.det-quiet .det-badge { margin:0 auto 10px; }
+.det-quiet-star { font-size:34px; color:#8d97c0; margin-bottom:4px; }
+.det-quiet h3 { font-size:18px; font-weight:700; }
+.det-quiet p { font-size:12.5px; color:var(--soft); margin-top:8px; line-height:1.6; max-width:44ch; margin-inline:auto; }
 
-/* claim/tradition/confidence badges (clock tooltip + tables) */
-.cbadge { font-size:10px; text-transform:uppercase; letter-spacing:.07em; padding:2px 8px; border-radius:999px; margin-right:6px; }
+/* legend */
+.clock-legend { display:flex; gap:16px; flex-wrap:wrap; justify-content:center; font-size:11.5px; color:var(--soft); margin-top:16px; padding-top:14px; border-top:1px solid var(--line); }
+.clock-legend .lg { display:inline-block; width:12px; height:12px; border-radius:4px; margin-right:5px; vertical-align:-1px; }
+.lg-day { background:color-mix(in srgb, var(--accent) 24%, var(--card)); }
+.lg-night { background:color-mix(in srgb, #4a5cc0 28%, var(--card)); }
+.lg-quiet { background:color-mix(in srgb, #0a0e1e 80%, var(--card)); }
+.lg-variant { border:1.4px solid var(--faint); background:transparent; border-radius:999px; }
+.lg-season { background:linear-gradient(90deg, color-mix(in srgb,#2f9e62 40%, var(--card)), color-mix(in srgb,#2a7fb8 40%, var(--card))); }
+
+/* badges shared by panel + explorer */
+.cbadge { font-size:9.5px; text-transform:uppercase; letter-spacing:.06em; padding:2px 8px; border-radius:999px; }
 .cb-primary { background:color-mix(in srgb, var(--accent) 16%, transparent); color:var(--accent); }
 .cb-variant { background:color-mix(in srgb, #8d97c0 20%, transparent); color:var(--soft); border:1px dashed var(--line-strong); }
-.cb-seasonal { background:color-mix(in srgb, #2f9e62 18%, transparent); color:#2f9e62; }
+.cb-seasonal { background:color-mix(in srgb, #2f9e62 18%, transparent); color:#3cb27a; }
 .cb-ceremonial { background:color-mix(in srgb, var(--gold) 22%, transparent); color:var(--gold); }
-.conf { font-size:10.5px; padding:2px 8px; border-radius:999px; margin-left:6px; }
-.conf-consistent { background:color-mix(in srgb, #2f9e62 15%, transparent); color:#2f9e62; }
+.conf { font-size:10px; padding:2px 8px; border-radius:999px; }
+.conf-consistent { background:color-mix(in srgb, #2f9e62 15%, transparent); color:#3cb27a; }
 .conf-majority { background:var(--chip); color:var(--soft); }
-.conf-disputed { background:color-mix(in srgb, #d97706 18%, transparent); color:#d97706; font-weight:650; }
-.tbadge { font-size:11px; padding:2px 9px; border-radius:999px; }
+.conf-disputed { background:color-mix(in srgb, #d97706 20%, transparent); color:#e08a1e; font-weight:650; }
+.tbadge { font-size:10.5px; padding:2px 9px; border-radius:999px; }
 .tb-gurmat_sangeet { background:color-mix(in srgb, var(--accent) 13%, transparent); color:var(--accent); }
-.tb-hindustani { background:color-mix(in srgb, #7c5bd0 16%, transparent); color:#9a7ee8; }
-.csrc { color:var(--faint); font-size:12px; }
-.cnotes { color:var(--faint); font-size:11.5px; margin-top:3px; max-width:70ch; }
+.tb-hindustani { background:color-mix(in srgb, #7c5bd0 18%, transparent); color:#a488ea; }
 
-/* claims / divergence tables */
+/* --- claims explorer --- */
+.exp-head { margin-bottom:14px; }
+.exp-head h3 { font-size:18px; font-weight:730; }
+.exp-hint { font-size:12.5px; color:var(--faint); margin-top:3px; }
+.exp-tools { display:flex; align-items:center; gap:12px; flex-wrap:wrap; margin-bottom:14px; }
+.exp-search { flex:1 1 220px; min-width:180px; font-size:13px; padding:9px 14px; border-radius:12px;
+  background:var(--bg-2); border:1px solid var(--line-strong); color:var(--ink); }
+.exp-search:focus { outline:2px solid var(--accent); outline-offset:1px; }
+.exp-chips { display:flex; gap:7px; flex-wrap:wrap; }
+.chip { font-size:12px; padding:6px 13px; border-radius:999px; cursor:pointer; background:var(--chip);
+  color:var(--soft); border:1px solid transparent; transition:background .15s, color .15s; }
+.chip:hover { color:var(--ink); }
+.chip.on { background:color-mix(in srgb, var(--accent) 16%, transparent); color:var(--accent); font-weight:650; }
+.chip-disp.on { background:color-mix(in srgb, #d97706 18%, transparent); color:#e08a1e; }
+.exp-count { font-size:11.5px; color:var(--faint); margin-bottom:8px; }
+.exp-scroll { overflow-x:auto; }
+.exp-table { width:100%; border-collapse:collapse; font-size:13px; }
+.exp-table thead th { text-align:left; font-size:10.5px; text-transform:uppercase; letter-spacing:.05em; color:var(--faint); font-weight:600; padding:0 10px 9px; white-space:nowrap; }
+.exp-table td { padding:11px 10px; border-top:1px solid var(--line); vertical-align:middle; }
+.exp-row:hover { background:color-mix(in srgb, var(--accent) 5%, transparent); }
+.exp-row.is-disp { box-shadow:inset 3px 0 0 color-mix(in srgb, #d97706 60%, transparent); }
+.c-raag .gm { font-size:17px; }
+.c-raag .c-roman { display:block; font-size:11px; color:var(--faint); }
+.c-when b { font-weight:600; }
+.c-note { font-size:11px; color:var(--faint); margin-top:3px; max-width:38ch; line-height:1.45; }
+.c-claim { display:flex; flex-direction:column; gap:4px; align-items:flex-start; }
+.c-src .tbadge { display:inline-block; }
+.c-srcname { font-size:11px; color:var(--soft); margin-top:4px; }
+.c-srcname a { color:var(--accent); }
+.tl { display:flex; gap:2px; }
+.tl-cell { width:11px; height:20px; border-radius:2px; background:var(--chip); }
+.tl-cell.tl-day { background:var(--accent); }
+.tl-cell.tl-night { background:#6f7fdc; }
+.tl-cell.tl-season { background:linear-gradient(180deg,#2f9e62,#2a7fb8); }
+.tl-h { min-width:104px; }
+.exp-empty { text-align:center; color:var(--faint); font-size:13px; padding:30px; }
+
+/* explorer → stacked cards on small screens (CSS only) */
+@media (max-width:720px) {
+  .exp-table thead { display:none; }
+  .exp-table, .exp-table tbody, .exp-table tr, .exp-table td { display:block; }
+  .exp-table tr { border:1px solid var(--line); border-radius:14px; margin-bottom:10px; padding:8px 12px; }
+  .exp-table td { border:0; padding:5px 0; display:flex; gap:10px; align-items:center; }
+  .exp-table td::before { content:attr(data-l); flex:none; width:96px; color:var(--faint); font-size:10px; text-transform:uppercase; letter-spacing:.05em; }
+  .c-claim { flex-direction:row; }
+}
+
+/* --- divergence page --- */
 .claims-table { width:100%; border-collapse:collapse; font-size:13px; margin-top:10px; }
 .claims-table caption { text-align:left; color:var(--faint); font-size:12px; padding-bottom:10px; }
-.claims-table th, .claims-table td { text-align:left; padding:9px 10px; border-bottom:1px solid var(--line); vertical-align:top; }
-.claims-table thead th { font-size:11px; text-transform:uppercase; letter-spacing:.06em; color:var(--faint); }
-.claims-table .gm { font-size:16px; }
+.claims-table th, .claims-table td { text-align:left; padding:10px; border-bottom:1px solid var(--line); vertical-align:top; }
+.claims-table thead th { font-size:11px; text-transform:uppercase; letter-spacing:.05em; color:var(--faint); }
+.claims-table .gm { font-size:17px; }
 .claims-table .tr { display:block; font-size:11px; color:var(--faint); }
 .div-table .rcell a { text-decoration:none; color:var(--ink); }
 .div-table .rcell a:hover .gm { color:var(--accent); }
 .div-table tr.rfirst th, .div-table tr.rfirst td { border-top:2px solid var(--line-strong); }
 .divnote { margin-top:12px; }
-#v-clock details summary { cursor:pointer; color:var(--soft); font-size:13.5px; }
-
-/* divergence table → stacked cards on small screens (CSS only) */
-@media (max-width: 640px) {
+@media (max-width:640px) {
   .div-table thead { display:none; }
   .div-table, .div-table tbody, .div-table tr, .div-table td, .div-table th { display:block; }
   .div-table tr { border:1px solid var(--line); border-radius:14px; margin-bottom:10px; padding:8px 10px; }
   .div-table td { border:0; padding:5px 4px; }
-  .div-table td::before { content:attr(data-l) ": "; color:var(--faint); font-size:10.5px; text-transform:uppercase; letter-spacing:.06em; }
+  .div-table td::before { content:attr(data-l) ": "; color:var(--faint); font-size:10.5px; text-transform:uppercase; letter-spacing:.05em; }
   .div-table .rcell { border:0; padding:4px; }
-  .clock-legend { gap:10px; }
 }
