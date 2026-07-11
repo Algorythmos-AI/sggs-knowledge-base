@@ -21,6 +21,7 @@ struct SGGSApp: App {
             }
             .environment(container)
             .task {
+                CrashMonitor.shared.start()   // local-only diagnostics; QA requires zero collected
                 await container.runIntegrity()
                 await container.loadMeta()
                 await container.refreshWidgetSnapshot()

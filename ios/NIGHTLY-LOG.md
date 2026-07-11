@@ -151,3 +151,21 @@
   Flow streamgraph (Swift Charts stacked areas per concept along the raag). VaarsScreen: 22 ballads
   → salok/pauri anatomy (verbatim from tables; cross-voice structure explained).
 - Contract catch: author_analytics.top_themes is [{concept,lift}] not [String] — TopTheme model.
+
+## P7 (full-parity plan, Phase 7–9): a11y, native layer, QA gate
+- A11y: LineRow = one combined VoiceOver element (Punjabi Gurmukhi → English → Ang) with
+  Copy/Share/Save/Explore as accessibility actions; Share carries the Ang citation; manual
+  script in Tests/UI/A11Y_CHECKLIST.md (incl. the deliberate translit-out-of-label deviation).
+- Native layer: GurbaniPahar split into a dependency-free SPM product; SGGSWidgets extension
+  (Raag-now pahar timeline + Hukam verse) reading only the <50KB App-Group snapshot the app
+  writes post-integrity (verified in-sim: verbatim verse + correct pahar raags); App Intents/
+  Siri ("Today's Hukam", "What raag is it now", "Search Gurbani", "Open Ang") all via sggs://;
+  CoreSpotlight for SAVED verses only; ImageRenderer share cards.
+- QA: check_release_license.sh (public OK / personal BLOCKED — negative-tested in CI); fuzz
+  suite (1,000 seeded hostile queries, no crash) + 24,719-input roman_norm drift check
+  (finding: the fold is deliberately NOT idempotent — matches Python; single-application
+  equality is the correct property); perf budgets as asserts (search p50 20ms, ang fetch 2ms,
+  worst-case progression 19ms, full network-layout settle 126ms — all far under budget);
+  MetricKit local-only crash collection (QA exit = zero diagnostics); CI paths now include
+  pahar.js + contributors.json (new app inputs).
+- Suites at close: kit 17/17 · app 28/28 (12 unit + 16 UI) · release gate green both ways.

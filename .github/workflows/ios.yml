@@ -15,6 +15,9 @@ on:
       - "contract/**"
       - "pipeline/build_ios_db.py"
       - "pipeline/gen_golden_vectors.py"
+      - "pipeline/check_release_license.sh"
+      - "frontend/src/scripts/pahar.js"          # source of the golden_pahar contract
+      - "frontend/public/contributors.json"      # bundled into the app (Lineage roster)
       - ".github/workflows/ios.yml"
   pull_request:
   workflow_dispatch:
