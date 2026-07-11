@@ -48,6 +48,14 @@ struct LineRow: View {
                 Label("Copy verse", systemImage: "doc.on.doc")     // verbatim — never the saroop form
             }
             ShareLink(item: shareText) { Label("Share", systemImage: "square.and.arrow.up") }
+            Button {
+                if let img = VerseCardRenderer.render(gurmukhi: gurmukhi, translit: translit,
+                                                      en: englishPref ? en : nil, ang: ang) {
+                    presentShareSheet(items: [img])
+                } else {
+                    presentShareSheet(items: [shareText])
+                }
+            } label: { Label("Share as card", systemImage: "photo") }
             if let lineId {
                 // Save needs a live SwiftData container; when even the in-memory fallback failed
                 // the action is hidden rather than crashing on \.modelContext access.
@@ -69,7 +77,7 @@ struct LineRow: View {
         .accessibilityAddTraits(onTap != nil ? [.isButton] : [])
         .accessibilityHint(onTap != nil ? "Opens the composition" : "")
         .accessibilityAction(named: "Copy verse") { UIPasteboard.general.string = gurmukhi }
-        .accessibilityAction(named: "Share") { presentShareSheet(shareText) }
+        .accessibilityAction(named: "Share") { presentShareSheet(items: [shareText]) }
         .accessibilityActions {
             if let lineId {
                 if container.modelContainer != nil {
@@ -103,13 +111,13 @@ struct LineRow: View {
         return out
     }
 
-    /// UIKit share fallback for the accessibility action (ShareLink can't be invoked
-    /// programmatically). Verbatim text + Ang citation only.
-    private func presentShareSheet(_ text: String) {
+    /// UIKit share presenter (ShareLink can't be invoked programmatically; card images need it
+    /// too). Verbatim scripture + Ang citation only.
+    private func presentShareSheet(items: [Any]) {
         guard let scene = UIApplication.shared.connectedScenes
             .compactMap({ $0 as? UIWindowScene }).first(where: { $0.activationState == .foregroundActive }),
               let root = scene.keyWindow?.rootViewController else { return }
-        let vc = UIActivityViewController(activityItems: [text], applicationActivities: nil)
+        let vc = UIActivityViewController(activityItems: items, applicationActivities: nil)
         var top = root
         while let presented = top.presentedViewController { top = presented }
         vc.popoverPresentationController?.sourceView = top.view
@@ -122,7 +130,13 @@ struct LineRow: View {
         let existing = FetchDescriptor<SavedLine>(predicate: #Predicate { $0.lineId == lineId })
         if let count = try? modelContext.fetchCount(existing), count > 0 { return }
         modelContext.insert(SavedLine(lineId: lineId, gurmukhi: gurmukhi, translit: translit, ang: ang, compId: compId))
-        do { try modelContext.save(); Haptics.success() }
+        do {
+            try modelContext.save()
+            Haptics.success()
+            // saved verses surface in system search (verbatim + Ang; removed on delete)
+            SpotlightIndex.index(lineId: lineId, compId: compId, gurmukhi: gurmukhi,
+                                 translit: translit, ang: ang)
+        }
         catch { modelContext.rollback() }     // keep the context clean on failure
     }
 }

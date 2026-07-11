@@ -1,5 +1,6 @@
 import SwiftUI
 import SwiftData
+import WidgetKit
 import GurbaniSearchKit
 
 /// App-wide dependency root. Owns the CorpusActor + the launch-integrity result + the single shared
@@ -94,6 +95,33 @@ final class AppContainer {
     func loadMeta() async {
         guard meta == nil, let corpus else { return }
         meta = try? await corpus.meta()
+    }
+
+    /// Refresh the <50 KB widget snapshot (App Group JSON): today's Hukam opening verse +
+    /// the fixed-clock pahar→raags table + saved count. Widgets NEVER open the corpus DB.
+    /// Runs post-launch (after integrity passes) and is cheap enough to run every launch.
+    func refreshWidgetSnapshot(savedCount: Int = 0) async {
+        guard let corpus, integrity?.ok == true else { return }
+        guard let hukam = try? await corpus.randomHukam(),
+              let firstVerse = hukam.lines.first(where: { !$0.isHeader }) else { return }
+        var paharRaags: [Int: [String]] = [:]
+        let clock = await corpus.timingClock()
+        if clock.available {
+            for p in 1...8 {
+                paharRaags[p] = clock.raags(forPahar: p).compactMap { $0.roman ?? $0.raagName }
+            }
+        }
+        WidgetStore.save(WidgetSnapshot(
+            generatedAt: Date(),
+            hukamGurmukhi: firstVerse.gurmukhi,     // verbatim — copied, never edited
+            hukamTranslit: firstVerse.translit,
+            hukamAng: firstVerse.ang,
+            hukamCompId: hukam.compId,
+            paharRaags: paharRaags,
+            savedCount: savedCount))
+        #if canImport(WidgetKit)
+        WidgetCenter.shared.reloadAllTimelines()
+        #endif
     }
 }
 

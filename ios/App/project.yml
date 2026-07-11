@@ -23,6 +23,7 @@ targets:
     platform: iOS
     sources:
       - path: Sources
+      - path: Shared
       - path: Resources
         excludes: ["Info.plist"]
       - path: ../Resources/sggs-ios.sqlite
@@ -36,11 +37,42 @@ targets:
         product: GurbaniSearchKit
       - package: GurbaniSearchKit
         product: GurbaniDB
+      - target: SGGSWidgets
+        embed: true
+    entitlements:
+      path: SGGS.entitlements
+      properties:
+        com.apple.security.application-groups: [group.org.sggs]
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: org.sggs.app
         INFOPLIST_FILE: Resources/Info.plist
         GENERATE_INFOPLIST_FILE: "NO"
+  # WidgetKit extension: links ONLY the dependency-free GurbaniPahar product + the shared
+  # snapshot store — never CSQLite or the 100 MB corpus DB. Entitlements are inert on the
+  # simulator (CI stays green with CODE_SIGNING_ALLOWED NO); device installs need signing.
+  SGGSWidgets:
+    type: app-extension
+    platform: iOS
+    sources:
+      - path: Widgets
+      - path: Shared
+    dependencies:
+      - package: GurbaniSearchKit
+        product: GurbaniPahar
+    entitlements:
+      path: Widgets/SGGSWidgets.entitlements
+      properties:
+        com.apple.security.application-groups: [group.org.sggs]
+    info:
+      path: Widgets/Info.plist
+      properties:
+        CFBundleDisplayName: SGGS Widgets
+        NSExtension:
+          NSExtensionPointIdentifier: com.apple.widgetkit-extension
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: org.sggs.app.widgets
   SGGSTests:
     type: bundle.unit-test
     platform: iOS

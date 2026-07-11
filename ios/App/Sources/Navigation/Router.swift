@@ -64,6 +64,8 @@ final class Router {
             }
         case "shabad":
             if let c = Int(value), c > 0 { container.present(.shabad(compId: c)) }
+        case "hukam":
+            container.present(.hukam)
         case "search":
             let q = URLComponents(url: url, resolvingAgainstBaseURL: false)?
                 .queryItems?.first(where: { $0.name == "q" })?.value ?? ""

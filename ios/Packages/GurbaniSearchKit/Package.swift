@@ -14,9 +14,12 @@ let package = Package(
     products: [
         .library(name: "GurbaniSearchKit", targets: ["GurbaniSearchKit"]),
         .library(name: "GurbaniDB", targets: ["GurbaniDB"]),
+        // Dependency-free pahar math for extensions (widgets/watch): links kilobytes, not CSQLite.
+        .library(name: "GurbaniPahar", targets: ["GurbaniPahar"]),
     ],
     targets: [
-        .target(name: "GurbaniSearchKit"),
+        .target(name: "GurbaniPahar"),
+        .target(name: "GurbaniSearchKit", dependencies: ["GurbaniPahar"]),
         .target(
             name: "CSQLite",
             path: "Sources/CSQLite",

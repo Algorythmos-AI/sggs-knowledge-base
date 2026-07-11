@@ -1,5 +1,6 @@
 import SwiftUI
 import SwiftData
+import CoreSpotlight
 
 @main
 struct SGGSApp: App {
@@ -22,8 +23,16 @@ struct SGGSApp: App {
             .task {
                 await container.runIntegrity()
                 await container.loadMeta()
+                await container.refreshWidgetSnapshot()
             }
             .onOpenURL { url in container.router.handle(url, container: container) }
+            .onContinueUserActivity(CSSearchableItemActionType) { activity in
+                // a saved verse tapped in system search → open its composition
+                if let id = activity.userInfo?[CSSearchableItemActivityIdentifier] as? String,
+                   let compId = SpotlightIndex.compId(fromIdentifier: id) {
+                    container.present(.shabad(compId: compId))
+                }
+            }
         }
     }
 }

@@ -22,7 +22,10 @@ struct SavedScreen: View {
                         .listRowSeparator(.hidden)
                     }
                     .onDelete { idx in
-                        for i in idx { modelContext.delete(saved[i]) }
+                        for i in idx {
+                            SpotlightIndex.remove(lineId: saved[i].lineId, compId: saved[i].compId)
+                            modelContext.delete(saved[i])
+                        }
                         do { try modelContext.save() } catch { modelContext.rollback() }
                     }
                 }
