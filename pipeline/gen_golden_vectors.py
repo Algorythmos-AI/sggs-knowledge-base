@@ -217,6 +217,16 @@ def search_vectors():
         ('s n k', 'auto'), ('dh dh r g', 'auto'),                        # roman first-letters
         ('satgur kirpa', 'auto'),                                         # translit / fold
         ('ਨਾਮੁ simran', 'auto'),                                         # mixed-script
+        # --- english mode + english tier of the auto waterfall (personal-profile DB only;
+        #     on the public/Gurmukhi-only DB these resolve to later tiers or empty, which the
+        #     Swift degradation-parity test asserts separately) ---
+        ('mercy', 'english'), ('compassion', 'english'), ('the true guru', 'english'),
+        ('lotus feet', 'english'), ('ocean of peace', 'english'), ('beloved', 'english'),
+        ('"', 'english'), ('', 'english'),                                # adversarial/degenerate
+        ('lotus feet of the lord', 'auto'),                               # auto → english tier
+        ('ocean of peace', 'auto'),
+        ('the fear of death', 'auto'),
+        ('wandering in doubt', 'auto'),
         # passage tier candidates (cross-line quotes; ≥3 tokens that fail earlier tiers)
         ('jeevat jo marai haan dutar so tarai haan', 'auto'),
         ('jeevat marai taa sabh kichh soojhai', 'auto'),
@@ -253,12 +263,21 @@ def reader_vectors():
     serve.DB = DB
     serve.HAVE_FTS = None
     out = []
-    for n in (1, 2, 8, 100, 1430):
+    for n in (1, 2, 8, 100, 829, 1430):
         r = serve.api(f'/api/ang/{n}', {})
         out.append({'kind': 'ang', 'n': n,
                     'line_ids': [l['id'] for l in r['lines']],
                     'continued_from': r['continued_from'],
-                    'raag': r['raag'], 'section': r['section'], 'authors': r['authors']})
+                    'raag': r['raag'], 'section': r['section'], 'authors': r['authors'],
+                    # English rides along verbatim (None where the layer/row is absent —
+                    # 2,619 lines incl. 330 verses have no en row; that absence is contract)
+                    'ens': [l.get('en') for l in r['lines']]})
+    # a shabad payload (attach_translations parity on /api/shabad)
+    for cid in (1, 682, 3000):
+        r = serve.api(f'/api/shabad/{cid}', {})
+        out.append({'kind': 'shabad', 'comp_id': cid,
+                    'line_ids': [l['id'] for l in r['lines']],
+                    'ens': [l.get('en') for l in r['lines']]})
     for seed in (1, 5, 100, 400, 405, 1000, 1500):
         try:
             h = serve.hukam_package(seed=seed)
@@ -271,7 +290,8 @@ def reader_vectors():
         out.append({'kind': 'neighbors', 'line_id': lid, 'level': r['level'],
                     'source': r.get('source'),
                     'neighbor_ids': [n.get('id', n.get('comp_id')) for n in r['neighbors']],
-                    'scores': [round(n['score'], 6) for n in r['neighbors']]})
+                    'scores': [round(n['score'], 6) for n in r['neighbors']],
+                    'ens': [n.get('en') for n in r['neighbors']]})
     # analytics (Insight Engine): author/raag lists + theme co-occurrence network
     av = serve.api('/api/analytics/author', {})['authors']
     out.append({'kind': 'authors', 'names': [a['author'] for a in av],
@@ -291,41 +311,176 @@ def reader_vectors():
     return out
 
 
+# ---------------------------------------------------------------------------
+# 6. timing vectors — the v2.12.0 Raag-Timing knowledge layer (attributed CLAIMS
+#    with citations, never facts). Records the FULL endpoint payloads so the
+#    Swift SQLiteTimingReader is byte-parity, incl. the {'available': False}
+#    degradation on layer-less DBs (asserted by the degradation-parity test).
+# ---------------------------------------------------------------------------
+def timing_vectors():
+    serve.DB = DB
+    serve.HAVE_FTS = None
+    serve._TIMING_CACHE = None   # never serve a stale cache from a prior DB
+    out = []
+    clock = serve.api('/api/timing/clock', {})
+    out.append({'kind': 'clock', 'payload': clock})
+    # every raag that actually has claims, by both gurmukhi and roman name,
+    # plus a claim-less raag and a nonexistent name (contract includes misses)
+    con = sqlite3.connect(f'file:{DB}?mode=ro&immutable=1', uri=True)
+    con.row_factory = sqlite3.Row
+    claimed = [r[0] for r in con.execute(
+        "SELECT DISTINCT raag_name FROM raag_timing_claims ORDER BY raag_name")]
+    romans = {r['name']: r['roman'] for r in con.execute("SELECT name, roman FROM raags")}
+    unclaimed = [r[0] for r in con.execute(
+        "SELECT name FROM raags WHERE name NOT IN "
+        "(SELECT DISTINCT raag_name FROM raag_timing_claims) ORDER BY seq LIMIT 2")]
+    for name in claimed:
+        out.append({'kind': 'raag', 'name': name,
+                    'payload': serve.api('/api/timing/raag', {'name': [name]})})
+        rom = romans.get(name)
+        if rom:
+            out.append({'kind': 'raag', 'name': rom,
+                        'payload': serve.api('/api/timing/raag', {'name': [rom]})})
+    for name in unclaimed + ['no-such-raag']:
+        out.append({'kind': 'raag', 'name': name,
+                    'payload': serve.api('/api/timing/raag', {'name': [name]})})
+    out.append({'kind': 'divergence', 'payload': serve.api('/api/timing/divergence', {})})
+    # /api/forms over a stratified comp sample: one per structural form, one per
+    # genre bucket (first few), partaal=1, ghar extremes, and a mapped-but-bare comp
+    cids = []
+    for (c,) in con.execute("SELECT MIN(comp_id) FROM shabd_structural_form GROUP BY form"):
+        cids.append(c)
+    for (c,) in con.execute("SELECT MIN(comp_id) FROM shabd_poetic_genre GROUP BY genre LIMIT 6"):
+        cids.append(c)
+    for (c,) in con.execute("SELECT comp_id FROM shabd_musical_markers WHERE partaal=1 LIMIT 2"):
+        cids.append(c)
+    for (c,) in con.execute("SELECT comp_id FROM shabd_musical_markers WHERE ghar=17 LIMIT 1"):
+        cids.append(c)
+    for (c,) in con.execute(
+            "SELECT comp_id FROM shabd_raag_map WHERE comp_id NOT IN "
+            "(SELECT comp_id FROM shabd_structural_form) LIMIT 1"):
+        cids.append(c)
+    con.close()
+    cids = sorted(set(cids)) + [99999999]   # + unmapped id (forms: None case)
+    for cid in cids:
+        out.append({'kind': 'forms', 'comp_id': cid,
+                    'payload': serve.api('/api/forms', {'comp_id': [str(cid)]})})
+    return out
+
+
+# ---------------------------------------------------------------------------
+# 7. analytics vectors — the Insight-Engine endpoints the native app ports next:
+#    progression (computed on the fly — the float/int-sensitive port), author
+#    profiles (radar + distinctive terms), resonance (chord), vaars (anatomy).
+# ---------------------------------------------------------------------------
+def analytics_vectors():
+    serve.DB = DB
+    serve.HAVE_FTS = None
+    out = []
+    con = sqlite3.connect(f'file:{DB}?mode=ro&immutable=1', uri=True)
+    # 6 raags stratified by size: largest, smallest >0, and four spread between
+    sizes = con.execute(
+        "SELECT raag, COUNT(*) c FROM (SELECT raag FROM lines WHERE raag IS NOT NULL) "
+        "GROUP BY raag ORDER BY c DESC").fetchall()
+    picks = [sizes[0][0], sizes[len(sizes)//5][0], sizes[2*len(sizes)//5][0],
+             sizes[3*len(sizes)//5][0], sizes[4*len(sizes)//5][0], sizes[-1][0]]
+    for raag in picks:
+        for bins in (8, 36, 80):
+            for top in (2, 7):
+                r = serve.api('/api/analytics/progression',
+                              {'raag': [raag], 'bins': [str(bins)], 'top': [str(top)]})
+                out.append({'kind': 'progression', 'raag': raag, 'bins_req': bins, 'top_req': top,
+                            'payload': r})
+    # author profiles (full=1 radar axes + distinctive terms), 5 authors + the list
+    out.append({'kind': 'authors_list', 'payload': serve.api('/api/analytics/author', {})})
+    authors = [r[0] for r in con.execute(
+        "SELECT author FROM author_analytics ORDER BY n_lines DESC LIMIT 5")]
+    for a in authors:
+        out.append({'kind': 'author', 'author': a,
+                    'payload': serve.api('/api/analytics/author', {'author': [a], 'full': ['1']})})
+        out.append({'kind': 'author12', 'author': a,
+                    'payload': serve.api('/api/analytics/author', {'author': [a]})})
+    con.close()
+    # resonance: web defaults + a tightened variant
+    out.append({'kind': 'resonance', 'payload': serve.api('/api/analytics/resonance', {})})
+    out.append({'kind': 'resonance', 'payload': serve.api(
+        '/api/analytics/resonance', {'min_lines': ['500'], 'min_lift': ['1.5'], 'min_edges': ['12']})})
+    # vaars: list + 3 anatomies (first, a cross-author one, last) + a miss
+    vl = serve.api('/api/analytics/vaars', {})
+    out.append({'kind': 'vaars', 'payload': vl})
+    ids = [v['vaar_id'] for v in vl['vaars']]
+    cross = [v['vaar_id'] for v in vl['vaars'] if v.get('cross_author')]
+    for vid in [ids[0], (cross[0] if cross else ids[len(ids)//2]), ids[-1], 999]:
+        out.append({'kind': 'vaar', 'id': vid,
+                    'payload': serve.api('/api/analytics/vaar', {'id': [str(vid)]})})
+    # theme network at the web's full-edge render params (min_ppmi 0 → all edges)
+    for mp, lim in (('0.7', '40'), ('0', '1500')):
+        r = serve.api('/api/themes/network', {'min_ppmi': [mp], 'limit': [lim]})
+        out.append({'kind': 'theme_network', 'min_ppmi': mp, 'limit': lim,
+                    'pairs': [f"{e['source']}~{e['target']}" for e in r['edges']],
+                    'ppmi': [round(e['ppmi'], 6) for e in r['edges']],
+                    'jaccard': [round(e['jaccard'], 6) for e in r['edges']],
+                    'shabad_count': [e['shabad_count'] for e in r['edges']]})
+    return out
+
+
+SUITES = {
+    'roman_norm': ('golden_roman_norm.ndjson', roman_norm_vectors),
+    'difflib':    ('golden_difflib.ndjson',    difflib_vectors),
+    'verify':     ('golden_verify.ndjson',     verify_vectors),
+    'search':     ('golden_search.ndjson',     search_vectors),
+    'reader':     ('golden_reader.ndjson',     reader_vectors),
+    'timing':     ('golden_timing.ndjson',     timing_vectors),
+    'analytics':  ('golden_analytics.ndjson',  analytics_vectors),
+}
+
+
 def main():
+    # --suites a,b,c regenerates a subset; _meta.json entries for untouched suites
+    # are preserved (merge), so a partial regen can never silently zero them out.
+    args = [a for a in sys.argv[1:] if not a.startswith('--')]
+    sel = None
+    for a in sys.argv[1:]:
+        if a.startswith('--suites='):
+            sel = [s.strip() for s in a.split('=', 1)[1].split(',') if s.strip()]
+    names = sel or list(SUITES)
+    unknown = [n for n in names if n not in SUITES]
+    if unknown:
+        sys.exit(f'unknown suite(s): {unknown} — choose from {list(SUITES)}')
+
     db_hash = sha256(DB) if os.path.exists(DB) else None
-    rn = roman_norm_vectors()
-    dl = difflib_vectors()
-    vv = verify_vectors()
-    sv = search_vectors()
-    rv = reader_vectors()
-    p1, n1 = write_ndjson('golden_roman_norm.ndjson', rn)
-    p2, n2 = write_ndjson('golden_difflib.ndjson', dl)
-    p3, n3 = write_ndjson('golden_verify.ndjson', vv)
-    p4, n4 = write_ndjson('golden_search.ndjson', sv)
-    p5, n5 = write_ndjson('golden_reader.ndjson', rv)
-    meta = {
-        'generator': 'pipeline/gen_golden_vectors.py',
+    meta_path = os.path.join(OUT, '_meta.json')
+    meta = {}
+    if os.path.exists(meta_path):
+        with open(meta_path, encoding='utf-8') as f:
+            meta = json.load(f)
+    files = meta.get('files', {})
+
+    for name in names:
+        fname, fn = SUITES[name]
+        path, n = write_ndjson(fname, fn())
+        files[fname] = n
+        print(f'{name:>10} vectors: {n}  -> {path}')
+
+    # golden_pahar.ndjson is emitted by frontend/scripts/gen-pahar-vectors.mjs
+    # (TZ=UTC node); count it into _meta when present so the contract is inventoried
+    pahar_path = os.path.join(OUT, 'golden_pahar.ndjson')
+    if os.path.exists(pahar_path):
+        with open(pahar_path, encoding='utf-8') as f:
+            files['golden_pahar.ndjson'] = sum(1 for _ in f)
+
+    meta.update({
+        'generator': 'pipeline/gen_golden_vectors.py (+ frontend/scripts/gen-pahar-vectors.mjs)',
         'db_sha256': db_hash,
         'tool_versions': {
             'python': platform.python_version(),
             'sqlite': sqlite3.sqlite_version,
         },
-        'files': {
-            'golden_roman_norm.ndjson': n1,
-            'golden_difflib.ndjson': n2,
-            'golden_verify.ndjson': n3,
-            'golden_search.ndjson': n4,
-            'golden_reader.ndjson': n5,
-        },
-    }
-    with open(os.path.join(OUT, '_meta.json'), 'w', encoding='utf-8') as f:
+        'files': files,
+    })
+    with open(meta_path, 'w', encoding='utf-8') as f:
         json.dump(meta, f, ensure_ascii=False, indent=2, sort_keys=True)
         f.write('\n')
-    print(f'roman_norm vectors: {n1}  -> {p1}')
-    print(f'difflib   vectors: {n2}  -> {p2}')
-    print(f'verify    vectors: {n3}  -> {p3}')
-    print(f'search    vectors: {n4}  -> {p4}')
-    print(f'reader    vectors: {n5}  -> {p5}')
     print(f'db_sha256={db_hash}  python={meta["tool_versions"]["python"]}  sqlite={meta["tool_versions"]["sqlite"]}')
 
 
