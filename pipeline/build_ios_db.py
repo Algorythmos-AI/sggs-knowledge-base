@@ -1,29 +1,41 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-build_ios_db.py — derive the GURMUKHI-ONLY iOS database from the full corpus DB.
+build_ios_db.py — derive the iOS database from the full corpus DB, in one of two PROFILES.
 
-Why: NOTICE.md restricts the bundled English (Khalsa/ShabadOS) translation to personal,
-non-commercial use; App Store distribution is public redistribution. So the iOS v1 ships a
-variant with the `translations` table + the `fts_en` index removed. The English layer returns
-in a later version once licensed in writing.
+  --profile personal  (default; the bundled ios/Resources/sggs-ios.sqlite)
+      Keeps the `translations` table + `fts_en` index (Dr. Sant Singh Khalsa English,
+      via ShabadOS — see NOTICE.md). PERSONAL, LOCAL, NON-COMMERCIAL USE ONLY.
+      Any public/App Store release with this profile is BLOCKED by
+      pipeline/check_release_license.sh until the translation is licensed in writing.
 
-Prime directive: this NEVER alters scripture. Only the translation layer is dropped; the
-`lines` table (the verbatim Gurmukhi) is byte-for-byte unchanged — proven below by comparing
-the line count and a checksum of every `gurmukhi` value against the source DB.
+  --profile public
+      Gurmukhi-only: drops `translations` + `fts_en`. This is the only profile eligible
+      for public distribution today. Written to a separate (git-ignored) artifact so it
+      can never silently replace the bundled personal DB.
 
-Usage:  python3 pipeline/build_ios_db.py [source-db] [dest-db]
-  defaults: db/sggs.sqlite  ->  ios/Resources/sggs-ios.sqlite
+Both profiles carry every other table verbatim — including the v2.12.0 additive timing
+layer (timing_sources, raag_timing_claims, shabd_* form tables) when present in the source.
+
+Prime directive: this NEVER alters scripture. The `lines` table (the verbatim Gurmukhi)
+is byte-for-byte unchanged — proven below by comparing the line count and a checksum of
+every `gurmukhi` value against the source DB.
+
+Usage:  python3 pipeline/build_ios_db.py [--profile personal|public] [source-db] [dest-db]
+  defaults: source db/sggs.sqlite
+            dest   personal -> ios/Resources/sggs-ios.sqlite
+                   public   -> ios/Resources/sggs-ios-public.sqlite  (git-ignored)
 """
-import os, sys, json, shutil, sqlite3, hashlib
+import argparse, os, sys, json, shutil, sqlite3, hashlib
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(HERE)
-SRC = sys.argv[1] if len(sys.argv) > 1 else os.path.join(ROOT, 'db', 'sggs.sqlite')
-DEST = sys.argv[2] if len(sys.argv) > 2 else os.path.join(ROOT, 'ios', 'Resources', 'sggs-ios.sqlite')
 
-# Tables/indexes dropped for the Gurmukhi-only build (translation layer only).
-DROP = ['translations', 'fts_en']
+# The translation layer (the only license-restricted content in the DB).
+TRANSLATION_LAYER = ['translations', 'fts_en']
+# Timing-layer tables expected from DB v2.12.0+ (additive; informational detection only).
+TIMING_TABLES = ['timing_sources', 'raag_timing_claims', 'shabd_raag_map',
+                 'shabd_musical_markers', 'shabd_structural_form', 'shabd_poetic_genre']
 
 
 def scripture_checksum(con):
@@ -54,23 +66,37 @@ def invariants(con):
 
 
 def main():
-    if not os.path.exists(SRC):
-        sys.exit(f'source DB not found: {SRC}')
-    os.makedirs(os.path.dirname(DEST), exist_ok=True)
+    ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
+    ap.add_argument('--profile', choices=['personal', 'public'], default='personal')
+    ap.add_argument('source', nargs='?', default=os.path.join(ROOT, 'db', 'sggs.sqlite'))
+    ap.add_argument('dest', nargs='?', default=None)
+    args = ap.parse_args()
+
+    profile = args.profile
+    src_path = args.source
+    dest = args.dest or os.path.join(
+        ROOT, 'ios', 'Resources',
+        'sggs-ios.sqlite' if profile == 'personal' else 'sggs-ios-public.sqlite')
+    drop = [] if profile == 'personal' else list(TRANSLATION_LAYER)
+
+    if not os.path.exists(src_path):
+        sys.exit(f'source DB not found: {src_path}')
+    os.makedirs(os.path.dirname(dest), exist_ok=True)
 
     # baseline scripture checksum from the source (read-only)
-    src = sqlite3.connect(f'file:{SRC}?mode=ro&immutable=1', uri=True)
+    src = sqlite3.connect(f'file:{src_path}?mode=ro&immutable=1', uri=True)
     src_ck = scripture_checksum(src)
     src_inv = invariants(src)
     src.close()
+    print(f'profile: {profile}')
     print(f'source: {src_inv}  scripture_sha={src_ck[:16]}…')
 
-    print(f'copy {SRC} -> {DEST}')
-    shutil.copyfile(SRC, DEST)
+    print(f'copy {src_path} -> {dest}')
+    shutil.copyfile(src_path, dest)
 
-    con = sqlite3.connect(DEST)
+    con = sqlite3.connect(dest)
     present = {r[0] for r in con.execute("SELECT name FROM sqlite_master WHERE type IN ('table','view')")}
-    for t in DROP:
+    for t in drop:
         if t in present:
             con.execute(f'DROP TABLE IF EXISTS "{t}"')
             print(f'  dropped {t}')
@@ -91,28 +117,45 @@ def main():
     assert dst_inv['angs'] == 1430, f"ang count {dst_inv['angs']}"
     assert dst_inv['ik_onkar'] >= 560, f"ੴ count {dst_inv['ik_onkar']}"
     assert dst_inv['fts_ok'] and dst_inv['mool_mantar'], 'FTS/Mool Mantar check failed'
-    assert 'translations' not in remaining and 'fts_en' not in remaining, 'translation layer not removed'
 
-    db_sha = sha256_file(DEST)
+    en_bundled = 'translations' in remaining and 'fts_en' in remaining
+    timing_bundled = all(t in remaining for t in TIMING_TABLES)
+    if profile == 'public':
+        assert not en_bundled and 'translations' not in remaining and 'fts_en' not in remaining, \
+            'translation layer not removed from the PUBLIC profile'
+    else:
+        assert en_bundled, 'personal profile expected translations + fts_en in the source DB'
+
+    db_sha = sha256_file(dest)
     manifest = {
-        'name': 'SGGS iOS DB (Gurmukhi-only)',
-        'derived_from': os.path.relpath(SRC, ROOT),
-        'dropped': DROP,
-        'bytes': os.path.getsize(DEST),
+        'name': f'SGGS iOS DB ({ "personal — bundled English" if profile == "personal" else "Gurmukhi-only" })',
+        'profile': profile,
+        'en_bundled': en_bundled,
+        'timing_bundled': timing_bundled,
+        'derived_from': os.path.relpath(src_path, ROOT),
+        'dropped': drop,
+        'bytes': os.path.getsize(dest),
         'db_sha256': db_sha,
         'scripture_sha256': dst_ck,
         'invariants': dst_inv,
     }
-    mpath = os.path.join(os.path.dirname(DEST), 'sggs-ios.manifest.json')
+    stem = os.path.splitext(os.path.basename(dest))[0]
+    mpath = os.path.join(os.path.dirname(dest), f'{stem}.manifest.json')
     with open(mpath, 'w', encoding='utf-8') as f:
         json.dump(manifest, f, ensure_ascii=False, indent=2, sort_keys=True)
         f.write('\n')
 
-    src_mb = os.path.getsize(SRC) / 1e6
+    src_mb = os.path.getsize(src_path) / 1e6
     dst_mb = manifest['bytes'] / 1e6
-    print(f'OK  scripture byte-identical ✓  invariants ✓  translations removed ✓')
+    layer = 'translations kept ✓' if en_bundled else 'translations removed ✓'
+    print(f'OK  scripture byte-identical ✓  invariants ✓  {layer}  timing={"✓" if timing_bundled else "ABSENT"}')
     print(f'    size {src_mb:.1f} MB -> {dst_mb:.1f} MB   db_sha256={db_sha[:16]}…')
     print(f'    manifest -> {mpath}')
+    if en_bundled:
+        print()
+        print('  ⚠ LICENSE (NOTICE.md): this build embeds the Khalsa English translation —')
+        print('    personal, local, non-commercial use ONLY. Do NOT distribute publicly or')
+        print('    submit to the App Store until the translation is licensed in writing.')
 
 
 if __name__ == '__main__':

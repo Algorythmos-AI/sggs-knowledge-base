@@ -24,8 +24,10 @@ jobs:
           lfs: true
       - name: Pull the Git-LFS source DB
         run: git lfs pull --include "db/sggs.sqlite"
-      - name: Build the Gurmukhi-only iOS DB from the source (deterministic)
-        run: python3 pipeline/build_ios_db.py
+      - name: Build the bundled (personal-profile) iOS DB from the source (deterministic)
+        run: python3 pipeline/build_ios_db.py --profile personal
+      - name: Build the public (Gurmukhi-only) profile for the degradation-parity gate
+        run: python3 pipeline/build_ios_db.py --profile public
       - name: Verify the iOS DB matches its certified manifest (db_sha256)
         run: |
           EXPECTED=$(python3 -c "import json;print(json.load(open('ios/Resources/sggs-ios.manifest.json'))['db_sha256'])")

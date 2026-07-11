@@ -41,3 +41,8 @@ ios/App/build/
 ios/App/*.xcodeproj/
 ios/App/*.xcworkspace/
 db/backups/
+
+# public-profile iOS DB manifest (built on demand for the degradation-parity gate; the
+# .sqlite itself is already covered by ios/Resources/*.sqlite — DB artifacts are never
+# committed, CI rebuilds them deterministically)
+ios/Resources/sggs-ios-public.manifest.json
