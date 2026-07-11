@@ -96,6 +96,50 @@ final class SGGSUITests: XCTestCase {
         XCTAssertTrue(app.cells.firstMatch.waitForExistence(timeout: 20), "english-mode search returned nothing")
     }
 
+    /// Reader parity: jump-to-Ang (boundary 1430, next disabled), swipe page-turn back.
+    func testReaderJumpAndSwipe() {
+        let app = XCUIApplication(); app.launch()
+        app.tabBars.buttons["Reader"].tap()
+        let jump = app.buttons["jumpToAng"].firstMatch
+        XCTAssertTrue(jump.waitForExistence(timeout: 15))
+        jump.tap()
+        let field = app.textFields["angField"].firstMatch
+        XCTAssertTrue(field.waitForExistence(timeout: 8))
+        field.tap(); field.typeText("1430")
+        app.buttons["goToAng"].tap()
+        XCTAssertTrue(app.navigationBars["Ang 1430"].waitForExistence(timeout: 12), "jump to 1430 failed")
+        XCTAssertFalse(app.buttons["Next Ang"].isEnabled, "next must be disabled at Ang 1430")
+        // swipe left-to-right = previous Ang
+        app.scrollViews.firstMatch.swipeRight()
+        XCTAssertTrue(app.navigationBars["Ang 1429"].waitForExistence(timeout: 12), "swipe page-turn failed")
+    }
+
+    /// Raag Clock: pinned wall clock (16:40 → 4th pahar of day), now card + pahar list +
+    /// detail sheet + divergence sheet all reachable.
+    func testRaagClock() {
+        let app = XCUIApplication()
+        app.launchEnvironment["SGGS_CLOCK_NOW"] = "1000"     // 16:40 → pahar 4 (3–6 PM)
+        app.launch()
+        app.tabBars.buttons["Clock"].tap()
+        XCTAssertTrue(app.staticTexts["What raag is it now?"].waitForExistence(timeout: 20), "now card missing")
+        XCTAssertTrue(app.staticTexts["4th pahar of day  ·  3–6 PM"].waitForExistence(timeout: 8),
+                      "pinned pahar/window line missing")
+        // the accessible pahar list is the content path — open P7 (deliberately silent)
+        let p7 = app.buttons.matching(NSPredicate(format: "label BEGINSWITH %@", "3rd pahar of night")).firstMatch
+        XCTAssertTrue(p7.waitForExistence(timeout: 8), "pahar list missing")
+        p7.tap()
+        XCTAssertTrue(app.staticTexts
+            .matching(NSPredicate(format: "label CONTAINS[c] %@", "Deliberately silent")).firstMatch
+            .waitForExistence(timeout: 8), "P7 empty-state missing")
+        app.buttons["Done"].tap()
+        // divergence sheet
+        let div = app.buttons["divergenceLink"].firstMatch
+        XCTAssertTrue(div.waitForExistence(timeout: 8))
+        div.tap()
+        XCTAssertTrue(app.navigationBars["Where traditions disagree"].waitForExistence(timeout: 10),
+                      "divergence sheet did not open")
+    }
+
     /// The Explore hub reaches every browse surface (nav-restructure gate).
     func testExploreHubReachesEverySurface() {
         let app = XCUIApplication(); app.launch()
@@ -158,6 +202,9 @@ final class SGGSUITests: XCTestCase {
         _ = app.buttons["Hukam"].waitForExistence(timeout: 12)
         _ = app.staticTexts.element(boundBy: 0).waitForExistence(timeout: 8)
         shot("v11_reader_ang1")
+        app.tabBars.buttons["Clock"].tap()
+        _ = app.staticTexts["What raag is it now?"].waitForExistence(timeout: 12)
+        shot("v12_clock")
         app.tabBars.buttons["Explore"].tap()
         let themes = app.buttons["Themes"].firstMatch
         if themes.waitForExistence(timeout: 8) { themes.tap() }

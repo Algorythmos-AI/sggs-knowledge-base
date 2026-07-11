@@ -16,7 +16,7 @@ struct IndexScreen: View {
                                     HStack {
                                         GurmukhiText(verbatim: r.name, size: 18)
                                         Spacer()
-                                        Text("Ang \(r.firstAng)").font(.caption).foregroundStyle(.secondary)
+                                        Text("Ang \(String(r.firstAng))").font(.caption).foregroundStyle(.secondary)
                                     }
                                 }
                             }
@@ -25,7 +25,7 @@ struct IndexScreen: View {
                             ForEach(meta.sections) { s in
                                 Button { container.router.openAng(s.firstAng) } label: {
                                     HStack { GurmukhiText(verbatim: s.name, size: 18); Spacer()
-                                        Text("Ang \(s.firstAng)").font(.caption).foregroundStyle(.secondary) }
+                                        Text("Ang \(String(s.firstAng))").font(.caption).foregroundStyle(.secondary) }
                                 }
                             }
                         }

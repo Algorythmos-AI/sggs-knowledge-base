@@ -55,10 +55,10 @@ struct TrailScreen: View {
     private var breadcrumb: some View {
         ScrollView(.horizontal, showsIndicators: false) {
             HStack(spacing: 6) {
-                Text("Ang \(start.ang)").font(.caption2)
+                Text("Ang \(String(start.ang))").font(.caption2)
                 ForEach(trail) { step in
                     Image(systemName: "chevron.right").font(.caption2).foregroundStyle(.tertiary)
-                    Text("Ang \(step.ang)").font(.caption2)
+                    Text("Ang \(String(step.ang))").font(.caption2)
                 }
             }
             .foregroundStyle(.secondary)
@@ -70,7 +70,7 @@ struct TrailScreen: View {
         VStack(alignment: .leading, spacing: 6) {
             GurmukhiText(verbatim: current.gurmukhi, size: 22)
             HStack {
-                Text("Ang \(current.ang)").font(.caption).foregroundStyle(.secondary)
+                Text("Ang \(String(current.ang))").font(.caption).foregroundStyle(.secondary)
                 Spacer()
                 Button { container.present(.shabad(compId: current.compId)) } label: {
                     Label("Open", systemImage: "book").font(.caption)

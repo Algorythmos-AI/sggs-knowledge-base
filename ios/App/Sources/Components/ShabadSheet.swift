@@ -21,7 +21,7 @@ struct ShabadSheet: View {
                             .listRowSeparator(.hidden)
                     }
                     if let ang = openAng {
-                        Button("Open Ang \(ang) in Reader") { container.router.openAng(ang); dismiss() }
+                        Button("Open Ang \(String(ang)) in Reader") { container.router.openAng(ang); dismiss() }
                     }
                 }
                 .listStyle(.plain)

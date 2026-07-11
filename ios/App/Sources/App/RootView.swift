@@ -27,6 +27,7 @@ struct RootView: View {
                 TabView(selection: $router.selectedTab) {
                     ReaderScreen().tabItem { Label("Reader", systemImage: "book") }.tag(Tab.reader)
                     SearchScreen().tabItem { Label("Search", systemImage: "magnifyingglass") }.tag(Tab.search)
+                    ClockScreen().tabItem { Label("Clock", systemImage: "clock") }.tag(Tab.clock)
                     ExploreScreen().tabItem { Label("Explore", systemImage: "square.grid.2x2") }.tag(Tab.explore)
                     MoreScreen().tabItem { Label("More", systemImage: "ellipsis") }.tag(Tab.more)
                 }

@@ -54,6 +54,23 @@ actor CorpusActor {
     func constellation(concept: String, author: String? = nil, raag: String? = nil) throws -> ConstellationResult {
         try db.constellation(concept: concept, author: author, raag: raag)
     }
+    // Insight-Engine deep reads (Lineage profiles, chord, streamgraph, vaar anatomy).
+    func authorProfile(_ author: String, full: Bool = false) -> AuthorProfile { db.authorProfile(author, full: full) }
+    func resonance(minLines: Int = 250, minLift: Double = 1.0, minEdges: Int = 8) -> ResonanceGraph {
+        db.resonance(minLines: minLines, minLift: minLift, minEdges: minEdges)
+    }
+    func progression(raag: String, bins: Int = 36, top: Int = 7) -> Progression? {
+        db.progression(raag: raag, bins: bins, top: top)
+    }
+    func vaars() -> [VaarSummary] { db.vaars() }
+    func vaar(id: Int) -> VaarAnatomy { db.vaar(id: id) }
+
+    // Raag-Timing layer (v2.12.0) — attributed claims with citations, never facts.
+    func timingClock() -> TimingClock { db.timingClock() }
+    func timingRaag(name: String) -> RaagTiming { db.timingRaag(name: name) }
+    func timingDivergence() -> TimingDivergence { db.timingDivergence() }
+    func forms(compId: Int) -> ShabadForms { db.forms(compId: compId) }
+
     func theme(_ name: String) throws -> ThemeSearchResult {
         let t = try db.themeSearch(name, limit: 200, offset: 0)
         return ThemeSearchResult(concept: t.concept, lines: db.attachTranslations(t.lines))

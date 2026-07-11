@@ -62,5 +62,7 @@
       <array><string>sggs</string></array>
     </dict>
   </array>
+  <key>NSLocationWhenInUseUsageDescription</key>
+  <string>Your location is used only on this device to compute local sunrise and sunset for the solar Raag Clock. It is rounded to about 1 km, stored only on this device, and never transmitted.</string>
 </dict>
 </plist>

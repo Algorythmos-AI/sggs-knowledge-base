@@ -1,10 +1,10 @@
 import SwiftUI
 
-/// The five-tab shell: Reader · Search · Explore · More (+ Clock when the Raag Clock lands).
+/// The five-tab shell: Reader · Search · Clock · Explore · More.
 /// Explore is the hub for the browse/insight surfaces (Index, Themes, Insights, Constellation, …)
 /// so the daily-ritual surfaces keep the prime tab positions — mirrors the web navbar's reach
 /// without burying anything two levels deep.
-enum Tab: Hashable { case reader, search, explore, more }
+enum Tab: Hashable { case reader, search, clock, explore, more }
 
 /// Typed navigation targets pushed onto a tab's stack (Explore hosts most of them).
 enum Route: Hashable {
@@ -34,8 +34,17 @@ final class Router {
         explorePath = NavigationPath([route])
     }
 
+    /// A raag the Clock tab should focus when opened via deep link / Reader timing chip.
+    var pendingClockRaag: String?
+
+    func openClock(raag: String? = nil) {
+        pendingClockRaag = raag
+        selectedTab = .clock
+    }
+
     /// The sggs:// deep-link table (widgets/App Intents/Spotlight route through here):
-    ///   sggs://ang/1430 · sggs://theme/naam · sggs://shabad/123 · sggs://search?q=mercy
+    ///   sggs://ang/1430 · sggs://theme/naam · sggs://shabad/123 · sggs://search?q=mercy ·
+    ///   sggs://clock (optional /<raag-roman>)
     /// Out-of-range/malformed values are ignored (never crash on a hostile URL).
     func handle(_ url: URL, container: AppContainer) {
         guard url.scheme == "sggs" else { return }
@@ -44,6 +53,8 @@ final class Router {
         switch host {
         case "ang":
             if let n = Int(value), (1...1430).contains(n) { openAng(n) }
+        case "clock":
+            openClock(raag: value.isEmpty ? nil : value)
         case "theme":
             if !value.isEmpty {
                 selectedTab = .explore
