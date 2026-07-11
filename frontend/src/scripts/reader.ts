@@ -2,6 +2,8 @@
 // Ported 1:1 from the original; deep-links via ?ang=<n>&raag=<name>.
 import { $, esc, api, guard, meta, store, syncToolbarTop, relChip } from './core';
 import { pinButtonHTML } from './store';
+import { loadClock, claimsFor } from './timing';
+import { paharLabel, paharRange } from './pahar.js';
 
 let curAng = 1;
 let raagCtx: any = null;
@@ -37,6 +39,7 @@ const ang = guard(async (n: number) => {
   if (sec) chips.push(`<span class="gm">${esc(sec)}</span>`);
   (d.authors || []).forEach((a: string) => chips.push(`<span>${esc(a)}</span>`));
   ($('#angCtx') as HTMLElement).innerHTML = chips.join('');
+  if (d.raag) addTimingChip(d.raag, myReq);   // async metadata chip; never blocks the scripture
   // raag banner while inside a raag opened from the grid
   let banner = '';
   if (raagCtx && d.raag === raagCtx.name && curAng >= raagCtx.first_ang && curAng <= raagCtx.last_ang) {
@@ -66,6 +69,51 @@ const ang = guard(async (n: number) => {
   window.scrollTo({ top: 0 });
 });
 const step = (d: number) => ang(curAng + d);
+
+/* ---- raag timing chip: small metadata chip next to the raag context chip.
+   Scholarly metadata about the raag, visually distinct from Gurbani, never
+   inline with scripture lines. Toggleable (show_timing, default ON) via the
+   body class hide-timing; a fetch failure simply means no chip. */
+async function addTimingChip(raagName: string, myReq: number) {
+  try {
+    const clock = await loadClock();
+    if (myReq !== angReq) return;                         // user paged on meanwhile
+    const cs = claimsFor(clock, raagName);
+    if (!cs) return;
+    const primary = cs.primary[0];
+    const parts: string[] = [];
+    if (primary?.pahar) parts.push(`${paharLabel(primary.pahar)} (${paharRange(primary.pahar)})`);
+    else if (cs.seasonal[0]) parts.push(`${cs.seasonal[0].season} — any time`);   // esc applied at join
+    if (cs.variant.length) {
+      const v = cs.variant[0];
+      parts.push(`variant: ${v.pahar ? paharLabel(v.pahar) : (v.notes || '').toLowerCase().includes('night') ? 'night' : 'differs'}†`);
+    }
+    if (!parts.length) return;
+    const title = [
+      ...cs.primary.map((c: any) => `primary: ${c.pahar ? paharLabel(c.pahar) : c.season || ''} — ${c.source_name}`),
+      ...cs.variant.map((c: any) => `variant (disputed): ${c.pahar ? paharLabel(c.pahar) : c.notes || ''} — ${c.source_name}`),
+      ...cs.seasonal.map((c: any) => `seasonal: ${c.season} — ${c.source_name}`),
+      ...cs.ceremonial.map((c: any) => `ceremonial: ${c.occasion} — ${c.source_name}`),
+    ].join('\n');
+    const roman = primary?.roman || '';
+    const chip = document.createElement('a');
+    chip.className = 'timechip';
+    chip.href = '/raag-clock?raag=' + encodeURIComponent(roman || raagName);
+    chip.setAttribute('role', 'note');
+    chip.setAttribute('aria-label', `Raag timing (scholarly metadata, not scripture): ${parts.join('; ').replace(/†/g, ', disputed variant exists')}. Opens the Raag Clock.`);
+    chip.title = title;
+    chip.innerHTML = `<span class="tc-i" aria-hidden="true">🕐</span>${parts.map(esc).join(' <span class="tc-sep">·</span> ')}`;
+    $('#angCtx')?.appendChild(chip);
+  } catch { /* chip is optional metadata — reader never blocks on it */ }
+}
+
+function toggleTiming() {
+  document.body.classList.toggle('hide-timing');
+  const on = !document.body.classList.contains('hide-timing');
+  $('#tglTime')?.classList.toggle('on', on);
+  $('#tglTime')?.setAttribute('aria-checked', String(on));
+  store.set('show_timing', on ? '1' : '0');
+}
 
 function toggleT() {
   document.body.classList.toggle('hide-t');
@@ -143,6 +191,7 @@ $('#angOut')?.addEventListener('keydown', (e: any) => {
 (window as any).ang = ang;
 (window as any).step = step;
 (window as any).toggleT = toggleT;
+(window as any).toggleTiming = toggleTiming;
 (window as any).fontSize = fontSize;
 
 // ---- bootstrap: reflect the transliteration toggle, then load ?ang (+ optional ?raag) ----
@@ -150,6 +199,9 @@ $('#angOut')?.addEventListener('keydown', (e: any) => {
   const on = !document.body.classList.contains('hide-t');     // applyPrefs() already ran in core
   $('#tglT')?.classList.toggle('on', on);
   $('#tglT')?.setAttribute('aria-checked', String(on));
+  const tOn = !document.body.classList.contains('hide-timing');
+  $('#tglTime')?.classList.toggle('on', tOn);
+  $('#tglTime')?.setAttribute('aria-checked', String(tOn));
   if (store.get('sehaj', '0') === '1') {                       // restore calm focus mode
     document.body.classList.add('focus-mode');
     $('#sehajBtn')?.classList.add('on'); $('#sehajBtn')?.setAttribute('aria-pressed', 'true');

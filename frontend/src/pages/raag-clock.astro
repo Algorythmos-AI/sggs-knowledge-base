@@ -1,0 +1,58 @@
+---
+import Base from '../layouts/Base.astro';
+---
+<Base title="ੴ SGGS — Raag Clock (traditional timing)">
+  <section id="v-clock">
+    <div class="clock-head">
+      <h2>The Raag Clock</h2>
+      <p class="clock-sub">
+        When each raag is traditionally sung — shown as <b>attributed scholarly claims</b>,
+        not facts. Where traditions disagree, both placements appear with their sources:
+        divergence is preserved, never adjudicated.
+        <a href="/divergence">See every disagreement side-by-side →</a>
+      </p>
+    </div>
+
+    <!-- "What raag is it now?" — live widget -->
+    <div class="card nowcard" id="nowCard">
+      <div class="now-head">
+        <h3 id="nowTitle">What raag is it now?</h3>
+        <div class="mode-tgl" role="radiogroup" aria-label="Pahar computation mode" id="modeTgl">
+          <button type="button" role="radio" aria-checked="true" data-mode="fixed"
+                  title="Eight fixed 3-hour watches anchored at 6 AM">Fixed clock</button>
+          <button type="button" role="radio" aria-checked="false" data-mode="solar"
+                  title="Four watches of daylight, four of night — needs your location (computed locally, never sent anywhere)">Solar</button>
+        </div>
+      </div>
+      <div id="nowBody" aria-live="polite">
+        <div class="hint">Loading the timing claims…</div>
+      </div>
+      <p class="now-note">Pahars were traditionally <b>solar</b> — four equal watches of daylight
+        (sunrise→sunset) and four of night — so they stretch and shrink with the season.
+        The fixed-clock view anchors pahar 1 at 6 AM as a modern rendering.
+        Solar mode computes sunrise/sunset locally (NOAA equations); your location never leaves this device.</p>
+    </div>
+
+    <!-- the 24-hour dial -->
+    <div class="card clockcard">
+      <div id="clockWrap" role="img" aria-label="24-hour raag clock: eight pahar arcs with the raags traditionally sung in each; a full data table follows for screen readers"></div>
+      <div class="clock-legend" id="clockLegend">
+        <span><i class="lg lg-day"></i> day pahars (1–4)</span>
+        <span><i class="lg lg-night"></i> night pahars (5–8)</span>
+        <span><i class="lg lg-quiet"></i> pahar 7 — deliberately empty</span>
+        <span><span class="lg-variant">ਗ†</span> variant claim (disputed — see source)</span>
+        <span><i class="lg lg-season"></i> seasonal ring: any time in season</span>
+      </div>
+      <div id="clockTip" class="clock-tip" aria-live="polite"></div>
+    </div>
+
+    <!-- screen-reader twin of the dial (also useful as a plain reference) -->
+    <div class="card">
+      <details>
+        <summary>All timing claims as a table</summary>
+        <div id="claimsTable"></div>
+      </details>
+    </div>
+  </section>
+  <script>import '../scripts/raagclock';</script>
+</Base>

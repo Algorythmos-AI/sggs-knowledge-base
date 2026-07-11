@@ -104,6 +104,7 @@ function markNav() {
 // ---- user prefs applied on every page (translit hidden + Gurmukhi font size) ----
 export function applyPrefs() {
   if (store.get('show_t', '1') === '0') document.body.classList.add('hide-t');
+  if (store.get('show_timing', '1') === '0') document.body.classList.add('hide-timing');  // raag timing chip, default ON
   const gs = parseInt(store.get('gsize', '22')); if (gs) document.documentElement.style.setProperty('--gsize', gs + 'px');
 }
 

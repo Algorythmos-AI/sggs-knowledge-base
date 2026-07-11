@@ -16,6 +16,10 @@ import Base from '../layouts/Base.astro';
         <div class="tgl" id="tglT" onclick="toggleT()" role="switch" tabindex="0" aria-checked="true"
              aria-label="show transliteration" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();toggleT()}">
           <span class="sw"></span> transliteration</div>
+        <div class="tgl" id="tglTime" onclick="toggleTiming()" role="switch" tabindex="0" aria-checked="true"
+             aria-label="show raag timing chip (scholarly metadata near the raag heading — never changes the scripture)"
+             onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();toggleTiming()}">
+          <span class="sw"></span> timing</div>
         <button onclick="fontSize(-1)" title="smaller text" aria-label="smaller text">ਅ−</button>
         <button onclick="fontSize(1)" title="larger text" aria-label="larger text">ਅ+</button>
         <button id="sehajBtn" onclick="sehaj()" title="Sehaj — calm focus reading (Esc to exit)" aria-label="Focus reading mode" aria-pressed="false">✦ Sehaj</button>

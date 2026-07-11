@@ -8,7 +8,8 @@
     "build": "astro build",
     "sync": "node scripts/sync-to-webapp.mjs",
     "rollback": "node scripts/sync-to-webapp.mjs --rollback",
-    "build:deploy": "astro build && node scripts/sync-to-webapp.mjs"
+    "build:deploy": "astro build && node scripts/sync-to-webapp.mjs",
+    "test:pahar": "node scripts/test-pahar.mjs"
   },
   "dependencies": {
     "@tailwindcss/vite": "^4.3.1",
