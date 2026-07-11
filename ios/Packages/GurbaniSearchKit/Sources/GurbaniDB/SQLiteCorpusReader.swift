@@ -24,6 +24,38 @@ extension SQLiteCandidateSource: CorpusReader, AnalyticsSource {
             gurmukhi: text(10), translit: text(11), markers: markers)
     }
 
+    /// serve.py `attach_translations`: labelled English for a set of line ids, merged into
+    /// result models. Returns [:] when the DB has no `translations` table (public profile) —
+    /// that degradation is the parity contract (serve.py catches OperationalError → pass).
+    private func enMap(ids: [Int]) -> [Int: String] {
+        guard !ids.isEmpty else { return [:] }
+        let ph = Array(repeating: "?", count: ids.count).joined(separator: ",")
+        let sql = "SELECT line_id, text FROM translations WHERE lang='en' AND line_id IN (\(ph))"
+        var stmt: OpaquePointer?
+        guard sqlite3_prepare_v2(handle, sql, -1, &stmt, nil) == SQLITE_OK else { return [:] }
+        defer { sqlite3_finalize(stmt) }
+        for (i, lid) in ids.enumerated() { sqlite3_bind_int64(stmt, Int32(i + 1), Int64(lid)) }
+        var out: [Int: String] = [:]
+        while sqlite3_step(stmt) == SQLITE_ROW {
+            out[Int(sqlite3_column_int64(stmt, 0))] = sqlite3_column_text(stmt, 1).map { String(cString: $0) } ?? ""
+        }
+        return out
+    }
+
+    private func attachEn(_ lines: [ReaderLine]) -> [ReaderLine] {
+        let m = enMap(ids: lines.map { $0.id })
+        if m.isEmpty { return lines }
+        return lines.map { m[$0.id] != nil ? $0.withEn(m[$0.id]) : $0 }
+    }
+
+    /// English for search results — serve.py attaches en to EVERY search mode's results (:798).
+    /// Called by the app's CorpusActor after SearchEngine.search.
+    public func attachTranslations(_ lines: [SearchLine]) -> [SearchLine] {
+        let m = enMap(ids: lines.map { $0.id })
+        if m.isEmpty { return lines }
+        return lines.map { $0.en == nil && m[$0.id] != nil ? $0.withEn(m[$0.id]) : $0 }
+    }
+
     private func readerRows(_ sql: String, bind: (OpaquePointer?) -> Void) throws -> [ReaderLine] {
         var stmt: OpaquePointer?
         guard sqlite3_prepare_v2(handle, sql, -1, &stmt, nil) == SQLITE_OK else {
@@ -38,9 +70,9 @@ extension SQLiteCandidateSource: CorpusReader, AnalyticsSource {
 
     public func fetchAng(_ n: Int) throws -> AngPage {
         let ang = max(1, min(1430, n))
-        let rs = try readerRows("SELECT \(Self.readerCols) FROM lines WHERE ang = ? ORDER BY id") {
+        let rs = attachEn(try readerRows("SELECT \(Self.readerCols) FROM lines WHERE ang = ? ORDER BY id") {
             sqlite3_bind_int($0, 1, Int32(ang))
-        }
+        })
         var continuedFrom: Int? = nil
         if let first = rs.first, !first.isHeader {
             var stmt: OpaquePointer?
@@ -63,9 +95,9 @@ extension SQLiteCandidateSource: CorpusReader, AnalyticsSource {
     }
 
     public func fetchShabad(compId: Int) throws -> Shabad {
-        let rs = try readerRows("SELECT \(Self.readerCols) FROM lines WHERE comp_id = ? ORDER BY id") {
+        let rs = attachEn(try readerRows("SELECT \(Self.readerCols) FROM lines WHERE comp_id = ? ORDER BY id") {
             sqlite3_bind_int($0, 1, Int32(compId))
-        }
+        })
         return Shabad(compId: compId, lines: rs)
     }
 
@@ -149,6 +181,8 @@ extension SQLiteCandidateSource: CorpusReader, AnalyticsSource {
             _ = try? prepareEach("SELECT value FROM analytics_meta WHERE key='line_neighbors_source'") { s in
                 source = col(s, 0)
             }
+            let m = enMap(ids: line.map { $0.id })   // serve.py attaches en on /api/neighbors
+            if !m.isEmpty { line = line.map { m[$0.id] != nil ? $0.withEn(m[$0.id]) : $0 } }
             return NeighborsResult(lineId: lineId, level: "line", source: source, neighbors: line)
         }
         // Tier 2: composition-level theme profile (shabad_neighbors).

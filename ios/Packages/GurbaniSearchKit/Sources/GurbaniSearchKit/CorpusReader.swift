@@ -15,12 +15,24 @@ public struct ReaderLine: Sendable, Equatable {
     public let gurmukhi: String
     public let translit: String
     public let markers: [String]      // parsed from the markers JSON column (Hukam-unit logic)
+    /// Labelled English translation (Khalsa layer; serve.py `attach_translations` on /api/ang
+    /// and /api/shabad — NOT /api/random, which the web serves without en). nil on the public
+    /// DB profile and for the 2,619 lines with no en row — absence renders as nothing.
+    public let en: String?
     public init(id: Int, ang: Int, raag: String?, section: String?, author: String?, compType: String?,
                 compId: Int, lineNo: Int?, isRahao: Bool, isHeader: Bool, gurmukhi: String,
-                translit: String, markers: [String]) {
+                translit: String, markers: [String], en: String? = nil) {
         self.id = id; self.ang = ang; self.raag = raag; self.section = section; self.author = author
         self.compType = compType; self.compId = compId; self.lineNo = lineNo; self.isRahao = isRahao
         self.isHeader = isHeader; self.gurmukhi = gurmukhi; self.translit = translit; self.markers = markers
+        self.en = en
+    }
+
+    /// Same line with the translation attached (models are immutable value types).
+    public func withEn(_ en: String?) -> ReaderLine {
+        ReaderLine(id: id, ang: ang, raag: raag, section: section, author: author, compType: compType,
+                   compId: compId, lineNo: lineNo, isRahao: isRahao, isHeader: isHeader,
+                   gurmukhi: gurmukhi, translit: translit, markers: markers, en: en)
     }
 }
 
@@ -101,10 +113,18 @@ public struct Neighbor: Sendable, Equatable, Identifiable {
     public let compId: Int
     public let gurmukhi: String
     public let translit: String
+    /// Labelled English translation of the neighbour line (serve.py attaches en on /api/neighbors).
+    public let en: String?
     public init(id: Int, score: Double, ang: Int, raag: String?, author: String?, compId: Int,
-                gurmukhi: String, translit: String) {
+                gurmukhi: String, translit: String, en: String? = nil) {
         self.id = id; self.score = score; self.ang = ang; self.raag = raag; self.author = author
-        self.compId = compId; self.gurmukhi = gurmukhi; self.translit = translit
+        self.compId = compId; self.gurmukhi = gurmukhi; self.translit = translit; self.en = en
+    }
+
+    /// Same neighbour with the translation attached.
+    public func withEn(_ en: String?) -> Neighbor {
+        Neighbor(id: id, score: score, ang: ang, raag: raag, author: author, compId: compId,
+                 gurmukhi: gurmukhi, translit: translit, en: en)
     }
 }
 

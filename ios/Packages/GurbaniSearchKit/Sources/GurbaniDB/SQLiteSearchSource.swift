@@ -69,6 +69,31 @@ extension SQLiteCandidateSource: SearchSource {
         return out
     }
 
+    public func ftsEnglish(match: String, limit: Int, offset: Int) throws -> [SearchLine] {
+        if match.isEmpty { return [] }
+        // serve.py search_en: bm25(fts_en) rank, ORDER BY e.rk ONLY (no lines.id tie-break).
+        // Missing fts_en (public/Gurmukhi-only profile) degrades to [] — the parity contract
+        // (serve.py catches sqlite3.OperationalError), so prepare failure is NOT an error here.
+        let sql = """
+        SELECT \(Self.lineCols), e.text AS en FROM
+          (SELECT line_id, text, bm25(fts_en) AS rk FROM fts_en WHERE fts_en MATCH ?) e
+          JOIN lines ON lines.id = e.line_id ORDER BY e.rk LIMIT ? OFFSET ?
+        """
+        var stmt: OpaquePointer?
+        guard sqlite3_prepare_v2(handle, sql, -1, &stmt, nil) == SQLITE_OK else { return [] }
+        defer { sqlite3_finalize(stmt) }
+        sqlite3_bind_text(stmt, 1, match, -1, Self.transientDtor)
+        sqlite3_bind_int(stmt, 2, Int32(limit))
+        sqlite3_bind_int(stmt, 3, Int32(offset))
+        var out: [SearchLine] = []
+        while sqlite3_step(stmt) == SQLITE_ROW {
+            let en = sqlite3_column_type(stmt, 10) == SQLITE_NULL
+                ? nil : sqlite3_column_text(stmt, 10).map { String(cString: $0) }
+            out.append(mapLine(stmt).withEn(en))
+        }
+        return out
+    }
+
     public func variantsLookup(_ token: String) throws -> [String] {
         var stmt: OpaquePointer?
         let sql = "SELECT DISTINCT translit FROM variants WHERE variant = ? ORDER BY freq * score DESC LIMIT 3"

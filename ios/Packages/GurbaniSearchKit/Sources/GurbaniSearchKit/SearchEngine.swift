@@ -12,11 +12,23 @@ public struct SearchLine: Sendable, Equatable {
     public let compId: Int
     public let isRahao: Bool
     public let isHeader: Bool
+    /// Labelled English translation (Khalsa layer; serve.py `attach_translations`/`search_en`).
+    /// nil on the public/Gurmukhi-only DB profile AND for the 2,619 lines with no en row
+    /// (2,289 headers + 330 verses) — absence is contract, never a placeholder.
+    public let en: String?
     public init(id: Int, ang: Int, gurmukhi: String, translit: String, raag: String?,
-                section: String?, author: String?, compId: Int, isRahao: Bool, isHeader: Bool) {
+                section: String?, author: String?, compId: Int, isRahao: Bool, isHeader: Bool,
+                en: String? = nil) {
         self.id = id; self.ang = ang; self.gurmukhi = gurmukhi; self.translit = translit
         self.raag = raag; self.section = section; self.author = author; self.compId = compId
-        self.isRahao = isRahao; self.isHeader = isHeader
+        self.isRahao = isRahao; self.isHeader = isHeader; self.en = en
+    }
+
+    /// Same line with the translation attached (models are immutable value types).
+    public func withEn(_ en: String?) -> SearchLine {
+        SearchLine(id: id, ang: ang, gurmukhi: gurmukhi, translit: translit, raag: raag,
+                   section: section, author: author, compId: compId, isRahao: isRahao,
+                   isHeader: isHeader, en: en)
     }
 }
 
@@ -78,6 +90,11 @@ public protocol SearchSource: Sendable {
     func shabadLineNorms(compIds: [Int]) throws -> [Int: [String]]
     /// non-header lines of a comp_id (ORDER BY id) with their translit_norm (passage bubbling).
     func compLines(compId: Int) throws -> [VariantRow]
+    /// serve.py `search_en`: `bm25(fts_en)`-ranked over the labelled English layer,
+    /// `ORDER BY e.rk` (NO lines.id tie-break — mirror exactly). Rows carry `en` from the SQL.
+    /// MUST return [] when the DB has no `fts_en` (public profile) — that degradation IS the
+    /// parity contract (serve.py catches OperationalError → []).
+    func ftsEnglish(match: String, limit: Int, offset: Int) throws -> [SearchLine]
 }
 
 /// A shabad-level FTS candidate (passage tier).
@@ -87,11 +104,12 @@ public struct ShabadCand: Sendable { public let compId: Int; public let tnorm: S
 public enum SearchError: Error { case queryTooLong }
 
 /// Byte-identical Swift port of `webapp/serve.py:do_search`. Covers the explicit modes
-/// (gurmukhi/roman/first/theme) and the full auto-mode waterfall — mixed-script, the curated
-/// seeker lexicon, the precomputed variant index (incl. the graceful all-but-one fallback), the
-/// phonetic-fold tier, single-token theme, and both honorific-drop passes. The English tier is a
-/// no-op on the Gurmukhi-only iOS DB (no fts_en), `blob_search` is a no-op (no norm_blob), and
-/// `passage_search` is deferred (returns nil) — a later phase. Pinned by contract/golden_search.ndjson.
+/// (gurmukhi/roman/english/first/theme) and the full auto-mode waterfall — mixed-script, the
+/// curated seeker lexicon, the precomputed variant index (incl. the graceful all-but-one
+/// fallback), the ENGLISH translation tier (`search_en` over fts_en; live on the personal-profile
+/// DB, degrades to [] on the public/Gurmukhi-only profile), the phonetic-fold tier, single-token
+/// theme, and both honorific-drop passes. `blob_search` is a no-op (no norm_blob).
+/// Pinned by contract/golden_search.ndjson.
 public struct SearchEngine {
     private let source: SearchSource
 
@@ -152,6 +170,12 @@ public struct SearchEngine {
         case "theme":
             let t = try source.themeSearch(q, limit: limit, offset: offset)
             return SearchOutput(mode: "theme", results: t.lines, concept: t.concept, relatedThemes: nil)
+        case "english":
+            // serve.py: res = search_en(q, limit, offset); used = 'english'
+            if let m = Self.ftsMatch(toks, phrase: false) {
+                res = try source.ftsEnglish(match: m, limit: limit, offset: offset)
+            }
+            used = "english"
         default:  // auto
             if isG {
                 let singleLetters = toks.allSatisfy { $0.unicodeScalars.count == 1 } && toks.count >= 2
@@ -181,7 +205,12 @@ public struct SearchEngine {
                 if res.isEmpty, let vr = try variantSearch(q, limit: limit, offset: offset), !vr.isEmpty {
                     return SearchOutput(mode: "variant-match", results: vr, concept: nil, relatedThemes: nil)
                 }
-                if res.isEmpty { used = "english-translation" }   // search_en: [] on the EN-less iOS DB
+                if res.isEmpty {                                   // English layer before fold:
+                    if let m = Self.ftsMatch(toks, phrase: false) {  // 'mercy' must hit translations,
+                        res = try source.ftsEnglish(match: m, limit: limit, offset: offset)
+                    }                                              // not fold-collide with ਮੋਰਚਾ.
+                    used = "english-translation"                   // [] on the public (EN-less) profile
+                }
                 if res.isEmpty {                                   // early honorific retry
                     let kept = toks.filter { !Self.honorifics.contains($0.lowercased()) }
                     if kept.count >= 2 && kept.count < toks.count {

@@ -41,6 +41,9 @@ final class ReaderParityTests: XCTestCase {
         let cluster_cos: [String]?
         let cluster_ns: [Int]?
         let top_verse_ids: [Int]?
+        /// Labelled English per line, null where absent (2,619 lines have no en row) —
+        /// asserted verbatim: the translation layer must ride along byte-identically.
+        let ens: [String?]?
     }
 
     private func eqDoubles(_ a: [Double], _ b: [Double]) -> Bool {
@@ -70,6 +73,12 @@ final class ReaderParityTests: XCTestCase {
                 if page.raag != v.raag { failures.append("ang \(n): raag \(String(describing: page.raag)) != \(String(describing: v.raag))") }
                 if page.section != v.section { failures.append("ang \(n): section differs") }
                 if page.authors != (v.authors ?? []) { failures.append("ang \(n): authors \(page.authors) != \(String(describing: v.authors))") }
+                if let ens = v.ens, page.lines.map({ $0.en }) != ens { failures.append("ang \(n): ens differ") }
+            } else if v.kind == "shabad", let cid = v.comp_id {
+                asserted += 1
+                let sh = try db.fetchShabad(compId: cid)
+                if sh.lines.map({ $0.id }) != (v.line_ids ?? []) { failures.append("shabad \(cid): line ids differ") }
+                if let ens = v.ens, sh.lines.map({ $0.en }) != ens { failures.append("shabad \(cid): ens differ") }
             } else if v.kind == "neighbors", let lid = v.line_id {
                 asserted += 1
                 let r = try db.neighbors(lineId: lid, limit: 12)
@@ -80,6 +89,7 @@ final class ReaderParityTests: XCTestCase {
                 if zip(gotScores, v.scores ?? []).contains(where: { abs($0 - $1) > 1e-5 }) || gotScores.count != (v.scores?.count ?? -1) {
                     failures.append("neighbors \(lid): scores differ")
                 }
+                if let ens = v.ens, r.neighbors.map({ $0.en }) != ens { failures.append("neighbors \(lid): ens differ") }
             } else if v.kind == "authors" {
                 asserted += 1
                 let a = try db.authorAnalytics()

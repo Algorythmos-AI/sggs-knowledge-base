@@ -1,13 +1,16 @@
 {
-  "db_sha256": "3ec779a5ad9608314b98410a0b6f2a1f60296dd9cc5f50f793f2d7f1dde96f33",
+  "db_sha256": "384f53a1a61c844cb8409a653326a2c3c5d5d355e3451b19927aaa139b3f85c0",
   "files": {
+    "golden_analytics.ndjson": 56,
     "golden_difflib.ndjson": 49,
-    "golden_reader.ndjson": 23,
+    "golden_pahar.ndjson": 2183,
+    "golden_reader.ndjson": 27,
     "golden_roman_norm.ndjson": 24719,
-    "golden_search.ndjson": 50,
+    "golden_search.ndjson": 62,
+    "golden_timing.ndjson": 83,
     "golden_verify.ndjson": 18
   },
-  "generator": "pipeline/gen_golden_vectors.py",
+  "generator": "pipeline/gen_golden_vectors.py (+ frontend/scripts/gen-pahar-vectors.mjs)",
   "tool_versions": {
     "python": "3.9.6",
     "sqlite": "3.51.0"
