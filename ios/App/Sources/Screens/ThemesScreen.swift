@@ -40,8 +40,8 @@ struct ThemeResultsScreen: View {
         LoadStateView(state: state) { lines in
             List(lines, id: \.id) { line in
                 LineRow(gurmukhi: line.gurmukhi, translit: line.translit, meta: line.metaLine,
-                        en: line.en) {
-                    container.presentation = .shabad(compId: line.compId)
+                        en: line.en, lineId: line.id, ang: line.ang, compId: line.compId) {
+                    container.present(.shabad(compId: line.compId))
                 }
                 .listRowSeparator(.hidden)
             }

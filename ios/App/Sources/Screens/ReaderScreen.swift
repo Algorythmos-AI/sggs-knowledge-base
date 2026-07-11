@@ -94,7 +94,7 @@ struct ReaderScreen: View {
                                                 meta: line.isRahao ? "ਰਹਾਉ · refrain" : "",
                                                 en: focusMode ? nil : line.en,
                                                 lineId: line.id, ang: line.ang, compId: line.compId) {
-                                            container.presentation = .shabad(compId: line.compId)
+                                            container.present(.shabad(compId: line.compId))
                                         }
                                         .padding(.vertical, focusMode ? Theme.Space.s : 0)
                                     }
@@ -121,7 +121,7 @@ struct ReaderScreen: View {
                         .disabled(router.readerAng <= 1)
                         .accessibilityLabel("Previous Ang")
                     Spacer()
-                    Button { Haptics.tap(); container.presentation = .hukam } label: { Label("Hukam", systemImage: "sparkles") }
+                    Button { Haptics.tap(); container.present(.hukam) } label: { Label("Hukam", systemImage: "sparkles") }
                     Spacer()
                     Button { router.openAng(router.readerAng + 1) } label: { Image(systemName: "chevron.right") }
                         .disabled(router.readerAng >= 1430)
@@ -155,11 +155,12 @@ struct ReaderScreen: View {
         }
         .task(id: container.router.readerAng) {
             if model == nil { model = ReaderModel(corpus: container.corpus) }
-            // resume-last-Ang: once per launch, only from the untouched default (deep links
-            // and explicit navigation set readerAng first and must never be overridden)
+            // resume-last-Ang: once per launch, only from the untouched default. The router
+            // flag (not the Ang value) marks explicit navigation, so sggs://ang/1 is honoured.
             if !resumed {
                 resumed = true
-                if container.router.readerAng == 1, lastAng > 1 {
+                if !container.router.navigatedToAngExplicitly,
+                   container.router.readerAng == 1, lastAng > 1 {
                     container.router.readerAng = lastAng
                     return   // the task re-fires with the resumed Ang
                 }

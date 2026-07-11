@@ -24,10 +24,12 @@
   <true/>
   <key>ITSAppUsesNonExemptEncryption</key>
   <false/>
+  <!-- Multiple scenes stay OFF until navigation state is per-scene: Router/AppContainer are
+       app-scoped, so two windows would mirror tab switches and present every sheet twice. -->
   <key>UIApplicationSceneManifest</key>
   <dict>
     <key>UIApplicationSupportsMultipleScenes</key>
-    <true/>
+    <false/>
   </dict>
   <key>UILaunchScreen</key>
   <dict>

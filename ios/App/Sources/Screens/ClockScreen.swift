@@ -12,7 +12,10 @@ struct ClockScreen: View {
     @Environment(AppContainer.self) private var container
     @AppStorage("sggs_clock_mode") private var mode = "fixed"     // fixed | solar
     @State private var clock: TimingClock?
-    @State private var location = SolarLocation()
+    /// Lazily created in .task — a `@State = SolarLocation()` default would construct a fresh
+    /// CLLocationManager (delegate wired, defaults read) on EVERY ClockScreen struct init,
+    /// i.e. every RootView body re-evaluation (the documented @State-autoclosure anti-pattern).
+    @State private var location: SolarLocation?
     @State private var detailPahar: PaharSelection?
     @State private var showDivergence = false
     @State private var showManualLocation = false
@@ -43,6 +46,7 @@ struct ClockScreen: View {
             .sheet(isPresented: $showDivergence) { DivergenceScreen() }
         }
         .task {
+            if location == nil { location = SolarLocation() }
             guard clock == nil, let corpus = container.corpus else { return }
             clock = await corpus.timingClock()
             consumePendingRaag()
@@ -62,7 +66,7 @@ struct ClockScreen: View {
     }
 
     private var sun: Pahar.SunTimes? {
-        guard mode == "solar", let coords = location.coords else { return nil }
+        guard mode == "solar", let coords = location?.coords else { return nil }
         var cal = Calendar(identifier: .gregorian)
         cal.timeZone = TimeZone.current
         let c = cal.dateComponents([.year, .month, .day], from: now())
@@ -165,14 +169,14 @@ struct ClockScreen: View {
             if live {
                 Text("Solar watches from your stored location (rounded ~1 km; never leaves this device).")
                     .font(.caption2).foregroundStyle(.tertiary)
-            } else if location.coords == nil {
+            } else if location?.coords == nil {
                 HStack(spacing: Theme.Space.s) {
-                    Button("Use my location") { location.requestOnce() }
+                    Button("Use my location") { location?.requestOnce() }
                         .buttonStyle(.bordered).font(.caption)
                     Button("Enter manually") { showManualLocation = true }
                         .buttonStyle(.bordered).font(.caption)
                 }
-                if location.denied {
+                if location?.denied == true {
                     Text("Location denied — enter coordinates manually, or stay on the fixed clock.")
                         .font(.caption2).foregroundStyle(.secondary)
                 }
@@ -182,7 +186,7 @@ struct ClockScreen: View {
             }
         }
         .sheet(isPresented: $showManualLocation) {
-            ManualLocationSheet { lat, lon in location.setManually(lat: lat, lon: lon) }
+            ManualLocationSheet { lat, lon in location?.setManually(lat: lat, lon: lon) }
                 .presentationDetents([.medium])
         }
     }

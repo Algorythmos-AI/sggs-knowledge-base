@@ -39,11 +39,19 @@ enum LaunchIntegrity {
     static let cacheKey = "sggs_db_verified_v1"
 
     /// Stream-hash the bundled DB (~100 MB) without loading it all into memory.
+    /// Uses the throwing `read(upToCount:)` — the legacy `readData(ofLength:)` raises an
+    /// uncatchable ObjC exception on an I/O error, which would CRASH the launch check on
+    /// exactly the corrupted-bundle case it exists to catch. Any read failure returns nil,
+    /// which the caller records as a failed check (fail closed, never fail crashed).
     private static func sha256(ofFileAt path: String) -> String? {
         guard let fh = FileHandle(forReadingAtPath: path) else { return nil }
         defer { try? fh.close() }
         var hasher = SHA256()
-        while case let chunk = fh.readData(ofLength: 1 << 20), !chunk.isEmpty { hasher.update(data: chunk) }
+        do {
+            while let chunk = try fh.read(upToCount: 1 << 20), !chunk.isEmpty {
+                hasher.update(data: chunk)
+            }
+        } catch { return nil }
         return hasher.finalize().map { String(format: "%02x", $0) }.joined()
     }
 

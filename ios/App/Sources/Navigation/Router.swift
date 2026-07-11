@@ -25,8 +25,13 @@ final class Router {
     var explorePath = NavigationPath()
     /// A deep-linked search query (sggs://search?q=…); SearchScreen consumes and clears it.
     var pendingSearchQuery: String?
+    /// True once ANY explicit Ang navigation happened (deep link, intent, widget, in-app).
+    /// The Reader's resume-last-Ang must not fire after this — `readerAng == 1` alone can't
+    /// distinguish the untouched default from an explicit `sggs://ang/1`.
+    private(set) var navigatedToAngExplicitly = false
 
     func openAng(_ n: Int) {
+        navigatedToAngExplicitly = true
         readerAng = max(1, min(1430, n))
         selectedTab = .reader
     }

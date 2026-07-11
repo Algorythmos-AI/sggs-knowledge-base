@@ -57,6 +57,13 @@ targets:
     sources:
       - path: Widgets
       - path: Shared
+      # The Hukam widget typesets Gurmukhi — the extension must bundle+register the scripture
+      # font itself (extensions don't inherit the app's resources; without this it silently
+      # falls back to SF). PrivacyInfo ships in every distributable target.
+      - path: Resources/SantLipi.ttf
+        buildPhase: resources
+      - path: Resources/PrivacyInfo.xcprivacy
+        buildPhase: resources
     dependencies:
       - package: GurbaniSearchKit
         product: GurbaniPahar
@@ -68,6 +75,11 @@ targets:
       path: Widgets/Info.plist
       properties:
         CFBundleDisplayName: SGGS Widgets
+        # Must track the app's MARKETING_VERSION — App Store validation rejects an extension
+        # whose CFBundleShortVersionString differs from the containing app.
+        CFBundleShortVersionString: $(MARKETING_VERSION)
+        CFBundleVersion: $(CURRENT_PROJECT_VERSION)
+        UIAppFonts: [SantLipi.ttf]
         NSExtension:
           NSExtensionPointIdentifier: com.apple.widgetkit-extension
     settings:

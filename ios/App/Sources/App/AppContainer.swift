@@ -17,6 +17,10 @@ final class AppContainer {
     var presentation: Presentation?
     /// Queued modal to present once the current sheet finishes dismissing (see `present` + RootView onDismiss).
     var pendingPresentation: Presentation?
+    /// True from the moment `present` starts a swap-dismiss until RootView's `onDismiss` fires.
+    /// Presenting during that window is dropped by SwiftUI, so `present` must keep queueing —
+    /// `presentation == nil` alone can't distinguish "no sheet" from "dismiss in flight".
+    private var dismissInFlight = false
     var meta: CorpusMeta?
 
     /// The SwiftData store for saved verses. Built explicitly (never via the implicit
@@ -66,14 +70,23 @@ final class AppContainer {
     /// `onDismiss` then presents the queued modal AFTER the dismiss animation completes (presenting
     /// during the dismiss is dropped by SwiftUI).
     func present(_ p: Presentation) {
-        guard presentation != nil else { presentation = p; return }
-        pendingPresentation = p
-        presentation = nil
+        if presentation != nil {
+            pendingPresentation = p
+            dismissInFlight = true
+            presentation = nil
+        } else if dismissInFlight {
+            // A swap-dismiss is still animating; presenting now would be silently dropped by
+            // SwiftUI. Replace the queued modal — latest intent wins (rapid taps).
+            pendingPresentation = p
+        } else {
+            presentation = p
+        }
     }
 
     /// Called from RootView's sheet onDismiss: flush any queued modal. If another modal was already
     /// presented in the meantime (rapid taps), keep it and drop the stale queue entry.
     func flushPendingPresentation() {
+        dismissInFlight = false
         guard let pending = pendingPresentation else { return }
         pendingPresentation = nil
         guard presentation == nil else { return }

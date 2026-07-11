@@ -16,8 +16,11 @@ struct ShabadSheet: View {
             LoadStateView(state: state) { lines in
                 List {
                     ForEach(lines, id: \.id) { line in
+                        // Full line identity: Share carries the Ang citation, and Save /
+                        // Explore-related work from inside the sheet (never an "Ang 0" card).
                         LineRow(gurmukhi: line.gurmukhi, translit: line.translit,
-                                meta: line.isRahao ? "ਰਹਾਉ · refrain" : "", en: line.en)
+                                meta: line.isRahao ? "ਰਹਾਉ · refrain" : "", en: line.en,
+                                lineId: line.id, ang: line.ang, compId: line.compId)
                             .listRowSeparator(.hidden)
                     }
                     if let ang = openAng {

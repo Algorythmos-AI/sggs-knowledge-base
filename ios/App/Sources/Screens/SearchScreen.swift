@@ -79,6 +79,7 @@ struct SearchScreen: View {
     private func consumePendingQuery() {
         guard let model, let q = container.router.pendingSearchQuery, !q.isEmpty else { return }
         model.query = q
+        model.mode = "auto"   // a deep-linked query must not inherit a sticky Verify/theme mode
         container.router.pendingSearchQuery = nil
     }
 
@@ -136,7 +137,7 @@ struct SearchScreen: View {
                     ForEach(out.results, id: \.id) { line in
                         LineRow(gurmukhi: line.gurmukhi, translit: line.translit, meta: line.metaLine,
                                 en: line.en, lineId: line.id, ang: line.ang, compId: line.compId) {
-                            container.presentation = .shabad(compId: line.compId)
+                            container.present(.shabad(compId: line.compId))
                         }
                         .listRowSeparator(.hidden)
                     }

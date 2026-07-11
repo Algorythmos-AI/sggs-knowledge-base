@@ -51,7 +51,20 @@ struct MoreScreen: View {
                 }
                 Section {
                     // Insights & Constellation moved to the Explore tab (nav restructure)
-                    NavigationLink { SavedScreen() } label: { Label("Saved verses", systemImage: "bookmark") }
+                    if container.modelContainer != nil {
+                        NavigationLink { SavedScreen() } label: { Label("Saved verses", systemImage: "bookmark") }
+                    } else {
+                        // SavedScreen's @Query fatal-errors without a model container in the
+                        // environment — when even the in-memory fallback failed, show why
+                        // instead of a crashing link (mirrors the RootView banner copy).
+                        Label {
+                            VStack(alignment: .leading) {
+                                Text("Saved verses").foregroundStyle(.secondary)
+                                Text("Unavailable this session — the bookmarks store could not be opened.")
+                                    .font(.caption).foregroundStyle(.tertiary)
+                            }
+                        } icon: { Image(systemName: "bookmark.slash").foregroundStyle(.secondary) }
+                    }
                     NavigationLink { AboutScreen() } label: { Label("About & credits", systemImage: "info.circle") }
                 }
             }

@@ -7,8 +7,7 @@ import GurbaniSearchKit
 struct ConstellationScreen: View {
     @Environment(AppContainer.self) private var container
     @State private var concept = "naam"
-    @State private var result: ConstellationResult?
-    @State private var loading = false
+    @State private var state: LoadState<ConstellationResult> = .loading
 
     private var concepts: [ConceptRow] { container.meta?.concepts ?? [] }
 
@@ -26,20 +25,20 @@ struct ConstellationScreen: View {
             }
             .padding(.top, 8)
 
-            if let result {
-                Text("\(result.total) verses carry this theme · grouped by their closest companion theme")
-                    .font(.caption).foregroundStyle(.secondary)
-                    .multilineTextAlignment(.center).padding(.horizontal)
-                if result.clusters.isEmpty {
-                    ContentUnavailableView("No companion themes", systemImage: "circle.dotted")
-                } else {
-                    ConstellationMap(center: concept, clusters: result.clusters) {
-                        container.presentation = .cluster(center: concept, cluster: $0)
+            LoadStateView(state: state) { result in
+                VStack(spacing: 12) {
+                    Text("\(result.total) verses carry this theme · grouped by their closest companion theme")
+                        .font(.caption).foregroundStyle(.secondary)
+                        .multilineTextAlignment(.center).padding(.horizontal)
+                    if result.clusters.isEmpty {
+                        ContentUnavailableView("No companion themes", systemImage: "circle.dotted")
+                    } else {
+                        ConstellationMap(center: concept, clusters: result.clusters) {
+                            container.present(.cluster(center: concept, cluster: $0))
+                        }
+                        .padding()
                     }
-                    .padding()
                 }
-            } else {
-                ProgressView().frame(maxWidth: .infinity, maxHeight: .infinity)
             }
             Spacer(minLength: 0)
         }
@@ -50,10 +49,16 @@ struct ConstellationScreen: View {
     }
 
     private func load() async {
-        guard let corpus = container.corpus else { return }
-        loading = true; result = nil
-        result = try? await corpus.constellation(concept: concept)
-        loading = false
+        guard let corpus = container.corpus else { state = .failed("No database"); return }
+        state = .loading
+        do {
+            let r = try await corpus.constellation(concept: concept)
+            // .task(id: concept) cancels on switch — never let theme A's late reply
+            // overwrite theme B's view, and never swallow a real failure into a spinner.
+            if Task.isCancelled { return }
+            state = .loaded(r)
+        } catch is CancellationError {
+        } catch { state = .failed(UserMessage.load(error)) }
     }
 }
 

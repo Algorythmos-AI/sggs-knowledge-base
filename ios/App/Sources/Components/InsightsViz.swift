@@ -299,7 +299,9 @@ struct ProgressionSection: View {
             if container.meta == nil { await container.loadMeta() }
             let name = raag ?? container.meta?.raags.first?.name
             guard let name else { return }
-            progression = await corpus.progression(raag: name)
+            let p = await corpus.progression(raag: name)
+            if Task.isCancelled { return }   // fast picker flips must not chart a stale raag
+            progression = p
         }
     }
 

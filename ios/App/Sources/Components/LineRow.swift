@@ -49,10 +49,13 @@ struct LineRow: View {
             }
             ShareLink(item: shareText) { Label("Share", systemImage: "square.and.arrow.up") }
             Button {
-                if let img = VerseCardRenderer.render(gurmukhi: gurmukhi, translit: translit,
-                                                      en: englishPref ? en : nil, ang: ang) {
+                // A card is only ever rendered WITH its Ang citation — a call site that didn't
+                // provide line identity falls back to the plain text share (which self-gates).
+                if ang > 0, let img = VerseCardRenderer.render(gurmukhi: gurmukhi, translit: translit,
+                                                               en: englishPref ? en : nil, ang: ang) {
                     presentShareSheet(items: [img])
                 } else {
+                    assert(ang > 0, "LineRow used without line identity — pass lineId/ang/compId")
                     presentShareSheet(items: [shareText])
                 }
             } label: { Label("Share as card", systemImage: "photo") }
