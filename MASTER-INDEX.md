@@ -1,6 +1,6 @@
 # SGGS Knowledge Base — Master Index
 
-**Source:** `Siri-Guru-Granth-Sahib-in-Gurmukhi-with-Index.pdf` (1,483 pages → 1,430 Angs) · v2.11.0, built 2026-06-26 · 60,658 lines (char-for-char reconciled with the source) · 29,244 distinct words · 54 themes · per-Bhatt Swaiyye attribution · Vaar pauris correctly attributed.
+**Source:** `Siri-Guru-Granth-Sahib-in-Gurmukhi-with-Index.pdf` (1,483 pages → 1,430 Angs) · v2.12.0, built 2026-07-11 · 60,658 lines (char-for-char reconciled with the source) · 29,244 distinct words · 54 themes · per-Bhatt Swaiyye attribution · Vaar pauris correctly attributed · raag-timing knowledge layer (attributed claims, divergence preserved).
 
 ## Use it
 
@@ -21,6 +21,8 @@
 | `webapp/` | `serve.py` (stdlib server) + `static/` (prebuilt Astro multi-page UI) + README |
 | `Answer-Protocol.md` | Faithfulness rules for answering |
 | `Validation-Report.md` | All quality gates, checks, corrections & known limits |
+| `Raag_Timing_Knowledge_Layer.md` | Raag timing as attributed claims (pahar clock, divergence policy) + bani-forms metadata; schema, derivation rules, runbook |
+| `pipeline/timing/` + `audit/scripture-baseline.json` | Timing-layer migrations/seed/derivation + the committed per-table scripture integrity baseline (`guard_scripture.py` gate) |
 
 ## Line record (every one of the 60,658 lines)
 
