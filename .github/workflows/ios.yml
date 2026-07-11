@@ -1,7 +1,11 @@
 name: iOS fidelity gate
 
-# Proves the Swift search/verify/reader/analytics core stays byte-for-byte with the Python backend,
-# on the VENDORED SQLite 3.51.0 (the engine the app ships). Runs on every push / PR.
+# Two independent gates on every push / PR:
+#   parity — the Swift search/verify/reader/analytics core stays byte-for-byte with the
+#            Python backend, on the VENDORED SQLite 3.51.0 (the engine the app ships),
+#            for BOTH DB profiles (personal incl. English/timing; public Gurmukhi-only).
+#   app    — the SGGS app target builds and its unit + UI tests pass on a simulator.
+# Keeping them separate makes a kit-parity failure distinguishable from an app failure.
 
 on:
   push:
@@ -36,3 +40,42 @@ jobs:
           test "$EXPECTED" = "$ACTUAL"
       - name: Kit parity tests on the vendored SQLite 3.51.0 (the fidelity gate)
         run: swift test --package-path ios/Packages/GurbaniSearchKit
+
+  # The app target: unit tests (integration + launch-cache) and XCUITests on a simulator.
+  # The xcodeproj is generated (not committed); the DB is rebuilt deterministically per job.
+  app:
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          lfs: true
+      - name: Pull the Git-LFS source DB
+        run: git lfs pull --include "db/sggs.sqlite"
+      - name: Build the bundled (personal-profile) iOS DB
+        run: python3 pipeline/build_ios_db.py --profile personal
+      - name: Install XcodeGen
+        run: brew install xcodegen
+      - name: Generate SGGS.xcodeproj
+        run: xcodegen generate --spec ios/App/project.yml --project ios/App
+      - name: Resolve an available iPhone simulator
+        run: |
+          UDID=$(xcrun simctl list devices available -j | python3 -c "
+          import json,sys
+          d=json.load(sys.stdin)['devices']
+          devs=[dev for k in sorted(d, reverse=True) for dev in d[k]
+                if dev.get('isAvailable') and dev['name'].startswith('iPhone')]
+          print(devs[0]['udid'])")
+          echo "SIM_UDID=$UDID" >> "$GITHUB_ENV"
+          xcrun simctl boot "$UDID" || true
+      - name: Build for testing
+        run: |
+          xcodebuild build-for-testing -project ios/App/SGGS.xcodeproj -scheme SGGS \
+            -destination "id=$SIM_UDID" CODE_SIGNING_ALLOWED=NO | tail -40
+      - name: Unit tests (SGGSTests)
+        run: |
+          xcodebuild test-without-building -project ios/App/SGGS.xcodeproj -scheme SGGS \
+            -destination "id=$SIM_UDID" -only-testing:SGGSTests CODE_SIGNING_ALLOWED=NO | tail -60
+      - name: UI tests (SGGSUITests)
+        run: |
+          xcodebuild test-without-building -project ios/App/SGGS.xcodeproj -scheme SGGS \
+            -destination "id=$SIM_UDID" -only-testing:SGGSUITests CODE_SIGNING_ALLOWED=NO | tail -80

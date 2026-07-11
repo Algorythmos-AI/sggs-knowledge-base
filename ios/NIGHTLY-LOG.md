@@ -106,3 +106,26 @@
 - Independent re-review of the P1–P3 diff: found 1 real bug (LineRow "Explore related" bypassed present()
   → dropped sheet from inside ClusterSheet) + 2 latent (double-present race, Router deeplink). All fixed.
 - Full suite 15/15 green; kit parity 6 suites.
+
+## P5 (full-parity plan, Phase 0–1): DB profiles, English kit layer, reliability, CI app gate
+- DB now builds in two PROFILES (build_ios_db.py --profile personal|public): personal (bundled)
+  keeps translations+fts_en per NOTICE.md w/ build-time license warning; public stays Gurmukhi-only
+  as a git-ignored artifact. Both carry the v2.12.0 timing tables (previous bundle predated them).
+  Scripture checksum gate unchanged; scripture_sha256 identical across profiles.
+- Contract grew 3 suites: golden_timing (83) + golden_analytics (56) + golden_pahar (2,183 from
+  the real pahar.js under TZ=UTC; the 47-case gate is now a cross-language contract). Generator
+  gained --suites= with merge-safe _meta.json.
+- English layer live in the kit at byte parity: search_en tier (explicit 'english' mode + auto
+  waterfall position after variant, before honorific-drop), attach_translations on ang/shabad/
+  line-neighbors (NOT hukam — web parity), optional `en` on SearchLine/ReaderLine/Neighbor.
+  golden_search 62 (8 english w/ results), golden_reader 27 w/ per-line ens asserted verbatim.
+  New DegradationParityTests (4) pin the public profile to today's EN-less behavior. Kit 10/10.
+- Reliability: SwiftData container now built explicitly w/ fallback ladder (persistent →
+  recreate → in-memory → nil) + degraded banner + Save hidden when nil — the .modelContainer(for:)
+  fatalError launch path is gone. Launch-hash cache (UserDefaults fingerprint: sha+size+mtime+
+  bundle version+manifest sha) skips the ~100MB streaming SHA when unchanged; structural checks
+  still run every launch; failures clear the cache (fail-closed unchanged; threat model in-file).
+  IntegrityFailView gained a Verify-again retry. LaunchCacheTests (3) cover hit/miss/garbage.
+- CI: new `app` job — xcodegen → build-for-testing → SGGSTests + SGGSUITests on a resolved
+  simulator; parity job builds BOTH profiles. Local: 18/18 app tests green (8 unit + 10 UI),
+  zero app-source warnings under Swift 6 strict concurrency.

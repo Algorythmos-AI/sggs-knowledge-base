@@ -40,7 +40,11 @@ struct LineRow: View {
             }
             ShareLink(item: gurmukhi) { Label("Share", systemImage: "square.and.arrow.up") }
             if let lineId {
-                Button { save(lineId) } label: { Label("Save", systemImage: "bookmark") }
+                // Save needs a live SwiftData container; when even the in-memory fallback failed
+                // the action is hidden rather than crashing on \.modelContext access.
+                if container.modelContainer != nil {
+                    Button { save(lineId) } label: { Label("Save", systemImage: "bookmark") }
+                }
                 Button {
                     container.present(.trail(TrailStart(id: lineId, gurmukhi: gurmukhi,
                                                         translit: translit, ang: ang, compId: compId)))

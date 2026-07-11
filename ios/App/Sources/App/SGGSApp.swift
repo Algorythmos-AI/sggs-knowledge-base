@@ -7,14 +7,23 @@ struct SGGSApp: App {
 
     var body: some Scene {
         WindowGroup {
-            RootView()
-                .environment(container)
-                .task {
-                    await container.runIntegrity()
-                    await container.loadMeta()
+            // The SwiftData container is built (with fallbacks) in AppContainer — never via the
+            // implicit `.modelContainer(for:)`, which fatalErrors on an unopenable store. If even
+            // the in-memory fallback failed (container nil), the app still runs: scripture
+            // reading must never be hostage to the bookmarks store.
+            Group {
+                if let modelContainer = container.modelContainer {
+                    RootView().modelContainer(modelContainer)
+                } else {
+                    RootView()
                 }
-                .onOpenURL { url in container.router.handle(url, container: container) }
+            }
+            .environment(container)
+            .task {
+                await container.runIntegrity()
+                await container.loadMeta()
+            }
+            .onOpenURL { url in container.router.handle(url, container: container) }
         }
-        .modelContainer(for: SavedLine.self)
     }
 }
