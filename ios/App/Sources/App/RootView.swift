@@ -4,7 +4,10 @@ import SwiftUI
 struct RootView: View {
     @Environment(AppContainer.self) private var container
     @AppStorage("sggs_appearance") private var appearance = "system"
+    @AppStorage(AccentPalette.storageKey) private var accentChoice = AccentPalette.saffron.rawValue
     @State private var savedStoreNoticeDismissed = false
+
+    private var palette: AccentPalette { AccentPalette(rawValue: accentChoice) ?? .saffron }
 
     var body: some View {
         @Bindable var c = container
@@ -58,7 +61,8 @@ struct RootView: View {
                 }
             }
         }
-        .tint(Brand.saffron)
+        .tint(palette.accent)
+        .environment(\.palette, palette)
         .preferredColorScheme(appearance == "light" ? .light : appearance == "dark" ? .dark : nil)
     }
 }
@@ -70,13 +74,13 @@ struct IntegrityFailView: View {
     @State private var retrying = false
     var body: some View {
         VStack(spacing: 14) {
-            Image(systemName: "exclamationmark.shield").font(.largeTitle).foregroundStyle(.red)
+            Image(systemName: "exclamationmark.shield").font(.largeTitle).foregroundStyle(Ink.negative)
             Text("Scripture integrity check failed").font(.headline)
             Text("The app will not display scripture that cannot be verified against the certified corpus.")
                 .font(.subheadline).foregroundStyle(.secondary).multilineTextAlignment(.center)
             if let report {
                 ForEach(report.checks.filter { !$0.passed }) { c in
-                    Text("• \(c.name)").font(.caption).foregroundStyle(.red)
+                    Text("• \(c.name)").font(.caption).foregroundStyle(Ink.negative)
                 }
             }
             if let onRetry {

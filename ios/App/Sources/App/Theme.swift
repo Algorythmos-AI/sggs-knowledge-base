@@ -1,9 +1,13 @@
 import SwiftUI
 
-/// Brand tokens (mirrors the web's saffron/gold identity) + the Sant Lipi scripture font.
+/// Brand tokens (the web's saffron/gold identity, tuned per scheme) + the Sant Lipi
+/// scripture font. These are the FIXED brand colors (launch, About, integrity screens);
+/// accent-aware components read @Environment(\.palette) instead — see DesignTokens.swift.
+/// The light saffron is #E06E09 (2% deeper than the web's #E8730C) so it clears 3:1 on
+/// the paper surfaces; the AccentColor asset is pinned to these values by ThemeContrastTests.
 enum Brand {
-    static let saffron = Color(red: 0xE8 / 255, green: 0x73 / 255, blue: 0x0C / 255)
-    static let gold = Color(red: 0xB0 / 255, green: 0x7D / 255, blue: 0x12 / 255)
+    static let saffron = AccentPalette.saffron.accent
+    static let gold = AccentPalette.gold.accent
 
     /// The bundled Gurmukhi scripture font (variable; default instance). Scales with Dynamic Type.
     static func gurmukhi(_ size: CGFloat, relativeTo style: Font.TextStyle = .body) -> Font {
@@ -41,8 +45,8 @@ enum Theme {
     /// web's display convention.
     static func echoBand(_ score: Double) -> (label: String, color: Color) {
         switch score {
-        case 0.65...: return ("Strong echo", .green)
-        case 0.45..<0.65: return ("Related", Brand.gold)
+        case 0.65...: return ("Strong echo", Ink.positive)
+        case 0.45..<0.65: return ("Related", AccentPalette.gold.accentText)
         default: return ("Faint echo", .secondary)
         }
     }
@@ -51,14 +55,20 @@ enum Theme {
 }
 
 /// The standard content card (Explore hub, Lineage profiles, Insights panels).
+/// Elevation is scheme-appropriate: a soft resting shadow in light; a hairline border in
+/// dark (shadows die on warm ink — the border does the layering there).
 struct Card<Content: View>: View {
+    @Environment(\.colorScheme) private var scheme
     @ViewBuilder var content: Content
     var body: some View {
         content
             .frame(maxWidth: .infinity, alignment: .leading)
             .padding(Theme.Space.l)
-            .background(Color(.secondarySystemGroupedBackground),
-                        in: RoundedRectangle(cornerRadius: Theme.Radius.card))
+            .background(Ink.card, in: RoundedRectangle(cornerRadius: Theme.Radius.card))
+            .overlay(RoundedRectangle(cornerRadius: Theme.Radius.card)
+                .strokeBorder(scheme == .dark ? Ink.hairline : Color.clear))
+            .shadow(color: scheme == .dark ? .clear : Elevation.cardShadowColor,
+                    radius: Elevation.cardShadowRadius, y: Elevation.cardShadowY)
     }
 }
 
@@ -73,7 +83,7 @@ struct StatTile: View {
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(Theme.Space.m)
-        .background(Color(.tertiarySystemGroupedBackground),
-                    in: RoundedRectangle(cornerRadius: Theme.Radius.chip))
+        .background(Ink.raised, in: RoundedRectangle(cornerRadius: Theme.Radius.chip))
+        .overlay(RoundedRectangle(cornerRadius: Theme.Radius.chip).strokeBorder(Ink.hairline))
     }
 }
