@@ -291,6 +291,12 @@ final class SGGSUITests: XCTestCase {
         app.tabBars.buttons["Explore"].tap()
         _ = app.staticTexts["Explore the Granth"].waitForExistence(timeout: 8)
         shot("explore_hub")
+        let index = app.buttons["Index"].firstMatch
+        if index.waitForExistence(timeout: 8) { index.tap() }
+        _ = app.navigationBars["Index"].waitForExistence(timeout: 8)
+        _ = app.staticTexts["MAJOR COMPOSITIONS — QUICK ACCESS"].waitForExistence(timeout: 8)
+        shot("index")
+        app.navigationBars.buttons.firstMatch.tap()   // back to the hub
         let themes = app.buttons["Themes"].firstMatch
         if themes.waitForExistence(timeout: 8) { themes.tap() }
         _ = app.navigationBars["Themes"].waitForExistence(timeout: 8)
