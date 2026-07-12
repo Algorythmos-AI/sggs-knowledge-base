@@ -33,12 +33,22 @@ only a human with assistive tech can judge. Run before any release-readiness sig
 
 ## Other
 
-9. **Reduce Motion** — the network graph never animates a live simulation (settled before
-   display by design); the Clock dial has no continuous animation; sheets use system motion.
-10. **Increase Contrast** — saffron-on-white chips remain legible (borderline ramp — audit
-    each release; tokens live in Theme.swift).
+9. **Reduce Motion** — every app animation routes through Components/Motion.swift and
+   returns nil under Reduce Motion: verify the Reader page-turn is an instant swap, pills
+   don't spring, pressable cards don't scale. The network graph never animates a live
+   simulation (settled before display by design); the Clock dial has no continuous animation.
+10. **Increase Contrast** — every token carries an Increase-Contrast leg (DesignTokens.swift,
+    enforced by ThemeContrastTests across all 4 accents × both schemes). Spot-check: warm
+    accents' selected pills flip to white-on-deepened-fill in light+IC (by design); dark
+    surfaces get stronger hairlines.
 11. **Copy fidelity** — Copy verse / Share put the VERBATIM Gurmukhi (+ "— Sri Guru Granth
     Sahib, Ang N" citation on Share) on the pasteboard, never the saroop display form.
+    Share-as-card refuses to render without a real Ang citation (falls back to text share).
+12. **Accent picker** (More → Display) — each swatch reads "<name> accent" with a selected
+    trait; switching re-tints every tab live without resetting navigation; the choice
+    persists across launches (covered by testAccentPickerSwitchesAndPersists).
+13. **Both appearances** — run passes 1–8 in light AND dark: dark uses the designed warm-ink
+    ramp (never pure black); scripture on the Reader's paper/ink surface stays ≥7:1.
 
 Known deviations (deliberate):
 - The transliteration is NOT in the VoiceOver label: it is redundant phonetics for a

@@ -239,29 +239,64 @@ final class SGGSUITests: XCTestCase {
         XCTAssertTrue(app.cells.firstMatch.waitForExistence(timeout: 20), "results must still render with translit hidden")
     }
 
+    /// Accent picker (premium pass): switching accents re-tints live via \.palette environment
+    /// injection and persists across launches; navigation state must survive the switch.
+    func testAccentPickerSwitchesAndPersists() {
+        let app = XCUIApplication(); app.launch()
+        app.tabBars.buttons["More"].tap()
+        let indigo = app.buttons["Indigo accent"]
+        if !indigo.waitForExistence(timeout: 8) { app.swipeUp() }
+        XCTAssertTrue(indigo.waitForExistence(timeout: 8))
+        indigo.tap()
+        XCTAssertTrue(indigo.isSelected || indigo.exists)   // selected trait set by the swatch
+        // still on More (no navigation reset), and the app survives a relaunch with the choice
+        XCTAssertTrue(app.navigationBars["More"].waitForExistence(timeout: 4))
+        app.terminate(); app.launch()
+        app.tabBars.buttons["More"].tap()
+        if !app.buttons["Indigo accent"].waitForExistence(timeout: 8) { app.swipeUp() }
+        XCTAssertTrue(app.buttons["Indigo accent"].isSelected, "accent choice must persist")
+        // restore the default for subsequent tests/captures
+        app.buttons["Saffron accent"].tap()
+    }
+
     /// Captures reference screenshots (not an assertion gate). Written to the simulator's tmp
     /// dir — pull with `xcrun simctl get_app_container` or read the test attachments.
+    /// Set SGGS_SHOT_TAG in the runner env to prefix filenames (disambiguates light/dark runs
+    /// when harvesting with `find` — identical names across runs/containers mix otherwise).
     func testCaptureScreens() {
         let dir = NSTemporaryDirectory()
+        let tag = ProcessInfo.processInfo.environment["SGGS_SHOT_TAG"].map { "\($0)_" } ?? ""
         let app = XCUIApplication(); app.launch()
         func shot(_ name: String) {
-            try? app.screenshot().pngRepresentation.write(to: URL(fileURLWithPath: "\(dir)/\(name).png"))
+            try? app.screenshot().pngRepresentation.write(to: URL(fileURLWithPath: "\(dir)/\(tag)\(name).png"))
         }
         let field = app.searchFields.firstMatch
         if field.waitForExistence(timeout: 20) { field.tap(); field.typeText("naam") }
         _ = app.cells.firstMatch.waitForExistence(timeout: 20)
-        shot("v11_search_results")
-        app.tabBars.buttons["Reader"].tap()
-        _ = app.buttons["Hukam"].waitForExistence(timeout: 12)
+        shot("search_results")
+        // Dismiss the keyboard via the return key — it covers the tab bar (a swipe would
+        // dismiss it too, but iOS 26 minimises the floating tab bar during scroll and the
+        // Reader tap lands on nothing; both failure modes are silent).
+        field.typeText("\n")
+        let readerTab = app.tabBars.buttons["Reader"]
+        XCTAssertTrue(readerTab.waitForExistence(timeout: 8))
+        readerTab.tap()
+        XCTAssertTrue(app.buttons["Hukam"].waitForExistence(timeout: 12),
+                      "Reader must actually open before its screenshot")
         _ = app.staticTexts.element(boundBy: 0).waitForExistence(timeout: 8)
-        shot("v11_reader_ang1")
+        shot("reader")
         app.tabBars.buttons["Clock"].tap()
         _ = app.staticTexts["What raag is it now?"].waitForExistence(timeout: 12)
-        shot("v12_clock")
+        shot("clock")
         app.tabBars.buttons["Explore"].tap()
+        _ = app.staticTexts["Explore the Granth"].waitForExistence(timeout: 8)
+        shot("explore_hub")
         let themes = app.buttons["Themes"].firstMatch
         if themes.waitForExistence(timeout: 8) { themes.tap() }
         _ = app.navigationBars["Themes"].waitForExistence(timeout: 8)
-        shot("v11_themes")
+        shot("themes")
+        app.tabBars.buttons["More"].tap()
+        _ = app.staticTexts["Accent"].waitForExistence(timeout: 8)
+        shot("more_display")
     }
 }

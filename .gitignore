@@ -48,3 +48,4 @@ db/backups/
 ios/Resources/sggs-ios-public.manifest.json
 baseline_shots/
 ios/App/*.log
+new_shots/
