@@ -301,6 +301,11 @@ final class SGGSUITests: XCTestCase {
         if themes.waitForExistence(timeout: 8) { themes.tap() }
         _ = app.navigationBars["Themes"].waitForExistence(timeout: 8)
         shot("themes")
+        app.navigationBars.buttons.firstMatch.tap()   // back to the hub
+        let lineage = app.buttons["Lineage"].firstMatch
+        if lineage.waitForExistence(timeout: 8) { lineage.tap() }
+        _ = app.staticTexts["30 voices · 12th–17th century"].waitForExistence(timeout: 8)
+        shot("lineage")
         app.tabBars.buttons["More"].tap()
         _ = app.staticTexts["Accent"].waitForExistence(timeout: 8)
         shot("more_display")

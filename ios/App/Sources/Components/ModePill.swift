@@ -8,6 +8,8 @@ import SwiftUI
 struct ModePill: View {
     let title: String
     var systemImage: String? = nil
+    /// Optional leading legend dot (kind color-coding on Lineage). Independent of selection.
+    var dot: Color? = nil
     let isSelected: Bool
     /// Preserved verbatim for XCUITest (`mode_auto`, `insights_Network`, …).
     var accessibilityID: String? = nil
@@ -18,6 +20,7 @@ struct ModePill: View {
     var body: some View {
         Button(action: action) {
             HStack(spacing: 5) {
+                if let dot { Circle().fill(dot).frame(width: 7, height: 7) }
                 if let systemImage { Image(systemName: systemImage).font(.caption) }
                 Text(title)
             }
