@@ -91,18 +91,8 @@ struct SearchScreen: View {
                 ScrollView(.horizontal, showsIndicators: false) {
                     HStack(spacing: Theme.Space.s) {
                         ForEach(modes, id: \.id) { m in
-                            let selected = model.mode == m.id
-                            Button { model.mode = m.id } label: {
-                                Text(m.label)
-                                    .font(.subheadline.weight(selected ? .semibold : .regular))
-                                    .padding(.horizontal, Theme.Space.m).padding(.vertical, 6)
-                                    .background(Capsule().fill(selected ? Theme.accent.opacity(0.18)
-                                                                        : Color(.tertiarySystemFill)))
-                                    .foregroundStyle(selected ? Theme.accent : .primary)
-                            }
-                            .buttonStyle(.plain)
-                            .accessibilityAddTraits(selected ? [.isSelected] : [])
-                            .accessibilityIdentifier("mode_\(m.id)")
+                            ModePill(title: m.label, isSelected: model.mode == m.id,
+                                     accessibilityID: "mode_\(m.id)") { model.mode = m.id }
                         }
                     }
                     .padding(.horizontal)

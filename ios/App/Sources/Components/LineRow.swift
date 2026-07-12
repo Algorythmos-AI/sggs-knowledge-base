@@ -22,6 +22,7 @@ struct LineRow: View {
 
     @Environment(\.modelContext) private var modelContext
     @Environment(AppContainer.self) private var container
+    @Environment(\.colorScheme) private var colorScheme
     @AppStorage("sggs_translit") private var translitPref = true
     @AppStorage("sggs_show_english") private var englishPref = true
 
@@ -52,7 +53,8 @@ struct LineRow: View {
                 // A card is only ever rendered WITH its Ang citation — a call site that didn't
                 // provide line identity falls back to the plain text share (which self-gates).
                 if ang > 0, let img = VerseCardRenderer.render(gurmukhi: gurmukhi, translit: translit,
-                                                               en: englishPref ? en : nil, ang: ang) {
+                                                               en: englishPref ? en : nil, ang: ang,
+                                                               scheme: colorScheme) {
                     presentShareSheet(items: [img])
                 } else {
                     assert(ang > 0, "LineRow used without line identity — pass lineId/ang/compId")

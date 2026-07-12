@@ -10,6 +10,7 @@ import GurbaniSearchKit
 /// is the full-content path (VoiceOver / Switch Control / keyboard).
 struct ClockScreen: View {
     @Environment(AppContainer.self) private var container
+    @Environment(\.palette) private var palette
     @AppStorage("sggs_clock_mode") private var mode = "fixed"     // fixed | solar
     @State private var clock: TimingClock?
     /// Lazily created in .task — a `@State = SolarLocation()` default would construct a fresh
@@ -129,10 +130,28 @@ struct ClockScreen: View {
             }
             .padding(Theme.Space.l)
         }
+        .background(Ink.canvas)
+        .contentMargins(.bottom, Theme.Space.xl, for: .scrollContent)
     }
 
+    /// The hero card: an accent ember wash over the card surface (content stays on the
+    /// AA-checked surface — the gradient is a glow, never a text background).
     private func nowCard(clock: TimingClock, pahar p: Int, boundary: Pahar.Boundary, solarLive: Bool) -> some View {
-        Card {
+        nowCardContent(clock: clock, pahar: p, boundary: boundary, solarLive: solarLive)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(Theme.Space.l)
+            .background(
+                ZStack {
+                    RoundedRectangle(cornerRadius: Theme.Radius.card).fill(Ink.card)
+                    RoundedRectangle(cornerRadius: Theme.Radius.card)
+                        .fill(LinearGradient(colors: [palette.accent.opacity(0.16), .clear],
+                                             startPoint: .topLeading, endPoint: .bottomTrailing))
+                }
+            )
+            .overlay(RoundedRectangle(cornerRadius: Theme.Radius.card).strokeBorder(Ink.hairline))
+    }
+
+    private func nowCardContent(clock: TimingClock, pahar p: Int, boundary: Pahar.Boundary, solarLive: Bool) -> some View {
             VStack(alignment: .leading, spacing: Theme.Space.s) {
                 HStack {
                     Text("What raag is it now?").font(.headline)
@@ -140,7 +159,7 @@ struct ClockScreen: View {
                     Picker("Clock mode", selection: $mode) {
                         Text("Fixed").tag("fixed"); Text("Solar").tag("solar")
                     }
-                    .pickerStyle(.segmented).frame(width: 140)
+                    .pickerStyle(.segmented).fixedSize()   // no fixed width — survives AX type sizes
                     .accessibilityIdentifier("clockModePicker")
                 }
                 Text("\(Pahar.label(p))  ·  \(windowText(p))")
@@ -161,7 +180,6 @@ struct ClockScreen: View {
                     solarControls(live: solarLive)
                 }
             }
-        }
     }
 
     @ViewBuilder private func solarControls(live: Bool) -> some View {
@@ -400,8 +418,8 @@ struct ClaimRow: View {
             }
             HStack(spacing: Theme.Space.xs) {
                 Badge(text: claim.claimType, color: claim.claimType == "primary" ? Theme.accent : .secondary)
-                Badge(text: claim.confidence, color: claim.confidence == "disputed" ? .red : .green)
-                Badge(text: claim.tradition.replacingOccurrences(of: "_", with: " "), color: .blue)
+                Badge(text: claim.confidence, color: claim.confidence == "disputed" ? Ink.negative : Ink.positive)
+                Badge(text: claim.tradition.replacingOccurrences(of: "_", with: " "), color: Ink.info)
             }
             if let season = claim.season { Text("Season: \(season)").font(.caption) }
             if let occasion = claim.occasion { Text("Occasion: \(occasion)").font(.caption) }
@@ -440,10 +458,10 @@ struct FlowChips: View {
                             if let roman = c.roman { Text(roman).font(.caption2).foregroundStyle(.secondary) }
                         }
                         .padding(.horizontal, Theme.Space.m).padding(.vertical, Theme.Space.s)
-                        .background(RoundedRectangle(cornerRadius: Theme.Radius.chip)
-                            .fill(Color(.tertiarySystemGroupedBackground)))
+                        .background(RoundedRectangle(cornerRadius: Theme.Radius.chip).fill(Ink.raised))
+                        .overlay(RoundedRectangle(cornerRadius: Theme.Radius.chip).strokeBorder(Ink.hairline))
                     }
-                    .buttonStyle(.plain)
+                    .buttonStyle(.pressableCard)
                     .accessibilityLabel("Raag \(c.roman ?? c.raagName ?? ""), read from Ang \(String(c.firstAng ?? 0))")
                 }
             }
@@ -458,17 +476,36 @@ struct ManualLocationSheet: View {
     @State private var lat = ""
     @State private var lon = ""
 
+    /// nil unless BOTH values parse AND are in range — the button stays disabled for lat 200
+    /// instead of silently dropping it (SolarLocation.setManually guards the same range).
+    private var parsed: (lat: Double, lon: Double)? {
+        guard let la = Double(lat), let lo = Double(lon), abs(la) <= 90, abs(lo) <= 180 else { return nil }
+        return (la, lo)
+    }
+    private var outOfRange: Bool {
+        if let la = Double(lat), abs(la) > 90 { return true }
+        if let lo = Double(lon), abs(lo) > 180 { return true }
+        return false
+    }
+
     var body: some View {
         NavigationStack {
             Form {
-                Section("Coordinates (stored on this device only)") {
+                Section {
                     TextField("Latitude (e.g. 31.63)", text: $lat).keyboardType(.numbersAndPunctuation)
                     TextField("Longitude (e.g. 74.87)", text: $lon).keyboardType(.numbersAndPunctuation)
+                } header: {
+                    Text("Coordinates (stored on this device only)")
+                } footer: {
+                    if outOfRange {
+                        Text("Latitude must be −90…90 and longitude −180…180.")
+                            .foregroundStyle(Ink.negative)
+                    }
                 }
                 Button("Use these coordinates") {
-                    if let la = Double(lat), let lo = Double(lon) { onSet(la, lo); dismiss() }
+                    if let p = parsed { onSet(p.lat, p.lon); dismiss() }
                 }
-                .disabled(Double(lat) == nil || Double(lon) == nil)
+                .disabled(parsed == nil)
             }
             .navigationTitle("Solar location")
             .navigationBarTitleDisplayMode(.inline)

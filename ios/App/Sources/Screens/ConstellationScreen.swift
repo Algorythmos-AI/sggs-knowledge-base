@@ -113,7 +113,7 @@ private struct ConstellationMap: View {
             Text(label).font(.caption2.weight(.semibold)).lineLimit(1).minimumScaleFactor(0.6)
             if let sub { Text(sub).font(.caption2).opacity(0.85) }
         }
-        .foregroundStyle(.white)
+        .foregroundStyle(AccentPalette.saffron.onAccent)
         .frame(width: diameter, height: diameter)
         .background(Circle().fill(fill.gradient))
     }

@@ -31,11 +31,11 @@ struct DivergenceScreen: View {
                                         VStack(alignment: .leading, spacing: Theme.Space.xs) {
                                             HStack(spacing: Theme.Space.xs) {
                                                 Badge(text: c.claimType,
-                                                      color: c.claimType == "primary" ? Theme.accent : .purple)
+                                                      color: c.claimType == "primary" ? Theme.accent : Ink.special)
                                                 Badge(text: c.confidence,
-                                                      color: c.confidence == "disputed" ? .red : .green)
+                                                      color: c.confidence == "disputed" ? Ink.negative : Ink.positive)
                                                 Badge(text: c.tradition.replacingOccurrences(of: "_", with: " "),
-                                                      color: .blue)
+                                                      color: Ink.info)
                                                 Spacer()
                                                 if let p = c.pahar {
                                                     Text("P\(p) · \(Pahar.range(p))")

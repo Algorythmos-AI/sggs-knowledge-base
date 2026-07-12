@@ -16,11 +16,9 @@ struct LoadStateView<T: Sendable, Content: View>: View {
         case .loaded(let value):
             content(value)
         case .empty:
-            ContentUnavailableView(emptyTitle, systemImage: "magnifyingglass",
-                                   description: emptyMessage.isEmpty ? nil : Text(emptyMessage))
+            EmptyStateView(title: emptyTitle, message: emptyMessage)
         case .failed(let message):
-            ContentUnavailableView("Something went wrong", systemImage: "exclamationmark.triangle",
-                                   description: Text(message))
+            EmptyStateView(title: "Something went wrong", message: message, isError: true)
         }
     }
 }

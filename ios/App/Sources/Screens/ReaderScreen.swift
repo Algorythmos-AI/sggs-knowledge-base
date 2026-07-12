@@ -10,11 +10,13 @@ final class ReaderModel {
     init(corpus: CorpusActor?) { self.corpus = corpus }
     func load(_ ang: Int) async {
         guard let corpus else { state = .failed("No database"); return }
-        state = .loading
+        // Page turns keep the current page on screen while the next loads (local SQLite,
+        // ~ms) — no spinner flash mid-read. The spinner only shows on first entry.
+        if case .loaded = state {} else { state = .loading }
         do {
             let page = try await corpus.ang(ang)
             if Task.isCancelled { return }
-            state = .loaded(page)
+            MotionGate.run(Motion.gentle) { state = .loaded(page) }
             timing = nil
             if corpus.capabilities.hasTiming, let raag = page.raag {
                 let t = await corpus.timingRaag(name: raag)
@@ -50,6 +52,8 @@ struct ReaderScreen: View {
     @AppStorage("sggs_last_ang") private var lastAng = 1
     @State private var showJump = false
     @State private var resumed = false
+    /// Which edge the incoming page enters from (next → trailing, previous → leading).
+    @State private var turnEdge: Edge = .trailing
 
     var body: some View {
         @Bindable var router = container.router
@@ -61,7 +65,8 @@ struct ReaderScreen: View {
                             LazyVStack(alignment: .leading, spacing: 14) {
                                 if let raag = page.raag {
                                     HStack(spacing: Theme.Space.s) {
-                                        Text(raag).font(.subheadline.weight(.semibold)).foregroundStyle(Brand.gold)
+                                        Text(raag).font(.subheadline.weight(.semibold))
+                                            .foregroundStyle(AccentPalette.gold.accentText)
                                         if showTiming, let chip = model.timingChipText, let t = model.timing {
                                             // metadata-only, dashed (web parity) — never part of the scripture
                                             Button {
@@ -81,7 +86,10 @@ struct ReaderScreen: View {
                                 }
                                 if let from = page.continuedFrom {
                                     Label("Continues from Ang \(String(from))", systemImage: "arrow.up.backward")
-                                        .font(.caption).foregroundStyle(.secondary)
+                                        .font(.caption)
+                                        .padding(.horizontal, Theme.Space.m).padding(.vertical, 5)
+                                        .overlay(Capsule().strokeBorder(AccentPalette.gold.accentText.opacity(0.45)))
+                                        .foregroundStyle(AccentPalette.gold.accentText)
                                 }
                                 ForEach(page.lines, id: \.id) { line in
                                     if line.isHeader {
@@ -102,28 +110,40 @@ struct ReaderScreen: View {
                             }
                             .padding()
                         }
+                        .id(page.ang)   // page identity — drives the turn transition below
+                        .transition(.asymmetric(
+                            insertion: .move(edge: turnEdge).combined(with: .opacity),
+                            removal: .opacity))
                         // horizontal page-turn; plain .gesture so vertical scrolling always wins
                         .gesture(DragGesture(minimumDistance: 40).onEnded { v in
                             guard abs(v.translation.width) > 60,
                                   abs(v.translation.width) > abs(v.translation.height) * 2 else { return }
+                            let forward = v.translation.width < 0
+                            let next = router.readerAng + (forward ? 1 : -1)
+                            guard (1...1430).contains(next) else { return }   // no haptic on a no-op edge swipe
+                            turnEdge = forward ? .trailing : .leading
                             Haptics.tap()
-                            router.openAng(router.readerAng + (v.translation.width < 0 ? 1 : -1))
+                            router.openAng(next)
                         })
+                        .contentMargins(.bottom, Theme.Space.xl, for: .scrollContent)
                     }
                 } else { Color.clear }
             }
+            .background(Ink.paper.ignoresSafeArea())
             .navigationTitle("Ang \(String(router.readerAng))")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar(focusMode ? .hidden : .visible, for: .bottomBar)
             .toolbar {
                 ToolbarItemGroup(placement: .bottomBar) {
-                    Button { router.openAng(router.readerAng - 1) } label: { Image(systemName: "chevron.left") }
+                    Button { turnEdge = .leading; router.openAng(router.readerAng - 1) }
+                        label: { Image(systemName: "chevron.left") }
                         .disabled(router.readerAng <= 1)
                         .accessibilityLabel("Previous Ang")
                     Spacer()
                     Button { Haptics.tap(); container.present(.hukam) } label: { Label("Hukam", systemImage: "sparkles") }
                     Spacer()
-                    Button { router.openAng(router.readerAng + 1) } label: { Image(systemName: "chevron.right") }
+                    Button { turnEdge = .trailing; router.openAng(router.readerAng + 1) }
+                        label: { Image(systemName: "chevron.right") }
                         .disabled(router.readerAng >= 1430)
                         .accessibilityLabel("Next Ang")
                 }
@@ -166,6 +186,11 @@ struct ReaderScreen: View {
                 }
             }
             lastAng = container.router.readerAng
+            // Returning to the tab re-fires this task; skip the reload (and the loading
+            // flash + scroll reset) when the page for this Ang is already on screen.
+            if let model, case .loaded(let page) = model.state, page.ang == container.router.readerAng {
+                return
+            }
             await model?.load(container.router.readerAng)
         }
     }
@@ -191,6 +216,11 @@ struct JumpToAngSheet: View {
                     TextField("Ang number (1–1430)", text: $text)
                         .keyboardType(.numberPad)
                         .accessibilityIdentifier("angField")
+                    if !text.trimmingCharacters(in: .whitespaces).isEmpty, typedAng == nil {
+                        // typed input must never be silently discarded in favour of the slider
+                        Text("Enter an Ang between 1 and 1430.")
+                            .font(.caption).foregroundStyle(Ink.negative)
+                    }
                     VStack(alignment: .leading, spacing: Theme.Space.xs) {
                         Slider(value: $slider, in: 1...1430, step: 1) { Text("Ang") }
                             .accessibilityIdentifier("angSlider")
@@ -202,7 +232,10 @@ struct JumpToAngSheet: View {
                     onGo(target)
                     dismiss()
                 }
-                .disabled(typedAng == nil && Int(slider) == current)
+                // invalid typed text disables Go outright — the slider only stands in when
+                // the field is empty (never silently overriding what the user typed)
+                .disabled(!text.trimmingCharacters(in: .whitespaces).isEmpty && typedAng == nil
+                          || text.trimmingCharacters(in: .whitespaces).isEmpty && Int(slider) == current)
                 .accessibilityIdentifier("goToAng")
             }
             .navigationTitle("Jump to Ang")

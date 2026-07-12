@@ -93,17 +93,7 @@ struct LineageScreen: View {
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: Theme.Space.s) {
                     ForEach(Self.kinds, id: \.id) { k in
-                        let selected = kindFilter == k.id
-                        Button { kindFilter = k.id } label: {
-                            Text(k.label)
-                                .font(.caption.weight(selected ? .semibold : .regular))
-                                .padding(.horizontal, Theme.Space.m).padding(.vertical, 5)
-                                .background(Capsule().fill(selected ? Theme.accent.opacity(0.18)
-                                                                    : Color(.tertiarySystemFill)))
-                                .foregroundStyle(selected ? Theme.accent : .primary)
-                        }
-                        .buttonStyle(.plain)
-                        .accessibilityAddTraits(selected ? [.isSelected] : [])
+                        ModePill(title: k.label, isSelected: kindFilter == k.id) { kindFilter = k.id }
                     }
                 }
             }
@@ -165,9 +155,9 @@ struct LineageScreen: View {
     private func kindColor(_ kind: String) -> Color {
         switch kind {
         case "guru": return Theme.accent
-        case "bhagat": return .blue
-        case "bhatt": return .purple
-        default: return .green
+        case "bhagat": return Ink.info
+        case "bhatt": return Ink.special
+        default: return Ink.positive
         }
     }
 
@@ -285,10 +275,10 @@ struct CompareVoicesSheet: View {
                     HStack {
                         legendDot(Theme.accent, a.roman)
                         Spacer()
-                        legendDot(.blue, b.roman)
+                        legendDot(Ink.info, b.roman)
                     }
                     if let pa, let pb {
-                        RadarCompareView(a: pa, b: pb, colorA: Theme.accent, colorB: .blue)
+                        RadarCompareView(a: pa, b: pb, colorA: Theme.accent, colorB: Ink.info)
                             .frame(height: 280)
                             .accessibilityHidden(true)   // the table below is the a11y path
                         radarTable(pa, pb)
@@ -328,7 +318,7 @@ struct CompareVoicesSheet: View {
                 GridRow {
                     Text("Theme").font(.caption.weight(.semibold))
                     Text(a.roman).font(.caption.weight(.semibold)).foregroundStyle(Theme.accent)
-                    Text(b.roman).font(.caption.weight(.semibold)).foregroundStyle(.blue)
+                    Text(b.roman).font(.caption.weight(.semibold)).foregroundStyle(Ink.info)
                 }
                 ForEach(axes, id: \.self) { axis in
                     GridRow {
@@ -346,7 +336,7 @@ struct CompareVoicesSheet: View {
             GridRow {
                 Text("").font(.caption)
                 Text(a.roman).font(.caption.weight(.semibold)).foregroundStyle(Theme.accent)
-                Text(b.roman).font(.caption.weight(.semibold)).foregroundStyle(.blue)
+                Text(b.roman).font(.caption.weight(.semibold)).foregroundStyle(Ink.info)
             }
             statRow("Lines", pa.stylometry?.nLines, pb.stylometry?.nLines)
             statRow("Compositions", pa.stylometry?.nShabads, pb.stylometry?.nShabads)

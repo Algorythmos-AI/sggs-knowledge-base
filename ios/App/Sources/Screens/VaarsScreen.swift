@@ -25,7 +25,7 @@ struct VaarsScreen: View {
                                     if let roman = v.roman { Text(roman).font(.caption).foregroundStyle(.secondary) }
                                     Spacer()
                                     if v.crossAuthor {
-                                        Badge(text: "cross-voice", color: .purple)
+                                        Badge(text: "cross-voice", color: Ink.special)
                                     }
                                 }
                                 if let title = v.title, !title.isEmpty {

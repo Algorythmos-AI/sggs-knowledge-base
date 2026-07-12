@@ -19,6 +19,7 @@ struct RaagNowEntry: TimelineEntry {
     let date: Date
     let pahar: Int
     let raags: [String]
+    let hasSnapshot: Bool
 }
 
 struct RaagNowProvider: TimelineProvider {
@@ -26,11 +27,12 @@ struct RaagNowProvider: TimelineProvider {
         let c = Calendar(identifier: .gregorian).dateComponents([.hour, .minute], from: date)
         let m = (c.hour ?? 0) * 60 + (c.minute ?? 0)
         let p = Pahar.paharFromMinutes(m)
-        return RaagNowEntry(date: date, pahar: p, raags: snapshot?.paharRaags[p] ?? [])
+        return RaagNowEntry(date: date, pahar: p, raags: snapshot?.paharRaags[p] ?? [],
+                            hasSnapshot: snapshot != nil)
     }
 
     func placeholder(in context: Context) -> RaagNowEntry {
-        RaagNowEntry(date: .now, pahar: 4, raags: ["maajh", "gaurhee", "tilang"])
+        RaagNowEntry(date: .now, pahar: 4, raags: ["maajh", "gaurhee", "tilang"], hasSnapshot: true)
     }
 
     func getSnapshot(in context: Context, completion: @escaping (RaagNowEntry) -> Void) {
@@ -57,8 +59,8 @@ struct RaagNowProvider: TimelineProvider {
 struct RaagNowWidget: Widget {
     var body: some WidgetConfiguration {
         StaticConfiguration(kind: "RaagNow", provider: RaagNowProvider()) { entry in
-            RaagNowView(entry: entry)
-                .containerBackground(.fill.tertiary, for: .widget)
+            RaagNowView(entry: entry, hasSnapshot: entry.hasSnapshot)
+                .containerBackground(for: .widget) { Ink.card }
         }
         .configurationDisplayName("Raag now")
         .description("Which raags are traditionally sung in the current watch (fixed clock).")
@@ -68,17 +70,22 @@ struct RaagNowWidget: Widget {
 
 struct RaagNowView: View {
     let entry: RaagNowEntry
+    /// Distinguishes "no snapshot yet" (open the app) from a pahar that legitimately has
+    /// no primary raags — the two used to share one misleading message.
+    let hasSnapshot: Bool
+
     var body: some View {
         VStack(alignment: .leading, spacing: 4) {
             HStack {
                 Image(systemName: "clock").font(.caption2)
                 Text(Pahar.label(entry.pahar)).font(.caption.weight(.semibold))
             }
-            .foregroundStyle(.secondary)
+            .foregroundStyle(AccentPalette.saffron.accentText)
             Text(Pahar.range(entry.pahar)).font(.caption2).foregroundStyle(.tertiary)
             Spacer(minLength: 2)
             if entry.raags.isEmpty {
-                Text(entry.pahar == 7 ? "Deliberately silent" : "Open the app to load")
+                Text(entry.pahar == 7 ? "Deliberately silent"
+                     : hasSnapshot ? "No raags named for this watch" : "Open the app to load")
                     .font(.footnote).foregroundStyle(.secondary)
             } else {
                 Text(entry.raags.prefix(4).map { $0.capitalized }.joined(separator: " · "))
@@ -104,7 +111,9 @@ struct HukamProvider: TimelineProvider {
         completion(HukamEntry(date: .now, snapshot: WidgetStore.load()))
     }
     func getTimeline(in context: Context, completion: @escaping (Timeline<HukamEntry>) -> Void) {
-        // refresh next midnight — the app rotates the hukam snapshot when opened
+        // The verse ROTATES when the app is opened (the app writes a fresh snapshot);
+        // the midnight refresh only re-reads the store so a rotation done during the day
+        // still lands by next morning. The widget copy/description must not promise daily.
         let next = Calendar(identifier: .gregorian).nextDate(
             after: .now, matching: DateComponents(hour: 0, minute: 5), matchingPolicy: .nextTime) ?? .now.addingTimeInterval(86_400)
         completion(Timeline(entries: [HukamEntry(date: .now, snapshot: WidgetStore.load())],
@@ -116,10 +125,10 @@ struct HukamWidget: Widget {
     var body: some WidgetConfiguration {
         StaticConfiguration(kind: "Hukam", provider: HukamProvider()) { entry in
             HukamView(entry: entry)
-                .containerBackground(.fill.tertiary, for: .widget)
+                .containerBackground(for: .widget) { Ink.card }
         }
         .configurationDisplayName("Hukam verse")
-        .description("A complete Hukam unit's opening verse, verbatim with its Ang.")
+        .description("A Hukam unit's opening verse, verbatim with its Ang — a new draw each time you open the app.")
         .supportedFamilies([.systemMedium, .systemLarge])
     }
 }
@@ -135,10 +144,16 @@ struct HukamView: View {
                     .lineLimit(4)
                 Spacer(minLength: 2)
                 Text(s.hukamTranslit).font(.caption2).foregroundStyle(.secondary).lineLimit(2)
-                Text("Ang \(String(s.hukamAng)) · tap to read")
-                    .font(.caption2).foregroundStyle(.tertiary)
+                HStack(spacing: 6) {
+                    RoundedRectangle(cornerRadius: 1)
+                        .fill(AccentPalette.saffron.heroGradient)
+                        .frame(width: 22, height: 2)
+                    Text("Ang \(String(s.hukamAng)) · tap to read")
+                        .font(.caption2).foregroundStyle(AccentPalette.gold.accentText)
+                }
             } else {
                 Text("ੴ").font(.custom("SantLipi-ExtraLight", size: 28))
+                    .foregroundStyle(AccentPalette.saffron.accent)
                 Text("Open SGGS once to load a Hukam.").font(.footnote).foregroundStyle(.secondary)
             }
         }

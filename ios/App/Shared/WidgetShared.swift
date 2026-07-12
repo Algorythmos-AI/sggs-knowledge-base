@@ -13,7 +13,6 @@ struct WidgetSnapshot: Codable, Sendable {
     /// Fixed-clock primary raag claims: pahar (1–8) → roman raag names, from /api/timing/clock.
     /// Precomputed so the widget needs zero SQLite/location/solar logic.
     var paharRaags: [Int: [String]]
-    var savedCount: Int
 }
 
 enum WidgetStore {

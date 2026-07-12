@@ -13,8 +13,19 @@ struct RootView: View {
         @Bindable var c = container
         @Bindable var router = container.router
         Group {
-            if container.startupError != nil {
-                IntegrityFailView(report: nil)
+            if let startupError = container.startupError {
+                // A missing/unopenable bundled DB is NOT an integrity failure — say what
+                // actually happened instead of "integrity check failed" with no detail.
+                VStack(spacing: 14) {
+                    Image(systemName: "externaldrive.badge.xmark")
+                        .font(.largeTitle).foregroundStyle(Ink.negative)
+                    Text("Scripture database unavailable").font(.headline)
+                    Text(startupError)
+                        .font(.subheadline).foregroundStyle(.secondary).multilineTextAlignment(.center)
+                    Text("Reinstalling the app restores the bundled corpus.")
+                        .font(.caption).foregroundStyle(.tertiary)
+                }
+                .padding(32)
             } else if container.integrity == nil {
                 // Still verifying — do NOT present scripture before the integrity check passes.
                 VStack(spacing: 14) {

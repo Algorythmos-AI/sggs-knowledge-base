@@ -111,9 +111,9 @@ final class AppContainer {
     }
 
     /// Refresh the <50 KB widget snapshot (App Group JSON): today's Hukam opening verse +
-    /// the fixed-clock pahar→raags table + saved count. Widgets NEVER open the corpus DB.
+    /// the fixed-clock pahar→raags table. Widgets NEVER open the corpus DB.
     /// Runs post-launch (after integrity passes) and is cheap enough to run every launch.
-    func refreshWidgetSnapshot(savedCount: Int = 0) async {
+    func refreshWidgetSnapshot() async {
         guard let corpus, integrity?.ok == true else { return }
         guard let hukam = try? await corpus.randomHukam(),
               let firstVerse = hukam.lines.first(where: { !$0.isHeader }) else { return }
@@ -130,8 +130,7 @@ final class AppContainer {
             hukamTranslit: firstVerse.translit,
             hukamAng: firstVerse.ang,
             hukamCompId: hukam.compId,
-            paharRaags: paharRaags,
-            savedCount: savedCount))
+            paharRaags: paharRaags))
         #if canImport(WidgetKit)
         WidgetCenter.shared.reloadAllTimelines()
         #endif

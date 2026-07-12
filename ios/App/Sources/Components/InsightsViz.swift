@@ -113,6 +113,12 @@ struct ThemeNetworkSection: View {
         }
         .task(id: minPPMI) {
             guard let corpus = container.corpus else { return }
+            // Debounce the continuous slider (SearchScreen pattern) — without it every tick
+            // fires a query + full force-layout; the detached layout can't be cancelled.
+            if !Task.isCancelled {
+                try? await Task.sleep(for: .milliseconds(200))
+                guard !Task.isCancelled else { return }
+            }
             let mp = minPPMI
             let loaded = (try? await corpus.themeNetwork(minPPMI: mp, limit: 1500)) ?? []
             if Task.isCancelled { return }

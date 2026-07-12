@@ -79,6 +79,7 @@ struct TrailScreen: View {
         }
         .padding()
         .background(Brand.saffron.opacity(0.08))
+        .overlay(Rectangle().frame(height: 1).foregroundStyle(Ink.hairline), alignment: .bottom)
     }
 
     private func neighborRow(_ n: Neighbor) -> some View {

@@ -46,3 +46,5 @@ db/backups/
 # .sqlite itself is already covered by ios/Resources/*.sqlite — DB artifacts are never
 # committed, CI rebuilds them deterministically)
 ios/Resources/sggs-ios-public.manifest.json
+baseline_shots/
+ios/App/*.log

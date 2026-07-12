@@ -11,8 +11,8 @@ struct VerdictView: View {
 
     private var base: String { result.verdict.components(separatedBy: "+").first ?? result.verdict }
     private var color: Color {
-        if base.hasPrefix("VERIFIED") { return .green }
-        if base == "NOT_FOUND" { return .red }
+        if base.hasPrefix("VERIFIED") { return Ink.positive }
+        if base == "NOT_FOUND" { return Ink.negative }
         return Brand.gold
     }
     private var headline: String {
@@ -47,8 +47,8 @@ struct VerdictView: View {
                         .font(.caption).foregroundStyle(.secondary)
                 }
                 Spacer()
-                if result.verdict.contains("ANG_MATCH") { Label("Ang ✓", systemImage: "checkmark").font(.caption).foregroundStyle(.green) }
-                else if result.verdict.contains("ANG_MISMATCH") { Text("Ang ✗").font(.caption).foregroundStyle(.red) }
+                if result.verdict.contains("ANG_MATCH") { Label("Ang ✓", systemImage: "checkmark").font(.caption).foregroundStyle(Ink.positive) }
+                else if result.verdict.contains("ANG_MISMATCH") { Text("Ang ✗").font(.caption).foregroundStyle(Ink.negative) }
             }
             Text(explanation).font(.subheadline).foregroundStyle(.secondary)
 

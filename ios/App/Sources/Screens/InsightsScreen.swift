@@ -33,18 +33,8 @@ struct InsightsScreen: View {
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: Theme.Space.s) {
                     ForEach(Self.views, id: \.id) { v in
-                        let selected = tab == v.id
-                        Button { tab = v.id } label: {
-                            Text(v.label)
-                                .font(.subheadline.weight(selected ? .semibold : .regular))
-                                .padding(.horizontal, Theme.Space.m).padding(.vertical, 6)
-                                .background(Capsule().fill(selected ? Theme.accent.opacity(0.18)
-                                                                    : Color(.tertiarySystemFill)))
-                                .foregroundStyle(selected ? Theme.accent : .primary)
-                        }
-                        .buttonStyle(.plain)
-                        .accessibilityAddTraits(selected ? [.isSelected] : [])
-                        .accessibilityIdentifier("insights_\(v.label)")
+                        ModePill(title: v.label, isSelected: tab == v.id,
+                                 accessibilityID: "insights_\(v.label)") { tab = v.id }
                     }
                 }
                 .padding(.horizontal)

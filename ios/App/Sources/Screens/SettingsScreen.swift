@@ -7,6 +7,7 @@ struct MoreScreen: View {
     @AppStorage("sggs_show_english") private var showEnglish = true
     @AppStorage("sggs_gurmukhi_size") private var gurmukhiSize = 24.0
     @AppStorage("sggs_appearance") private var appearance = "system"
+    @AppStorage(AccentPalette.storageKey) private var accentChoice = AccentPalette.saffron.rawValue
 
     var body: some View {
         NavigationStack {
@@ -48,6 +49,34 @@ struct MoreScreen: View {
                     Picker("Appearance", selection: $appearance) {
                         Text("System").tag("system"); Text("Light").tag("light"); Text("Dark").tag("dark")
                     }
+
+                    VStack(alignment: .leading, spacing: Theme.Space.s) {
+                        Text("Accent")
+                        HStack(spacing: Theme.Space.m) {
+                            ForEach(AccentPalette.allCases) { p in
+                                Button {
+                                    accentChoice = p.rawValue
+                                } label: {
+                                    Circle()
+                                        .fill(p.accent)
+                                        .frame(width: 32, height: 32)
+                                        .overlay {
+                                            if accentChoice == p.rawValue {
+                                                Image(systemName: "checkmark")
+                                                    .font(.caption.weight(.bold))
+                                                    .foregroundStyle(p.onAccent)
+                                            }
+                                        }
+                                        .overlay(Circle().strokeBorder(Ink.hairline))
+                                }
+                                .buttonStyle(.plain)
+                                .accessibilityLabel("\(p.label) accent")
+                                .accessibilityAddTraits(accentChoice == p.rawValue ? [.isSelected] : [])
+                            }
+                            Spacer()
+                        }
+                    }
+                    .accessibilityIdentifier("accentPicker")
                 }
                 Section {
                     // Insights & Constellation moved to the Explore tab (nav restructure)
@@ -90,7 +119,7 @@ struct AboutScreen: View {
                 Section("Integrity") {
                     ForEach(report.checks) { c in
                         Label(c.name, systemImage: c.passed ? "checkmark.circle.fill" : "xmark.circle.fill")
-                            .foregroundStyle(c.passed ? .green : .red)
+                            .foregroundStyle(c.passed ? Ink.positive : Ink.negative)
                     }
                     Text("db_sha256 \(report.dbSha256.prefix(16))…").font(.caption2).foregroundStyle(.tertiary)
                     Text("SQLite (pinned) \(report.sqliteVersion)").font(.caption2).foregroundStyle(.tertiary)
