@@ -9,8 +9,8 @@ settings:
     SWIFT_VERSION: "6.0"
     SWIFT_STRICT_CONCURRENCY: complete
     TARGETED_DEVICE_FAMILY: "1,2"
-    MARKETING_VERSION: "1.1.0"
-    CURRENT_PROJECT_VERSION: "2"
+    MARKETING_VERSION: "1.1.1"
+    CURRENT_PROJECT_VERSION: "3"
     CODE_SIGNING_ALLOWED: "NO"
     ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
     ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME: AccentColor
@@ -48,6 +48,15 @@ targets:
         PRODUCT_BUNDLE_IDENTIFIER: org.sggs.app
         INFOPLIST_FILE: Resources/Info.plist
         GENERATE_INFOPLIST_FILE: "NO"
+      configs:
+        # Release = the archive/TestFlight configuration. Fill DEVELOPMENT_TEAM with the
+        # Apple Developer Team ID once membership is active; Automatic signing then
+        # creates the App ID + App Group (group.org.sggs) profiles. Debug/CI stay unsigned
+        # (CI passes CODE_SIGNING_ALLOWED=NO on the command line, which wins).
+        Release:
+          CODE_SIGNING_ALLOWED: "YES"
+          CODE_SIGN_STYLE: Automatic
+          DEVELOPMENT_TEAM: ""
   # WidgetKit extension: links ONLY the dependency-free GurbaniPahar product + the shared
   # snapshot store — never CSQLite or the 100 MB corpus DB. Entitlements are inert on the
   # simulator (CI stays green with CODE_SIGNING_ALLOWED NO); device installs need signing.
@@ -85,6 +94,11 @@ targets:
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: org.sggs.app.widgets
+      configs:
+        Release:                      # must match the app target (same team, same App Group)
+          CODE_SIGNING_ALLOWED: "YES"
+          CODE_SIGN_STYLE: Automatic
+          DEVELOPMENT_TEAM: ""
   SGGSTests:
     type: bundle.unit-test
     platform: iOS

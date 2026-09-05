@@ -4,7 +4,7 @@
 // pahar, and a searchable/filterable claims explorer with a 24-hour timeline
 // per raag. Everything here is METADATA about raags — scripture rendering is
 // untouched; all API text passes esc() before innerHTML.
-import { $, esc, guard, store, toast, prefersReducedMotion, goReader } from './core';
+import { $, esc, guard, store, toast, prefersReducedMotion, goReader, failHTML } from './core';
 import { loadClock as loadClockShared } from './timing';
 import {
   paharFromMinutes, paharWindow, paharLabel, paharRange, fmt12,
@@ -169,9 +169,10 @@ function scrollPanelIntoView() {
 // Detail panel
 // =============================================================================
 const TRAD = (t: string) => t === 'hindustani' ? 'Hindustani' : 'Gurmat Sangeet';
+const safeHref = (u: any) => (/^https?:\/\//i.test(u || '') ? esc(u) : '');   // never javascript: etc.
 function whenText(c: any): string {
-  if (c.pahar) return `${paharLabel(c.pahar)} · ${paharRange(c.pahar)}`;
-  if (c.time_start) return `${fmt12(c.time_start)}–${fmt12(c.time_end)}${c.occasion ? ` · ${esc(c.occasion)}` : ''}`;
+  if (c.pahar) return esc(`${paharLabel(c.pahar)} · ${paharRange(c.pahar)}`);
+  if (c.time_start) return esc(`${fmt12(c.time_start)}–${fmt12(c.time_end)}`) + (c.occasion ? ` · ${esc(c.occasion)}` : '');
   if (c.season) return `${esc(c.season)} · any time`;
   if (c.occasion) return esc(c.occasion);
   return '';
@@ -180,18 +181,17 @@ function raagCard(c: any, isVariant: boolean): string {
   const others = (BYRAAG[c.raag_name] || []).filter((x: any) =>
     x !== c && (x.claim_type === 'seasonal' || x.claim_type === 'ceremonial'));
   const occ = others.map((x: any) => `<span class="occhip">${esc(x.season || x.occasion || '')}</span>`).join('');
-  const name = esc(c.raag_name).replace(/'/g, '');
   return `<div class="raagcard${isVariant ? ' is-variant' : ''}">
     <div class="rc-top">
       <div class="rc-name"><span class="gm" lang="pa">${esc(c.raag_name)}</span><span class="rc-roman">${esc(c.roman || '')}</span></div>
-      <button class="rc-read" type="button" onclick="goReader(${c.first_ang || 1}, '${name}')" aria-label="Read raag ${esc(c.roman)} in the reader">Read →</button>
+      <button class="rc-read" type="button" data-go-ang="${c.first_ang || 1}" data-go-raag="${esc(c.raag_name)}" aria-label="Read raag ${esc(c.roman)} in the reader">Read →</button>
     </div>
     <div class="rc-meta">
       <span class="cbadge cb-${esc(c.claim_type)}">${esc(c.claim_type)}</span>
       <span class="conf conf-${esc(c.confidence)}">${esc(c.confidence)}</span>
       <span class="tbadge tb-${esc(c.tradition)}">${esc(TRAD(c.tradition))}</span>
     </div>
-    <div class="rc-src">${c.source_url ? `<a href="${esc(c.source_url)}" target="_blank" rel="noopener">${esc(c.source_name)}</a>` : esc(c.source_name)}</div>
+    <div class="rc-src">${safeHref(c.source_url) ? `<a href="${safeHref(c.source_url)}" target="_blank" rel="noopener">${esc(c.source_name)}</a>` : esc(c.source_name)}</div>
     ${c.notes ? `<div class="rc-note">${esc(c.notes)}</div>` : ''}
     ${occ ? `<div class="rc-occ"><span class="rc-occ-l">also sung for</span> ${occ}</div>` : ''}
   </div>`;
@@ -288,11 +288,11 @@ function renderNow() {
     ${st.pahar === 7
       ? `<p class="quiet-note">✦ The quiet hours — no raag is assigned to the 3rd pahar of night. This silence is deliberate and canonical.</p>`
       : `<div class="now-raags">${raags.map((c: any) =>
-          `<button type="button" class="now-chip gm" lang="pa" onclick="goReader(${c.first_ang}, '${esc(c.raag_name).replace(/'/g, '')}')"
+          `<button type="button" class="now-chip gm" lang="pa" data-go-ang="${c.first_ang || 1}" data-go-raag="${esc(c.raag_name)}"
              aria-label="Read raag ${esc(c.roman)} in the reader">${esc(c.raag_name)}<span class="tr">${esc(c.roman)}</span></button>`).join('')}
-        ${seasonNow ? `<button type="button" class="now-chip gm season" lang="pa" onclick="goReader(${
+        ${seasonNow ? `<button type="button" class="now-chip gm season" lang="pa" data-go-ang="${
             (CLOCK.claims.seasonal.find((c: any) => c.raag_name === seasonNow) || {}).first_ang || 1
-          }, '${seasonNow}')" aria-label="Seasonal raag, any time of day right now">${seasonNow}<span class="tr">in season · any time</span></button>` : ''}</div>`}
+          }" data-go-raag="${esc(seasonNow)}" aria-label="Seasonal raag, any time of day right now">${esc(seasonNow)}<span class="tr">in season · any time</span></button>` : ''}</div>`}
     <div class="now-next">next: <b>${paharLabel(nb.nextPahar)}</b> in ${inWait}${
       nextRaags.length ? ` — ${nextRaags.map((c: any) => esc(c.roman)).join(', ')}` : ' — the quiet hours'}</div>
     ${st.note ? `<div class="now-fallback">${esc(st.note)}</div>` : ''}`;
@@ -351,7 +351,7 @@ function rowHTML(c: any): string {
     <td class="c-when" data-l="When"><b>${whenText(c)}</b>${c.notes ? `<div class="c-note">${esc(c.notes)}</div>` : ''}</td>
     <td class="c-tl" data-l="Across the day">${timeline(c)}</td>
     <td class="c-claim" data-l="Claim"><span class="cbadge cb-${esc(c.claim_type)}">${esc(c.claim_type)}</span><span class="conf conf-${esc(c.confidence)}">${esc(c.confidence)}</span></td>
-    <td class="c-src" data-l="Source"><span class="tbadge tb-${esc(c.tradition)}">${esc(TRAD(c.tradition))}</span><div class="c-srcname">${c.source_url ? `<a href="${esc(c.source_url)}" target="_blank" rel="noopener">${esc(c.source_name)}</a>` : esc(c.source_name)}</div></td>
+    <td class="c-src" data-l="Source"><span class="tbadge tb-${esc(c.tradition)}">${esc(TRAD(c.tradition))}</span><div class="c-srcname">${safeHref(c.source_url) ? `<a href="${safeHref(c.source_url)}" target="_blank" rel="noopener">${esc(c.source_name)}</a>` : esc(c.source_name)}</div></td>
   </tr>`;
 }
 function renderExp() {
@@ -427,4 +427,7 @@ guard(async () => {
   if (hitClaim && hitClaim.pahar) selectPahar(hitClaim.pahar);
   else if (hitClaim && hitClaim.claim_type === 'seasonal') selectSeason(hitClaim.raag_name);
   else selectPahar(currentPahar().pahar, true);      // default: the current pahar
+}, () => {
+  const nb = $('#nowBody'); if (nb) nb.innerHTML = failHTML('The Raag Clock');
+  const cd = $('#clockDetail'); if (cd) cd.innerHTML = '';
 })();

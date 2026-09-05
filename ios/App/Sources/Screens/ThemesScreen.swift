@@ -107,11 +107,11 @@ struct ThemeResultsScreen: View {
     @State private var state: LoadState<[SearchLine]> = .loading
 
     var body: some View {
-        LoadStateView(state: state) { lines in
+        LoadStateView(state: state, onRetry: { Task { await load() } }) { lines in
             List(lines, id: \.id) { line in
                 LineRow(gurmukhi: line.gurmukhi, translit: line.translit, meta: line.metaLine,
                         en: line.en, lineId: line.id, ang: line.ang, compId: line.compId) {
-                    container.present(.shabad(compId: line.compId))
+                    container.present(.shabad(compId: line.compId, focusLineId: line.id))
                 }
                 .listRowSeparator(.hidden)
             }
@@ -119,10 +119,13 @@ struct ThemeResultsScreen: View {
         }
         .navigationTitle(concept.capitalized)
         .navigationBarTitleDisplayMode(.inline)
-        .task(id: concept) {
-            guard let corpus = container.corpus else { state = .failed("No database"); return }
-            do { let t = try await corpus.theme(concept); state = t.lines.isEmpty ? .empty : .loaded(t.lines) }
-            catch { state = .failed(UserMessage.load(error)) }
-        }
+        .task(id: concept) { await load() }
+    }
+
+    private func load() async {
+        guard let corpus = container.corpus else { state = .failed("No database"); return }
+        state = .loading
+        do { let t = try await corpus.theme(concept); state = t.lines.isEmpty ? .empty : .loaded(t.lines) }
+        catch { state = .failed(UserMessage.load(error)) }
     }
 }

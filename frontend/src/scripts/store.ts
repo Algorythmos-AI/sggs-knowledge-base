@@ -6,9 +6,16 @@ export type Pin = { line_id: number; gm: string; ang: number; comp_id: number; t
 
 // shared pin affordance — emitted by search/reader/panel renderers; activated by the
 // capture-phase delegate in studytrail.ts (so it never triggers the card's own click).
-export function pinButtonHTML(id: number, ang: number, cid: number): string {
-  return `<button class="pin-btn" data-id="${id}" data-ang="${ang}" data-cid="${cid}" type="button" aria-label="Pin to study trail" title="Pin to study trail">📌</button>`;
+// `gm` is the VERBATIM Gurmukhi from the API data model — never read back from the rendered
+// DOM, which the display-only saroop painter rewrites (see saroop.ts / CLAUDE.md).
+const escAttr = (s: string) => (s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+export function pinButtonHTML(id: number, ang: number, cid: number, gm: string): string {
+  return `<button class="pin-btn" data-id="${id}" data-ang="${ang}" data-cid="${cid}" data-gm="${escAttr(gm)}" type="button" aria-label="Pin to study trail" title="Pin to study trail">📌</button>`;
 }
+// Variation Selectors (U+FE00–FE0F) only ever exist in the display layer; a stored pin that
+// carries one was captured from painted DOM by an older build and must be re-fetched verbatim.
+const HAS_VS = /[\uFE00-\uFE0F]/;
+export const needsRepair = (p: Pin) => !p.gm || HAS_VS.test(p.gm);
 const KEY = 'sggs_pins';
 export const MAX_PINS = 500;                    // hard cap so the pin set can't outgrow the localStorage quota
 export type ToggleResult = 'pinned' | 'unpinned' | 'cap' | 'quota';
@@ -56,6 +63,23 @@ export function mostRecent(): Pin | null {
 // keep every open tab/page in sync
 window.addEventListener('storage', (e) => { if (e.key === KEY) emit(); });
 
+/* ---------- repair: restore verbatim text for pins captured from painted DOM ---------- */
+export async function repairPins(): Promise<void> {
+  const bad = read().filter(needsRepair).map((p) => p.line_id);
+  if (!bad.length) return;
+  const text: Record<string, string> = {};
+  try {
+    for (let i = 0; i < bad.length; i += 250) {
+      const r = await fetch('/api/lines?ids=' + bad.slice(i, i + 250).join(','));
+      if (!r.ok) return;                                   // server not reachable → try next load
+      ((await r.json()).lines || []).forEach((l: any) => { text[String(l.id)] = l.gurmukhi || ''; });
+    }
+  } catch { return; }
+  const fresh = read(); let changed = false;
+  fresh.forEach((p) => { const g = text[String(p.line_id)]; if (g && p.gm !== g) { p.gm = g; changed = true; } });
+  if (changed) write(fresh);
+}
+
 /* ---------- ML: enrich pins with corpus-verified theme tags (one lazy batch) ---------- */
 export async function enrichThemes(): Promise<Pin[]> {
   const a = read();
@@ -65,7 +89,9 @@ export async function enrichThemes(): Promise<Pin[]> {
       const map: Record<string, string[]> = {};
       for (let i = 0; i < missing.length; i += 250) {        // chunk under the server's 300-id cap
         const slice = missing.slice(i, i + 250);
-        const d = await fetch('/api/line_concepts?ids=' + slice.join(',')).then((r) => r.json());
+        const r = await fetch('/api/line_concepts?ids=' + slice.join(','));
+        if (!r.ok) throw new Error('line_concepts ' + r.status);
+        const d = await r.json();
         Object.assign(map, d.concepts || {});
       }
       // Re-read AFTER the await: another tab — or a pin added during the fetch window — may

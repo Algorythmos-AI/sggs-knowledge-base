@@ -24,6 +24,12 @@ enum SpotlightIndex {
             withIdentifiers: [identifier(lineId: lineId, compId: compId)])
     }
 
+    /// The saved verse's own line id (so the composition opens scrolled to it).
+    static func lineId(fromIdentifier id: String) -> Int? {
+        guard id.hasPrefix("saved-"), let range = id.range(of: "-comp-") else { return nil }
+        return Int(id[id.index(id.startIndex, offsetBy: 6)..<range.lowerBound])
+    }
+
     /// Parse a Spotlight result back to its composition (nil for foreign identifiers).
     static func compId(fromIdentifier id: String) -> Int? {
         guard id.hasPrefix("saved-"), let range = id.range(of: "-comp-") else { return nil }

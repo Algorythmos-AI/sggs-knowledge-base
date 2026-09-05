@@ -42,14 +42,20 @@ struct RaagNowProvider: TimelineProvider {
     func getTimeline(in context: Context, completion: @escaping (Timeline<RaagNowEntry>) -> Void) {
         let snap = WidgetStore.load()
         var entries: [RaagNowEntry] = [entry(at: .now, snapshot: snap)]
-        // one entry per fixed-clock pahar boundary over the next 24 h (8 boundaries)
+        // one entry per fixed-clock pahar boundary over the next 24 h (8 boundaries).
+        // Boundaries are WALL-CLOCK times (6:00, 9:00, …), so each is resolved with
+        // `nextDate(matching:)` rather than by adding minutes — adding absolute time drifts
+        // by an hour across a DST change while `entry(at:)` re-derives the pahar from the clock.
         var cursor = Date.now
-        let cal = Calendar(identifier: .gregorian)
+        var cal = Calendar(identifier: .gregorian)
+        cal.timeZone = .autoupdatingCurrent
         for _ in 0..<8 {
             let c = cal.dateComponents([.hour, .minute], from: cursor)
             let m = (c.hour ?? 0) * 60 + (c.minute ?? 0)
-            let wait = Pahar.nextBoundary(m, mode: "fixed").minutes
-            cursor = cursor.addingTimeInterval(TimeInterval(wait * 60))
+            let next = Pahar.window(Pahar.paharFromMinutes(m)).end            // start of the next pahar
+            let match = DateComponents(hour: next / 60, minute: next % 60)
+            guard let at = cal.nextDate(after: cursor, matching: match, matchingPolicy: .nextTime) else { break }
+            cursor = at
             entries.append(entry(at: cursor, snapshot: snap))
         }
         completion(Timeline(entries: entries, policy: .atEnd))

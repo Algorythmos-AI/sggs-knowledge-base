@@ -112,6 +112,9 @@ struct AboutScreen: View {
                     Text("ੴ").font(Brand.gurmukhi(64)).foregroundStyle(Brand.saffron)
                     Text("Sri Guru Granth Sahib — Knowledge Base").font(.headline).multilineTextAlignment(.center)
                     Text("1430 Angs · verbatim Gurmukhi · fully offline").font(.caption).foregroundStyle(.secondary)
+                    Text("Version \(LaunchIntegrity.bundleVersionString())")
+                        .font(.caption2).foregroundStyle(.tertiary).monospacedDigit()
+                        .accessibilityIdentifier("aboutVersion")
                 }
                 .frame(maxWidth: .infinity)
             }
@@ -123,10 +126,25 @@ struct AboutScreen: View {
                     }
                     Text("db_sha256 \(report.dbSha256.prefix(16))…").font(.caption2).foregroundStyle(.tertiary)
                     Text("SQLite (pinned) \(report.sqliteVersion)").font(.caption2).foregroundStyle(.tertiary)
+                    // Widget App Group: silently absent on a mis-provisioned signed build (the
+                    // widgets would then read a different container and stay empty forever).
+                    let groupOK = FileManager.default
+                        .containerURL(forSecurityApplicationGroupIdentifier: WidgetStore.appGroup) != nil
+                    Label("Widget App Group \(groupOK ? "available" : "unavailable")",
+                          systemImage: groupOK ? "checkmark.circle" : "xmark.circle")
+                        .font(.caption2).foregroundStyle(groupOK ? Ink.positive : Ink.negative)
+                    Text("Meaningful on a signed device build only — the simulator always reports available.")
+                        .font(.caption2).foregroundStyle(.tertiary)
+                    let diag = CrashMonitor.diagnosticCount()
+                    Text("Diagnostics collected on this device: \(String(diag)) (local only, never sent)")
+                        .font(.caption2).foregroundStyle(.tertiary)
                 }
             }
             Section("Credits") {
                 Text("Gurmukhi text: verbatim from the source edition, cited by Ang.")
+                if container.corpus?.capabilities.hasEnglish == true {
+                    Text("English translation by Dr. Sant Singh Khalsa (sourced via BaniDB) — a separate labelled layer, never the scripture.")
+                }
                 Text("Font: Sant Lipi © Shabad OS, SIL Open Font License 1.1.")
                 Text("No accounts. No network. No tracking. Ever.").foregroundStyle(.secondary)
             }

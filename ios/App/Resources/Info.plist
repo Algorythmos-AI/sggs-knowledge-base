@@ -22,6 +22,10 @@
   <string>$(CURRENT_PROJECT_VERSION)</string>
   <key>LSRequiresIPhoneOS</key>
   <true/>
+  <key>LSApplicationCategoryType</key>
+  <string>public.app-category.reference</string>
+  <key>CFBundleLocalizations</key>
+  <array><string>en</string></array>
   <key>ITSAppUsesNonExemptEncryption</key>
   <false/>
   <!-- Multiple scenes stay OFF until navigation state is per-scene: Router/AppContainer are

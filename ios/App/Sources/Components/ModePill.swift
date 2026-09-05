@@ -22,7 +22,7 @@ struct ModePill: View {
             HStack(spacing: 5) {
                 if let dot { Circle().fill(dot).frame(width: 7, height: 7) }
                 if let systemImage { Image(systemName: systemImage).font(.caption) }
-                Text(title)
+                Text(title).lineLimit(1)               // the row scrolls; a pill never wraps
             }
             .font(.subheadline.weight(isSelected ? .semibold : .regular))
             .padding(.horizontal, Theme.Space.m)

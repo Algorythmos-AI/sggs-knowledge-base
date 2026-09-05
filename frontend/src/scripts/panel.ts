@@ -2,12 +2,12 @@
 // renders a full shabad/composition, the Hukam-style random draw, focus-trap + a11y.
 // Logic is ported 1:1 from the original index.html (only the "Open Ang" action is
 // adapted to MPA navigation via goReader instead of in-page nav()/ang()).
-import { $, esc, api, guard } from './core';
+import { $, esc, api, guard, prefersReducedMotion } from './core';
 import { pinButtonHTML } from './store';
 
 function panelLines(lines: any[]): string {
-  return lines.map((l: any) => `<div class="sline ${l.is_rahao ? 'rahao' : ''}${l.is_header ? '' : ' haspin'}">
-      ${l.is_header ? '' : pinButtonHTML(l.id, l.ang, l.comp_id)}
+  return lines.map((l: any) => `<div class="sline ${l.is_rahao ? 'rahao' : ''}${l.is_header ? '' : ' haspin'}"${l.is_header ? '' : ` data-line-id="${l.id}"`}>
+      ${l.is_header ? '' : pinButtonHTML(l.id, l.ang, l.comp_id, l.gurmukhi)}
       <div class="g gm ${l.is_header && l.gurmukhi.startsWith('ੴ') ? 'invoc' : ''}" lang="pa" style="${l.is_header ? 'color:var(--gold);font-weight:600;text-align:center' : ''}">${esc(l.gurmukhi)}</div>
       <div class="t" style="${l.is_header ? 'text-align:center' : ''}">${esc(l.translit)}</div>
       ${l.en ? `<div class="en" lang="en">${esc(l.en)}</div>` : ''}</div>`).join('');
@@ -53,16 +53,35 @@ const setP = (title: string, body: string) => {
 };
 
 // ---- a full composition by composition id (hi kept for signature parity; unused) ----
-export const shabad = guard(async (cid: number, _hi?: number) => {
+export const shabad = guard(async (cid: number, hi?: number) => {
   openPanel();
   setP('Loading…', '<div class="hint">Loading composition…</div>');
   const d = await api('shabad/' + cid);
   const ang = (d.lines[0] || {}).ang || '';
+  const first = d.lines.find((l: any) => !l.is_header) || d.lines[0];
+  const line = hi || (first ? first.id : 0);
   setP(`Composition · Ang ${ang}`,
     titleBlock(d.lines) + panelLines(d.lines) +
     `<div class="endnav" style="margin-top:16px"><span></span>
-      <button onclick="goReader(${ang || 1})">Open Ang ${ang} ›</button></div>`);
+      <button data-go-ang="${ang || 1}" data-go-line="${line}">Open Ang ${ang} ›</button></div>`);
+  if (hi) focusPanelLine(hi);
 });
+
+/* Scroll the tapped verse to the centre of the MODAL (the #panel element is the overflow:auto
+   scroller — the page behind must not move), flash it, and hand focus to it after openPanel's
+   own close-button focus has run. */
+function focusPanelLine(id: number) {
+  const panel = $('#panel'), inner = document.querySelector('#panel .inner') as HTMLElement | null;
+  const el = document.querySelector(`#pbody .sline[data-line-id="${id}"]`) as HTMLElement | null;
+  if (!panel || !inner || !el) return;
+  const top = el.offsetTop + inner.offsetTop - (panel.clientHeight - el.offsetHeight) / 2;
+  if (prefersReducedMotion()) panel.scrollTop = Math.max(0, top);
+  else panel.scrollTo({ top: Math.max(0, top), behavior: 'smooth' });
+  el.setAttribute('tabindex', '-1');
+  el.classList.add('verse-focus');
+  el.addEventListener('animationend', () => el.classList.remove('verse-focus'), { once: true });
+  setTimeout(() => { try { el.focus({ preventScroll: true }); } catch {} }, 0);
+}
 
 // ---- Hukam-style random draw ----
 let randomLoading = false;
@@ -74,10 +93,11 @@ export const randomShabad = guard(async () => {
   try {
     const d = await api('random');
     const ang = (d.lines[0] || {}).ang || '';
+    const first = d.lines.find((l: any) => !l.is_header) || d.lines[0];
     setP(`Hukam-style random · Ang ${ang}`,
       titleBlock(d.lines) + panelLines(d.lines) +
       `<div class="endnav" style="margin-top:16px"><button onclick="randomShabad()">Another ↻</button>
-        <button onclick="goReader(${ang || 1})">Open Ang ${ang} ›</button></div>`);
+        <button data-go-ang="${ang || 1}" data-go-line="${first ? first.id : ''}">Open Ang ${ang} ›</button></div>`);
   } finally { randomLoading = false; }
 });
 

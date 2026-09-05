@@ -3,7 +3,7 @@
 // All data comes from the existing offline analytics endpoints; nothing is computed client-side.
 import * as d3 from 'd3';
 import Chart from 'chart.js/auto';
-import { $, esc, api, meta, prefersReducedMotion } from './core';
+import { $, esc, api, meta, prefersReducedMotion, guard, failHTML } from './core';
 
 const titleCase = (k: string) => k.split('_').map((w) => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
 const cssVar = (n: string) => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
@@ -135,6 +135,7 @@ async function themeNetwork() {
   if (slider) slider.oninput = () => {
     const v = +slider.value; if (out) out.textContent = v.toFixed(1);
     nodes = build(v); render();
+    buildNetworkTable(edgesAll.filter((e: any) => e.ppmi >= v), size, desc);   // keep the text twin in step
   };
 }
 
@@ -245,11 +246,14 @@ async function resonanceChord() {
   const short = (s: string) => s.split(' (')[0].replace('Bhagat ', '').replace('Guru ', '').replace(' Ji', '');
   const tip = d3.select(host).append('div').attr('class', 'viz-tip').style('opacity', 0);
 
+  let req = 0;
   async function draw() {
     const minLines = sel ? sel.value : '250';
     const minLift = lift ? lift.value : '1.0';
     if (liftOut && lift) liftOut.textContent = (+lift.value).toFixed(1) + '×';
+    const my = ++req;
     const d = await api(`analytics/resonance?min_lines=${minLines}&min_lift=${minLift}&min_edges=8`);
+    if (my !== req) return;                                   // a newer selection superseded this one
     const names: string[] = (d.nodes || []).map((n: any) => n.author);
     const idx: Record<string, number> = {}; names.forEach((n, i) => idx[n] = i);
     const N = names.length;
@@ -322,10 +326,13 @@ async function ribbonStream() {
   const tip = d3.select(host).append('div').attr('class', 'viz-tip').style('opacity', 0);
   const color = (i: number) => STREAM_PAL[i % STREAM_PAL.length];
 
+  let req = 0;
   async function draw() {
     const raag = sel ? sel.value : raags[0]?.name;
     if (!raag) return;
+    const my = ++req;
     const d = await api(`analytics/progression?raag=${encodeURIComponent(raag)}&bins=40&top=7`);
+    if (my !== req) return;                                   // stale response
     const concepts: string[] = d.concepts || []; const series = d.series || {};
     host.querySelectorAll('svg').forEach((s) => s.remove());
     if (!concepts.length) { host.insertAdjacentHTML('beforeend', '<div class="hint">No theme data for this raag.</div>'); return; }
@@ -416,8 +423,12 @@ async function vaarAnatomy() {
   draw();
 }
 
-themeNetwork();
-authorRadar();
-resonanceChord();
-ribbonStream();
-vaarAnatomy();
+// every section is independent: one failing endpoint must not leave the others blank or
+// the page with an unhandled rejection — each renders an honest error line into its stage
+const section = (fn: () => Promise<any>, stage: string, what: string) =>
+  guard(fn, () => { const h = $(stage); if (h) h.innerHTML = failHTML(what); })();
+section(themeNetwork, '#network', 'The theme network');
+section(authorRadar, '#radarNote', 'The author fingerprint');
+section(resonanceChord, '#chord', 'The resonance chord');
+section(ribbonStream, '#stream', 'The raag progression');
+section(vaarAnatomy, '#vaar', 'The Vaar anatomy');

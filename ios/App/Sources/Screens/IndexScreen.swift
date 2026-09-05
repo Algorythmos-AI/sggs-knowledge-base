@@ -21,10 +21,11 @@ struct IndexScreen: View {
         ("ਓਅੰਕਾਰੁ", "Dakhni Oankaar", 929, "Raag Ramkali"),
     ]
 
-    private static let tabs: [(id: String, label: String)] = [
-        ("compositions", "Compositions"), ("raags", "The 31 Raags"),
-        ("sections", "Banis & Sections"), ("authors", "Voices"),
-    ]
+    /// The raag count comes from the DB's `raags` table (31 in the certified corpus).
+    private func tabs(_ meta: CorpusMeta) -> [(id: String, label: String)] {
+        [("compositions", "Compositions"), ("raags", "The \(String(meta.raags.count)) Raags"),
+         ("sections", "Banis & Sections"), ("authors", "Voices")]
+    }
 
     private let columns = [GridItem(.flexible(), spacing: Theme.Space.m), GridItem(.flexible())]
 
@@ -35,7 +36,7 @@ struct IndexScreen: View {
                     VStack(alignment: .leading, spacing: Theme.Space.l) {
                         ScrollView(.horizontal, showsIndicators: false) {
                             HStack(spacing: Theme.Space.s) {
-                                ForEach(Self.tabs, id: \.id) { t in
+                                ForEach(tabs(meta), id: \.id) { t in
                                     ModePill(title: t.label, isSelected: tab == t.id,
                                              accessibilityID: "index_\(t.id)") { tab = t.id }
                                 }

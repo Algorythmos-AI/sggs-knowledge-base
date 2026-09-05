@@ -4,7 +4,22 @@ import CoreSpotlight
 
 @main
 struct SGGSApp: App {
-    @State private var container = AppContainer()
+    @State private var container: AppContainer
+    @Environment(\.scenePhase) private var scenePhase
+
+    init() {
+        #if DEBUG
+        // XCUITest launches set SGGS_UITEST=1: clear per-launch residue that would otherwise
+        // leak between tests (resume-last-Ang, the transliteration toggle). Never the accent —
+        // its persistence across a relaunch is itself under test. Debug builds only.
+        if ProcessInfo.processInfo.environment["SGGS_UITEST"] == "1" {
+            for key in ["sggs_last_ang", "sggs_translit"] {
+                UserDefaults.standard.removeObject(forKey: key)
+            }
+        }
+        #endif
+        _container = State(initialValue: AppContainer())
+    }
 
     var body: some Scene {
         WindowGroup {
@@ -27,11 +42,14 @@ struct SGGSApp: App {
                 await container.refreshWidgetSnapshot()
             }
             .onOpenURL { url in container.router.handle(url, container: container) }
+            .onChange(of: scenePhase) { _, phase in
+                if phase == .active { container.flushIfIdle() }   // never presents mid-dismiss
+            }
             .onContinueUserActivity(CSSearchableItemActionType) { activity in
                 // a saved verse tapped in system search → open its composition
                 if let id = activity.userInfo?[CSSearchableItemActivityIdentifier] as? String,
                    let compId = SpotlightIndex.compId(fromIdentifier: id) {
-                    container.present(.shabad(compId: compId))
+                    container.present(.shabad(compId: compId, focusLineId: SpotlightIndex.lineId(fromIdentifier: id)))
                 }
             }
         }

@@ -15,16 +15,18 @@ Ang modifier on top: +ANG_MATCH / +ANG_MISMATCH(actual=N)
 DB: /tmp/sggs.db  (SQLite, read-only, FTS5 'fts', content table 'lines')
 """
 
+import os
 import re
 import sqlite3
 import unicodedata
 import difflib
 from typing import Optional
+from romannorm import roman_norm
 
 # ---------------------------------------------------------------------------
 # Thresholds
 # ---------------------------------------------------------------------------
-DB_PATH          = "/tmp/sggs.db"
+DB_PATH = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "db", "sggs.sqlite")
 _THRESH_EXACT    = 0.95
 _THRESH_PROBABLE = 0.85
 _THRESH_AMBIG    = 0.80
@@ -54,14 +56,12 @@ def _clean_gurmukhi(s: str) -> str:
 
 def _roman_to_tn(s: str) -> str:
     """
-    Reduce a roman-transliteration token to translit_norm form:
-    lowercase, drop vowels a/e/i/o/u, collapse repeated consonants.
-    Mirrors the translit_norm column built at DB-creation time.
+    Reduce a roman-transliteration token to translit_norm form — the SAME phonetic fold
+    (romannorm.roman_norm) that built the `translit_norm` column, so a loosely spelled Roman
+    claim is scored against the representation that actually exists in the index.
+    (Before 2.12.1 this was a plain vowel-strip that never matched the column.)
     """
-    s = s.lower()
-    s = re.sub(r"[aeiou]", "", s)
-    s = re.sub(r"(.)\1+", r"\1", s)
-    return s
+    return roman_norm(s)
 
 # ---------------------------------------------------------------------------
 # FTS query builders
@@ -240,7 +240,9 @@ def _make_verdict(candidates, exact_hit, claim_clean, claim_tn, is_gurmukhi, cur
             for ratio, rid, row in scored:
                 hay = _clean_gurmukhi(row["gurmukhi"]) if is_gurmukhi \
                       else (row.get("translit_norm") or "")
-                if f" {needle} " in f" {hay} ":
+                # a claim that IS the whole line is not a fragment — let it fall through
+                # to the ratio tiers (VERIFIED at 1.0) instead of mislabelling it PARTIAL
+                if needle != hay and f" {needle} " in f" {hay} ":
                     return {
                         "verdict": "VERIFIED_PARTIAL",
                         "confidence": 0.95,
@@ -263,7 +265,7 @@ def _make_verdict(candidates, exact_hit, claim_clean, claim_tn, is_gurmukhi, cur
         confidence = best_ratio
     else:
         verdict = "NOT_FOUND"
-        confidence = best_ratio
+        confidence = 0.0            # no line is being asserted — a % here only misleads
 
     best_rid_out = best_rid if verdict != "NOT_FOUND" else None
     best_row_out = best_row if verdict != "NOT_FOUND" else None

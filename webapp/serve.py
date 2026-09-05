@@ -27,8 +27,8 @@ PORT = int(os.environ.get('PORT') or os.environ.get('SGGS_PORT') or '7777')
 # doesn't force an 86 MB DB re-commit. /api/meta and /api/health prefer these; the
 # DB meta row is the fallback. Bump on every search-logic release so the UI footer
 # (which reads /api/meta) reflects the running build.
-APP_VERSION = '2.12.0'
-APP_BUILT = '2026-07-11'
+APP_VERSION = '2.12.1'
+APP_BUILT = '2026-09-05'
 
 import sys as _sys
 _sys.path.insert(0, HERE)
@@ -37,24 +37,7 @@ from verify import verify as verify_claim     # Layer-3: quotation verification 
 GURMUKHI = re.compile('[਀-੿]')
 _local = threading.local()
 
-def roman_norm(s):
-    """Phonetic-fold Roman normal form, applied to BOTH the index column and the
-    query: 'waheguru'/'vaahiguroo' -> 'vhgr'; 'yashoda'/'jasodaa' -> 'jsd';
-    'krishna'/'krisan' -> 'krsn'; 'gyan'/'giaan' -> 'gn'.
-    KEEP IN SYNC with pipeline/sggs_pipeline.py:roman_norm()."""
-    out = []
-    for w in s.lower().split():
-        w = w.replace('w', 'v').replace('z', 'j').replace('q', 'k').replace('x', 'k')
-        for dg in ('sh', 'chh', 'ch', 'kh', 'gh', 'jh', 'th', 'dh', 'bh', 'ph', 'rh', 'f'):
-            w = w.replace(dg, dg[0] if dg != 'f' else 'p')
-        w = w.replace('b', 'v').replace('k', 'g').replace('t', 'd').replace('p', 'v')   # ਬ/ਵ + Sanskrit↔Punjabi voicing (bhakti~bhagatee)
-        if w.startswith('y'): w = 'j' + w[1:]
-        w = w.replace('y', '')                       # medial glide: gyan ~ giaan
-        head = w[0] if w and w[0] in 'aeiou' else ''
-        body = re.sub('[aeiou]', '', w)
-        body = re.sub(r'(.)\1+', r'\1', body)        # collapse doubles
-        out.append((head + body) if (head + body) else w)
-    return ' '.join(o for o in out if o)
+from romannorm import roman_norm   # shared fold (see romannorm.py); re-exported for gen_golden_vectors.py
 
 def fold_match_alts(fn):
     """Exact-fold FTS clauses for a query token's fold, plus the casual-spelling twins a
@@ -117,6 +100,23 @@ def _fts_clean(s):
     a stray " closes the phrase (syntax error / injection), and a trailing * silently
     turns an exact term into a prefix match. Tokens are otherwise passed verbatim."""
     return str(s).replace('"', '').replace('*', '')
+
+_ID_MAX = 2**31 - 1
+
+def _int_str(raw, lo, hi):
+    """Parse one integer query value defensively: reject absurd digit strings (Python has no
+    int-size limit, SQLite does → OverflowError → 500), then clamp into [lo, hi]."""
+    t = (raw or '').strip()
+    if len(t) > 12:
+        raise ValueError('integer parameter too long')
+    try:
+        v = int(t)
+    except (TypeError, ValueError, OverflowError):
+        raise ValueError('integer parameter expected')
+    return max(lo, min(hi, v))
+
+def _int(qs, key, default, lo, hi):
+    return _int_str(qs.get(key, [str(default)])[0], lo, hi)
 
 def fts_query(tokens, phrase=False):
     toks = [_fts_clean(t) for t in tokens if _fts_clean(t)]
@@ -792,8 +792,8 @@ def api(path, qs):
         q = qs.get('q', [''])[0]
         # clamp both ends: a negative limit is `LIMIT -1` in SQLite = no limit (full-corpus
         # dump); a negative offset is silently treated as 0. Bound them to a sane window.
-        limit = max(0, min(int(qs.get('limit', ['50'])[0]), 200))
-        offset = max(0, int(qs.get('offset', ['0'])[0]))
+        limit = _int(qs, 'limit', 50, 0, 200)
+        offset = _int(qs, 'offset', 0, 0, 1_000_000)      # corpus has 60,658 lines: lossless
         out = do_search(q, qs.get('mode', ['auto'])[0], limit, offset)
         attach_translations(out.get('results'))     # en for EVERY mode (FTS/variant/theme tiers
         out.setdefault('related_themes', [])         # skipped it); uniform contract for the UI
@@ -815,7 +815,7 @@ def api(path, qs):
                 'raag': majority('raag'), 'section': majority('section'),
                 'authors': sorted({l['author'] for l in rs if l['author']})}
     if p[0] == 'shabad':
-        cid = int(p[1])
+        cid = _int_str(p[1], 0, _ID_MAX)
         rs = db().execute(f'SELECT {LINE_COLS} FROM lines WHERE comp_id = ? ORDER BY id', (cid,)).fetchall()
         return {'comp_id': cid, 'lines': attach_translations(rows_to_list(rs))}
     if p[0] == 'health':
@@ -869,7 +869,7 @@ def api(path, qs):
         if not math.isfinite(min_ppmi):     # NaN/inf survive max(min()) (compare False) -> clamp explicitly
             min_ppmi = 0.0
         min_ppmi = max(0.0, min(1.0, min_ppmi))
-        lim = max(1, min(int(qs.get('limit', ['200'])[0]), 2000))
+        lim = _int(qs, 'limit', 200, 1, 2000)
         try:
             if concept:
                 rows = db().execute(
@@ -927,8 +927,8 @@ def api(path, qs):
             return {'raag': raag, 'note': 'analytics tables not present in this DB build'}
     if p[0] == 'analytics' and len(p) >= 2 and p[1] == 'progression':  # /api/analytics/progression?raag=X
         raag = qs.get('raag', [None])[0]
-        bins = max(8, min(int(qs.get('bins', ['36'])[0]), 80))
-        top = max(2, min(int(qs.get('top', ['7'])[0]), 10))
+        bins = _int(qs, 'bins', 36, 8, 80)
+        top = _int(qs, 'top', 7, 2, 10)
         if not raag:
             raise ValueError('progression requires a raag')
         try:
@@ -963,9 +963,9 @@ def api(path, qs):
         except sqlite3.OperationalError:
             return {'raag': raag, 'concepts': [], 'series': {}, 'note': 'analytics tables not present'}
     if p[0] == 'analytics' and len(p) >= 2 and p[1] == 'resonance':   # /api/analytics/resonance
-        min_lines = max(1, int(qs.get('min_lines', ['250'])[0]))
+        min_lines = _int(qs, 'min_lines', 250, 1, _ID_MAX)
         min_lift = float(qs.get('min_lift', ['1.0'])[0])
-        min_edges = max(1, int(qs.get('min_edges', ['8'])[0]))
+        min_edges = _int(qs, 'min_edges', 8, 1, _ID_MAX)
         try:
             nodes = rows_to_list(db().execute(
                 "SELECT name AS author, n_lines, first_ang FROM authors WHERE n_lines >= ? "
@@ -998,8 +998,8 @@ def api(path, qs):
         except sqlite3.OperationalError:
             return {'vaars': [], 'note': 'vaar tables not present in this DB build'}
     if p[0] == 'analytics' and len(p) >= 2 and p[1] == 'vaar':       # /api/analytics/vaar?id=N (anatomy)
-        try: vid = int(qs.get('id', ['0'])[0])
-        except (TypeError, ValueError): return {'vaar': None, 'units': []}
+        try: vid = _int(qs, 'id', 0, 0, _ID_MAX)
+        except ValueError: return {'vaar': None, 'units': []}
         try:
             head = db().execute("SELECT * FROM vaars WHERE vaar_id=?", (vid,)).fetchone()
             if not head:
@@ -1061,7 +1061,7 @@ def api(path, qs):
         except sqlite3.OperationalError:
             return {'concepts': [], 'clusters': [], 'note': 'concept tables not present in this DB build'}
     if p[0] == 'related':                                   # /api/related?comp_id=N
-        cid = int(qs.get('comp_id', ['0'])[0])
+        cid = _int(qs, 'comp_id', 0, 0, _ID_MAX)
         try:
             rows = db().execute(
                 "SELECT n.neighbor_comp_id AS comp_id, n.rank, n.score, "
@@ -1073,9 +1073,18 @@ def api(path, qs):
                     'note': 'shabads with the most similar theme profile (corpus-verified themes)'}
         except sqlite3.OperationalError:
             return {'comp_id': cid, 'related': [], 'note': 'analytics tables not present in this DB build'}
+    if p[0] == 'lines':                                      # /api/lines?ids=1,2,3  (verbatim text by id)
+        raw = qs.get('ids', [''])[0]
+        ids = [int(x) for x in raw.split(',') if x.strip().isdigit() and len(x.strip()) <= 12][:300]
+        rows = []
+        if ids:
+            ph = ','.join('?' * len(ids))
+            rows = rows_to_list(db().execute(
+                f"SELECT id, ang, comp_id, gurmukhi, translit FROM lines WHERE id IN ({ph}) ORDER BY id", ids))
+        return {'lines': rows, 'note': 'verbatim Gurmukhi by line id, cited by Ang'}
     if p[0] == 'line_concepts':                              # /api/line_concepts?ids=1,2,3  (Study Trail)
         raw = qs.get('ids', [''])[0]
-        ids = [int(x) for x in raw.split(',') if x.strip().lstrip('-').isdigit()][:300]
+        ids = [int(x) for x in raw.split(',') if x.strip().isdigit() and len(x.strip()) <= 12][:300]
         out = {}
         if ids:
             ph = ','.join('?' * len(ids))
@@ -1087,8 +1096,8 @@ def api(path, qs):
                 pass
         return {'concepts': out, 'note': 'corpus-verified theme tags per line; descriptive only'}
     if p[0] == 'neighbors':                                  # /api/neighbors?line_id=N  (Phase 2: semantic)
-        lid = int(qs.get('line_id', ['0'])[0])
-        lim = max(1, min(int(qs.get('limit', ['10'])[0]), 50))
+        lid = _int(qs, 'line_id', 0, 0, _ID_MAX)
+        lim = _int(qs, 'limit', 10, 1, 50)
         srow = db().execute("SELECT id, ang, raag, author, comp_id, gurmukhi, translit "
                             "FROM lines WHERE id=?", (lid,)).fetchone()
         src_line = attach_translations([dict(srow)])[0] if srow else None   # the queried verse itself
@@ -1203,7 +1212,7 @@ def api(path, qs):
         except sqlite3.OperationalError:
             return {'available': False, 'raags': []}
     if p[0] == 'forms':                                        # /api/forms?comp_id=N
-        cid = int(qs.get('comp_id', ['0'])[0])
+        cid = _int(qs, 'comp_id', 0, 0, _ID_MAX)
         if cid <= 0:
             raise ValueError('forms requires ?comp_id=')
         try:
@@ -1303,7 +1312,15 @@ class H(BaseHTTPRequestHandler):
             ct += '; charset=utf-8'
         # hashed build assets are content-addressed -> cache forever; HTML must revalidate
         rel = os.path.relpath(full, STATIC_ROOT)
-        cache = 'public, max-age=31536000, immutable' if rel.split(os.sep)[0] == '_astro' else 'no-store'
+        top = rel.split(os.sep)[0]
+        if top == '_astro':
+            cache = 'public, max-age=31536000, immutable'
+        elif top == 'fonts':                       # unhashed filename → revalidate daily, not immutable
+            cache = 'public, max-age=86400'
+        elif rel == 'contributors.json':
+            cache = 'public, max-age=3600'
+        else:
+            cache = 'no-store'
         with open(full, 'rb') as f:
             body = f.read()
         self.send_response(200)
@@ -1324,7 +1341,7 @@ class H(BaseHTTPRequestHandler):
                 body = json.dumps(api(u.path, parse_qs(u.query)), ensure_ascii=False).encode()
                 return self._respond(200, body, 'application/json; charset=utf-8')
             return self._serve_static(u.path)
-        except (ValueError, IndexError) as e:           # bad ang/shabad/params
+        except (ValueError, IndexError, OverflowError) as e:   # bad ang/shabad/params
             msg = json.dumps({'error': 'invalid request: ' + str(e)}).encode()
             return self._respond(400, msg, 'application/json')
         except Exception as e:

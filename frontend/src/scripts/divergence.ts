@@ -5,9 +5,10 @@
 import { $, esc, api, guard } from './core';
 import { paharLabel, paharRange, fmt12 } from './pahar.js';
 
+const safeHref = (u: any) => (/^https?:\/\//i.test(u || '') ? esc(u) : '');   // never javascript: etc.
 function when(c: any): string {
-  if (c.pahar) return `${paharLabel(c.pahar)} (${paharRange(c.pahar)})`;
-  if (c.time_start) return `${fmt12(c.time_start)}–${fmt12(c.time_end)}`;
+  if (c.pahar) return esc(`${paharLabel(c.pahar)} (${paharRange(c.pahar)})`);
+  if (c.time_start) return esc(`${fmt12(c.time_start)}–${fmt12(c.time_end)}`);
   return esc(c.season || c.occasion || '—');
 }
 
@@ -25,8 +26,8 @@ guard(async () => {
       <td data-l="When"><b>${when(c)}</b>${c.notes ? `<div class="cnotes">${esc(c.notes)}</div>` : ''}</td>
       <td data-l="Tradition"><span class="tbadge tb-${esc(c.tradition)}">${esc(c.tradition === 'hindustani' ? 'Hindustani' : 'Gurmat Sangeet')}</span></td>
       <td data-l="Confidence"><span class="conf conf-${esc(c.confidence)}">${esc(c.confidence)}</span></td>
-      <td data-l="Source">${c.source_url
-        ? `<a href="${esc(c.source_url)}" rel="noopener" target="_blank">${esc(c.source_name)}</a>`
+      <td data-l="Source">${safeHref(c.source_url)
+        ? `<a href="${safeHref(c.source_url)}" rel="noopener" target="_blank">${esc(c.source_name)}</a>`
         : esc(c.source_name)}</td>
     </tr>`).join('')).join('');
 

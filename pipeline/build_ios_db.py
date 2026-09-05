@@ -154,8 +154,9 @@ def main():
     if en_bundled:
         print()
         print('  ⚠ LICENSE (NOTICE.md): this build embeds the Khalsa English translation —')
-        print('    personal, local, non-commercial use ONLY. Do NOT distribute publicly or')
-        print('    submit to the App Store until the translation is licensed in writing.')
+        print('    personal, local, non-commercial use ONLY. Do NOT distribute (TestFlight or')
+        print('    App Store) until the licence is recorded in ios/Resources/TRANSLATION-LICENSE.md')
+        print('    (LICENSED: true) — pipeline/check_release_license.sh enforces this.')
 
 
 if __name__ == '__main__':

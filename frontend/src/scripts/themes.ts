@@ -1,4 +1,4 @@
-// themes.ts — the Themes page (/themes) : the 53 corpus concepts grouped theologically.
+// themes.ts — the Themes page (/themes) : the 54 corpus concepts grouped theologically.
 // Ported 1:1; a tile deep-links into Search as a theme query via goSearchTheme.
 import { $, esc, guard, meta, goSearchTheme } from './core';
 
@@ -6,10 +6,10 @@ const titleCase = (k: string) => k.split('_').map((w) => w.charAt(0).toUpperCase
 
 let META: any = null;
 
-// theological grouping of the 53 corpus concepts (every key assigned; leftover -> "More")
+// theological grouping of the 54 corpus concepts (every key assigned; leftover -> "More")
 const THEME_CATS: [string, string, string[]][] = [
   ['The Divine Reality', 'God, the Names, and the cosmic Word',
-    ['ik_onkar', 'vahiguru', 'karta', 'akal_kaal', 'hukam', 'naam', 'shabad', 'bani', 'jot', 'anhad', 'patit_pavan']],
+    ['ik_onkar', 'vahiguru', 'karta', 'akal', 'kaal', 'hukam', 'naam', 'shabad', 'bani', 'jot', 'anhad', 'patit_pavan']],
   ['The Human Condition & Illusions', 'Ego, mind, attachment, and the wheel of birth–death',
     ['haumai', 'maya', 'man', 'sansar', 'janam_maran', 'avagavan', 'manmukh', 'bharam', 'dukh_sukh', 'garab', 'trishna', 'bhavjal', 'jam']],
   ['The Five Vices', 'The panj chor that rob the soul',

@@ -923,3 +923,23 @@ body.hide-timing .timechip { display:none; }
   .div-table td::before { content:attr(data-l) ": "; color:var(--faint); font-size:10.5px; text-transform:uppercase; letter-spacing:.05em; }
   .div-table .rcell { border:0; padding:4px; }
 }
+
+/* ---- precision landing: one-shot flash on the verse a deep link / modal asked for ---- */
+@keyframes verse-focus-fade {
+  0%   { background: color-mix(in srgb, var(--accent) 28%, transparent); box-shadow: 0 0 0 4px color-mix(in srgb, var(--accent) 22%, transparent); }
+  100% { background: transparent; box-shadow: none; }
+}
+.sline.verse-focus { animation: verse-focus-fade 1.6s ease-out forwards; border-radius: 10px; }
+.sline:focus { outline: none; }
+.sline:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 10px; }
+.cont-slot { min-height: 34px; margin: 6px 0 10px; }              /* reserved: no layout shift */
+.cont.cont-next { margin-left: auto; }
+@media (prefers-reduced-motion: reduce) {
+  .sline.verse-focus { animation: none; background: color-mix(in srgb, var(--accent) 18%, transparent); }
+}
+
+/* ---- ambient chrome (Reader): slide nav + toolbar away while reading downwards ---- */
+nav.site, .toolbar { transition: transform .22s ease, opacity .22s ease; }
+body.chrome-hidden nav.site { transform: translateY(-100%); opacity: 0; pointer-events: none; }
+body.chrome-hidden .toolbar { transform: translateY(calc(-100% - var(--nav-h) - 12px)); opacity: 0; pointer-events: none; }
+@media (prefers-reduced-motion: reduce) { nav.site, .toolbar { transition: none; } }

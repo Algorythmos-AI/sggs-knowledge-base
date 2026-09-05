@@ -55,7 +55,8 @@ public enum Pahar {
 
     /// "1st pahar of day" … "4th pahar of night".
     public static func label(_ p: Int) -> String {
-        p <= 4 ? "\(ord[p]) pahar of day" : "\(ord[p - 4]) pahar of night"
+        let q = min(max(p, 1), 8)           // public API: never trap on an out-of-range pahar
+        return q <= 4 ? "\(ord[q]) pahar of day" : "\(ord[q - 4]) pahar of night"
     }
 
     /// '15:00' → '3 PM' (whole hours stay terse; minutes kept when present).
@@ -87,7 +88,8 @@ public enum Pahar {
     static func dayOfYear(year: Int, month: Int, day: Int) -> Int {
         let leap = (year % 4 == 0 && year % 100 != 0) || year % 400 == 0
         let cum = [0, 31, 59, 90, 120, 151, 181, 212, 243, 273, 304, 334]
-        return cum[month - 1] + day + ((leap && month > 2) ? 1 : 0)
+        let m = min(max(month, 1), 12)      // defensive: a non-Gregorian calendar can yield 13
+        return cum[m - 1] + day + ((leap && m > 2) ? 1 : 0)
     }
 
     /// NOAA sunrise/sunset (minutes since local midnight) for a calendar date.

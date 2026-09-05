@@ -227,7 +227,8 @@ struct LineageScreen: View {
                 // year column
                 Text(c.timelineYear == 9999 ? "—" : (c.circa ? "c. " : "") + String(c.timelineYear))
                     .font(.caption2).monospacedDigit().foregroundStyle(.secondary)
-                    .frame(width: 44, alignment: .trailing)
+                    .lineLimit(1).minimumScaleFactor(0.7)
+                    .frame(minWidth: 44, alignment: .trailing)   // grows with Dynamic Type
                     .padding(.top, Theme.Space.l + 2)
                 // the rail: continuous line + a glowing kind-colored node dot
                 ZStack {
@@ -401,7 +402,8 @@ struct AuthorProfileSheet: View {
                             ForEach(themes) { t in
                                 HStack(spacing: Theme.Space.s) {
                                     Text(t.concept).font(.subheadline)
-                                        .frame(width: 90, alignment: .leading)
+                                        .lineLimit(1).minimumScaleFactor(0.7)
+                                        .frame(minWidth: 90, alignment: .leading)
                                     // the web .ld-ttrack treatment: a lift/maxLift gradient track
                                     GeometryReader { geo in
                                         Capsule().fill(Ink.raised)
@@ -415,7 +417,8 @@ struct AuthorProfileSheet: View {
                                     .frame(height: 6)
                                     Text(String(format: "%.1f×", t.lift)).font(.caption).monospacedDigit()
                                         .foregroundStyle(Theme.accent)
-                                        .frame(width: 40, alignment: .trailing)
+                                        .lineLimit(1).minimumScaleFactor(0.7)
+                                        .frame(minWidth: 40, alignment: .trailing)
                                 }
                                 .accessibilityElement(children: .ignore)
                                 .accessibilityLabel("\(t.concept), \(String(format: "%.1f", t.lift)) times the corpus baseline")

@@ -169,7 +169,7 @@ function nodeHTML(c: C): string {
       <span class="tl-card">
         <span class="tl-med" aria-hidden="true">${esc(initials(c))}</span>
         <span class="tl-main">
-          <span class="tl-row"><span class="tl-name">${esc(c.roman)}</span><span class="tl-kind">${KIND_LABEL[c.kind] || c.kind}${c.seq ? ' · M' + c.seq : ''}</span></span>
+          <span class="tl-row"><span class="tl-name">${esc(c.roman)}</span><span class="tl-kind">${esc(KIND_LABEL[c.kind] || c.kind)}${c.seq ? ' · M' + c.seq : ''}</span></span>
           <span class="tl-era">${esc(c.era)} · ${esc(c.region)}</span>
           <span class="tl-bar" aria-hidden="true"><i style="width:${bar(c.n_lines || 0)}%"></i></span>
           <span class="tl-lines">${esc(lines)}</span>
@@ -247,7 +247,7 @@ function profileHTML(c: C, d: any, compact: boolean): string {
       <div class="ld-id">
         <div class="ld-name">${esc(c.roman)}</div>
         <div class="ld-chips">
-          <span class="ld-chip kind-${esc(c.kind)}">${KIND_LABEL[c.kind] || c.kind}${c.seq ? ' · M' + c.seq : ''}</span>
+          <span class="ld-chip kind-${esc(c.kind)}">${esc(KIND_LABEL[c.kind] || c.kind)}${c.seq ? ' · M' + c.seq : ''}</span>
           <span class="ld-chip">${esc(lifespan)}</span>
           <span class="ld-chip">${esc(c.region)}</span>
           <span class="ld-chip">${esc(c.tradition)}</span>
