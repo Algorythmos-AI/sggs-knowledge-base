@@ -1,6 +1,6 @@
 // search.ts — the Search page (/) : word/sound/first-letter/theme search + Verify-quote.
 // Ported 1:1 from the original; in-page nav()/ang() calls are replaced by MPA goReader().
-import { $, esc, api, guard, goReader } from './core';
+import { $, esc, api, guard, goReader, failHTML } from './core';
 import { pinButtonHTML } from './store';
 
 let mode = 'auto';
@@ -46,7 +46,7 @@ function lineCard(l: any): string {
   if (l.is_rahao) chips.push(`<span class="rahao">ਰਹਾਉ · refrain</span>`);
   if (l.matched_term) chips.push(`<span class="gm">term: ${esc(l.matched_term)}</span>`);
   return `<div class="card haspin" role="button" tabindex="0" aria-label="Open composition at Ang ${l.ang}" onclick="shabad(${l.comp_id},${l.id})">
-    ${pinButtonHTML(l.id, l.ang, l.comp_id)}
+    ${pinButtonHTML(l.id, l.ang, l.comp_id, l.gurmukhi)}
     <div class="g gm" lang="pa">${hl(esc(l.gurmukhi))}</div><div class="t">${hl(esc(l.translit))}</div>
     ${l.en ? `<div class="en" lang="en">${esc(l.en)}</div>` : ''}
     <div class="meta">${chips.join('')}</div></div>`;
@@ -76,7 +76,11 @@ const go = guard(async (off: number) => {
       <a href="#" class="rel-theme" data-theme="haumai">haumai</a> —
       or <a href="/browse">browse the index</a>.</div>`;
   ($('#results') as HTMLElement).innerHTML = h; window.scrollTo({ top: 0 });
-});
+  try {                                            // shareable URL; one entry, not one per keystroke
+    const u = new URL(location.href); u.searchParams.set('q', q); u.searchParams.set('mode', mode);
+    history.replaceState({ q, mode }, '', u);
+  } catch {}
+}, () => { const r = $('#results'); if (r) r.innerHTML = failHTML('Search'); });
 // delegated handlers for #results — keyboard activation of cards + related-theme links
 ($('#results') as HTMLElement | null)?.addEventListener('click', (e: any) => {
   const a = e.target.closest('.rel-theme');
@@ -97,7 +101,7 @@ const doVerify = guard(async (qIn: string) => {
   const cls = v.startsWith('VERIFIED') ? 'v-ok' : (v.startsWith('NOT_FOUND') ? 'v-no' : 'v-maybe');
   let h = `<div class="verdict ${cls}">
       <div class="vv">${esc(v.replace(/\+/g, ' + '))}</div>
-      <div class="vc">confidence ${(d.confidence * 100).toFixed(1)}%</div>
+      ${v.startsWith('NOT_FOUND') ? '' : `<div class="vc">confidence ${(d.confidence * 100).toFixed(1)}%</div>`}
       <div class="vh">${v.startsWith('VERIFIED') ? 'This is scripture, verified against the canonical corpus.' :
       v.startsWith('NOT_FOUND') ? 'No such line exists in Sri Guru Granth Sahib (this edition). Treat the quote as unverified.' :
         'Close match found — compare carefully below.'}</div></div>`;
@@ -110,7 +114,7 @@ const doVerify = guard(async (qIn: string) => {
         ${d.author ? `<span>${esc(d.author)}</span>` : ''}</div></div>`;
   }
   ($('#results') as HTMLElement).innerHTML = h; window.scrollTo({ top: 0 });
-});
+}, () => { const r = $('#results'); if (r) r.innerHTML = failHTML('Verification'); });
 
 (window as any).go = go;          // for inline "More" button + programmatic calls
 

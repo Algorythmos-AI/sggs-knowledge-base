@@ -19,6 +19,7 @@ struct ClockScreen: View {
     @State private var location: SolarLocation?
     @State private var detailPahar: PaharSelection?
     @State private var showDivergence = false
+    @State private var unknownRaagNote: String?
     @State private var showManualLocation = false
     /// Injectable for tests (XCUITest launches with SGGS_CLOCK_NOW=<minutes> to pin the time).
     var now: () -> Date = { Date() }
@@ -58,10 +59,13 @@ struct ClockScreen: View {
     // MARK: time plumbing
 
     private var minutesNow: Int {
-        // test override: pin the wall clock to a minute-of-day
+        #if DEBUG
+        // test override: pin the wall clock to a minute-of-day (XCUITests run the Debug
+        // configuration; this hook never ships in Release)
         if let env = ProcessInfo.processInfo.environment["SGGS_CLOCK_NOW"], let m = Int(env) {
             return ((m % 1440) + 1440) % 1440
         }
+        #endif
         let c = Calendar(identifier: .gregorian).dateComponents([.hour, .minute], from: now())
         return (c.hour ?? 0) * 60 + (c.minute ?? 0)
     }
@@ -100,7 +104,12 @@ struct ClockScreen: View {
         // focus the pahar that raag's primary claim names (roman or gurmukhi)
         if let claim = clock?.primary.first(where: { $0.roman == raag.lowercased() || $0.raagName == raag }),
            let p = claim.pahar {
+            unknownRaagNote = nil
             detailPahar = PaharSelection(p: p)
+        } else {
+            // a widget/Siri/sggs:// link named a raag with no primary timing claim — say so
+            // instead of silently landing on the Clock as if nothing was asked
+            unknownRaagNote = "No timing claim is recorded for “\(raag)” — showing the current watch."
         }
     }
 
@@ -164,6 +173,10 @@ struct ClockScreen: View {
                 }
                 Text("\(Pahar.label(p))  ·  \(windowText(p))")
                     .font(.title3.weight(.semibold))
+                if let unknownRaagNote {
+                    Text(unknownRaagNote).font(.caption).foregroundStyle(.secondary)
+                        .accessibilityIdentifier("unknownRaagNote")
+                }
                 let raags = clock.raags(forPahar: p)
                 if raags.isEmpty {
                     Text(p == 7 ? "Deliberately silent — no raags are assigned to this watch."

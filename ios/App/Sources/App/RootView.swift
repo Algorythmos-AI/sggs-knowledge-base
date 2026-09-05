@@ -45,6 +45,8 @@ struct RootView: View {
                     ExploreScreen().tabItem { Label("Explore", systemImage: "square.grid.2x2") }.tag(Tab.explore)
                     MoreScreen().tabItem { Label("More", systemImage: "ellipsis") }.tag(Tab.more)
                 }
+                .onAppear { container.sheetHostDidAppear() }
+                .onDisappear { container.sheetHostDidDisappear() }
                 .sheet(item: $c.presentation, onDismiss: { container.flushPendingPresentation() }) { p in
                     switch p {
                     case .shabad, .hukam: ShabadSheet(presentation: p.composition ?? .hukam)
@@ -58,7 +60,9 @@ struct RootView: View {
                             Image(systemName: "bookmark.slash").foregroundStyle(.secondary)
                             Text(container.modelContainer == nil
                                  ? "Saved verses are unavailable this session."
-                                 : "Saved verses won't persist from before — the bookmarks store was reset.")
+                                 : container.savedStoreDestroyed
+                                 ? "Saved verses from before were lost — the bookmarks store was reset."
+                                 : "Saved verses won't persist this session — the bookmarks store couldn't be opened.")
                                 .font(.caption)
                             Spacer()
                             Button { savedStoreNoticeDismissed = true } label: {

@@ -3,7 +3,7 @@
 // theme each verse most shares. All data from /api/analytics/constellation (read-only over the
 // existing concepts/concept_lines tables); nothing computed client-side. Tap a star → Reader.
 import * as d3 from 'd3';
-import { $, esc, api } from './core';
+import { $, esc, api, guard, failHTML } from './core';
 
 const titleCase = (k: string) => k.split('_').map((w) => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
 const cssVar = (n: string) => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
@@ -33,15 +33,18 @@ async function constellation() {
   const shortAuthor = (a: string) => a.replace(' Ji', '');
   const tip = d3.select(host).append('div').attr('class', 'viz-tip').style('opacity', 0);
 
-  async function draw() {
+  let req = 0;
+  const draw = guard(async () => {
     const c = sel ? sel.value : concepts[0]?.concept;
     if (!c) return;
     const au = authorSel ? authorSel.value : '', rg = raagSel ? raagSel.value : '';
-    host.querySelectorAll('svg, .constel-list').forEach((s) => s.remove());
+    const my = ++req;
     let q = 'analytics/constellation?concept=' + encodeURIComponent(c);
     if (au) q += '&author=' + encodeURIComponent(au);
     if (rg) q += '&raag=' + encodeURIComponent(rg);
     const d = await api(q);
+    if (my !== req) return;                                   // stale response: a newer pick is in flight
+    host.querySelectorAll('svg, .constel-list, .hint').forEach((s) => s.remove());   // clear AFTER the await
     const clusters = d.clusters || [];
     const filt = [au ? shortAuthor(au) : '', rg ? (raagSel?.selectedOptions[0]?.text || rg) : ''].filter(Boolean).join(' · ');
     if (head) head.textContent = `${titleCase(c)}${filt ? ' (' + filt + ')' : ''} — ${(d.total || 0).toLocaleString()} verses across ${clusters.length} thematic sub-constellations`;
@@ -65,8 +68,7 @@ async function constellation() {
       cl.verses.forEach((v: any) => {
         const a = rand() * 2 * Math.PI, rr = Math.sqrt(rand()) * spread;
         g.append('circle').attr('cx', gx + rr * Math.cos(a)).attr('cy', gy + rr * Math.sin(a)).attr('r', 2.6)
-          .attr('fill', col).attr('fill-opacity', 0.85).attr('tabindex', 0).attr('role', 'button')
-          .attr('aria-label', `Verse at Ang ${v.ang}, ${titleCase(c)} with ${titleCase(cl.co)}. Activate to open in the Reader.`)
+          .attr('fill', col).attr('fill-opacity', 0.85).attr('aria-hidden', 'true')   // ~360 stars: the list below is the keyboard/AT path
           .style('cursor', 'pointer')
           .on('mouseover focus', (ev: any) => {
             const r = host.getBoundingClientRect(), b = ev.currentTarget.getBoundingClientRect();
@@ -100,10 +102,10 @@ async function constellation() {
     host.insertAdjacentHTML('beforeend', `<ul class="constel-list" aria-label="Verses by sub-constellation">${items}</ul>`);
     host.querySelectorAll('.constel-list a').forEach((a: any) =>
       a.addEventListener('click', (e: any) => { e.preventDefault(); openReader(+a.dataset.ang); }));
-  }
+  }, () => { host.insertAdjacentHTML('beforeend', failHTML('This constellation')); if (head) head.textContent = 'Could not load this theme.'; });
   if (sel) sel.onchange = draw;
   if (authorSel) authorSel.onchange = draw;
   if (raagSel) raagSel.onchange = draw;
   draw();
 }
-constellation();
+guard(constellation, () => { const h = $('#constel'); if (h) h.innerHTML = failHTML('The constellation'); const hd = $('#conHead'); if (hd) hd.textContent = 'Could not load concept data.'; })();

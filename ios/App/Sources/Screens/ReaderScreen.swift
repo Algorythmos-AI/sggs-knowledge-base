@@ -60,7 +60,8 @@ struct ReaderScreen: View {
         NavigationStack {
             Group {
                 if let model {
-                    LoadStateView(state: model.state) { page in
+                    LoadStateView(state: model.state,
+                                  onRetry: { Task { await model.load(router.readerAng) } }) { page in
                         ScrollView {
                             LazyVStack(alignment: .leading, spacing: 14) {
                                 if let raag = page.raag {
@@ -132,21 +133,37 @@ struct ReaderScreen: View {
             .background(Ink.paper.ignoresSafeArea())
             .navigationTitle("Ang \(String(router.readerAng))")
             .navigationBarTitleDisplayMode(.inline)
-            .toolbar(focusMode ? .hidden : .visible, for: .bottomBar)
-            .toolbar {
-                ToolbarItemGroup(placement: .bottomBar) {
-                    Button { turnEdge = .leading; router.openAng(router.readerAng - 1) }
-                        label: { Image(systemName: "chevron.left") }
-                        .disabled(router.readerAng <= 1)
-                        .accessibilityLabel("Previous Ang")
-                    Spacer()
-                    Button { Haptics.tap(); container.present(.hukam) } label: { Label("Hukam", systemImage: "sparkles") }
-                    Spacer()
-                    Button { turnEdge = .trailing; router.openAng(router.readerAng + 1) }
-                        label: { Image(systemName: "chevron.right") }
-                        .disabled(router.readerAng >= 1430)
-                        .accessibilityLabel("Next Ang")
+            // Page controls live in a bottom safe-area inset, NOT a `.bottomBar` toolbar: inside a
+            // TabView on iOS 26 the bottom toolbar is drawn UNDER the floating glass tab bar, so
+            // Previous / Hukam / Next were invisible (verified in the simulator; the July
+            // baseline screenshots show the same). The inset is laid out above the tab bar.
+            .safeAreaInset(edge: .bottom) {
+                if !focusMode {
+                    HStack {
+                        Button { turnEdge = .leading; router.openAng(router.readerAng - 1) }
+                            label: { Image(systemName: "chevron.left").frame(minWidth: 44, minHeight: 44) }
+                            .disabled(router.readerAng <= 1)
+                            .accessibilityLabel("Previous Ang")
+                        Spacer()
+                        Button { Haptics.tap(); container.present(.hukam) } label: {
+                            Label("Hukam", systemImage: "sparkles").frame(minHeight: 44)
+                        }
+                        Spacer()
+                        Button { turnEdge = .trailing; router.openAng(router.readerAng + 1) }
+                            label: { Image(systemName: "chevron.right").frame(minWidth: 44, minHeight: 44) }
+                            .disabled(router.readerAng >= 1430)
+                            .accessibilityLabel("Next Ang")
+                    }
+                    .font(.body.weight(.medium))
+                    .padding(.horizontal, Theme.Space.m)
+                    .background(Capsule().fill(Ink.card))
+                    .overlay(Capsule().strokeBorder(Ink.hairline))
+                    .padding(.horizontal, Theme.Space.l)
+                    .padding(.bottom, Theme.Space.xs)
+                    .accessibilityIdentifier("readerPageBar")
                 }
+            }
+            .toolbar {
                 ToolbarItem(placement: .topBarLeading) {
                     Button { showJump = true } label: { Image(systemName: "number") }
                         .accessibilityLabel("Jump to Ang")

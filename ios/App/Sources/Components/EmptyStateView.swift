@@ -9,6 +9,9 @@ struct EmptyStateView: View {
     /// Failure states show the warning triangle instead of the brand mark —
     /// the ੴ is reserved for calm states, never for errors.
     var isError: Bool = false
+    /// Optional single action (e.g. "Try again") — a failure state should never be a dead end.
+    var actionTitle: String? = nil
+    var action: (() -> Void)? = nil
 
     @Environment(\.palette) private var palette
 
@@ -31,6 +34,12 @@ struct EmptyStateView: View {
                         .font(.subheadline).foregroundStyle(.secondary)
                         .multilineTextAlignment(.center)
                 }
+            }
+            if let actionTitle, let action {
+                Button(actionTitle, action: action)
+                    .buttonStyle(.bordered)
+                    .padding(.top, Theme.Space.xs)
+                    .accessibilityIdentifier("retryButton")
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)

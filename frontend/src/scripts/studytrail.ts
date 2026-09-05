@@ -2,10 +2,10 @@
 // Off-canvas glass panel with two tabs: Pinned Verses + AI Insights (thematic centre of
 // gravity + semantic echoes). Pin buttons everywhere are handled here in the CAPTURE phase
 // so a pin click never fires the underlying verse card's own onclick.
-import { $, esc } from './core';
+import { $, esc, api } from './core';
 import {
   getPins, count, isPinned, togglePin, removePin, clearPins, subscribe, mostRecent,
-  enrichThemes, centerOfGravity, label, toJSON, toText, MAX_PINS, type Pin,
+  enrichThemes, centerOfGravity, label, toJSON, toText, MAX_PINS, pinButtonHTML, repairPins, type Pin,
 } from './store';
 
 /* ---------- transient toast (self-contained, no CSS dependency) ---------- */
@@ -30,9 +30,9 @@ document.addEventListener('click', (e: any) => {
   if (!btn) return;
   e.stopPropagation(); e.preventDefault();                 // capture-phase: beat the card's onclick
   const id = +btn.dataset.id, ang = +btn.dataset.ang, cid = +btn.dataset.cid;
-  const card = btn.closest('.card, .sline, .relcard, .stone, .pl, .trail-now');
-  const gEl = card ? card.querySelector('.g') : null;
-  const gm = gEl ? (gEl.textContent || '').trim() : '';
+  // verbatim scripture comes from the data model (data-gm), NEVER from rendered text — the
+  // display-only saroop painter rewrites .g text nodes, and that must never reach storage.
+  const gm = btn.dataset.gm || '';
   const r = togglePin({ line_id: id, gm, ang, comp_id: cid });
   if (r === 'cap' || r === 'quota') {            // save failed → keep the button truthful + tell the user
     btn.classList.remove('pinned'); btn.setAttribute('aria-pressed', 'false');
@@ -153,7 +153,7 @@ async function renderEchoes() {
   const recent = mostRecent();
   if (!recent) { host.innerHTML = ''; return; }
   try {
-    const d = await fetch('/api/neighbors?line_id=' + recent.line_id + '&limit=6').then((r) => r.json());
+    const d = await api('neighbors?line_id=' + recent.line_id + '&limit=6');
     const items = (d.neighbors || []).filter((n: any) => !isPinned(n.id)).slice(0, 3);
     if (!items.length) { host.innerHTML = `<div class="trail-empty small">No new echoes — your trail already holds the closest verses.</div>`; return; }
     host.innerHTML = items.map((n: any) => `
@@ -169,7 +169,7 @@ async function renderEchoes() {
   }
 }
 function pinBtn(n: any): string {
-  return `<button class="pin-btn" data-id="${n.id}" data-ang="${n.ang || 1}" data-cid="${n.comp_id || 0}" type="button" aria-label="Pin to study trail" title="Pin">📌</button>`;
+  return pinButtonHTML(n.id, n.ang || 1, n.comp_id || 0, n.gurmukhi || '');
 }
 
 function download(content: string, name: string, mime: string) {
@@ -187,10 +187,28 @@ function renderAll() {
 /* ---------- wire up ---------- */
 subscribe(renderAll);
 window.addEventListener('DOMContentLoaded', markPins);
+// pages re-render results with innerHTML; reflect pinned state on every newly added button
+new MutationObserver((muts) => {
+  for (const m of muts)
+    for (const n of Array.from(m.addedNodes))
+      if (n.nodeType === 1 && ((n as Element).matches('.pin-btn') || (n as Element).querySelector('.pin-btn'))) { markPins(); return; }
+}).observe(document.body, { childList: true, subtree: true });
+repairPins().then(markPins);              // heal pins captured from painted DOM by older builds
 $('#trailFab')?.addEventListener('click', openDrawer);
 $('#trailClose')?.addEventListener('click', closeDrawer);
 $('#trailScrim')?.addEventListener('click', closeDrawer);
 document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && $('#trailDrawer')?.classList.contains('on')) closeDrawer(); });
+// focus trap while the drawer is open (WCAG 2.1.2) — mirrors panel.ts's dialog trap
+$('#trailDrawer')?.addEventListener('keydown', (e: any) => {
+  const d = $('#trailDrawer');
+  if (e.key !== 'Tab' || !d || !d.classList.contains('on')) return;
+  const f = Array.from(d.querySelectorAll('button,[href],input,select,textarea,[tabindex]:not([tabindex="-1"])'))
+    .filter((el: any) => el.offsetParent !== null) as HTMLElement[];
+  if (!f.length) return;
+  const first = f[0], last = f[f.length - 1];
+  if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
+  else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
+});
 document.querySelectorAll('#trailTabs [data-tab]').forEach((t: any) => t.onclick = () => showTab(t.dataset.tab));
 (window as any).openStudyTrail = openDrawer;
 fabBadge(); markPins();

@@ -28,8 +28,12 @@ export async function api(p: string): Promise<any> {
   return r.json();
 }
 
-export const guard = (fn: (...a: any[]) => Promise<any>) =>
-  async (...a: any[]) => { try { return await fn(...a); } catch (e) { console.error(e); } };
+// `onFail` lets a page replace its "Loading…" placeholder with an honest error line instead
+// of leaving the pane stuck (api() already showed a toast).
+export const guard = (fn: (...a: any[]) => Promise<any>, onFail?: (e: any) => void) =>
+  async (...a: any[]) => { try { return await fn(...a); } catch (e) { console.error(e); try { onFail?.(e); } catch {} } };
+export const failHTML = (what = 'This section') =>
+  `<div class="hint">${what} could not be loaded — is serve.py still running? Reload to try again.</div>`;
 
 // Honour the OS "reduce motion" setting for JS-driven animation (D3 transitions / force
 // layout). The global CSS rule only covers CSS transitions; D3 runs its own animation loop.
@@ -126,6 +130,12 @@ async function initFooter() {
 }
 
 (window as any).goReader = goReader;          // for inline handlers in rendered HTML
+// delegated alternative to inline onclick="goReader(n,'name')": raag names are DB text and
+// must never be spliced into a JS string literal — carry them as data attributes instead.
+document.addEventListener('click', (e: any) => {
+  const b = e.target?.closest?.('[data-go-ang]');
+  if (b) { e.preventDefault(); goReader(+b.dataset.goAng || 1, b.dataset.goRaag || undefined); }
+});
 
 // shared init (module scripts are deferred → DOM is ready)
 initTheme();

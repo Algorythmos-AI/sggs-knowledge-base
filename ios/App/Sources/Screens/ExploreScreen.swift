@@ -16,20 +16,27 @@ struct ExploreScreen: View {
         var id: String { title }
     }
 
-    private let entries: [Entry] = [
-        .init(route: .index, title: "Index",
-              caption: "Raags, sections & authors — jump anywhere", icon: "list.bullet"),
-        .init(route: .themes, title: "Themes",
-              caption: "54 concepts, every tagged verse", icon: "circle.grid.2x2"),
-        .init(route: .lineage, title: "Lineage",
-              caption: "30 voices across five centuries", icon: "person.2"),
-        .init(route: .insights, title: "Insights",
-              caption: "Contributors, network, resonance & flow", icon: "chart.bar.xaxis"),
-        .init(route: .constellation, title: "Constellation",
-              caption: "A theme's verses clustered by co-theme", icon: "circle.hexagongrid"),
-        .init(route: .vaars, title: "Vaars",
-              caption: "22 ballads — pauri & salok anatomy", icon: "list.number"),
-    ]
+    /// Captions with counts are derived from the bundled data (never a hard-coded fact that a
+    /// DB-profile or roster change could silently falsify); the wording holds while loading.
+    private var entries: [Entry] {
+        let concepts = container.meta.map { "\(String($0.concepts.count)) concepts" } ?? "Every concept"
+        let voices = container.contributorCount.map { "\(String($0)) voices" } ?? "Every voice"
+        let vaars = container.vaarCount.map { "\(String($0)) ballads" } ?? "The ballads"
+        return [
+            .init(route: .index, title: "Index",
+                  caption: "Raags, sections & authors — jump anywhere", icon: "list.bullet"),
+            .init(route: .themes, title: "Themes",
+                  caption: "\(concepts), every tagged verse", icon: "circle.grid.2x2"),
+            .init(route: .lineage, title: "Lineage",
+                  caption: "\(voices) across five centuries", icon: "person.2"),
+            .init(route: .insights, title: "Insights",
+                  caption: "Contributors, network, resonance & flow", icon: "chart.bar.xaxis"),
+            .init(route: .constellation, title: "Constellation",
+                  caption: "A theme's verses clustered by co-theme", icon: "circle.hexagongrid"),
+            .init(route: .vaars, title: "Vaars",
+                  caption: "\(vaars) — pauri & salok anatomy", icon: "list.number"),
+        ]
+    }
 
     var body: some View {
         @Bindable var router = container.router
@@ -81,6 +88,7 @@ struct ExploreScreen: View {
             .background(Ink.canvas)
             .contentMargins(.bottom, Theme.Space.xl, for: .scrollContent)
             .navigationTitle("Explore")
+            .task { await container.loadMeta() }   // captions + Index/Themes need meta
             .navigationDestination(for: Route.self) { route in
                 switch route {
                 case .index: IndexScreen()
@@ -90,7 +98,6 @@ struct ExploreScreen: View {
                 case .constellation: ConstellationScreen()
                 case .vaars: VaarsScreen()
                 case .theme(let name): ThemeResultsScreen(concept: name)
-                case .raagAng: EmptyView()   // reserved (future: raag detail)
                 }
             }
         }

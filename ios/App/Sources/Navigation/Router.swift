@@ -15,7 +15,6 @@ enum Route: Hashable {
     case constellation
     case vaars
     case theme(String)
-    case raagAng(name: String, ang: Int)
 }
 
 @MainActor @Observable
@@ -34,11 +33,6 @@ final class Router {
         navigatedToAngExplicitly = true
         readerAng = max(1, min(1430, n))
         selectedTab = .reader
-    }
-
-    func openExplore(_ route: Route) {
-        selectedTab = .explore
-        explorePath = NavigationPath([route])
     }
 
     /// A raag the Clock tab should focus when opened via deep link / Reader timing chip.

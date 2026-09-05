@@ -142,7 +142,15 @@ final class SGGSUITests: XCTestCase {
         XCTAssertTrue(app.staticTexts["Strongest pairs"].waitForExistence(timeout: 15), "network list missing")
         app.buttons["insights_Resonance"].tap()
         XCTAssertTrue(app.staticTexts["Strongest resonances"].waitForExistence(timeout: 15), "resonance missing")
-        app.buttons["insights_Flow"].tap()
+        // Flow is the last pill in a horizontal row — on narrow widths it sits off-screen
+        // (an off-screen XCUIElement has no hit point). Drag the row left first.
+        // (`isHittable` itself throws for an off-screen element, so always drag — harmless
+        // when the row already fits.)
+        app.buttons["insights_Resonance"].firstMatch
+            .press(forDuration: 0.05, thenDragTo: app.buttons["insights_Contributors"].firstMatch)
+        let flow = app.buttons["insights_Flow"].firstMatch
+        XCTAssertTrue(flow.waitForExistence(timeout: 5))
+        flow.tap()
         XCTAssertTrue(app.otherElements["progressionRaagPicker"].firstMatch.waitForExistence(timeout: 15)
                       || app.buttons["progressionRaagPicker"].firstMatch.exists
                       || app.staticTexts["Raag"].firstMatch.waitForExistence(timeout: 5),
@@ -257,6 +265,84 @@ final class SGGSUITests: XCTestCase {
         XCTAssertTrue(app.buttons["Indigo accent"].isSelected, "accent choice must persist")
         // restore the default for subsequent tests/captures
         app.buttons["Saffron accent"].tap()
+    }
+
+    // MARK: pre-TestFlight hardening (2026-09)
+
+    /// The Search tab must never be a blank pane: idle shows guidance, and the mode pills
+    /// change that guidance.
+    func testSearchIdleStateShowsExamples() {
+        let app = XCUIApplication(); app.launch()
+        XCTAssertTrue(app.otherElements["searchIdle"].firstMatch.waitForExistence(timeout: 20)
+                      || app.staticTexts["Search the Granth"].waitForExistence(timeout: 5), "idle guidance missing")
+        // Roman is the third pill — always on screen (Theme/Verify scroll off on narrow widths)
+        app.buttons["mode_roman"].firstMatch.tap()
+        XCTAssertTrue(app.staticTexts["Roman"].firstMatch.waitForExistence(timeout: 5), "mode-specific guidance missing")
+    }
+
+    /// Save a verse (context menu) → More → Saved verses lists it → opens its composition →
+    /// Done returns to Saved → swipe-delete removes it (SwiftData store round trip).
+    func testSavedVerseRoundTrip() {
+        let app = XCUIApplication(); app.launch()
+        let field = app.searchFields.firstMatch
+        XCTAssertTrue(field.waitForExistence(timeout: 20))
+        field.tap(); field.typeText("naam")
+        let firstCell = app.cells.firstMatch
+        XCTAssertTrue(firstCell.waitForExistence(timeout: 20))
+        firstCell.press(forDuration: 1.1)
+        let save = app.buttons["Save"].firstMatch
+        XCTAssertTrue(save.waitForExistence(timeout: 8), "Save action missing"); save.tap()
+        field.typeText("\n")                                     // keyboard covers the tab bar
+        app.tabBars.buttons["More"].tap()
+        let saved = app.buttons["Saved verses"].firstMatch
+        XCTAssertTrue(saved.waitForExistence(timeout: 10)); saved.tap()
+        XCTAssertTrue(app.navigationBars["Saved"].waitForExistence(timeout: 10))
+        let row = app.cells.firstMatch
+        XCTAssertTrue(row.waitForExistence(timeout: 10), "saved verse not listed")
+        row.tap()
+        XCTAssertTrue(app.buttons["Done"].waitForExistence(timeout: 12), "composition did not open from Saved")
+        app.buttons["Done"].tap()
+        XCTAssertTrue(app.navigationBars["Saved"].waitForExistence(timeout: 8), "Done must return to Saved")
+        row.swipeLeft()
+        let del = app.buttons["Delete"].firstMatch
+        XCTAssertTrue(del.waitForExistence(timeout: 5)); del.tap()
+        XCTAssertTrue(app.staticTexts["No saved verses"].waitForExistence(timeout: 8), "delete did not empty the list")
+    }
+
+    /// Every composition sheet's Done returns to exactly where the reader was.
+    func testShabadDoneReturnsToOrigin() {
+        let app = XCUIApplication(); app.launch()
+        app.tabBars.buttons["Reader"].tap()
+        let hukam = app.buttons["Hukam"]
+        XCTAssertTrue(hukam.waitForExistence(timeout: 15)); hukam.tap()
+        XCTAssertTrue(app.buttons["Done"].waitForExistence(timeout: 12))
+        app.buttons["Done"].tap()
+        XCTAssertTrue(hukam.waitForExistence(timeout: 8), "Done must return to the Reader")
+        // Reader-only chrome proves we are back where we started (not on another tab/sheet)
+        XCTAssertTrue(app.buttons["jumpToAng"].firstMatch.waitForExistence(timeout: 8), "Reader toolbar must be back")
+        XCTAssertFalse(app.buttons["Done"].exists, "the sheet must be gone")
+    }
+
+    /// Testers must be able to report which build they are on.
+    func testAboutShowsVersion() {
+        let app = XCUIApplication(); app.launch()
+        app.tabBars.buttons["More"].tap()
+        let about = app.buttons["About & credits"].firstMatch
+        XCTAssertTrue(about.waitForExistence(timeout: 12)); about.tap()
+        let v = app.staticTexts["aboutVersion"].firstMatch
+        XCTAssertTrue(v.waitForExistence(timeout: 8), "version line missing")
+        XCTAssertTrue(v.label.contains("1.1.1+3"), "unexpected version label: \(v.label)")
+    }
+
+    /// A deep link arriving while the app runs must open the Hukam sheet (no production hook:
+    /// the system opens the URL exactly as a widget/Siri/Spotlight would).
+    func testDeepLinkOpensHukam() {
+        let app = XCUIApplication(); app.launch()
+        XCTAssertTrue(app.navigationBars["Search"].waitForExistence(timeout: 20))
+        XCUIDevice.shared.system.open(URL(string: "sggs://hukam")!)
+        XCTAssertTrue(app.navigationBars.matching(NSPredicate(format: "identifier BEGINSWITH %@", "Hukam")).firstMatch
+                        .waitForExistence(timeout: 15), "sggs://hukam did not open the Hukam sheet")
+        app.buttons["Done"].tap()
     }
 
     /// Captures reference screenshots (not an assertion gate). Written to the simulator's tmp

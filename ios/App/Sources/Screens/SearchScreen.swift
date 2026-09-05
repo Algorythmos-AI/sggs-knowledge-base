@@ -118,7 +118,9 @@ struct SearchScreen: View {
             ScrollView { VerdictView(result: v, en: model.verifyEn) { ang in container.router.openAng(ang) }.padding() }
         } else {
             LoadStateView(state: model.state, emptyTitle: "No matches",
-                          emptyMessage: "Try fewer words, first-letters mode, or a theme (naam, hukam, haumai).") { out in
+                          emptyMessage: "Try fewer words, first-letters mode, or a theme (naam, hukam, haumai).",
+                          onRetry: { Task { await model.run() } },
+                          idle: { AnyView(SearchIdleView(mode: model.mode)) }) { out in
                 List {
                     if let themes = out.relatedThemes, !themes.isEmpty {
                         Section { Text("Related themes: " + themes.joined(separator: " · "))
@@ -139,3 +141,39 @@ struct SearchScreen: View {
 }
 
 private struct SearchKey: Equatable { let q: String; let mode: String }
+
+/// The Search tab's idle canvas: what to type and which mode does what — instead of a blank
+/// pane under the pills (the empty-RESULTS state already had guidance; the idle state didn't).
+struct SearchIdleView: View {
+    let mode: String
+    @Environment(\.palette) private var palette
+    private var hint: (title: String, lines: [String]) {
+        switch mode {
+        case "verify": return ("Verify a quotation",
+                               ["Paste a line as you remember it — Gurmukhi or Roman.",
+                                "Add @Ang to check a claimed page, e.g. “… @1”.",
+                                "The verdict cites the canonical line and its Ang."])
+        case "first": return ("First letters", ["Type the first letter of each word: ਸ ਨ ਕ", "or in Roman: s n k"])
+        case "theme": return ("Theme", ["Try naam, hukam, haumai, seva, simran", "Every tagged verse, cited by Ang"])
+        case "english": return ("English", ["Search the labelled translation layer: mercy, light, ego"])
+        case "gurmukhi": return ("Gurmukhi", ["ਨਾਮੁ · ਸਤਿਗੁਰ · ਹੁਕਮਿ"])
+        case "roman": return ("Roman", ["waheguru · satgur · naam — spelling is forgiven"])
+        default: return ("Search the Granth", ["ਨਾਮੁ · waheguru · ਸ ਨ ਕ · naam",
+                                                "Words, sounds, first letters or a theme — Auto picks the tier.",
+                                                "Every result is verbatim scripture, cited by Ang."])
+        }
+    }
+    var body: some View {
+        VStack(spacing: Theme.Space.m) {
+            Text("ੴ").font(Brand.gurmukhi(44, relativeTo: .largeTitle))
+                .foregroundStyle(palette.accent.opacity(0.55)).accessibilityHidden(true)
+            Text(hint.title).font(.headline)
+            ForEach(hint.lines, id: \.self) { l in
+                Text(l).font(.subheadline).foregroundStyle(.secondary).multilineTextAlignment(.center)
+            }
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .padding(Theme.Space.xl)
+        .accessibilityIdentifier("searchIdle")
+    }
+}

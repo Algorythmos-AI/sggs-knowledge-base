@@ -21,48 +21,81 @@ final class AppContainer {
     /// Presenting during that window is dropped by SwiftUI, so `present` must keep queueing —
     /// `presentation == nil` alone can't distinguish "no sheet" from "dismiss in flight".
     private var dismissInFlight = false
+    /// True while RootView's TabView (the ONLY `.sheet(item:)` host) is mounted. Before the
+    /// integrity check passes — and again while a manual re-verify unmounts the TabView —
+    /// there is no sheet to dismiss, so `present` must never enter the swap-and-wait path:
+    /// its `onDismiss` would never fire and every later `present` would queue forever
+    /// (a cold launch from a widget/Spotlight/`sggs://` link during verification hit this).
+    var sheetHosted = false
     var meta: CorpusMeta?
 
     /// The SwiftData store for saved verses. Built explicitly (never via the implicit
     /// `.modelContainer(for:)` result-builder, which fatalErrors on a corrupt store): a broken
-    /// bookmarks store must NEVER take scripture reading down with it. Fallback ladder:
-    /// persistent → destroy-and-recreate persistent → in-memory (session-only) → nil (hide Save).
+    /// bookmarks store must NEVER take scripture reading down with it. Fallback ladder (see
+    /// `openSavedStore`): persistent → [second consecutive failure only] destroy-and-recreate
+    /// → in-memory (session-only) → nil (hide Save).
     let modelContainer: ModelContainer?
-    /// "Saved verses won't persist this session" — set when the persistent store was unusable
-    /// and we fell back to in-memory (or nothing). Surfaced as a one-time banner, never a crash.
+    /// The persistent store was unusable this launch: we fell back to in-memory (or nothing).
+    /// Surfaced as a one-time banner, never a crash.
     var savedStoreDegraded = false
+    /// The persistent store was destroyed and recreated (only after a SECOND consecutive
+    /// launch failure — a one-off I/O hiccup must never cost the reader their bookmarks).
+    var savedStoreDestroyed = false
+
+    static let savedStoreFailKey = "sggs_saved_store_fail_count"
 
     init() {
         do { self.corpus = try CorpusActor() }
         catch { self.corpus = nil; self.startupError = error.localizedDescription }
 
-        let schema = Schema([SavedLine.self])
-        if let persistent = try? ModelContainer(for: schema, configurations: ModelConfiguration(schema: schema)) {
-            self.modelContainer = persistent
-        } else if let recreated = Self.recreatedPersistentContainer(schema: schema) {
-            // one-time recreate: the old store file was corrupt beyond opening; bookmarks are
-            // user annotations (never scripture), so a clean store beats a dead feature
-            self.modelContainer = recreated
-            self.savedStoreDegraded = true
-        } else if let memory = try? ModelContainer(
-            for: schema, configurations: ModelConfiguration(schema: schema, isStoredInMemoryOnly: true)) {
-            self.modelContainer = memory
-            self.savedStoreDegraded = true
-        } else {
-            self.modelContainer = nil
-            self.savedStoreDegraded = true
-        }
+        let defaults = UserDefaults.standard
+        let prior = defaults.integer(forKey: Self.savedStoreFailKey)
+        let opened = Self.openSavedStore(url: nil, priorFailures: prior)
+        self.modelContainer = opened.container
+        self.savedStoreDegraded = opened.degraded
+        self.savedStoreDestroyed = opened.destroyed
+        // count consecutive persistent-open failures; a clean open resets the ladder
+        defaults.set(opened.degraded && !opened.destroyed ? prior + 1 : 0, forKey: Self.savedStoreFailKey)
     }
 
-    /// Destroy an unopenable store file and try once more. Returns nil if that also fails.
-    private static func recreatedPersistentContainer(schema: Schema) -> ModelContainer? {
-        let config = ModelConfiguration(schema: schema)
-        let fm = FileManager.default
-        let url = config.url
-        for suffix in ["", "-shm", "-wal"] {
-            try? fm.removeItem(at: URL(fileURLWithPath: url.path + suffix))
+    struct SavedStoreOpen {
+        let container: ModelContainer?
+        let degraded: Bool
+        let destroyed: Bool
+    }
+
+    /// The bookmarks-store fallback ladder, pure enough to unit-test against a temp URL:
+    ///   persistent → (only if a previous launch ALSO failed) destroy + recreate persistent
+    ///   → in-memory (session-only) → nil (Save hidden).
+    /// `url == nil` uses SwiftData's default store location.
+    static func openSavedStore(url: URL?, priorFailures: Int) -> SavedStoreOpen {
+        let schema = Schema(versionedSchema: SavedLineSchemaV1.self)
+        func config(inMemory: Bool = false) -> ModelConfiguration {
+            if let url { return ModelConfiguration(schema: schema, url: url) }
+            return ModelConfiguration(schema: schema, isStoredInMemoryOnly: inMemory)
         }
-        return try? ModelContainer(for: schema, configurations: config)
+        func open(_ cfg: ModelConfiguration) -> ModelContainer? {
+            try? ModelContainer(for: schema, migrationPlan: SavedLineMigrationPlan.self, configurations: cfg)
+        }
+        if let persistent = open(config()) {
+            return SavedStoreOpen(container: persistent, degraded: false, destroyed: false)
+        }
+        if priorFailures >= 1 {
+            // second consecutive failure: the store file is unusable, not merely busy.
+            // Bookmarks are user annotations (never scripture) — a clean store beats a
+            // permanently dead feature.
+            let path = config().url
+            for suffix in ["", "-shm", "-wal"] {
+                try? FileManager.default.removeItem(at: URL(fileURLWithPath: path.path + suffix))
+            }
+            if let recreated = open(config()) {
+                return SavedStoreOpen(container: recreated, degraded: true, destroyed: true)
+            }
+        }
+        if let memory = open(ModelConfiguration(schema: schema, isStoredInMemoryOnly: true)) {
+            return SavedStoreOpen(container: memory, degraded: true, destroyed: false)
+        }
+        return SavedStoreOpen(container: nil, degraded: true, destroyed: false)
     }
 
     /// Present a modal through the single root sheet. If a sheet is already up (e.g. opening a shabad
@@ -70,6 +103,14 @@ final class AppContainer {
     /// `onDismiss` then presents the queued modal AFTER the dismiss animation completes (presenting
     /// during the dismiss is dropped by SwiftUI).
     func present(_ p: Presentation) {
+        guard sheetHosted else {
+            // No host yet: nothing is on screen to dismiss. Latest intent wins; the sheet
+            // presents as soon as the TabView mounts (`.sheet(item:)` shows a non-nil item).
+            pendingPresentation = nil
+            dismissInFlight = false
+            presentation = p
+            return
+        }
         if presentation != nil {
             pendingPresentation = p
             dismissInFlight = true
@@ -85,6 +126,20 @@ final class AppContainer {
 
     /// Called from RootView's sheet onDismiss: flush any queued modal. If another modal was already
     /// presented in the meantime (rapid taps), keep it and drop the stale queue entry.
+    /// RootView calls this when the TabView unmounts (integrity re-verify): any in-flight
+    /// dismiss can no longer complete, so the protocol is re-armed rather than left latched.
+    func sheetHostDidDisappear() {
+        sheetHosted = false
+        dismissInFlight = false
+    }
+
+    /// RootView calls this when the TabView mounts: present anything that was queued while
+    /// there was no host (e.g. a deep link that arrived during the integrity check).
+    func sheetHostDidAppear() {
+        sheetHosted = true
+        flushPendingPresentation()
+    }
+
     func flushPendingPresentation() {
         dismissInFlight = false
         guard let pending = pendingPresentation else { return }
@@ -105,9 +160,15 @@ final class AppContainer {
         await runIntegrity()
     }
 
+    /// Number of Vaars in the bundled DB (Explore caption; nil until loaded).
+    var vaarCount: Int?
+    /// Number of voices in the bundled roster (Explore caption).
+    let contributorCount: Int? = ContributorsStore.load()?.count
+
     func loadMeta() async {
         guard meta == nil, let corpus else { return }
         meta = try? await corpus.meta()
+        vaarCount = await corpus.vaars().count
     }
 
     /// Refresh the <50 KB widget snapshot (App Group JSON): today's Hukam opening verse +

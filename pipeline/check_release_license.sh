@@ -2,9 +2,12 @@
 # check_release_license.sh — the mechanical NOTICE.md hard-gate for any PUBLIC iOS release.
 #
 # Fails (exit 1) if:
-#   (a) the manifest says en_bundled=true            — the Khalsa English translation is
-#       PERSONAL, LOCAL, NON-COMMERCIAL use only; a public/App Store build must be built
-#       with `--profile public` (or ship a licensed/open translation);
+#   (a) the manifest says en_bundled=true AND the licence attestation file
+#       (ios/Resources/TRANSLATION-LICENSE.md, override with $SGGS_LICENSE_ATTESTATION)
+#       does not contain the line `LICENSED: true` — the Khalsa English translation is
+#       PERSONAL, LOCAL, NON-COMMERCIAL use only until licensed in writing; a public /
+#       TestFlight / App Store build must either be built with `--profile public` or
+#       carry a filled-in attestation;
 #   (b) scripture_sha256 differs from the certified corpus value — scripture must be
 #       byte-identical to the proven corpus, always;
 #   (c) the DB artifact's sha256 doesn't match its manifest;
@@ -19,6 +22,7 @@ cd "$(dirname "$0")/.."
 MANIFEST="${1:-ios/Resources/sggs-ios-public.manifest.json}"
 DB="${2:-${MANIFEST%.manifest.json}.sqlite}"
 CERTIFIED_SCRIPTURE_SHA="0eff4bae60cfcf1c63ae4ac14c2ecf255a9457edc0bebaf627aa28dedb89c84f"
+ATTESTATION="${SGGS_LICENSE_ATTESTATION:-ios/Resources/TRANSLATION-LICENSE.md}"
 
 fail=0
 say() { echo "  $1"; }
@@ -29,9 +33,14 @@ echo "release gate: $MANIFEST"
 
 EN=$(python3 -c "import json;print(json.load(open('$MANIFEST')).get('en_bundled', False))")
 if [ "$EN" = "True" ]; then
-  say "✗ en_bundled=true — the Khalsa English layer is personal-use only (NOTICE.md)."
-  say "  A public release must be built with --profile public, or ship a licensed translation."
-  fail=1
+  if [ -f "$ATTESTATION" ] && grep -qE '^LICENSED:[[:space:]]*true[[:space:]]*$' "$ATTESTATION"; then
+    say "✓ en_bundled=true and the translation licence is attested ($ATTESTATION)"
+  else
+    say "✗ en_bundled=true — the Khalsa English layer is personal-use only (NOTICE.md)."
+    say "  A public/TestFlight release must be built with --profile public, or the licence"
+    say "  must be attested with 'LICENSED: true' in $ATTESTATION."
+    fail=1
+  fi
 else
   say "✓ no restricted translation layer bundled"
 fi

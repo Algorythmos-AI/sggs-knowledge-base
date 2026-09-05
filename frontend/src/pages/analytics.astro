@@ -11,7 +11,7 @@ import Base from '../layouts/Base.astro';
           <div class="viz-title">Theme Co-occurrence Network</div>
           <div class="viz-sub">Which themes tend to appear in the same hymns. Each circle is a theme — bigger means more verses carry it; a line joins two themes that recur together more than coincidence would explain, and a thicker, brighter line means a stronger bond. <b>Drag</b> a circle, <b>scroll</b> to zoom, or <b>click</b> a theme to see its verses. The web opens on the strongest links — drag <b>min&nbsp;PPMI</b> down to 0 to reveal every bond, or up to focus.<span style="display:block;margin-top:6px;font-size:.88em;opacity:.6">Method · link strength is PPMI, which corrects for how common each theme is on its own.</span></div>
         </div>
-        <label class="viz-ctl">min&nbsp;PPMI <input id="ppmiRange" type="range" min="0" max="3" step="0.1" value="0.7" /> <span id="ppmiVal" class="viz-val">0.7</span></label>
+        <label class="viz-ctl">min&nbsp;PPMI <input id="ppmiRange" type="range" min="0" max="1" step="0.1" value="0.7" /> <span id="ppmiVal" class="viz-val">0.7</span></label>
       </div>
       <div id="network" class="viz-stage"></div>
     </div>

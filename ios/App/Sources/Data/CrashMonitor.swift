@@ -26,7 +26,7 @@ final class CrashMonitor: NSObject, MXMetricManagerSubscriber, Sendable {
         }
     }
 
-    /// Count of collected diagnostics (surfaced in About for the QA pass).
+    /// Count of collected diagnostics (surfaced in About → Integrity for the QA pass).
     static func diagnosticCount() -> Int {
         guard let folder, let items = try? FileManager.default.contentsOfDirectory(atPath: folder.path)
         else { return 0 }

@@ -76,7 +76,7 @@ public struct VerifyEngine {
             claimClean = ""
             claimTN = nfc.lowercased()
                 .split(whereSeparator: { $0.isWhitespace })
-                .map { GurbaniText.romanToTN(String($0)) }
+                .map { RomanNorm.fold(String($0)) }
                 .joined(separator: " ")
             (candidates, exactHit) = try searchRoman(nfc)
         }
@@ -147,7 +147,7 @@ public struct VerifyEngine {
             if !needle.isEmpty && (GurbaniText.scalarCount(needle) >= 12 || GurbaniText.wordCount(needle) >= 3) {
                 for s in stable {
                     let hay = isG ? GurbaniText.cleanGurmukhi(s.row.gurmukhi) : s.row.translitNorm
-                    if " \(hay) ".contains(" \(needle) ") {
+                    if hay != needle && " \(hay) ".contains(" \(needle) ") {   // whole line ≠ fragment
                         // Python's VERIFIED_PARTIAL distance_details carries only {note, fragment_len}
                         // — no best/second/gap/candidates_scored — so those stay nil here.
                         return Inter(verdict: "VERIFIED_PARTIAL", confidence: 0.95,
@@ -169,7 +169,7 @@ public struct VerifyEngine {
             verdict = (secondRatio >= threshAmbig && gap < threshGap) ? "AMBIGUOUS" : "PROBABLE"
             confidence = bestRatio
         } else {
-            verdict = "NOT_FOUND"; confidence = bestRatio
+            verdict = "NOT_FOUND"; confidence = 0.0
         }
 
         let isNF = verdict == "NOT_FOUND"
@@ -220,7 +220,7 @@ public struct VerifyEngine {
         }
         if !rows.isEmpty { return (rows, exact) }
         // Stage 2: translit_norm phrase
-        let tn = tokens.map { GurbaniText.romanToTN($0) }
+        let tn = tokens.map { RomanNorm.fold($0) }
         rows = try source.ftsRowids(FTSQuery.phrase(tn, column: "translit_norm"), limit: candidateLimit)
         if !rows.isEmpty { return (rows, nil) }
         // Stage 3: translit_norm OR

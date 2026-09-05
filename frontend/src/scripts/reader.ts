@@ -1,6 +1,6 @@
 // reader.ts — the Reader page (/reader) : the Ang-by-Ang viewer.
 // Ported 1:1 from the original; deep-links via ?ang=<n>&raag=<name>.
-import { $, esc, api, guard, meta, store, syncToolbarTop, relChip } from './core';
+import { $, esc, api, guard, meta, store, syncToolbarTop, relChip, failHTML } from './core';
 import { pinButtonHTML } from './store';
 import { loadClock, claimsFor } from './timing';
 import { paharLabel, paharRange } from './pahar.js';
@@ -57,7 +57,7 @@ const ang = guard(async (n: number) => {
       `<div class="${x.gurmukhi.startsWith('ੴ') ? 'invoc' : ''}">${esc(x.gurmukhi)}</div>`).join('')}
         <div class="t">${g.headers.map((x: any) => esc(x.translit)).join(' · ')}</div></div>`;
     h += g.body.map((l: any) => `<div class="sline tap haspin ${l.is_rahao ? 'rahao' : ''}" data-line-id="${l.id}" title="Tap for related verses">
-        ${pinButtonHTML(l.id, curAng, l.comp_id)}
+        ${pinButtonHTML(l.id, curAng, l.comp_id, l.gurmukhi)}
         <div class="g gm" lang="pa">${esc(l.gurmukhi)}</div><div class="t">${esc(l.translit)}</div>
         ${l.en ? `<div class="en" lang="en">${esc(l.en)}</div>` : ''}</div>`).join('');
     h += '</div>';
@@ -67,8 +67,19 @@ const ang = guard(async (n: number) => {
       <button onclick="ang(${curAng + 1})" ${curAng >= 1430 ? 'disabled' : ''}>${nextL}</button></div>`;
   ($('#angOut') as HTMLElement).innerHTML = h;
   window.scrollTo({ top: 0 });
-});
+  // keep the URL honest (bookmarkable/shareable, Back stays on this page) without piling
+  // one history entry per page-turn
+  try {
+    const u = new URL(location.href); u.searchParams.set('ang', String(curAng));
+    if (raagCtx) u.searchParams.set('raag', raagCtx.name); else u.searchParams.delete('raag');
+    history.replaceState({ ang: curAng }, '', u);
+  } catch {}
+}, () => { const o = $('#angOut'); if (o) o.innerHTML = failHTML('This Ang'); });
 const step = (d: number) => ang(curAng + d);
+window.addEventListener('popstate', () => {
+  const n = parseInt(new URLSearchParams(location.search).get('ang') || '', 10);
+  if (n && n !== curAng) ang(n);
+});
 
 /* ---- raag timing chip: small metadata chip next to the raag context chip.
    Scholarly metadata about the raag, visually distinct from Gurbani, never
@@ -175,7 +186,7 @@ const loadRelated = guard(async (sline: HTMLElement) => {
       <span class="rel-actions"><a class="rel-trail" href="/trail?line_id=${id}">walk a trail →</a>
       <button class="rel-x" aria-label="Close">×</button></span></div>`
     + (items.length ? items.map(relCard).join('') : `<div class="rel-loading">No related verses found.</div>`);
-});
+}, () => { document.querySelectorAll('.related .rel-loading').forEach((el) => { el.innerHTML = failHTML('Related verses'); }); });
 // delegate on the stable #angOut node (its innerHTML is replaced per Ang, the node is not)
 $('#angOut')?.addEventListener('click', (e: any) => {
   const x = e.target.closest('.rel-x'); if (x) { x.closest('.related')?.remove(); return; }

@@ -20,7 +20,8 @@ struct TrailScreen: View {
                 pinnedVerse
                 Divider()
                 LoadStateView(state: state, emptyTitle: "No related verses",
-                              emptyMessage: "This verse has no computed neighbours.") { result in
+                              emptyMessage: "This verse has no computed neighbours.",
+                              onRetry: { Task { await load(current.id) } }) { result in
                     List {
                         Section {
                             ForEach(result.neighbors) { n in
@@ -107,7 +108,9 @@ struct TrailScreen: View {
         state = .loading
         do {
             let r = try await corpus.neighbors(lineId: lineId, limit: 12)
+            if Task.isCancelled { return }            // stepped on before this reply landed
             state = r.neighbors.isEmpty ? .empty : .loaded(r)
+        } catch is CancellationError {
         } catch { state = .failed(UserMessage.load(error)) }
     }
 }

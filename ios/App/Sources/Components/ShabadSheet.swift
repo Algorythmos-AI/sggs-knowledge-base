@@ -13,7 +13,9 @@ struct ShabadSheet: View {
 
     var body: some View {
         NavigationStack {
-            LoadStateView(state: state) { lines in
+            LoadStateView(state: state, emptyTitle: "Composition not found",
+                          emptyMessage: "No lines carry this composition id.",
+                          onRetry: { Task { await load() } }) { lines in
                 List {
                     ForEach(lines, id: \.id) { line in
                         // Full line identity: Share carries the Ang citation, and Save /
@@ -50,12 +52,12 @@ struct ShabadSheet: View {
             switch presentation {
             case .shabad(let compId):
                 let s = try await corpus.shabad(compId: compId)
-                title = "Ang \(s.lines.first?.ang ?? 0)"
+                title = s.lines.first.map { "Ang \($0.ang)" } ?? "Composition not found"
                 openAng = s.lines.first?.ang
                 state = s.lines.isEmpty ? .empty : .loaded(s.lines)
             case .hukam:
                 let h = try await corpus.randomHukam()
-                title = "Hukam · Ang \(h.lines.first?.ang ?? 0)"
+                title = h.lines.first.map { "Hukam · Ang \($0.ang)" } ?? "Hukam"
                 openAng = h.lines.first?.ang
                 state = h.lines.isEmpty ? .empty : .loaded(h.lines)
             }

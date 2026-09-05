@@ -25,7 +25,7 @@ Uses only the Python standard library + the prebuilt `db/sggs.sqlite`. Nothing t
 | Gurmukhi | `ਸੋਚੈ ਸੋਚਿ` | Whole-word full-text search of the scripture |
 | Roman | `sat naam karataa`, `waheguru`, `satgur kirpa` | Searches the transliteration; spelling-tolerant (w/v, aa/a, oo/u…) |
 | First letters | `ਧ ਧ ਰ ਗ` or `dh dh r g` | Finds a line by its word-initials |
-| Theme | `haumai`, `hukam`, `naam` | 53 curated concepts → every line containing their verified Gurmukhi terms |
+| Theme | `haumai`, `hukam`, `naam` | 54 curated concepts → every line containing their verified Gurmukhi terms |
 
 Plus: read any Ang (1–1430), browse Raags/Banis, click any line to see its full shabad with the ਰਹਾਉ highlighted, a random-shabad button, **Verify quote** mode (checks any claimed line against the canonical corpus, `@ang` optional), and an **English layer** (Dr. Sant Singh Khalsa, via BaniDB — labeled, never scripture) on Japji + liturgy, Sukhmani Sahib, and Anand Sahib. Health self-test: `http://localhost:7777/api/health`.
 

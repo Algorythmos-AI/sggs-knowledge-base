@@ -11,6 +11,7 @@ final class HardeningTests: XCTestCase {
     @MainActor
     func testPresentShowsImmediatelyWhenIdle() {
         let c = AppContainer()
+        c.sheetHostDidAppear()                // the TabView (sheet host) is mounted
         c.present(.hukam)
         XCTAssertNotNil(c.presentation)
         XCTAssertNil(c.pendingPresentation)
@@ -21,6 +22,7 @@ final class HardeningTests: XCTestCase {
     @MainActor
     func testPresentSwapQueuesUntilDismissCompletes() {
         let c = AppContainer()
+        c.sheetHostDidAppear()                // the TabView (sheet host) is mounted
         c.present(.hukam)
         c.present(.shabad(compId: 42))
         XCTAssertNil(c.presentation, "current sheet must start dismissing")
@@ -40,6 +42,7 @@ final class HardeningTests: XCTestCase {
     @MainActor
     func testRapidTriplePresentNeverStrandsTheQueue() {
         let c = AppContainer()
+        c.sheetHostDidAppear()                // the TabView (sheet host) is mounted
         c.present(.hukam)                     // sheet A up
         c.present(.shabad(compId: 1))         // queue B, dismiss A
         c.present(.shabad(compId: 2))         // mid-dismiss: must REPLACE the queue, not present
@@ -59,11 +62,49 @@ final class HardeningTests: XCTestCase {
     @MainActor
     func testUserDismissReArmsPresenting() {
         let c = AppContainer()
+        c.sheetHostDidAppear()                // the TabView (sheet host) is mounted
         c.present(.hukam)
         c.presentation = nil                  // .sheet(item:) binding writes nil on user dismiss
         c.flushPendingPresentation()          // onDismiss with nothing queued
         c.present(.shabad(compId: 7))
         XCTAssertNotNil(c.presentation, "present must not stay blocked after a normal dismiss")
+    }
+
+    /// A present that arrives BEFORE the TabView mounts (cold launch from a widget /
+    /// Spotlight / sggs:// link while the integrity check runs) has nothing to dismiss.
+    /// Before the fix a second such present set `dismissInFlight` with no onDismiss ever
+    /// coming → every later present queued forever (no modal for the rest of the session).
+    @MainActor
+    func testPresentBeforeSheetHostNeverLatches() {
+        let c = AppContainer()
+        XCTAssertFalse(c.sheetHosted)
+        c.present(.hukam)
+        c.present(.shabad(compId: 1))         // latest intent wins, nothing to wait for
+        guard case .shabad(let id)? = c.presentation else { return XCTFail("must present directly") }
+        XCTAssertEqual(id, 1)
+        XCTAssertNil(c.pendingPresentation)
+        c.sheetHostDidAppear()                // TabView mounts: the pending item shows as-is
+        guard case .shabad(let id2)? = c.presentation else { return XCTFail("host mount must keep it") }
+        XCTAssertEqual(id2, 1)
+        // and the normal swap protocol works from here on
+        c.present(.hukam)
+        XCTAssertNil(c.presentation, "swap: current sheet dismisses first")
+        c.flushPendingPresentation()
+        guard case .hukam? = c.presentation else { return XCTFail("queued modal must present") }
+    }
+
+    /// Integrity re-verify unmounts the TabView under an open sheet: the host-disappear
+    /// hook must re-arm presenting (no onDismiss will come for that sheet).
+    @MainActor
+    func testHostDisappearReArmsPresenting() {
+        let c = AppContainer()
+        c.sheetHostDidAppear()
+        c.present(.hukam)
+        c.present(.shabad(compId: 3))         // dismiss in flight…
+        c.sheetHostDidDisappear()             // …but the host vanished (re-verify)
+        c.present(.shabad(compId: 4))
+        guard case .shabad(let id)? = c.presentation else { return XCTFail("must not latch") }
+        XCTAssertEqual(id, 4)
     }
 
     // MARK: deep-link vs resume-last-Ang

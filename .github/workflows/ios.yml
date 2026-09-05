@@ -45,12 +45,18 @@ jobs:
         run: swift test --package-path ios/Packages/GurbaniSearchKit
       - name: Release-readiness gate (NOTICE.md hard-gate)
         run: |
-          # the PUBLIC artifact must pass; the PERSONAL one must be BLOCKED (negative test)
+          # the PUBLIC artifact must always pass
           pipeline/check_release_license.sh
-          if pipeline/check_release_license.sh ios/Resources/sggs-ios.manifest.json; then
-            echo "ERROR: the personal (English-bundled) manifest passed the public gate"; exit 1
+          # the PERSONAL (English-bundled) artifact must be BLOCKED without a licence
+          # attestation (negative test, independent of the committed attestation flag) …
+          if SGGS_LICENSE_ATTESTATION=/dev/null pipeline/check_release_license.sh ios/Resources/sggs-ios.manifest.json; then
+            echo "ERROR: the personal manifest passed the gate with no licence attestation"; exit 1
           fi
-          echo "personal profile correctly blocked from public release"
+          echo "personal profile correctly blocked without an attestation"
+          # … and must PASS once the licence is attested (positive test, temp file only)
+          printf 'LICENSED: true\n' > "$RUNNER_TEMP/attest.md"
+          SGGS_LICENSE_ATTESTATION="$RUNNER_TEMP/attest.md" pipeline/check_release_license.sh ios/Resources/sggs-ios.manifest.json
+          echo "personal profile correctly released by an attestation"
 
   # The app target: unit tests (integration + launch-cache) and XCUITests on a simulator.
   # The xcodeproj is generated (not committed); the DB is rebuilt deterministically per job.

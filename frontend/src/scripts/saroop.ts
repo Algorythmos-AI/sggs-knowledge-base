@@ -7,8 +7,8 @@
    the stored corpus, the DB, the API payloads, full-text search, or the explicit
    "Copy verse" action (which copies from the data model, not the DOM). A copy
    interceptor strips the selectors from any text the user selects, so the
-   clipboard always carries verbatim Unicode. Default OFF; opt-in via the header
-   toggle (ਯ), persisted in localStorage. Scripture bytes are never touched.
+   clipboard always carries verbatim Unicode. Default ON since v2.10.1; the header
+   toggle (ਯ) turns it off, persisted in localStorage. Scripture bytes are never touched.
 
    Transform rule (Sant Lipi spec): a subjoined-ya run  ੍ਯ  — single, and the
    source-faithful doubled  ੍ਯ੍ਯ  — becomes  VS1 + ਯ  (one tucked addha-yayya).
@@ -119,8 +119,10 @@ function init(): void {
   if (b) b.addEventListener('click', () => setSaroop(!ON));
   reflect();   // apply the initial (default-on) saroop state without persisting until the reader chooses
 
-  // Re-apply to scripture rendered after load (search results, reader pages, trail, modal…).
-  const target = document.getElementById('main') || document.body;
+  // Re-apply to scripture rendered after load (search results, reader pages, trail, the
+  // composition modal #panel and the study-trail drawer — both siblings of #main, so the
+  // observer must watch the whole body).
+  const target = document.body;
   const mo = new MutationObserver(muts => {
     if (!ON || busy) return;
     busy = true;

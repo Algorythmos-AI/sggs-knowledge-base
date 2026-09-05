@@ -73,6 +73,7 @@ enum ForceLayout {
 struct ThemeNetworkSection: View {
     @Environment(AppContainer.self) private var container
     @State private var edges: [ThemeEdge] = []
+    @State private var loaded = false            // distinguishes 'nothing yet' from 'nothing at this strength'
     @State private var minPPMI = 0.7
     @State private var asList = false
     @State private var graph: (names: [String], points: [CGPoint], links: [(Int, Int, Double)])?
@@ -84,7 +85,7 @@ struct ThemeNetworkSection: View {
                 VStack(alignment: .leading, spacing: Theme.Space.xs) {
                     Text("Minimum PPMI: \(minPPMI, format: .number.precision(.fractionLength(2)))")
                         .font(.caption).foregroundStyle(.secondary)
-                    Slider(value: $minPPMI, in: 0...1.4)
+                    Slider(value: $minPPMI, in: 0...1)     // the query clamps at 1.0 (server parity)
                         .accessibilityLabel("Minimum co-occurrence strength")
                 }
             }
@@ -99,6 +100,10 @@ struct ThemeNetworkSection: View {
                 }
             }
             Section(asList ? "Theme pairs" : "Strongest pairs") {
+                if loaded && edges.isEmpty {
+                    Text("No theme pairs at this strength — lower the minimum PPMI.")
+                        .font(.subheadline).foregroundStyle(.secondary)
+                }
                 ForEach(asList ? edges : Array(edges.prefix(12))) { e in
                     HStack {
                         Text("\(e.source.capitalized) + \(e.target.capitalized)").font(.subheadline)
@@ -120,9 +125,11 @@ struct ThemeNetworkSection: View {
                 guard !Task.isCancelled else { return }
             }
             let mp = minPPMI
-            let loaded = (try? await corpus.themeNetwork(minPPMI: mp, limit: 1500)) ?? []
+            let fetched = (try? await corpus.themeNetwork(minPPMI: mp, limit: 1500)) ?? []
             if Task.isCancelled { return }
-            edges = loaded
+            edges = fetched
+            loaded = true
+            let loaded = fetched
             // settle the layout OFF-main before first frame (deterministic seed)
             let names = Array(Set(loaded.flatMap { [$0.source, $0.target] })).sorted()
             let index = Dictionary(uniqueKeysWithValues: names.enumerated().map { ($1, $0) })
