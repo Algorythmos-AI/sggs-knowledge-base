@@ -129,8 +129,9 @@ struct ClockScreen: View {
                     Haptics.tap()
                     detailPahar = PaharSelection(p: tapped)
                 }
-                .frame(maxWidth: .infinity)
+                .frame(maxWidth: 420)                 // iPad/landscape: never taller than a screen
                 .aspectRatio(1, contentMode: .fit)
+                .frame(maxWidth: .infinity)
                 .padding(.horizontal, Theme.Space.xl)
                 .accessibilityHidden(true)   // decorative — the list below is the a11y path
                 paharList(clock: clock, current: p)

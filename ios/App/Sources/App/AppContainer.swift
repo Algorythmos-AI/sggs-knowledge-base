@@ -140,6 +140,15 @@ final class AppContainer {
         flushPendingPresentation()
     }
 
+    /// Watchdog-safe flush: presents a queued modal ONLY when nothing is presenting and no
+    /// dismiss is in flight. Unlike `flushPendingPresentation` it may be called from any
+    /// lifecycle point (e.g. scene becomes active) without racing a swap-dismiss.
+    func flushIfIdle() {
+        guard sheetHosted, !dismissInFlight, presentation == nil, let p = pendingPresentation else { return }
+        pendingPresentation = nil
+        presentation = p
+    }
+
     func flushPendingPresentation() {
         dismissInFlight = false
         guard let pending = pendingPresentation else { return }
@@ -200,20 +209,22 @@ final class AppContainer {
 
 /// The shared shabad/hukam modal target (passed to ShabadSheet).
 enum CompositionPresentation: Identifiable, Hashable {
-    case shabad(compId: Int)
+    /// `focusLineId`: the verse the sheet scrolls to and highlights (nil = top). Deliberately
+    /// NOT part of `id` — `.sheet(item:)` keys on `id`, and a focus change must never re-present.
+    case shabad(compId: Int, focusLineId: Int? = nil)
     case hukam
-    var id: String { switch self { case .shabad(let c): return "shabad-\(c)"; case .hukam: return "hukam" } }
+    var id: String { switch self { case .shabad(let c, _): return "shabad-\(c)"; case .hukam: return "hukam" } }
 }
 
 /// Every root modal, behind ONE `.sheet(item:)`. Identifiable only (associated values needn't be Hashable).
 enum Presentation: Identifiable {
-    case shabad(compId: Int)
+    case shabad(compId: Int, focusLineId: Int? = nil)
     case hukam
     case trail(TrailStart)
     case cluster(center: String, cluster: ConstellationCluster)
     var id: String {
         switch self {
-        case .shabad(let c): return "shabad-\(c)"
+        case .shabad(let c, _): return "shabad-\(c)"
         case .hukam: return "hukam"
         case .trail(let t): return "trail-\(t.id)"
         case .cluster(let center, let cl): return "cluster-\(center)-\(cl.co)"
@@ -221,7 +232,11 @@ enum Presentation: Identifiable {
     }
     /// The shabad/hukam subset, for ShabadSheet.
     var composition: CompositionPresentation? {
-        switch self { case .shabad(let c): return .shabad(compId: c); case .hukam: return .hukam; default: return nil }
+        switch self {
+        case .shabad(let c, let l): return .shabad(compId: c, focusLineId: l)
+        case .hukam: return .hukam
+        default: return nil
+        }
     }
 }
 

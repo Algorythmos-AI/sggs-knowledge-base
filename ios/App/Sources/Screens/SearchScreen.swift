@@ -63,9 +63,16 @@ struct SearchScreen: View {
         NavigationStack {
             content
                 .navigationTitle("Search")
+                // `.always`: the field never collapses behind a scroll (the horizontal pill
+                // row is the first scroll view under the bar and could hide it)
                 .searchable(text: Binding(get: { model?.query ?? "" },
                                           set: { model?.query = $0 }),
+                            placement: .navigationBarDrawer(displayMode: .always),
                             prompt: "ਨਾਮੁ · waheguru · ਸ ਨ ਕ · naam")
+                // iPadOS 26 otherwise hides the tab bar for the whole search presentation —
+                // after a search the reader had NO way to leave the Search tab (verified in
+                // the simulator). Keep the tab bar/toolbars visible while searching.
+                .modifier(KeepToolbarsWhileSearching())
         }
         .task {
             if model == nil { model = SearchModel(corpus: container.corpus) }
@@ -129,7 +136,7 @@ struct SearchScreen: View {
                     ForEach(out.results, id: \.id) { line in
                         LineRow(gurmukhi: line.gurmukhi, translit: line.translit, meta: line.metaLine,
                                 en: line.en, lineId: line.id, ang: line.ang, compId: line.compId) {
-                            container.present(.shabad(compId: line.compId))
+                            container.present(.shabad(compId: line.compId, focusLineId: line.id))
                         }
                         .listRowSeparator(.hidden)
                     }
@@ -164,16 +171,32 @@ struct SearchIdleView: View {
         }
     }
     var body: some View {
-        VStack(spacing: Theme.Space.m) {
-            Text("ੴ").font(Brand.gurmukhi(44, relativeTo: .largeTitle))
-                .foregroundStyle(palette.accent.opacity(0.55)).accessibilityHidden(true)
-            Text(hint.title).font(.headline)
-            ForEach(hint.lines, id: \.self) { l in
-                Text(l).font(.subheadline).foregroundStyle(.secondary).multilineTextAlignment(.center)
+        // Scrolls so accessibility text sizes never squeeze the guidance into "…" lines.
+        ScrollView {
+            VStack(spacing: Theme.Space.m) {
+                Text("ੴ").font(Brand.gurmukhi(44, relativeTo: .largeTitle))
+                    .foregroundStyle(palette.accent.opacity(0.55)).accessibilityHidden(true)
+                Text(hint.title).font(.headline).multilineTextAlignment(.center)
+                ForEach(hint.lines, id: \.self) { l in
+                    Text(l).font(.subheadline).foregroundStyle(.secondary).multilineTextAlignment(.center)
+                }
             }
+            .frame(maxWidth: .infinity)
+            .padding(Theme.Space.xl)
+            .padding(.top, Theme.Space.xl)
         }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .padding(Theme.Space.xl)
         .accessibilityIdentifier("searchIdle")
+    }
+}
+
+/// iPadOS 26 hides the tab bar for the whole search presentation; iOS 17.1+ exposes the
+/// behaviour switch. On 17.0 (no API) the default stands — the field is still dismissable.
+private struct KeepToolbarsWhileSearching: ViewModifier {
+    func body(content: Content) -> some View {
+        if #available(iOS 17.1, *) {
+            content.searchPresentationToolbarBehavior(.avoidHidingContent)
+        } else {
+            content
+        }
     }
 }

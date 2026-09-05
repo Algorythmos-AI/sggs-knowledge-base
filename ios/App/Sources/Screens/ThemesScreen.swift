@@ -111,7 +111,7 @@ struct ThemeResultsScreen: View {
             List(lines, id: \.id) { line in
                 LineRow(gurmukhi: line.gurmukhi, translit: line.translit, meta: line.metaLine,
                         en: line.en, lineId: line.id, ang: line.ang, compId: line.compId) {
-                    container.present(.shabad(compId: line.compId))
+                    container.present(.shabad(compId: line.compId, focusLineId: line.id))
                 }
                 .listRowSeparator(.hidden)
             }

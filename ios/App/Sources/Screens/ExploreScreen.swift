@@ -84,6 +84,8 @@ struct ExploreScreen: View {
                     }
                 }
                 .padding(Theme.Space.l)
+                .frame(maxWidth: 720)                 // regular width: cards stay card-sized
+                .frame(maxWidth: .infinity)
             }
             .background(Ink.canvas)
             .contentMargins(.bottom, Theme.Space.xl, for: .scrollContent)

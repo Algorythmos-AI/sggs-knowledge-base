@@ -1,6 +1,6 @@
 // reader.ts — the Reader page (/reader) : the Ang-by-Ang viewer.
 // Ported 1:1 from the original; deep-links via ?ang=<n>&raag=<name>.
-import { $, esc, api, guard, meta, store, syncToolbarTop, relChip, failHTML } from './core';
+import { $, esc, api, guard, meta, store, syncToolbarTop, relChip, failHTML, prefersReducedMotion } from './core';
 import { pinButtonHTML } from './store';
 import { loadClock, claimsFor } from './timing';
 import { paharLabel, paharRange } from './pahar.js';
@@ -22,12 +22,41 @@ function groupShabads(lines: any[]) {
   return groups;
 }
 let angReq = 0;
+/* ---- adjacent-Ang prefetch: page turns paint from cache (no "Loading…" flash). Raw fetch,
+   never api(): a failed prefetch must stay silent (api() toasts). Bounded, evicted by distance. */
+const angCache = new Map<number, any>();
+const inflight = new Set<number>();
+const inflightPromises = new Map<number, Promise<any>>();
+function prefetch(n: number): Promise<any> {
+  if (n < 1 || n > 1430) return Promise.resolve(null);
+  if (angCache.has(n)) return Promise.resolve(angCache.get(n));
+  const pending = inflightPromises.get(n); if (pending) return pending;
+  inflight.add(n);
+  const p = fetch('/api/ang/' + n).then((r) => (r.ok ? r.json() : null)).then((d) => { if (d) putCache(n, d); return d; })
+    .catch(() => null).finally(() => { inflight.delete(n); inflightPromises.delete(n); });
+  inflightPromises.set(n, p);
+  return p;
+}
+function putCache(n: number, d: any) {
+  angCache.set(n, d);
+  if (angCache.size > 6) {                                   // keep the 6 nearest to the current Ang
+    const far = [...angCache.keys()].sort((a, b) => Math.abs(b - curAng) - Math.abs(a - curAng))[0];
+    angCache.delete(far);
+  }
+}
+// verse to scroll to after the next render (from ?line= / ?comp= or the modal's "Open Ang")
+let focusLine: number | null = null, focusComp: number | null = null;
+let landingUntil = 0;                       // the landing scroll itself must never hide the chrome
 const ang = guard(async (n: number) => {
   curAng = Math.max(1, Math.min(1430, n)); ($('#angIn') as HTMLInputElement).value = String(curAng);
   const myReq = ++angReq;
-  ($('#angOut') as HTMLElement).innerHTML = '<div class="hint">Loading Ang ' + curAng + '…</div>';
-  const d = await api('ang/' + curAng);
-  if (myReq !== angReq) return;            // a newer page was requested meanwhile
+  let d = angCache.get(curAng);
+  if (!d) {
+    ($('#angOut') as HTMLElement).innerHTML = '<div class="hint">Loading Ang ' + curAng + '…</div>';
+    d = await api('ang/' + curAng);
+    if (myReq !== angReq) return;            // a newer page was requested meanwhile
+    putCache(curAng, d);
+  }
   // context chips
   const chips: string[] = [];
   if (d.raag) chips.push(`<span class="raagchip gm">${esc(d.raag)}</span>`);
@@ -52,7 +81,8 @@ const ang = guard(async (n: number) => {
   if (d.continued_from) h += `<div class="cont" onclick="ang(${d.continued_from})">‹ this composition continues from Ang ${d.continued_from}</div>`;
   // shabad groups
   for (const g of groupShabads(d.lines)) {
-    h += '<div class="shabad">';
+    const cid = (g.body[0] || g.headers[0] || {}).comp_id;
+    h += `<div class="shabad" data-comp-id="${cid ?? ''}">`;
     if (g.headers.length) h += `<div class="hdr gm" lang="pa">${g.headers.map((x: any) =>
       `<div class="${x.gurmukhi.startsWith('ੴ') ? 'invoc' : ''}">${esc(x.gurmukhi)}</div>`).join('')}
         <div class="t">${g.headers.map((x: any) => esc(x.translit)).join(' · ')}</div></div>`;
@@ -62,23 +92,85 @@ const ang = guard(async (n: number) => {
         ${l.en ? `<div class="en" lang="en">${esc(l.en)}</div>` : ''}</div>`).join('');
     h += '</div>';
   }
+  // continues-on pill: the NEXT Ang's continued_from points back into (or before) this one.
+  // Derived from the server's boundary field only — never from comp_id of the last line,
+  // which can be a header opening the next composition. Fixed-height slot: no layout shift.
+  const next = angCache.get(curAng + 1);
+  const continuesOn = !!(next && next.continued_from != null && next.continued_from <= curAng);
+  h += `<div class="cont-slot">${continuesOn
+    ? `<div class="cont cont-next" onclick="ang(${curAng + 1})">this composition continues on Ang ${curAng + 1} ›</div>` : ''}</div>`;
   const prevL = curAng > 1 ? `‹ Ang ${curAng - 1}` : '‹ Beginning', nextL = curAng < 1430 ? `Ang ${curAng + 1} ›` : 'End ›';
   h += `<div class="endnav"><button onclick="ang(${curAng - 1})" ${curAng <= 1 ? 'disabled' : ''}>${prevL}</button>
       <button onclick="ang(${curAng + 1})" ${curAng >= 1430 ? 'disabled' : ''}>${nextL}</button></div>`;
   ($('#angOut') as HTMLElement).innerHTML = h;
   window.scrollTo({ top: 0 });
+  showChrome();                                                // a page turn always restores the chrome
   // keep the URL honest (bookmarkable/shareable, Back stays on this page) without piling
-  // one history entry per page-turn
+  // one history entry per page-turn; line/comp survive only for the landing that asked for them
   try {
     const u = new URL(location.href); u.searchParams.set('ang', String(curAng));
     if (raagCtx) u.searchParams.set('raag', raagCtx.name); else u.searchParams.delete('raag');
+    if (focusLine) u.searchParams.set('line', String(focusLine)); else u.searchParams.delete('line');
+    if (!focusLine && focusComp) u.searchParams.set('comp', String(focusComp)); else u.searchParams.delete('comp');
     history.replaceState({ ang: curAng }, '', u);
   } catch {}
+  focusTarget();
+  // adjacent pages warm in the background; the pill may need the next page → fill its slot
+  // once that page lands (also when a prefetch from a previous page is still in flight)
+  prefetch(curAng - 1);
+  const thisAng = curAng;
+  prefetch(thisAng + 1).then((nd) => {
+    if (!nd || myReq !== angReq || next) return;                   // stale, or pill already rendered
+    if (nd.continued_from != null && nd.continued_from <= thisAng) {
+      const slot = $('#angOut .cont-slot');
+      if (slot) slot.innerHTML = `<div class="cont cont-next" onclick="ang(${thisAng + 1})">this composition continues on Ang ${thisAng + 1} ›</div>`;
+    }
+  });
 }, () => { const o = $('#angOut'); if (o) o.innerHTML = failHTML('This Ang'); });
+
+/* ---- precision landing: scroll the requested verse (or a composition's first verse) to the
+   centre, flash-highlight it, and move keyboard/screen-reader focus onto it. One-shot. */
+function focusTarget() {
+  let el: HTMLElement | null = null;
+  if (focusLine) el = document.querySelector(`#angOut .sline[data-line-id="${focusLine}"]`);
+  else if (focusComp) el = document.querySelector(`#angOut .shabad[data-comp-id="${focusComp}"] .sline`);
+  focusLine = null; focusComp = null;
+  if (!el) return;
+  el.setAttribute('tabindex', '-1');
+  landingUntil = performance.now() + 900;
+  el.scrollIntoView({ behavior: prefersReducedMotion() ? 'auto' : 'smooth', block: 'center' });
+  el.classList.add('verse-focus');
+  el.addEventListener('animationend', () => el!.classList.remove('verse-focus'), { once: true });
+  try { el.focus({ preventScroll: true }); } catch {}
+}
+
+/* ---- ambient chrome: hide nav + toolbar while reading downwards, bring them back on any
+   upward scroll, at the top, on a key press, or a pointer near the top edge. Never while the
+   composition modal or study-trail drawer is open; explicit Sehaj (focus-mode) has its own rules. */
+let lastY = 0, chromeHidden = false, scrollTick = false;
+function showChrome() { if (chromeHidden) { chromeHidden = false; document.body.classList.remove('chrome-hidden'); } }
+function onScroll() {
+  if (scrollTick) return; scrollTick = true;
+  requestAnimationFrame(() => {
+    scrollTick = false;
+    const y = window.scrollY, dy = y - lastY; lastY = y;
+    if (performance.now() < landingUntil) return;                   // programmatic landing scroll
+    if (document.body.classList.contains('focus-mode') || $('#panel')?.classList.contains('on')
+        || document.body.classList.contains('drawer-open')) return;
+    if (y < 80 || dy < -8) showChrome();
+    else if (dy > 0 && y > 80 && !chromeHidden) { chromeHidden = true; document.body.classList.add('chrome-hidden'); }
+  });
+}
+window.addEventListener('scroll', onScroll, { passive: true });
+document.addEventListener('keydown', showChrome);
+document.addEventListener('pointerdown', (e) => { if (e.clientY < 72) showChrome(); });
 const step = (d: number) => ang(curAng + d);
 window.addEventListener('popstate', () => {
-  const n = parseInt(new URLSearchParams(location.search).get('ang') || '', 10);
-  if (n && n !== curAng) ang(n);
+  const p = new URLSearchParams(location.search);
+  const n = parseInt(p.get('ang') || '', 10);
+  focusLine = parseInt(p.get('line') || '', 10) || null;
+  focusComp = focusLine ? null : (parseInt(p.get('comp') || '', 10) || null);
+  if (n && n !== curAng) ang(n); else focusTarget();
 });
 
 /* ---- raag timing chip: small metadata chip next to the raag context chip.
@@ -220,6 +312,8 @@ $('#angOut')?.addEventListener('keydown', (e: any) => {
   }
   const p = new URLSearchParams(location.search);
   const n = Math.max(1, Math.min(1430, parseInt(p.get('ang') || '1') || 1));
+  focusLine = parseInt(p.get('line') || '', 10) || null;          // ?line=Y → land on that verse
+  focusComp = focusLine ? null : (parseInt(p.get('comp') || '', 10) || null);
   const raagName = p.get('raag');
   if (raagName) {
     meta().then((m: any) => {

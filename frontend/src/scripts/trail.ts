@@ -58,7 +58,7 @@ function renderCurrent(line: any) {
   host.innerHTML = `<div class="now-meta">${meta}</div>
     <div class="g gm" lang="pa">${esc(line.gurmukhi || '')}</div>${t}${e}
     <div class="now-actions">
-      <button onclick="goReader(${line.ang || 1})" class="now-btn">Open in Reader →</button>
+      <button data-go-ang="${line.ang || 1}" data-go-line="${line.id}" class="now-btn">Open in Reader →</button>
       ${pinButtonHTML(line.id, line.ang || 1, line.comp_id || 0, line.gurmukhi || '')}
       <button id="trailCopy" class="now-btn ghost" type="button">⧉ Copy verse</button>
     </div>`;

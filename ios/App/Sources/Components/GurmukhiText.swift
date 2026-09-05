@@ -17,6 +17,10 @@ struct GurmukhiText: View {
         Text(saroop ? Saroop.toTraditional(verbatim) : verbatim)
             .font(Brand.gurmukhi(effective, relativeTo: .body).weight(weight))
             .lineSpacing(effective * 0.55)                  // headroom for stacked matras
+            // Never let a self-sizing List cell truncate scripture: at accessibility text sizes
+            // the cell under-measures a custom-font Text with large lineSpacing and shows "…".
+            // Vertical fixedSize makes the Text claim its full wrapped height (verified AX3).
+            .fixedSize(horizontal: false, vertical: true)
             .accessibilityLabel(Text(punjabiLabel))
     }
 

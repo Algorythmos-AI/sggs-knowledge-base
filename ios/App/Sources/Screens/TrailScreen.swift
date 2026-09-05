@@ -73,7 +73,7 @@ struct TrailScreen: View {
             HStack {
                 Text("Ang \(String(current.ang))").font(.caption).foregroundStyle(.secondary)
                 Spacer()
-                Button { container.present(.shabad(compId: current.compId)) } label: {
+                Button { container.present(.shabad(compId: current.compId, focusLineId: current.id)) } label: {
                     Label("Open", systemImage: "book").font(.caption)
                 }
             }
@@ -99,7 +99,7 @@ struct TrailScreen: View {
                                     ang: n.ang, compId: n.compId))
         }
         .swipeActions(edge: .trailing) {
-            Button { container.present(.shabad(compId: n.compId)) } label: { Label("Open", systemImage: "book") }
+            Button { container.present(.shabad(compId: n.compId, focusLineId: n.id)) } label: { Label("Open", systemImage: "book") }
         }
     }
 

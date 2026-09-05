@@ -28,7 +28,7 @@ final class HardeningTests: XCTestCase {
         XCTAssertNil(c.presentation, "current sheet must start dismissing")
         XCTAssertNotNil(c.pendingPresentation)
         c.flushPendingPresentation()   // RootView's sheet onDismiss
-        guard case .shabad(let id)? = c.presentation else {
+        guard case .shabad(let id, _)? = c.presentation else {
             return XCTFail("queued modal must present after the dismiss completes")
         }
         XCTAssertEqual(id, 42)
@@ -48,7 +48,7 @@ final class HardeningTests: XCTestCase {
         c.present(.shabad(compId: 2))         // mid-dismiss: must REPLACE the queue, not present
         XCTAssertNil(c.presentation, "nothing may present while the dismiss is in flight")
         c.flushPendingPresentation()          // A's dismiss completes
-        guard case .shabad(let id)? = c.presentation else {
+        guard case .shabad(let id, _)? = c.presentation else {
             return XCTFail("the latest modal must present after the dismiss")
         }
         XCTAssertEqual(id, 2, "latest intent wins")
@@ -80,11 +80,11 @@ final class HardeningTests: XCTestCase {
         XCTAssertFalse(c.sheetHosted)
         c.present(.hukam)
         c.present(.shabad(compId: 1))         // latest intent wins, nothing to wait for
-        guard case .shabad(let id)? = c.presentation else { return XCTFail("must present directly") }
+        guard case .shabad(let id, _)? = c.presentation else { return XCTFail("must present directly") }
         XCTAssertEqual(id, 1)
         XCTAssertNil(c.pendingPresentation)
         c.sheetHostDidAppear()                // TabView mounts: the pending item shows as-is
-        guard case .shabad(let id2)? = c.presentation else { return XCTFail("host mount must keep it") }
+        guard case .shabad(let id2, _)? = c.presentation else { return XCTFail("host mount must keep it") }
         XCTAssertEqual(id2, 1)
         // and the normal swap protocol works from here on
         c.present(.hukam)
@@ -103,8 +103,67 @@ final class HardeningTests: XCTestCase {
         c.present(.shabad(compId: 3))         // dismiss in flight…
         c.sheetHostDidDisappear()             // …but the host vanished (re-verify)
         c.present(.shabad(compId: 4))
-        guard case .shabad(let id)? = c.presentation else { return XCTFail("must not latch") }
+        guard case .shabad(let id, _)? = c.presentation else { return XCTFail("must not latch") }
         XCTAssertEqual(id, 4)
+        // host comes back (re-verify passed): the pending item shows, and presenting keeps working
+        c.sheetHostDidAppear()
+        guard case .shabad(let id2, _)? = c.presentation else { return XCTFail("host mount must keep it") }
+        XCTAssertEqual(id2, 4)
+        c.present(.hukam)                     // swap protocol re-armed
+        XCTAssertNil(c.presentation)
+        c.flushPendingPresentation()
+        guard case .hukam? = c.presentation else { return XCTFail("queued modal must present") }
+    }
+
+    /// The scene-active watchdog must NEVER assign `presentation` while a swap-dismiss is in
+    /// flight (SwiftUI would drop it and the later onDismiss would find nothing queued —
+    /// the modal would vanish). It may only act when the protocol is genuinely idle.
+    @MainActor
+    func testWatchdogNeverPresentsMidDismiss() {
+        let c = AppContainer()
+        c.sheetHostDidAppear()
+        c.present(.hukam)
+        c.present(.shabad(compId: 9))         // dismiss in flight, B queued
+        c.flushIfIdle()                       // scene became active mid-dismiss
+        XCTAssertNil(c.presentation, "watchdog must not present mid-dismiss")
+        XCTAssertNotNil(c.pendingPresentation, "queue must survive the watchdog")
+        c.flushPendingPresentation()          // the real onDismiss
+        guard case .shabad(let id, _)? = c.presentation else { return XCTFail("queued modal must present") }
+        XCTAssertEqual(id, 9)
+        // genuinely idle with something queued: the watchdog may flush
+        c.presentation = nil; c.flushPendingPresentation()
+        c.pendingPresentation = .hukam
+        c.flushIfIdle()
+        guard case .hukam? = c.presentation else { return XCTFail("idle watchdog must flush") }
+    }
+
+    // MARK: precision routing (line-level deep links)
+
+    /// `?line=` lands the Reader on a verse; malformed/negative values are dropped, and a later
+    /// `openAng` without a line clears any stale pending id.
+    @MainActor
+    func testAngDeepLinkCarriesLineAndClears() {
+        let c = AppContainer(); let r = Router()
+        r.handle(URL(string: "sggs://ang/500?line=123")!, container: c)
+        XCTAssertEqual(r.readerAng, 500); XCTAssertEqual(r.pendingReaderLineId, 123)
+        r.handle(URL(string: "sggs://ang/501?line=abc")!, container: c)
+        XCTAssertEqual(r.readerAng, 501); XCTAssertNil(r.pendingReaderLineId)
+        r.openAng(7, lineId: 9); XCTAssertEqual(r.pendingReaderLineId, 9)
+        r.handle(URL(string: "sggs://ang/8?line=-1")!, container: c)
+        XCTAssertEqual(r.readerAng, 8); XCTAssertNil(r.pendingReaderLineId, "negative line must clear, not linger")
+        r.openAng(9); XCTAssertNil(r.pendingReaderLineId)
+    }
+
+    @MainActor
+    func testShabadDeepLinkCarriesLine() {
+        let c = AppContainer(); c.sheetHostDidAppear(); let r = Router()
+        r.handle(URL(string: "sggs://shabad/12?line=99")!, container: c)
+        guard case .shabad(let comp, let line)? = c.presentation else { return XCTFail("shabad not presented") }
+        XCTAssertEqual(comp, 12); XCTAssertEqual(line, 99)
+        XCTAssertEqual(c.presentation?.id, "shabad-12", "focus line must not change the sheet identity")
+        XCTAssertEqual(SpotlightIndex.lineId(fromIdentifier: "saved-4321-comp-77"), 4321)
+        XCTAssertEqual(SpotlightIndex.compId(fromIdentifier: "saved-4321-comp-77"), 77)
+        XCTAssertNil(SpotlightIndex.lineId(fromIdentifier: "foreign"))
     }
 
     // MARK: deep-link vs resume-last-Ang

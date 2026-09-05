@@ -31,10 +31,12 @@ struct LineRow: View {
             GurmukhiText(verbatim: gurmukhi, size: 22)
             if showTranslit && translitPref && !translit.isEmpty {
                 Text(translit).font(.subheadline).foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
                     .accessibilityHidden(true)            // a reading aid, not scripture
             }
             if englishPref, let en, !en.isEmpty {
                 Text(en).font(.callout).foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
                     .accessibilityLabel("English translation: \(en)")
             }
             if !meta.isEmpty {

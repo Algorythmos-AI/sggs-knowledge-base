@@ -93,7 +93,7 @@ function verseRow(p: Pin): string {
       <div class="pv-g gm">${esc(p.gm)}</div>
       <div class="pv-meta"><span class="pv-ang">Ang ${p.ang}</span>${themes}</div>
       <div class="pv-actions">
-        <button class="pv-open" onclick="goReader(${p.ang})" title="Open in Reader">open →</button>
+        <button class="pv-open" data-go-ang="${p.ang}" data-go-line="${p.line_id}" title="Open in Reader">open →</button>
         <button class="pv-rm" data-id="${p.line_id}" title="Unpin" aria-label="Unpin">✕</button>
       </div>
     </div>`;
@@ -161,7 +161,7 @@ async function renderEchoes() {
         <div class="g gm">${esc(n.gurmukhi || '')}</div>
         ${n.en ? `<div class="e">${esc(n.en)}</div>` : ''}
         <div class="echo-meta"><span class="sc">${Math.round((n.score || 0) * 100)}%</span><span>Ang ${n.ang} · ${esc(n.author || '')}</span>
-          <span class="echo-act">${pinBtn(n)}<button class="echo-open" onclick="goReader(${n.ang || 1})">open →</button></span></div>
+          <span class="echo-act">${pinBtn(n)}<button class="echo-open" data-go-ang="${n.ang || 1}" data-go-line="${n.id}">open →</button></span></div>
       </div>`).join('');
     markPins();
   } catch {

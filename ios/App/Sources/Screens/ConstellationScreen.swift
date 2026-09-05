@@ -130,7 +130,7 @@ struct ClusterSheet: View {
             List(cluster.verses) { v in
                 LineRow(gurmukhi: v.gurmukhi, translit: "", meta: "Ang \(v.ang)",
                         lineId: v.id, ang: v.ang, compId: v.compId) {
-                    container.present(.shabad(compId: v.compId))
+                    container.present(.shabad(compId: v.compId, focusLineId: v.id))
                 }
                 .listRowSeparator(.hidden)
             }

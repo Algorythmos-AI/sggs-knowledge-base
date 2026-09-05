@@ -18,7 +18,7 @@ struct SavedScreen: View {
                         LineRow(gurmukhi: item.gurmukhi, translit: item.translit,
                                 meta: "Ang \(item.ang)",
                                 lineId: item.lineId, ang: item.ang, compId: item.compId) {
-                            container.present(.shabad(compId: item.compId))
+                            container.present(.shabad(compId: item.compId, focusLineId: item.lineId))
                         }
                         .listRowSeparator(.hidden)
                     }
