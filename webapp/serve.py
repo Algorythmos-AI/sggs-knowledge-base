@@ -27,8 +27,8 @@ PORT = int(os.environ.get('PORT') or os.environ.get('SGGS_PORT') or '7777')
 # doesn't force an 86 MB DB re-commit. /api/meta and /api/health prefer these; the
 # DB meta row is the fallback. Bump on every search-logic release so the UI footer
 # (which reads /api/meta) reflects the running build.
-APP_VERSION = '2.12.1'
-APP_BUILT = '2026-09-05'
+APP_VERSION = '1.0.0'
+APP_BUILT = '2026-09-06'
 
 import sys as _sys
 _sys.path.insert(0, HERE)
