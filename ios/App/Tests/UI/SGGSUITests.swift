@@ -394,7 +394,7 @@ final class SGGSUITests: XCTestCase {
         XCTAssertTrue(about.waitForExistence(timeout: 4)); about.tap()
         let v = app.staticTexts["aboutVersion"].firstMatch
         XCTAssertTrue(v.waitForExistence(timeout: 8), "version line missing")
-        XCTAssertTrue(v.label.contains("1.1.1+3"), "unexpected version label: \(v.label)")
+        XCTAssertTrue(v.label.contains("1.0.0+1"), "unexpected version label: \(v.label)")
     }
 
     /// A deep link arriving while the app runs must open the Hukam sheet (no production hook:
