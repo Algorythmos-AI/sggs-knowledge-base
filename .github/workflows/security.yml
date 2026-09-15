@@ -18,7 +18,7 @@ jobs:
         run: |
           V=8.21.2
           curl -sSL "https://github.com/gitleaks/gitleaks/releases/download/v${V}/gitleaks_${V}_linux_x64.tar.gz" | tar -xz gitleaks
-          ./gitleaks detect --source . --no-git --redact --no-banner --exit-code 1
+          ./gitleaks detect --source . --no-git --redact --no-banner --config .gitleaks.toml --exit-code 1
   static-analysis:
     runs-on: ubuntu-latest
     steps:
