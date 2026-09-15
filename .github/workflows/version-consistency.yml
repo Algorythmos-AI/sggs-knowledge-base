@@ -16,9 +16,11 @@ jobs:
       - run: python3 scripts/release/check_versions.py
       - name: main only accepts release from integration/hotfix
         if: github.base_ref == 'main'
+        env:
+          HEAD_REF: ${{ github.head_ref }}
         run: |
-          echo "PR into main from '${{ github.head_ref }}'"
-          case "${{ github.head_ref }}" in
+          echo "PR into main from '$HEAD_REF'"
+          case "$HEAD_REF" in
             integration|hotfix/*) echo "source branch OK" ;;
             *) echo "::error::main only accepts PRs from integration or hotfix/*"; exit 1 ;;
           esac

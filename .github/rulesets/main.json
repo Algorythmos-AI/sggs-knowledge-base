@@ -2,12 +2,26 @@
   "name": "protect-main-production",
   "target": "branch",
   "enforcement": "active",
-  "conditions": { "ref_name": { "include": ["refs/heads/main"], "exclude": [] } },
+  "conditions": {
+    "ref_name": {
+      "include": [
+        "refs/heads/main"
+      ],
+      "exclude": []
+    }
+  },
   "rules": [
-    { "type": "deletion" },
-    { "type": "non_fast_forward" },
-    { "type": "required_linear_history" },
-    { "type": "pull_request",
+    {
+      "type": "deletion"
+    },
+    {
+      "type": "non_fast_forward"
+    },
+    {
+      "type": "required_linear_history"
+    },
+    {
+      "type": "pull_request",
       "parameters": {
         "required_approving_review_count": 1,
         "dismiss_stale_reviews_on_push": true,
@@ -16,18 +30,38 @@
         "required_review_thread_resolution": true
       }
     },
-    { "type": "required_status_checks",
+    {
+      "type": "required_status_checks",
       "parameters": {
         "strict_required_status_checks_policy": true,
         "required_status_checks": [
-          { "context": "python" },
-          { "context": "frontend" },
-          { "context": "integrity" },
-          { "context": "versions" },
-          { "context": "secrets" },
-          { "context": "static-analysis" }
+          {
+            "context": "python"
+          },
+          {
+            "context": "frontend"
+          },
+          {
+            "context": "integrity"
+          },
+          {
+            "context": "versions"
+          },
+          {
+            "context": "secrets"
+          },
+          {
+            "context": "static-analysis"
+          }
         ]
       }
+    }
+  ],
+  "bypass_actors": [
+    {
+      "actor_id": null,
+      "actor_type": "OrganizationAdmin",
+      "bypass_mode": "always"
     }
   ]
 }
