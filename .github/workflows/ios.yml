@@ -27,10 +27,7 @@ jobs:
     runs-on: macos-15
     steps:
       - uses: actions/checkout@v4
-        with:
-          lfs: true
-      - name: Pull the Git-LFS source DB
-        run: git lfs pull --include "db/sggs.sqlite"
+      - uses: ./.github/actions/lfs-db
       - name: Build the bundled (personal-profile) iOS DB from the source (deterministic)
         run: python3 pipeline/build_ios_db.py --profile personal
       - name: Build the public (Gurmukhi-only) profile for the degradation-parity gate
@@ -64,10 +61,7 @@ jobs:
     runs-on: macos-15
     steps:
       - uses: actions/checkout@v4
-        with:
-          lfs: true
-      - name: Pull the Git-LFS source DB
-        run: git lfs pull --include "db/sggs.sqlite"
+      - uses: ./.github/actions/lfs-db
       - name: Build the bundled (personal-profile) iOS DB
         run: python3 pipeline/build_ios_db.py --profile personal
       - name: Install XcodeGen

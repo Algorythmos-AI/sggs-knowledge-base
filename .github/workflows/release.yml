@@ -1,7 +1,10 @@
 name: release
+# Manual fallback only. Normal releases are cut by deploy-production.yml AFTER a
+# verified production deploy (a release must never describe code that isn't live).
+# No auto back-merge: releases are merge commits into main, so integration never
+# diverges and a GITHUB_TOKEN-created PR (which cannot trigger checks) is avoided.
 on:
-  push:
-    branches: [main]
+  workflow_dispatch:
 permissions:
   contents: write
 concurrency:
@@ -10,27 +13,19 @@ concurrency:
 jobs:
   tag-and-release:
     runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
     steps:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
-      - name: Derive version + release notes from the repo
+      - name: Derive version + notes
         id: v
         run: |
           VERSION=$(python3 -c "import re;print(re.search(r\"APP_VERSION\s*=\s*'([^']+)'\", open('webapp/serve.py').read()).group(1))")
           echo "version=$VERSION" >> "$GITHUB_OUTPUT"
-          if git rev-parse "v$VERSION" >/dev/null 2>&1; then
-            echo "exists=true" >> "$GITHUB_OUTPUT"
-          else
-            echo "exists=false" >> "$GITHUB_OUTPUT"
-          fi
-          python3 - "$VERSION" > RELEASE_NOTES.md <<'PY'
-          import re, sys
-          v=sys.argv[1]; s=open('CHANGELOG.md',encoding='utf-8').read()
-          m=re.search(rf'(## \[{re.escape(v)}\].*?)(?=\n## \[)', s, re.S)
-          print(m.group(1).strip() if m else f'v{v}')
-          PY
-      - name: Create tag + GitHub Release (only if the tag is new)
+          if git rev-parse -q --verify "refs/tags/v$VERSION" >/dev/null; then echo "exists=true" >> "$GITHUB_OUTPUT"; else echo "exists=false" >> "$GITHUB_OUTPUT"; fi
+          python3 scripts/release/release_notes.py "$VERSION" > RELEASE_NOTES.md
+      - name: Create tag + GitHub Release
         if: steps.v.outputs.exists == 'false'
         env:
           GH_TOKEN: ${{ github.token }}
@@ -39,12 +34,3 @@ jobs:
           git tag -a "v$V" -m "v$V"
           git push origin "v$V"
           gh release create "v$V" --title "v$V" --notes-file RELEASE_NOTES.md --verify-tag
-      - name: Back-merge main → integration (keep trunk current)
-        if: steps.v.outputs.exists == 'false'
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: |
-          gh pr create --base integration --head main \
-            --title "chore: back-merge main into integration (v${{ steps.v.outputs.version }})" \
-            --body "Automated back-merge after the release tag. Keeps the trunk current." || \
-            echo "back-merge PR already exists or nothing to merge"

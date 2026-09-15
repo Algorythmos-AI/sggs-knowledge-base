@@ -1,6 +1,6 @@
 {
   "name": "sggs-frontend",
-  "version": "1.1.0",
+  "version": "1.1.1",
   "private": true,
   "type": "module",
   "scripts": {
@@ -23,5 +23,8 @@
     "@types/d3": "^7.4.3",
     "@playwright/test": "^1.48.0",
     "@axe-core/playwright": "^4.10.0"
+  },
+  "engines": {
+    "node": "22.x"
   }
 }

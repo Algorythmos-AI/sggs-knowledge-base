@@ -26,6 +26,16 @@ gitGraph
 - **`hotfix/*`** branches from `main` for urgent production fixes, then is
   back-merged into `integration`.
 
+## Merge strategy (important)
+| PR | Merge method | Why |
+|---|---|---|
+| `feature/*`, `fix/*` → `integration` | **Squash** | one clean commit per change on the trunk |
+| `integration` → `main` (release) | **Merge commit** | `main` stays a descendant of `integration`, so branches never diverge and no back-merge is needed |
+| `hotfix/*` → `main` | Squash, then merge `main` → `integration` | keeps the trunk current |
+
+`main` therefore does **not** require linear history (a squash/rebase release would
+rewrite SHAs and make every later release PR conflict).
+
 ## Required checks (once the owner is on GitHub Team)
 Applied from `.github/rulesets/` via `scripts/gh/apply_rulesets.sh`:
 - `main`: PR + 1 approval + CODEOWNERS + linear history + `web-ci`, `scripture-integrity`,

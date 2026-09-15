@@ -3,6 +3,32 @@
 The format below (newest first) follows [Keep a Changelog](https://keepachangelog.com);
 entries prior to v1.1.0 are the project's original prose style and are preserved verbatim.
 
+## [1.1.1] — 2026-09-15 — Deploy foundations
+
+### Added
+- `/api/meta` and `/api/health` report `commit` (the running build's source SHA, from
+  `RENDER_GIT_COMMIT`), so a deploy is verified by identity, not just by version.
+- `.github/actions/lfs-db`: the 108 MB database is fetched through an oid-keyed cache in
+  every CI job, so repeated runs stop spending Git LFS bandwidth.
+- `scripts/release/release_notes.py`: shared, tested CHANGELOG-section extractor.
+- Playwright remote mode: `PLAYWRIGHT_BASE_URL` (+ Vercel protection-bypass header) runs
+  the `@smoke` heading tests against any deployed URL.
+
+### Changed
+- Release PRs `integration → main` are merge commits; `main` no longer requires linear
+  history (squash/rebase releases made the branches diverge). Documented in branching.md.
+- `render.yaml` is staging-only with `autoDeploy: false`, so linking the Blueprint can never
+  create a duplicate production service.
+- `release.yml` is a manual fallback; releases will be cut after a verified deploy.
+  The auto back-merge PR is removed (a `GITHUB_TOKEN` PR can never pass required checks).
+- Frontend pins `engines.node 22.x` so Vercel builds on the same Node as CI.
+
+### Fixed
+- Old release-notes regex could run past the version's section into older prose entries.
+
+### Data
+- None. Scripture, corpus and DB unchanged (`db_sha256` 883f6f80…).
+
 ## [1.1.0] — 2026-09-15 — Composition heading fix (header-run regroup)
 
 ### Fixed
