@@ -158,8 +158,11 @@ jobs:
         run: |
           vercel pull --yes --environment=production --token="$VERCEL_TOKEN"
           vercel build --prod --token="$VERCEL_TOKEN"
-          url=$(vercel deploy --prebuilt --prod --skip-domain --token="$VERCEL_TOKEN")
-          case "$url" in https://*) ;; *) echo "::error::unexpected deploy output: $url"; exit 1 ;; esac
+          # --format=json makes the output deterministic (the CLI prints JSON in
+          # non-interactive/agent mode anyway; a bare-URL assumption breaks there).
+          out=$(vercel deploy --prebuilt --prod --skip-domain --format=json --token="$VERCEL_TOKEN")
+          url=$(printf '%s' "$out" | python3 -c "import sys,json; print(json.load(sys.stdin)['deployment']['url'])")
+          case "$url" in https://*.vercel.app) ;; *) echo "::error::could not read deployment URL from: $out"; exit 1 ;; esac
           echo "url=$url" >> "$GITHUB_OUTPUT"
           echo "built $url (not live)"
 
