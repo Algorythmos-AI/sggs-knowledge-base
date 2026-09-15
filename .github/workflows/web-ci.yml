@@ -1,0 +1,61 @@
+name: web-ci
+on:
+  pull_request:
+  push:
+    branches: [integration, main]
+concurrency:
+  group: web-ci-${{ github.ref }}
+  cancel-in-progress: true
+permissions:
+  contents: read
+jobs:
+  python:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          lfs: true
+      - run: git lfs pull --include "db/sggs.sqlite"
+      - uses: actions/setup-python@v5
+        with:
+          python-version-file: ".python-version"
+      - name: Fail fast if the DB is still an LFS pointer
+        run: |
+          head -c 16 db/sggs.sqlite | grep -q "SQLite format 3" || {
+            echo "::error::db/sggs.sqlite is an LFS pointer, not the real DB"; exit 1; }
+      - name: Ruff (lint + format check)
+        run: |
+          pip install ruff==0.6.9
+          ruff check .
+          ruff format --check .
+      - name: Server unit tests (webapp/tests)
+        run: python3 -m unittest discover -s webapp/tests -v
+      - name: Health + shabad heading regression
+        run: |
+          (cd webapp && SGGS_OPEN_BROWSER=0 SGGS_PORT=7777 python3 serve.py &) ; sleep 3
+          curl -sf http://127.0.0.1:7777/api/health | python3 -c "import sys,json; d=json.load(sys.stdin); assert d['ok'] and all(d['checks'].values()), d; print('health OK', d['version'])"
+          python3 pipeline/api_superset_check.py --db db/sggs.sqlite --url http://127.0.0.1:7777 --sample 200
+      - name: Search harnesses (sampled)
+        run: |
+          python3 pipeline/roundtrip_harness.py || true
+          python3 pipeline/casual_quote_harness.py
+      - name: Contract drift (regenerated vectors must match committed)
+        run: |
+          python3 pipeline/gen_golden_vectors.py
+          git diff --exit-code contract/ || {
+            echo "::error::contract/ is stale — run `python3 pipeline/gen_golden_vectors.py` and commit"; exit 1; }
+  frontend:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: ".nvmrc"
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - working-directory: frontend
+        run: |
+          npm ci
+          npx astro check || true   # informational until types are clean
+          npm run build
+          npm run test:pahar

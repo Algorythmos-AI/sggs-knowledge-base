@@ -1,0 +1,14 @@
+# Dev tooling only. The webapp (webapp/serve.py, verify.py, romannorm.py) is
+# deliberately Python-stdlib-only at runtime — this file adds NO runtime deps.
+[tool.ruff]
+target-version = "py312"
+line-length = 120
+extend-exclude = ["webapp/static", "frontend", "ios", "**/*.min.js"]
+
+[tool.ruff.lint]
+# Conservative on a mature stdlib codebase: real bugs, not style churn.
+select = ["E9", "F", "B", "UP032", "PLE"]
+ignore = ["E501", "F401"]
+
+[tool.ruff.lint.per-file-ignores]
+"pipeline/*" = ["B008"]

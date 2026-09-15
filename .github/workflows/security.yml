@@ -1,0 +1,47 @@
+name: security
+on:
+  pull_request:
+  push:
+    branches: [integration, main]
+  schedule:
+    - cron: "0 6 * * 1"   # Monday full history scan
+permissions:
+  contents: read
+jobs:
+  secrets:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: ${{ github.event_name == 'schedule' && 0 || 1 }}
+      - name: gitleaks
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITLEAKS_ENABLE_UPLOAD_ARTIFACT: "false"
+  static-analysis:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version-file: ".python-version"
+      - name: bandit (python)
+        run: |
+          pip install bandit
+          bandit -r webapp pipeline -ll || true
+      - name: semgrep (OSS rulesets)
+        uses: returntocorp/semgrep-action@v1
+        with:
+          config: "p/python p/javascript p/secrets"
+        continue-on-error: true
+      - name: actionlint (workflow files)
+        uses: raven-actions/actionlint@v2
+  deps:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: ".nvmrc"
+      - working-directory: frontend
+        run: npm audit --audit-level=high || true

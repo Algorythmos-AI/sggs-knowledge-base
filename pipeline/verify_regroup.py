@@ -57,9 +57,58 @@ def load_lines(con):
     rows = con.execute(f'SELECT {",".join(cols)} FROM lines ORDER BY id').fetchall()
     return cols, rows
 
+def invariants_only(db_p):
+    """Structural invariants on a single (already-regrouped) DB — for CI, where the
+    pre-regroup DB is not available. Scripture *unchangedness* is proven separately
+    by guard_scripture.py against the committed baseline."""
+    con = bl.connect_ro(db_p)
+    print(f"DB = {db_p}  (invariants-only)\n")
+    cols = cols_of(con, 'lines')
+    rows = con.execute(f'SELECT {",".join(cols)} FROM lines ORDER BY id').fetchall()
+    idx = {c: i for i, c in enumerate(cols)}
+    check(len(rows) == EXPECT_LINES, f"lines == {EXPECT_LINES} (got {len(rows)})")
+    ids = [r[idx['id']] for r in rows]
+    check(ids == list(range(1, EXPECT_LINES + 1)), "ids dense 1..N")
+    check(len({r[idx['ang']] for r in rows}) == EXPECT_ANGS, f"distinct angs == {EXPECT_ANGS}")
+    from collections import defaultdict
+    cl = defaultdict(list)
+    for r in rows:
+        cl[r[idx['comp_id']]].append(r)
+    check(len(cl) == EXPECT_DISTINCT_NEW, f"distinct comps == {EXPECT_DISTINCT_NEW} (got {len(cl)})")
+    bad_first = hab = 0; header_only = []
+    for c, ls in cl.items():
+        ls.sort(key=lambda r: r[idx['id']])
+        if not ls[0][idx['is_header']]:
+            bad_first += 1
+        prefix = True
+        for r in ls:
+            if r[idx['is_header']] and not prefix: hab += 1
+            if not r[idx['is_header']]: prefix = False
+        if all(r[idx['is_header']] for r in ls):
+            header_only.append(ls[0][idx['text']])
+    check(bad_first == 0, f"every comp's first line is a header ({bad_first} bad)")
+    check(hab == 0, f"no header follows a body line within a comp ({hab} bad)")
+    check(set(header_only) <= RUBRICS and len(header_only) == 3,
+          f"header-only comps == the 3 trailing rubrics (got {sorted(set(header_only))})")
+    # line_no contiguity
+    seen = {}; lnbad = 0
+    for r in rows:
+        c = r[idx['comp_id']]; seen[c] = seen.get(c, 0) + 1
+        if r[idx['line_no']] != seen[c]: lnbad += 1
+    check(lnbad == 0, f"line_no contiguous within every comp ({lnbad} bad)")
+    con.close()
+    print()
+    if fails:
+        print(f"RESULT: FAIL — {len(fails)} invariant(s) failed"); return 1
+    print("RESULT: PASS — structural invariants hold on the current DB."); return 0
+
+
 def main():
+    if len(sys.argv) == 3 and sys.argv[1] == '--invariants':
+        return invariants_only(sys.argv[2])
     if len(sys.argv) != 3:
-        print(__doc__); return 1
+        print(__doc__ + "\n  or:  python3 pipeline/verify_regroup.py --invariants NEW.sqlite")
+        return 1
     old_p, new_p = sys.argv[1], sys.argv[2]
     old = bl.connect_ro(old_p); new = bl.connect_ro(new_p)
     print(f"OLD = {old_p}\nNEW = {new_p}\n")

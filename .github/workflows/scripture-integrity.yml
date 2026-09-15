@@ -1,0 +1,48 @@
+name: scripture-integrity
+on:
+  pull_request:
+    paths: ["corpus/**", "db/**", "pipeline/**", "MANIFEST.json", "contract/**", "audit/**", "validation/reconcile-attestation.json"]
+  push:
+    branches: [integration, main]
+permissions:
+  contents: read
+jobs:
+  integrity:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          lfs: true
+      - run: git lfs pull --include "db/sggs.sqlite"
+      - uses: actions/setup-python@v5
+        with:
+          python-version-file: ".python-version"
+      - name: MANIFEST + contract + attestation hash chain
+        run: |
+          python3 - <<'PY'
+          import json, hashlib, sys
+          def sha(p):
+              h=hashlib.sha256()
+              with open(p,'rb') as f:
+                  for ch in iter(lambda:f.read(1<<20), b''): h.update(ch)
+              return h.hexdigest()
+          man=json.load(open('MANIFEST.json'))
+          corpus=sha('corpus/sggs.jsonl'); db=sha('db/sggs.sqlite')
+          meta=json.load(open('contract/_meta.json'))
+          att=json.load(open('validation/reconcile-attestation.json'))
+          fails=[]
+          if man['corpus_sha256']!=corpus: fails.append('MANIFEST.corpus_sha256 != corpus file')
+          if man['db_sha256']!=db:         fails.append('MANIFEST.db_sha256 != db file')
+          if meta.get('db_sha256')!=db:    fails.append('contract/_meta.json db_sha256 != db file')
+          if att['corpus_sha256']!=corpus: fails.append('reconcile attestation corpus_sha256 != corpus file (re-run `make reconcile`)')
+          if not att.get('reconciled_char_exact') or not att.get('golden_pass'):
+              fails.append('reconcile attestation does not record a clean reconcile+golden')
+          for f in fails: print('::error::'+f)
+          sys.exit(1 if fails else 0)
+          PY
+      - name: Structural + regroup invariants (verify_regroup single-DB mode)
+        run: python3 pipeline/verify_regroup.py --invariants db/sggs.sqlite
+      - name: Guard — pre-existing tables byte-identical to baseline
+        run: python3 pipeline/timing/guard_scripture.py
+      - name: Timing-layer tests
+        run: python3 pipeline/timing/test_timing_layer.py

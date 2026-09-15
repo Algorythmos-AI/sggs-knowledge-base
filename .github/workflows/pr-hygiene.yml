@@ -1,0 +1,18 @@
+name: pr-hygiene
+on:
+  pull_request:
+    types: [opened, edited, synchronize, reopened]
+permissions:
+  contents: read
+  pull-requests: read
+jobs:
+  title:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Conventional-commit PR title
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const title = context.payload.pull_request.title;
+            const ok = /^(feat|fix|docs|chore|ci|refactor|perf|test|data|ios|web|build|revert)(\([a-z0-9/-]+\))?!?:\s.+/.test(title);
+            if (!ok) core.setFailed(`PR title must be conventional-commit style (e.g. "fix(data): …"). Got: "${title}"`);
