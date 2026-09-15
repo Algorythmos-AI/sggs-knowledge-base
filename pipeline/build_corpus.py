@@ -140,6 +140,42 @@ for r in records:
 records = merged
 for i, r in enumerate(records, 1): r['id'] = i
 
+# ---- post-pass 1b: a run of consecutive header lines opens ONE composition
+#      together with the body that follows. Each header used to do comp_id += 1,
+#      leaving 677 single-line "orphan" header comps (e.g. a raag/title line, then
+#      the separate ੴ invocation) so the composition sheet (/api/shabad, and the
+#      iOS fetchShabad) lost the title line. Fold each header run into the comp_id
+#      of its LAST header -- the one already holding the body -- so no BODY line
+#      ever changes comp_id and vacated comp_ids become permanent gaps (never
+#      reused). Closing rubrics that belong to the PRECEDING unit break the run and
+#      keep their own one-line comp (flagged for scholarly review, never merged).
+TRAILING_RUBRICS = {'ਜੁਮਲਾ', 'ਦੁਤੁਕੇ',
+                    'ਏਹੁ ਸਲੋਕੁ ਆਦਿ ਅੰਤਿ ਪੜਣਾ'}
+def _is_run_header(r):
+    return r['is_header'] and r['text'] not in TRAILING_RUBRICS
+_regrouped, i, _n = 0, 0, len(records)
+while i < _n:
+    if not _is_run_header(records[i]):
+        i += 1; continue
+    j = i
+    while j + 1 < _n and _is_run_header(records[j + 1]):
+        j += 1
+    if j > i:
+        keep = records[j]['comp_id']
+        for r in records[i:j]:
+            all_anoms.append(('header_regrouped',
+                              f"ang {r['ang']}: comp {r['comp_id']}->{keep}: {r['text'][:30]}"))
+            r['comp_id'] = keep
+            _regrouped += 1
+    i = j + 1
+# renumber line_no 1..N within each comp (id order); also densifies the 16
+# post-pass-1 gaps so line_no is always contiguous within a comp
+_ln = {}
+for r in records:
+    _ln[r['comp_id']] = _ln.get(r['comp_id'], 0) + 1
+    r['line_no'] = _ln[r['comp_id']]
+print(f'header regroup: {_regrouped} header lines folded into the composition they open')
+
 # ---- post-pass 2: an ੴ invocation belongs to the section it OPENS — adopt the
 #      raag/section/author of the unit that follows it (fixes stale inheritance
 #      when the invocation precedes the raag-title unit in the page stream)
@@ -171,7 +207,8 @@ with open(OUT, 'w', encoding='utf-8') as f:
 angs = {r['ang'] for r in records}
 print(f'lines: {len(records)}  angs covered: {len(angs)} ({min(angs)}-{max(angs)})')
 print(f'rahao lines: {sum(r["is_rahao"] for r in records)}  headers: {sum(r["is_header"] for r in records)}')
-print(f'anomalies: {len(all_anoms)}')
-for a in all_anoms[:40]: print('  ', a)
+_other_anoms = [a for a in all_anoms if a[0] != 'header_regrouped']
+print(f'anomalies: {len(all_anoms)} ({len(_other_anoms)} excl. header_regrouped)')
+for a in _other_anoms[:40]: print('  ', a)
 missing = sorted(set(range(1, 1431)) - angs)
 print('missing angs:', missing if missing else 'NONE')

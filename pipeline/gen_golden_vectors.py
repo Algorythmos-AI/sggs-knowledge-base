@@ -273,7 +273,7 @@ def reader_vectors():
                     # 2,619 lines incl. 330 verses have no en row; that absence is contract)
                     'ens': [l.get('en') for l in r['lines']]})
     # a shabad payload (attach_translations parity on /api/shabad)
-    for cid in (1, 682, 3000):
+    for cid in (2, 682, 3000):   # comp 1 (Mool Mantar ੴ) folds into Japji comp 2 after the header-run regroup
         r = serve.api(f'/api/shabad/{cid}', {})
         out.append({'kind': 'shabad', 'comp_id': cid,
                     'line_ids': [l['id'] for l in r['lines']],

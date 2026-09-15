@@ -83,6 +83,9 @@ def is_pauri_label(t):
     return bool(w) and w[0].rstrip('॥') in ('ਪਉੜੀ', 'ਪਵੜੀ')
 
 
+_RAAG_NAMES = set()   # populated in main() from the raags table
+
+
 def line_kind(l):
     """pauri-label | salok-label | skip | verse."""
     t = (l['gurmukhi'] or '').strip()
@@ -92,6 +95,8 @@ def line_kind(l):
         return 'pauri-label'
     if (l['pada_total'] or 0) == 0 and l['is_header'] and t.startswith(SALOK_LBL):
         return 'salok-label'
+    if l['is_header'] and t.split() and t.split()[0].rstrip('॥') in _RAAG_NAMES:
+        return 'skip'                           # raag/title heading pulled in by the regroup
     return 'verse'
 
 
@@ -105,6 +110,8 @@ def main():
     ap.add_argument("--no-vacuum", action="store_true")
     args = ap.parse_args()
     con = sqlite3.connect(args.db); con.row_factory = sqlite3.Row
+    global _RAAG_NAMES
+    _RAAG_NAMES = {r[0] for r in con.execute("SELECT name FROM raags")}
 
     # group corpus into comps in reading order
     comps = collections.OrderedDict()
@@ -115,12 +122,13 @@ def main():
     for cid, L in comps.items():
         ct = collections.Counter(x['comp_type'] for x in L if x['comp_type']).most_common(1)
         title = next((x['gurmukhi'] for x in L if x['is_header'] and is_vaar_title(x['gurmukhi'])), None)
-        hdr = next((x['gurmukhi'] for x in L if x['is_header']), L[0]['gurmukhi'])
+        headers = [x['gurmukhi'] for x in L if x['is_header']]
+        hdr = headers[0] if headers else L[0]['gurmukhi']
         order.append(dict(cid=cid, ctype=(ct[0][0] if ct else None),
                           raag=next((x['raag'] for x in L if x['raag']), None),
                           ang=min(x['ang'] for x in L), lines=L,
                           has_rahao=any(x['is_rahao'] for x in L),
-                          is_title=bool(title), header=hdr or ''))
+                          is_title=bool(title), header=hdr or '', headers=headers))
 
     title_idx = [i for i, c in enumerate(order) if c['is_title']]
     log(f"detected {len(title_idx)} Vaar titles")
@@ -166,7 +174,7 @@ def main():
                 end_on = 'next-title'; break
             if c['raag'] and vraag and c['raag'] != vraag:
                 end_on = f"raag→{c['raag']}"; break
-            if is_section_intro(c['header']):
+            if any(is_section_intro(h) for h in c['headers']):
                 end_on = 'bhagat-bani'; break
             if c['ctype'] not in IN_SET:
                 end_on = f"ctype:{c['ctype']}"; break

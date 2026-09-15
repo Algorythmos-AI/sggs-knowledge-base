@@ -1,0 +1,32 @@
+# Render Blueprint — two services from webapp/Dockerfile (build context = repo root).
+# Link once in the Render dashboard (New → Blueprint). The Vercel /api/* rewrite
+# points at these origins (see frontend/vercel.json + docs/process/environments.md).
+services:
+  - type: web
+    name: sggs-api
+    runtime: docker
+    dockerfilePath: ./webapp/Dockerfile
+    dockerContext: .
+    branch: main
+    plan: starter
+    healthCheckPath: /api/meta
+    autoDeploy: true
+    envVars:
+      - key: SGGS_OPEN_BROWSER
+        value: "0"
+      - key: PORT
+        value: "7777"
+  - type: web
+    name: sggs-api-staging
+    runtime: docker
+    dockerfilePath: ./webapp/Dockerfile
+    dockerContext: .
+    branch: integration
+    plan: free
+    healthCheckPath: /api/meta
+    autoDeploy: true
+    envVars:
+      - key: SGGS_OPEN_BROWSER
+        value: "0"
+      - key: PORT
+        value: "7777"

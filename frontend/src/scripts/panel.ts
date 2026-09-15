@@ -28,6 +28,13 @@ function compTitle(lines: any[]): { main: string; sub: string; ang: any } {
 }
 function titleBlock(lines: any[]): string {
   const t = compTitle(lines);
+  // The composition now carries its own verbatim heading row(s) (e.g.
+  // 'ਟੋਡੀ ਮਹਲਾ ੫ ਘਰੁ ੨ ਚਉਪਦੇ'), rendered by panelLines. When such a real,
+  // non-invocation title header is present, drop the synthesized raag/section
+  // title to avoid showing it twice — keep only the "author · Ang N" subtitle.
+  const hasTitleHeader = lines.some((l: any) =>
+    l.is_header && !String(l.gurmukhi || '').startsWith('ੴ'));
+  if (hasTitleHeader) t.main = '';
   if (!t.main && !t.sub) return '';
   return `<div style="text-align:center;margin:0 0 18px;padding-bottom:14px;border-bottom:1px solid var(--line)">
     ${t.main ? `<div class="gm" style="color:var(--gold);font-size:20px;font-weight:600">${esc(t.main)}</div>` : ''}

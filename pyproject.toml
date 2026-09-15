@@ -1,0 +1,15 @@
+# Dev tooling only. The webapp (webapp/serve.py, verify.py, romannorm.py) is
+# deliberately Python-stdlib-only at runtime — this file adds NO runtime deps.
+[tool.ruff]
+target-version = "py312"
+line-length = 120
+extend-exclude = ["webapp/static", "frontend", "ios", "**/*.min.js"]
+
+[tool.ruff.lint]
+# Adopting linting on a mature, verified stdlib codebase: gate on genuine bugs
+# only (syntax errors, undefined names, broken f-strings/comparisons, pyflakes
+# logic errors, pylint errors). Style/bugbear rules (B, unused-var, import order)
+# are deliberately NOT gated yet — tighten incrementally in follow-up PRs so a
+# style nit never blocks a scripture fix.
+select = ["E9", "F63", "F7", "F82", "PLE"]
+ignore = []

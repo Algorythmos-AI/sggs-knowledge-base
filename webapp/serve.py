@@ -27,8 +27,17 @@ PORT = int(os.environ.get('PORT') or os.environ.get('SGGS_PORT') or '7777')
 # doesn't force an 86 MB DB re-commit. /api/meta and /api/health prefer these; the
 # DB meta row is the fallback. Bump on every search-logic release so the UI footer
 # (which reads /api/meta) reflects the running build.
-APP_VERSION = '1.0.0'
-APP_BUILT = '2026-09-06'
+APP_VERSION = '1.1.0'
+APP_BUILT = '2026-09-15'
+
+
+class ApiError(Exception):
+    """Raised by an endpoint to return a specific HTTP status (e.g. 404) with a
+    safe JSON body, instead of the generic 400/500 mapping."""
+    def __init__(self, status, message):
+        super().__init__(message)
+        self.status = status
+        self.message = message
 
 import sys as _sys
 _sys.path.insert(0, HERE)
@@ -817,6 +826,8 @@ def api(path, qs):
     if p[0] == 'shabad':
         cid = _int_str(p[1], 0, _ID_MAX)
         rs = db().execute(f'SELECT {LINE_COLS} FROM lines WHERE comp_id = ? ORDER BY id', (cid,)).fetchall()
+        if not rs:
+            raise ApiError(404, f'no composition with comp_id {cid}')
         return {'comp_id': cid, 'lines': attach_translations(rows_to_list(rs))}
     if p[0] == 'health':
         h = {'version': None, 'checks': {}, 'ok': True}
@@ -1341,6 +1352,9 @@ class H(BaseHTTPRequestHandler):
                 body = json.dumps(api(u.path, parse_qs(u.query)), ensure_ascii=False).encode()
                 return self._respond(200, body, 'application/json; charset=utf-8')
             return self._serve_static(u.path)
+        except ApiError as e:                                  # explicit status (e.g. 404 unknown comp_id)
+            msg = json.dumps({'error': e.message}).encode()
+            return self._respond(e.status, msg, 'application/json')
         except (ValueError, IndexError, OverflowError) as e:   # bad ang/shabad/params
             msg = json.dumps({'error': 'invalid request: ' + str(e)}).encode()
             return self._respond(400, msg, 'application/json')

@@ -29,15 +29,28 @@ struct ShabadSheet: View {
                 ScrollViewReader { proxy in
                     List {
                         ForEach(lines, id: \.id) { line in
-                            // Full line identity: Share carries the Ang citation, and Save /
-                            // Explore-related work from inside the sheet (never an "Ang 0" card).
-                            LineRow(gurmukhi: line.gurmukhi, translit: line.translit,
-                                    meta: line.isRahao ? "ਰਹਾਉ · refrain" : "", en: line.en,
-                                    lineId: line.id, ang: line.ang, compId: line.compId)
-                                .focusHighlight(highlightedId == line.id)
-                                .accessibilityFocused($voFocus, equals: line.id)
-                                .id(line.id)
-                                .listRowSeparator(.hidden)
+                            if line.isHeader {
+                                // Verbatim heading row(s) — a raag/title line
+                                // ('ਟੋਡੀ ਮਹਲਾ ੫ ਘਰੁ ੨ ਚਉਪਦੇ') and/or the ੴ invocation
+                                // now open the composition (matches the printed saroop and
+                                // the Reader). Rendered as a centred heading, never a savable
+                                // verse row. Mirrors ReaderScreen.
+                                GurmukhiText(verbatim: line.gurmukhi, size: 20, weight: .semibold)
+                                    .frame(maxWidth: .infinity, alignment: .center)
+                                    .padding(.vertical, 4)
+                                    .id(line.id)
+                                    .listRowSeparator(.hidden)
+                            } else {
+                                // Full line identity: Share carries the Ang citation, and Save /
+                                // Explore-related work from inside the sheet (never an "Ang 0" card).
+                                LineRow(gurmukhi: line.gurmukhi, translit: line.translit,
+                                        meta: line.isRahao ? "ਰਹਾਉ · refrain" : "", en: line.en,
+                                        lineId: line.id, ang: line.ang, compId: line.compId)
+                                    .focusHighlight(highlightedId == line.id)
+                                    .accessibilityFocused($voFocus, equals: line.id)
+                                    .id(line.id)
+                                    .listRowSeparator(.hidden)
+                            }
                         }
                     }
                     .listStyle(.plain)

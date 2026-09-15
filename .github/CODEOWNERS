@@ -1,0 +1,13 @@
+# Scripture-touching paths require explicit human review before merge.
+# After the transfer to Algorythmos-AI, switch @skalaliya to the org team
+# @Algorythmos-AI/scripture-reviewers.
+corpus/                       @skalaliya
+db/                           @skalaliya
+pipeline/build_corpus.py      @skalaliya
+pipeline/reconcile.py         @skalaliya
+pipeline/golden_test.py       @skalaliya
+pipeline/verify_regroup.py    @skalaliya
+MANIFEST.json                 @skalaliya
+contract/                     @skalaliya
+audit/                        @skalaliya
+.github/                      @skalaliya

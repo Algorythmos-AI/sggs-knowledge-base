@@ -1,0 +1,14 @@
+name: Bug report
+description: Something is wrong in the app, API, or data presentation.
+labels: ["type/bug"]
+body:
+  - type: textarea
+    id: what
+    attributes: { label: What happened, description: "Include the Ang/shabad, the query, and platform (web/iOS)." }
+    validations: { required: true }
+  - type: textarea
+    id: expected
+    attributes: { label: What you expected }
+  - type: input
+    id: version
+    attributes: { label: Version, description: "From the footer / About screen (/api/health)." }

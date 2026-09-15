@@ -163,13 +163,15 @@ def main():
         for comp_id, raag, ang, lid, is_h, gm, ghar, is_r, ptot, ctype in cur:
             c = comps.setdefault(comp_id, {
                 "raags": set(), "first_ang": ang, "first_line_id": lid,
-                "header": None, "ghar": set(), "rahao": 0, "rahao2": 0,
+                "header": None, "headers": [], "ghar": set(), "rahao": 0, "rahao2": 0,
                 "pada_total": None, "comp_type": ctype, "early": [],
             })
             if raag:
                 c["raags"].add(nfc(raag))
-            if is_h and c["header"] is None:
-                c["header"] = nfc(gm)
+            if is_h:
+                c["headers"].append(nfc(gm))
+                if c["header"] is None:
+                    c["header"] = nfc(gm)
             if len(c["early"]) < 3:
                 c["early"].append(nfc(gm))
             g = parse_ghar(ghar)
@@ -199,10 +201,18 @@ def main():
         rows_map.append((comp_id, raag if raag in raag_names else None,
                          c["first_ang"], c["first_line_id"]))
 
-        header = c["header"] or ""
-        toks = tokens(header)
+        # A composition can now open with a RUN of heading lines (e.g. ੴ
+        # invocation, then a raag/title line, then ਸਲੋਕੁ). The invocation is
+        # never a title; pick the first title-like non-invocation heading and
+        # union tokens across the run so form/genre/marker/dhunni evidence in any
+        # of the heading lines is seen. Single-header comps are unchanged.
+        hdrs = c["headers"] or ([c["header"]] if c["header"] else [])
+        non_ik = [h for h in hdrs if not nfc(h).startswith("ੴ")]
+        header = next((h for h in non_ik if is_title(h, raag_names)),
+                      (non_ik[0] if non_ik else (hdrs[0] if hdrs else "")))
+        toks = [t for h in non_ik for t in tokens(h)]
         joined = " ".join(toks)
-        title = is_title(header, raag_names)
+        title = any(is_title(h, raag_names) for h in non_ik)
         if title:
             stats["titles"] += 1
 
@@ -224,7 +234,9 @@ def main():
         # containing ਧੁਨਿ don't qualify: vaar comps only, <=8 tokens.
         dhunni = None
         if title and ("ਧੁਨੀ" in joined or "ਧੁਨਿ" in joined) and "ਵਾਰ" in joined:
-            dhunni = header
+            dhunni = next((h for h in non_ik
+                           if ("ਧੁਨੀ" in tokens(h) or "ਧੁਨਿ" in tokens(h))
+                           and "ਵਾਰ" in tokens(h)), header)
         elif form == "vaar":
             for line in c["early"]:
                 ltoks = tokens(line)

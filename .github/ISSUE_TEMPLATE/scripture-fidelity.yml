@@ -1,0 +1,15 @@
+name: Scripture fidelity concern
+description: A possible issue with the Gurmukhi text, heading, attribution, or Ang.
+labels: ["type/data", "scripture", "needs:human"]
+body:
+  - type: markdown
+    attributes:
+      value: "The corpus is verbatim from the source Bir. We never edit it — we flag for a Granthi/scholar to review. Do not propose a text change here."
+  - type: input
+    id: ang
+    attributes: { label: Ang }
+    validations: { required: true }
+  - type: textarea
+    id: observed
+    attributes: { label: What looks wrong, description: "Quote the line verbatim and cite the Ang. Say what the source Bir shows." }
+    validations: { required: true }
