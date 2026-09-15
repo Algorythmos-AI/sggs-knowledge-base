@@ -11,7 +11,7 @@ services:
     dockerContext: .
     branch: integration
     plan: free
-    healthCheckPath: /api/health
+    healthCheckPath: /api/meta   # cheap + cached; /api/health runs a full verify pass
     autoDeploy: false
     envVars:
       - key: SGGS_OPEN_BROWSER

@@ -1,0 +1,258 @@
+name: deploy-production
+# CI-gated production deploy. Order: gates → API (Render) → verify API → build web
+# (unaliased) → smoke the unaliased web → promote → smoke public → release tag.
+# Nothing reaches users unless every required check on this exact commit is green.
+# Runbook: docs/process/runbooks/deploy.md
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      expect_commit:
+        description: "Test hook: commit the API must report (a bogus value proves the pipeline stops before any web deploy)"
+        required: false
+        default: ""
+
+concurrency:
+  group: production
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+env:
+  PROD_API: https://sggs-knowledge-base.onrender.com
+  PROD_WEB: https://sggs-knowledge-base.vercel.app
+  VERCEL_CLI: vercel@59.7.0
+
+jobs:
+  gates:
+    name: gates
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 50
+    permissions:
+      contents: read
+      checks: read
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - name: Wait for every required check on this exact commit
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: python3 scripts/ci/wait_for_checks.py "$GITHUB_SHA" --extra playwright
+
+  preflight:
+    name: preflight
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    environment: production
+    timeout-minutes: 5
+    steps:
+      - name: Required secrets are configured
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+          VERCEL_AUTOMATION_BYPASS_SECRET: ${{ secrets.VERCEL_AUTOMATION_BYPASS_SECRET }}
+          RENDER_DEPLOY_HOOK_PROD: ${{ secrets.RENDER_DEPLOY_HOOK_PROD }}
+        run: |
+          missing=""
+          for v in VERCEL_TOKEN VERCEL_ORG_ID VERCEL_PROJECT_ID VERCEL_AUTOMATION_BYPASS_SECRET RENDER_DEPLOY_HOOK_PROD; do
+            [ -n "${!v}" ] || missing="$missing $v"
+          done
+          if [ -n "$missing" ]; then
+            echo "::error::missing production environment secrets:$missing (see docs/process/runbooks/deploy.md)"; exit 1
+          fi
+          echo "all production secrets present"
+
+  approve:
+    # Optional human gate: add required reviewers to the `production-approval`
+    # environment to require a click before anything deploys. Without reviewers it passes.
+    name: approve
+    needs: [gates, preflight]
+    runs-on: ubuntu-latest
+    environment: production-approval
+    timeout-minutes: 5
+    steps:
+      - run: echo "approved to deploy ${GITHUB_SHA::7}"
+
+  deploy-api:
+    name: deploy-api
+    needs: approve
+    runs-on: ubuntu-latest
+    environment: production
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - name: Trigger Render deploy of this exact commit
+        env:
+          HOOK: ${{ secrets.RENDER_DEPLOY_HOOK_PROD }}
+        run: |
+          case "$HOOK" in *\?*) sep='&' ;; *) sep='?' ;; esac
+          curl -fsS -X POST "${HOOK}${sep}ref=${GITHUB_SHA}" -o /dev/null
+          echo "deploy requested for ${GITHUB_SHA::7}"
+      - name: Wait until the API runs this commit and is healthy
+        env:
+          EXPECT: ${{ inputs.expect_commit || github.sha }}
+        # 'unknown' is expected while the previous build (without the commit field) is
+        # still live during a slow Docker+LFS build, so it is tolerated for the whole window.
+        run: python3 scripts/ci/wait_for_deploy.py "$PROD_API" --commit "$EXPECT" --timeout 1500 --unknown-grace 1500
+
+  verify-api:
+    name: verify-api
+    needs: deploy-api
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+      issues: write
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: ./.github/actions/lfs-db
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5
+        with:
+          python-version-file: ".python-version"
+      - name: Every sampled composition serves its exact lines; headings present; gaps 404
+        run: python3 pipeline/api_superset_check.py --db db/sggs.sqlite --url "$PROD_API" --sample 100
+      - name: Open an incident (API is live but failed verification)
+        if: failure()
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh issue create --repo "$GITHUB_REPOSITORY" \
+            --title "Production API verification failed for ${GITHUB_SHA::7}" \
+            --body "deploy-production run ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}. The web frontend was NOT deployed. Roll back the Render service to its previous deploy (docs/process/runbooks/rollback.md)."
+
+  deploy-web:
+    name: deploy-web
+    needs: verify-api
+    runs-on: ubuntu-latest
+    environment: production
+    timeout-minutes: 20
+    outputs:
+      url: ${{ steps.deploy.outputs.url }}
+      previous: ${{ steps.prev.outputs.previous }}
+    env:
+      VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+      VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version-file: ".nvmrc"
+      - run: npm i -g "$VERCEL_CLI"
+      - name: Record the current production deployment (rollback target)
+        id: prev
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+        run: |
+          prev=$(curl -fsS -H "Authorization: Bearer $VERCEL_TOKEN" \
+            "https://api.vercel.com/v6/deployments?projectId=$VERCEL_PROJECT_ID&teamId=$VERCEL_ORG_ID&target=production&state=READY&limit=1" \
+            | python3 -c "import sys,json;d=json.load(sys.stdin)['deployments'];print(d[0]['url'] if d else '')")
+          echo "previous production deployment: ${prev:-none}"
+          echo "previous=$prev" >> "$GITHUB_OUTPUT"
+      - name: Build + deploy (production target, NOT aliased yet)
+        id: deploy
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+        run: |
+          vercel pull --yes --environment=production --token="$VERCEL_TOKEN"
+          vercel build --prod --token="$VERCEL_TOKEN"
+          url=$(vercel deploy --prebuilt --prod --skip-domain --token="$VERCEL_TOKEN")
+          case "$url" in https://*) ;; *) echo "::error::unexpected deploy output: $url"; exit 1 ;; esac
+          echo "url=$url" >> "$GITHUB_OUTPUT"
+          echo "built $url (not live)"
+
+  verify-web:
+    name: verify-web
+    needs: deploy-web
+    runs-on: ubuntu-latest
+    environment: production
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version-file: ".nvmrc"
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - name: Playwright smoke against the unaliased deployment
+        working-directory: frontend
+        env:
+          PLAYWRIGHT_BASE_URL: ${{ needs.deploy-web.outputs.url }}
+          VERCEL_AUTOMATION_BYPASS_SECRET: ${{ secrets.VERCEL_AUTOMATION_BYPASS_SECRET }}
+        run: |
+          npm ci
+          npx playwright install --with-deps chromium
+          npx playwright test --grep @smoke --project=desktop
+
+  promote:
+    name: promote
+    needs: [deploy-web, verify-web]
+    runs-on: ubuntu-latest
+    environment: production
+    timeout-minutes: 15
+    permissions:
+      contents: read
+      issues: write
+    env:
+      VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+      VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version-file: ".nvmrc"
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - run: npm i -g "$VERCEL_CLI"
+      - name: Promote to the production domain
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          URL: ${{ needs.deploy-web.outputs.url }}
+        run: vercel promote "$URL" --yes --timeout 5m --token="$VERCEL_TOKEN"
+      - name: Smoke the public production domain
+        id: public
+        working-directory: frontend
+        env:
+          PLAYWRIGHT_BASE_URL: ${{ env.PROD_WEB }}
+        run: |
+          python3 ../scripts/ci/wait_for_deploy.py "$PROD_WEB" --commit "$GITHUB_SHA" --timeout 300 --interval 10
+          npm ci
+          npx playwright install --with-deps chromium
+          npx playwright test --grep @smoke --project=desktop
+      - name: Roll back the web frontend (public smoke failed)
+        if: failure() && needs.deploy-web.outputs.previous != ''
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          PREV: ${{ needs.deploy-web.outputs.previous }}
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          vercel rollback "$PREV" --yes --timeout 5m --token="$VERCEL_TOKEN"
+          gh issue create --repo "$GITHUB_REPOSITORY" \
+            --title "Production web rolled back after failed smoke (${GITHUB_SHA::7})" \
+            --body "Rolled back to $PREV. Run: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+
+  release:
+    name: release
+    needs: promote
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          fetch-depth: 0
+      - name: Tag + GitHub Release (only after a verified deploy; idempotent)
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          V=$(python3 -c "import re;print(re.search(r\"APP_VERSION\s*=\s*'([^']+)'\", open('webapp/serve.py').read()).group(1))")
+          if git rev-parse -q --verify "refs/tags/v$V" >/dev/null; then
+            echo "v$V already tagged — nothing to release"; exit 0
+          fi
+          python3 scripts/release/release_notes.py "$V" > notes.md || echo "v$V" > notes.md
+          git tag -a "v$V" -m "v$V" "$GITHUB_SHA"
+          git push origin "v$V"
+          gh release create "v$V" --title "v$V" --notes-file notes.md --verify-tag
