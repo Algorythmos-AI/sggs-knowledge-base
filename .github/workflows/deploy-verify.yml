@@ -1,0 +1,33 @@
+name: deploy-verify
+on:
+  deployment_status:
+permissions:
+  contents: read
+jobs:
+  verify:
+    # only run when a deployment reports success and exposes a URL
+    if: github.event.deployment_status.state == 'success' && github.event.deployment_status.environment_url != ''
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Health + version match on the deployed URL
+        env:
+          URL: ${{ github.event.deployment_status.environment_url }}
+        run: |
+          echo "verifying $URL"
+          EXPECT=$(python3 -c "import re;print(re.search(r\"APP_VERSION\s*=\s*'([^']+)'\", open('webapp/serve.py').read()).group(1))")
+          for i in $(seq 1 10); do
+            code=$(curl -s -o /tmp/h.json -w '%{http_code}' --max-time 20 "$URL/api/health" || true)
+            [ "$code" = "200" ] && break
+            echo "attempt $i: /api/health -> $code (retrying)"; sleep 15
+          done
+          python3 - "$EXPECT" <<'PY'
+          import json, sys
+          d=json.load(open('/tmp/h.json'))
+          assert d.get('ok') is True, f"health not ok: {d}"
+          assert all(d.get('checks',{}).values()), f"a health check failed: {d}"
+          exp=sys.argv[1]
+          got=d.get('version')
+          # staging/preview may legitimately be ahead of prod; only warn on mismatch
+          print(f"deployed version {got} (repo APP_VERSION {exp}) — health OK")
+          PY

@@ -9,7 +9,8 @@
     "sync": "node scripts/sync-to-webapp.mjs",
     "rollback": "node scripts/sync-to-webapp.mjs --rollback",
     "build:deploy": "astro build && node scripts/sync-to-webapp.mjs",
-    "test:pahar": "node scripts/test-pahar.mjs"
+    "test:pahar": "node scripts/test-pahar.mjs",
+    "test:e2e": "playwright test"
   },
   "dependencies": {
     "@tailwindcss/vite": "^4.3.1",
@@ -19,6 +20,8 @@
     "tailwindcss": "^4.3.1"
   },
   "devDependencies": {
-    "@types/d3": "^7.4.3"
+    "@types/d3": "^7.4.3",
+    "@playwright/test": "^1.48.0",
+    "@axe-core/playwright": "^4.10.0"
   }
 }
