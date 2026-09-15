@@ -1,0 +1,27 @@
+name: lfs-db
+description: >
+  Fetch db/sggs.sqlite from Git LFS through an oid-keyed cache, so repeated CI
+  runs don't spend LFS bandwidth on the same 108 MB object. Use after
+  actions/checkout WITHOUT `lfs: true` (checkout would download before the cache
+  can be restored).
+runs:
+  using: composite
+  steps:
+    - name: Resolve the DB's LFS oid (from the pointer; no download)
+      id: oid
+      shell: bash
+      run: |
+        OID=$(git lfs ls-files -l | awk '$3=="db/sggs.sqlite"{print $1}')
+        [ -n "$OID" ] || { echo "::error::db/sggs.sqlite is not tracked by Git LFS"; exit 1; }
+        echo "oid=$OID" >> "$GITHUB_OUTPUT"
+    - name: Restore LFS object cache
+      uses: actions/cache@v4
+      with:
+        path: .git/lfs/objects
+        key: lfs-db-${{ runner.os }}-${{ steps.oid.outputs.oid }}
+    - name: Materialize the DB (downloads only on a cache miss)
+      shell: bash
+      run: |
+        git lfs pull --include "db/sggs.sqlite"
+        head -c 16 db/sggs.sqlite | grep -q "SQLite format 3" || {
+          echo "::error::db/sggs.sqlite is still an LFS pointer after pull"; exit 1; }

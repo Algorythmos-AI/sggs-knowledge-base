@@ -27,8 +27,14 @@ PORT = int(os.environ.get('PORT') or os.environ.get('SGGS_PORT') or '7777')
 # doesn't force an 86 MB DB re-commit. /api/meta and /api/health prefer these; the
 # DB meta row is the fallback. Bump on every search-logic release so the UI footer
 # (which reads /api/meta) reflects the running build.
-APP_VERSION = '1.1.0'
+APP_VERSION = '1.1.1'
 APP_BUILT = '2026-09-15'
+
+
+# The exact source commit of the running build, so a deploy can be verified by
+# identity (not just version): Render injects RENDER_GIT_COMMIT for git-backed
+# services; SGGS_COMMIT is a manual override for other hosts.
+APP_COMMIT = os.environ.get('RENDER_GIT_COMMIT') or os.environ.get('SGGS_COMMIT') or 'unknown'
 
 
 class ApiError(Exception):
@@ -780,6 +786,7 @@ def api(path, qs):
         m['db_version'] = m.get('version')          # honest record of the DB build
         m['version'] = APP_VERSION or m.get('version')   # footer shows the running code build
         m['built'] = APP_BUILT or m.get('built')
+        m['commit'] = APP_COMMIT
         try:
             m['raags'] = rows_to_list(db().execute('SELECT * FROM raags ORDER BY seq'))
         except sqlite3.OperationalError:
@@ -838,6 +845,7 @@ def api(path, qs):
         h['version'] = APP_VERSION or m.get('version')
         h['db_version'] = m.get('version')
         h['built'] = APP_BUILT or m.get('built')
+        h['commit'] = APP_COMMIT
         check('lines_60658', db().execute('SELECT count(*) FROM lines').fetchone()[0] == 60658)
         check('angs_1430', db().execute('SELECT count(DISTINCT ang) FROM lines').fetchone()[0] == 1430)
         check('fts5', m.get('fts5') == '1' and bool(

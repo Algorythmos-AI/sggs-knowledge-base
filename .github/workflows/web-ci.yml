@@ -13,16 +13,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-        with:
-          lfs: true
-      - run: git lfs pull --include "db/sggs.sqlite"
+      - uses: ./.github/actions/lfs-db
       - uses: actions/setup-python@v5
         with:
           python-version-file: ".python-version"
-      - name: Fail fast if the DB is still an LFS pointer
-        run: |
-          head -c 16 db/sggs.sqlite | grep -q "SQLite format 3" || {
-            echo "::error::db/sggs.sqlite is an LFS pointer, not the real DB"; exit 1; }
       - name: Ruff (bug-only lint gate)
         run: |
           pip install ruff==0.9.10

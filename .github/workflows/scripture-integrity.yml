@@ -13,9 +13,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-        with:
-          lfs: true
-      - run: git lfs pull --include "db/sggs.sqlite"
+      - uses: ./.github/actions/lfs-db
       - uses: actions/setup-python@v5
         with:
           python-version-file: ".python-version"

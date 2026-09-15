@@ -3,12 +3,12 @@ import AxeBuilder from '@axe-core/playwright';
 
 const TODI = 'ਟੋਡੀ ਮਹਲਾ ੫ ਘਰੁ ੨ ਚਉਪਦੇ';
 
-test('Reader renders the printed heading on Ang 712', async ({ page }) => {
+test('Reader renders the printed heading on Ang 712 @smoke', async ({ page }) => {
   await page.goto('/reader?ang=712');
   await expect(page.locator('body')).toContainText(TODI, { timeout: 15_000 });
 });
 
-test('search → composition sheet shows the heading (the v1.1.0 fix)', async ({ page }) => {
+test('search → composition sheet shows the heading (the v1.1.0 fix) @smoke', async ({ page }) => {
   await page.goto('/');
   await page.locator('#q').fill('Maya magan swad lobh');
   await page.locator('#q').press('Enter');
