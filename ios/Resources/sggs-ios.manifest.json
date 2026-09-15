@@ -1,6 +1,6 @@
 {
-  "bytes": 107896832,
-  "db_sha256": "384f53a1a61c844cb8409a653326a2c3c5d5d355e3451b19927aaa139b3f85c0",
+  "bytes": 107778048,
+  "db_sha256": "ffdf7e33a93308e61a1e01b2aaac90b548d74d45aceda000a79cd028d2d8f8eb",
   "derived_from": "db/sggs.sqlite",
   "dropped": [],
   "en_bundled": true,

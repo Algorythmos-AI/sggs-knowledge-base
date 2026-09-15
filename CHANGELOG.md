@@ -1,5 +1,54 @@
 # Changelog — SGGS Knowledge Base
 
+The format below (newest first) follows [Keep a Changelog](https://keepachangelog.com);
+entries prior to v1.1.0 are the project's original prose style and are preserved verbatim.
+
+## [1.1.0] — 2026-09-15 — Composition heading fix (header-run regroup)
+
+### Fixed
+- **The composition sheet (web + iOS) now shows the printed heading.** Opening a
+  shabad — e.g. Ang 712 — previously showed only `ੴ ਸਤਿਗੁਰ ਪ੍ਰਸਾਦਿ ॥` and the
+  verses, dropping the title line `ਟੋਡੀ ਮਹਲਾ ੫ ਘਰੁ ੨ ਚਉਪਦੇ`. Root cause: the
+  corpus extractor gave every heading line its own `comp_id`, so a title line
+  followed by a separate ੴ invocation became a one-line "orphan" composition
+  that `/api/shabad/{comp_id}` (and the iOS `fetchShabad`) never fetched. Now a
+  run of consecutive heading lines opens ONE composition together with the body
+  it introduces (`pipeline/build_corpus.py` post-pass 1b).
+- **Pin button no longer overlaps long Gurmukhi verses** in the composition sheet
+  (`.haspin .g` reserves 48px for the 36px pin control).
+
+### Changed
+- The composition sheet drops its synthesized raag/section title when the real
+  heading row is present, so the title is never shown twice (web `panel.ts`, iOS
+  `ShabadSheet` renders heading rows centred, like the Reader).
+- `/api/shabad/{comp_id}` returns **404** for an unknown or now-vacated `comp_id`
+  instead of an empty sheet.
+- Bani-forms derivation (`derive_bani_forms.py`) and Vaar detection
+  (`build_vaars.py`) choose the title across the whole heading run — 495 shabads
+  now surface their form/genre (`shabd_poetic_genre` 57→67); Vaar count unchanged
+  (22 / 1423 units).
+
+### Data
+- **Scripture byte-identical.** 60,658 lines, 1,430 Angs; reconcile char-exact vs
+  the source PDF; every field except `comp_id`/`line_no` is byte-for-byte
+  unchanged (proven by `pipeline/verify_regroup.py`, and independently at the
+  JSONL level). 674 heading lines folded; distinct compositions 5,380 → 4,706
+  (vacated `comp_id`s become permanent gaps — no body line or saved bookmark
+  changes id). `db_sha256` `883f6f80…`; scripture hash `0eff4bae…` unchanged.
+- Contract vectors regenerated (reader/timing/analytics changed; search / verify /
+  roman-norm / difflib / pahar **unchanged**). iOS bundles rebuilt (both profiles),
+  Swift golden-parity 17/17. `audit/scripture-baseline.json` re-recorded.
+
+### Added
+- `pipeline/verify_regroup.py` — mechanical old-vs-new proof (release gate: only
+  `comp_id`/`line_no` may change; scripture and text-derived tables identical).
+- `pipeline/api_superset_check.py` — integration proof that every composition
+  serves its exact lines, headings appear, and gap ids 404.
+
+### Versions
+- `APP_VERSION` 1.1.0 · `MANIFEST.json` 1.1.0 · built 2026-09-15.
+
+
 ## v1.0.0 — Unified Production Baseline & TestFlight Release
 Version-unification pass: iOS, web, and API version strings reset to a single `1.0.0` baseline (iOS build 1) ahead of the first public TestFlight/production release. Metadata and documentation only — no corpus, DB, or search-logic change (`git diff -- corpus db` empty). Consolidates the recently landed pre-TestFlight hardening work now shipping under this baseline: Reader/sheet layout hardening (AX3 Dynamic Type truncation fix, scene-active watchdog), iOS 26 tab bar UX polish (bottom-bar controls moved out from under the floating glass tab bar; iPad search-presentation tab bar fix), precision deep-link/verse routing (`sggs://ang`, `sggs://shabad`, Spotlight, Study Trail — every entry point lands scrolled to and highlighting the exact verse), and full test-suite stabilization (kit 17/17, 33 unit, 26/26 UI tests green in one uninterrupted run).
 - **Versions.** `APP_VERSION` 1.0.0 / `MANIFEST.json` 1.0.0 (`db_sha256`/`corpus_sha256` unchanged), iOS `MARKETING_VERSION` 1.0.0 build 1, README/MASTER-INDEX/CLAUDE.md in step.

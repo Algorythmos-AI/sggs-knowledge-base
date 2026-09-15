@@ -1,23 +1,20 @@
 {
-  "created": "2026-07-11T06:52:56+1000",
-  "db_path": "db/sggs.sqlite",
-  "db_file_sha256": "cde0baa64a2afdd5af98cfb2be8b0217195099e6521f6832384a5da84f932678",
+  "created": "2026-09-15T15:22:50+1000",
+  "db_path": "/private/tmp/claude-501/-Users-samkalaliya-ppt-universe-SGGS-KnowledgeBase/98b49046-71d7-4da4-bf82-07f4bd8ee02c/scratchpad/pretiming.sqlite",
+  "db_file_sha256": "af5c902b922e0dd91042d4289f36a69c587f75680d9b43a3fa1cdf9f8ad501f0",
   "corpus_path": "corpus/sggs.jsonl",
-  "corpus_sha256": "72c86816fdf15eaf1e4c0e6bb16b89ddddca9567c8d050163e3730ad841f88cd",
-  "manifest_db_sha256_at_baseline": "cde0baa64a2afdd5af98cfb2be8b0217195099e6521f6832384a5da84f932678",
-  "manifest_corpus_sha256_at_baseline": "72c86816fdf15eaf1e4c0e6bb16b89ddddca9567c8d050163e3730ad841f88cd",
+  "corpus_sha256": "10b19698f7922824d4f98e332fc23215d1376243ec2a01c3b30f56acb3915696",
+  "manifest_db_sha256_at_baseline": "fce385b2545486dbe2ff0137febfce10ca6656c661d94d4b7a8032fc090b9492",
+  "manifest_corpus_sha256_at_baseline": "10b19698f7922824d4f98e332fc23215d1376243ec2a01c3b30f56acb3915696",
   "method": "data: sha256 of newline-joined compact-JSON rows, SELECT * ORDER BY rowid (fallback: ORDER BY all columns); blobs hex; floats repr. schema: sha256 of sqlite_master.sql. virtual tables: schema hash only.",
-  "backup": {
-    "path": "db/backups/sggs-pre-timing-20260711-065253.sqlite",
-    "sha256": "cde0baa64a2afdd5af98cfb2be8b0217195099e6521f6832384a5da84f932678"
-  },
+  "backup": null,
   "tables": {
     "analytics_meta": {
       "class": "metadata",
       "virtual": false,
       "schema_sha256": "ebad4d3bfd9d82a1a26b428960c7eb84e69f5f7a680284a03d03d7d2c0f9afe9",
       "rows": 12,
-      "data_sha256": "8d74fedc07bc0e3d3441129fd0c0b44ddddc88c95045253f1bfad524c04d4f25"
+      "data_sha256": "cf936ec516b6a1707850e5bb76c105e576dc72ea299d86471495b8782721636d"
     },
     "author_analytics": {
       "class": "metadata",
@@ -38,7 +35,7 @@
       "virtual": false,
       "schema_sha256": "736195e1cd6ff92e96cbda5b8d82e3eabdcfd58773880ce63c559e4efe6aba56",
       "rows": 552,
-      "data_sha256": "f350a09ce503b4a0eb29a4a5d150dd0c6abb14eb9cc436e8288f7219af32abbd"
+      "data_sha256": "9932c17fa8db95c017fa220ccb45b7b1ecf47fcff528d0f23cd52fe409a92a5d"
     },
     "authors": {
       "class": "metadata",
@@ -52,7 +49,7 @@
       "virtual": false,
       "schema_sha256": "fea761683afdac880036993f30ff83ab4a6295216347292bf472b9eaed26fa9d",
       "rows": 24676,
-      "data_sha256": "99ea47edc2c3102553372a0e406faa546158136d8e202c8fae5bb47e86aa6a4e"
+      "data_sha256": "07c13e39b92ef7606f4b4d64a6b12214ce82a6455f73fd3bd4d3c74a129ca17e"
     },
     "concept_lines": {
       "class": "scripture_derived",
@@ -234,21 +231,21 @@
       "virtual": false,
       "schema_sha256": "8773ec3c445d581b53c622dd63f16cbccbef5267f2172577001b67659c0395bc",
       "rows": 529867,
-      "data_sha256": "6f5f71a90b620dd21cf193e4212bf4198579f4ed4edaa3c36290f5379e281873"
+      "data_sha256": "df28474ccbef16bd450793c37c4d532917584b50e7df8178c864011c0c4643ad"
     },
     "lines": {
       "class": "scripture",
       "virtual": false,
       "schema_sha256": "c6ec1e82aa56fec8e49618f665c385dbaa36d98aa6899bb4970d7fd53ce105d6",
       "rows": 60658,
-      "data_sha256": "caab8b71149f43ea7bb9506cbe0be16d6d2ec06fd4e4f15168f0d86986abfcdf"
+      "data_sha256": "dbd9f5e8318134bbe886483ad346179ea801c95d7b8615c794925e4ba2a5b292"
     },
     "meta": {
       "class": "metadata",
       "virtual": false,
       "schema_sha256": "ab4e509cf7260b979fd5799a4f45734378fb4e2a67f89b009192e4005405e027",
       "rows": 9,
-      "data_sha256": "6745765f4750bf7e8789ee74cc739dd19a528cacd60bcb7660204905e1645143"
+      "data_sha256": "5922d9c16305c3e903cb9f71a9a6adefb46b66a7e6435fe731292f01d1b9077c"
     },
     "raag_analytics": {
       "class": "metadata",
@@ -262,7 +259,7 @@
       "virtual": false,
       "schema_sha256": "70fdccca327fbf44b5c3c015de74fb2303a14ea9ccc33ca99a8eba6be6c67558",
       "rows": 31,
-      "data_sha256": "d0a6b53157b9b892b6861ec88e3f2fad410b4c983f5246ec9fdf50647e000bca"
+      "data_sha256": "9006cb1f50cc05562137b845ebef4458df340b4a3d950352ae92b2144a688e36"
     },
     "sections": {
       "class": "metadata",
@@ -283,7 +280,7 @@
       "virtual": false,
       "schema_sha256": "4d310698d2dfe4f33d885389565d7a577c8fbeb2ae0c67c69f93b6ccfbd56187",
       "rows": 2,
-      "data_sha256": "84f0dbc481c8020b7cd483108e95b4d3c9a296dc282c937848e7ff368ea52df7"
+      "data_sha256": "ab348d0f63a667120164c7636d9befd23691430641232e7a0bb0d9f06020201f"
     },
     "theme_fingerprint": {
       "class": "metadata",
@@ -311,14 +308,14 @@
       "virtual": false,
       "schema_sha256": "775230435492991c99d8e880a2fee3f5d6d904443a8501239f83995269a0c923",
       "rows": 1423,
-      "data_sha256": "09d5a9eeacd4d911d56144904183e494cdb8a5bba8d8850c29f40d88624a0fd5"
+      "data_sha256": "7f8f1e80d96fb87c9f54049c6de3604d141301b89e0796adae749aa43fbf1450"
     },
     "vaars": {
       "class": "scripture_derived",
       "virtual": false,
       "schema_sha256": "11b540b87bcba45afc8fc55745069c0d9b08d166edd3579efbb66652b82dea3d",
       "rows": 22,
-      "data_sha256": "987d89d42015279bc71a0a98b5df0a6b2d03df933b9c79f91beae595733d87c5"
+      "data_sha256": "c233f2dc764ac50ddf396ed932faf51843299c356e73fe63b4734fc42a1350f7"
     },
     "variants": {
       "class": "scripture_derived",
