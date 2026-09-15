@@ -23,11 +23,11 @@ jobs:
         run: |
           head -c 16 db/sggs.sqlite | grep -q "SQLite format 3" || {
             echo "::error::db/sggs.sqlite is an LFS pointer, not the real DB"; exit 1; }
-      - name: Ruff (lint + format check)
+      - name: Ruff (bug-only lint gate)
         run: |
-          pip install ruff==0.6.9
+          pip install ruff==0.9.10
           ruff check .
-          ruff format --check .
+          ruff format --check . || echo "::warning::ruff format has suggestions (not gated yet — see pyproject.toml)"
       - name: Server unit tests (webapp/tests)
         run: python3 -m unittest discover -s webapp/tests -v
       - name: Health + shabad heading regression

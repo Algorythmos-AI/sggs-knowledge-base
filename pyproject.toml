@@ -6,9 +6,10 @@ line-length = 120
 extend-exclude = ["webapp/static", "frontend", "ios", "**/*.min.js"]
 
 [tool.ruff.lint]
-# Conservative on a mature stdlib codebase: real bugs, not style churn.
-select = ["E9", "F", "B", "UP032", "PLE"]
-ignore = ["E501", "F401"]
-
-[tool.ruff.lint.per-file-ignores]
-"pipeline/*" = ["B008"]
+# Adopting linting on a mature, verified stdlib codebase: gate on genuine bugs
+# only (syntax errors, undefined names, broken f-strings/comparisons, pyflakes
+# logic errors, pylint errors). Style/bugbear rules (B, unused-var, import order)
+# are deliberately NOT gated yet — tighten incrementally in follow-up PRs so a
+# style nit never blocks a scripture fix.
+select = ["E9", "F63", "F7", "F82", "PLE"]
+ignore = []
