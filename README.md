@@ -12,6 +12,9 @@ A **sovereign, verifiable Gurbani corpus** with a zero-dependency local web app.
 
 ---
 
+
+> **Engineering wiki:** see [`docs/`](docs/README.md) — architecture & diagrams, scripture-integrity, branching, environments, CI gates, runbooks, ADRs.
+
 ## Table of contents
 
 - [Why this exists](#why-this-exists)
