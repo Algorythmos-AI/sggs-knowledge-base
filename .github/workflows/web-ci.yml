@@ -39,11 +39,15 @@ jobs:
         run: |
           python3 pipeline/roundtrip_harness.py || true
           python3 pipeline/casual_quote_harness.py
-      - name: Contract drift (regenerated vectors must match committed)
+      - name: Contract drift (regenerated golden vectors must match committed)
         run: |
           python3 pipeline/gen_golden_vectors.py
-          git diff --exit-code contract/ || {
-            echo "::error::contract/ is stale — run `python3 pipeline/gen_golden_vectors.py` and commit"; exit 1; }
+          # Gate on the vectors themselves; contract/_meta.json only records the
+          # generating python/sqlite versions, which legitimately differ per env.
+          if ! git diff --exit-code -- 'contract/*.ndjson'; then
+            echo "::error::contract vectors are stale - regenerate with gen_golden_vectors.py and commit"
+            exit 1
+          fi
   frontend:
     runs-on: ubuntu-latest
     steps:

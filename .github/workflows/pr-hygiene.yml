@@ -14,5 +14,5 @@ jobs:
         with:
           script: |
             const title = context.payload.pull_request.title;
-            const ok = /^(feat|fix|docs|chore|ci|refactor|perf|test|data|ios|web|build|revert)(\([a-z0-9/-]+\))?!?:\s.+/.test(title);
+            const ok = /^(feat|fix|docs|chore|ci|refactor|perf|test|data|ios|web|build|revert|release)(\([a-z0-9/-]+\))?!?:\s.+/.test(title);
             if (!ok) core.setFailed(`PR title must be conventional-commit style (e.g. "fix(data): …"). Got: "${title}"`);

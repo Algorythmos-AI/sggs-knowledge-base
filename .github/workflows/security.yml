@@ -14,10 +14,11 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: ${{ github.event_name == 'schedule' && 0 || 1 }}
-      - name: gitleaks
-        uses: gitleaks/gitleaks-action@v2
-        env:
-          GITLEAKS_ENABLE_UPLOAD_ARTIFACT: "false"
+      - name: gitleaks (open-source binary — no org license needed)
+        run: |
+          V=8.21.2
+          curl -sSL "https://github.com/gitleaks/gitleaks/releases/download/v${V}/gitleaks_${V}_linux_x64.tar.gz" | tar -xz gitleaks
+          ./gitleaks detect --source . --no-git --redact --no-banner --config .gitleaks.toml --exit-code 1
   static-analysis:
     runs-on: ubuntu-latest
     steps:

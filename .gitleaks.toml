@@ -1,0 +1,11 @@
+title = "SGGS Knowledge Base — gitleaks config"
+
+# Build on gitleaks' default ruleset, then allowlist vendored third-party code.
+[extend]
+useDefault = true
+
+[allowlist]
+description = "Vendored, public-domain SQLite amalgamation (not project code; the generic-api-key rule mis-flags SQLite's hex constants and long identifiers)."
+paths = [
+  '''ios/Packages/GurbaniSearchKit/Sources/CSQLite/.*''',
+]
