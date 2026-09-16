@@ -3,6 +3,26 @@
 The format below (newest first) follows [Keep a Changelog](https://keepachangelog.com);
 entries prior to v1.1.0 are the project's original prose style and are preserved verbatim.
 
+## [Unreleased]
+
+### Added
+- **TestFlight → App Store launch kit** (docs/CI/tooling only; no code, corpus or DB change):
+  `docs/ios/testflight-launch-plan.md` (phased plan with entry/exit gates),
+  `docs/ios/testflight-test-plan.md` (device matrix, test charters incl. the mandatory
+  scripture-fidelity charter, triage rules, build log) and `docs/ios/app-store-listing.md`
+  (metadata, privacy answers, review notes).
+- `ios/tools/testflight_archive.sh` + `make testflight`: derives the chosen DB profile
+  (default `public`, Gurmukhi-only), runs `check_release_license.sh` on that exact artifact,
+  generates the project, archives with the Team ID and build number passed on the command
+  line, exports or uploads to App Store Connect, then proves the version/build/widget version
+  and the DB hash *inside* the archived `.app`.
+- `.github/workflows/ios-testflight.yml`: manual (`workflow_dispatch`) upload on a hosted
+  macOS runner through the same script, keyed by an App Store Connect API key in the
+  `testflight` environment.
+
+### Data
+- None. `git diff -- corpus db ios/Resources` empty.
+
 ## [1.1.1] — 2026-09-15 — Deploy foundations
 
 ### Added

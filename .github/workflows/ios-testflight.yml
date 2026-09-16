@@ -1,0 +1,100 @@
+name: iOS TestFlight upload
+
+# MANUAL ONLY. Archives the SGGS app on a hosted macOS runner and uploads it to App Store
+# Connect through the same script a maintainer runs locally (ios/tools/testflight_archive.sh),
+# so every TestFlight build passes the identical gates: scripture-checksum DB derivation,
+# the translation-licence release gate, version/build proof inside the archived .app.
+#
+# One-time setup (repo → Settings → Environments → `testflight`, deployment branches:
+# integration + main + release tags; secrets, never echoed):
+#   APPLE_TEAM_ID        Apple Developer Team ID
+#   ASC_KEY_ID           App Store Connect API key ID     (Users and Access → Integrations → App Store Connect API)
+#   ASC_ISSUER_ID        App Store Connect API issuer ID
+#   ASC_KEY_P8_BASE64    the .p8 key file, base64-encoded (`base64 -i AuthKey_XXXX.p8 | pbcopy`)
+# The key needs the App Manager role. Automatic signing with an API key uses cloud-managed
+# certificates (`-allowProvisioningUpdates`); the first run may need the distribution
+# certificate created once in Xcode on a maintainer's Mac if cloud signing is not enabled
+# for the team. Until this workflow has produced one processed TestFlight build, the local
+# script is the primary path and this job is the backup.
+#
+# The build number is an explicit input: App Store Connect rejects a reused CFBundleVersion for
+# the same marketing version, and the record of what was uploaded lives in the job summary.
+
+on:
+  workflow_dispatch:
+    inputs:
+      build_number:
+        description: "CFBundleVersion for this upload (integer; greater than every build already uploaded for this version)"
+        required: true
+        type: string
+      profile:
+        description: "Bundled DB profile (public = Gurmukhi-only; personal requires LICENSED: true)"
+        required: true
+        type: choice
+        default: public
+        options: [public, personal]
+      upload:
+        description: "Upload to App Store Connect (false = archive + gate only, keep the .ipa as an artifact)"
+        required: true
+        type: boolean
+        default: true
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ios-testflight
+  cancel-in-progress: false
+
+jobs:
+  archive:
+    runs-on: macos-15
+    environment: testflight
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/lfs-db
+      - name: Install XcodeGen
+        run: brew install xcodegen
+      - name: Select Xcode
+        run: |
+          sudo xcode-select -s /Applications/Xcode_16.4.app 2>/dev/null || true
+          xcodebuild -version
+      - name: Write the App Store Connect API key
+        env:
+          ASC_KEY_P8_BASE64: ${{ secrets.ASC_KEY_P8_BASE64 }}
+        run: |
+          test -n "$ASC_KEY_P8_BASE64" || { echo "::error::ASC_KEY_P8_BASE64 secret is not set"; exit 1; }
+          mkdir -p "$RUNNER_TEMP/asc"
+          printf '%s' "$ASC_KEY_P8_BASE64" | base64 --decode > "$RUNNER_TEMP/asc/AuthKey.p8"
+          chmod 600 "$RUNNER_TEMP/asc/AuthKey.p8"
+      - name: Archive, gate, and export / upload
+        env:
+          SGGS_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+          SGGS_ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
+          SGGS_ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
+          SGGS_ASC_KEY_PATH: ${{ runner.temp }}/asc/AuthKey.p8
+          SGGS_BUILD_NUMBER: ${{ inputs.build_number }}
+          SGGS_DB_PROFILE: ${{ inputs.profile }}
+          SGGS_UPLOAD: ${{ inputs.upload && '1' || '0' }}
+        run: bash ios/tools/testflight_archive.sh
+      - name: Record the candidate in the job summary
+        if: always()
+        run: |
+          {
+            echo '## TestFlight candidate'
+            echo '```json'
+            cat ios/App/build/candidate-*.json 2>/dev/null || echo '{"status":"no candidate record — the script failed before step 6"}'
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+      - name: Keep the .ipa when not uploading
+        if: ${{ !inputs.upload }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: SGGS-ipa-build-${{ inputs.build_number }}
+          path: ios/App/build/export-*/*.ipa
+          if-no-files-found: error
+          retention-days: 14
+      - name: Remove the API key
+        if: always()
+        run: rm -rf "$RUNNER_TEMP/asc"
