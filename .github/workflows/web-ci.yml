@@ -42,6 +42,24 @@ jobs:
             echo "::error::contract vectors are stale - regenerate with gen_golden_vectors.py and commit"
             exit 1
           fi
+  api-image:
+    # Builds the exact image Render builds and proves it boots healthy with the commit
+    # baked in — a broken Dockerfile/LFS context fails here, not in production.
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/lfs-db
+      - name: Build the production API image
+        run: docker build -f webapp/Dockerfile --build-arg RENDER_GIT_COMMIT="$GITHUB_SHA" -t sggs-api:ci .
+      - name: Run it and verify health + baked commit identity
+        run: |
+          docker run -d -p 7777:7777 -e PORT=7777 --name sggs sggs-api:ci
+          for _ in $(seq 1 45); do curl -sf -o /dev/null http://127.0.0.1:7777/api/meta && break; sleep 2; done
+          python3 scripts/ci/wait_for_deploy.py http://127.0.0.1:7777 --commit "$GITHUB_SHA" --timeout 120 --interval 3 --unknown-grace 0
+      - name: Container logs
+        if: always()
+        run: docker logs sggs 2>&1 | tail -20 || true
   frontend:
     runs-on: ubuntu-latest
     steps:

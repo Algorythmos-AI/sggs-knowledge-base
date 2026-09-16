@@ -6,7 +6,8 @@ permissions:
 jobs:
   verify:
     # only run when a deployment reports success and exposes a URL
-    if: github.event.deployment_status.state == 'success' && github.event.deployment_status.environment_url != ''
+    # previews only: production is verified end-to-end by deploy-production.yml
+    if: github.event.deployment_status.state == 'success' && github.event.deployment_status.environment_url != '' && github.event.deployment_status.environment != 'Production'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4

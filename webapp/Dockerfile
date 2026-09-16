@@ -23,6 +23,12 @@ RUN python -c "import sys; ok=open('db/sggs.sqlite','rb').read(16)==b'SQLite for
 
 WORKDIR /app/webapp
 
+# Bake the source commit into the image so /api/health.commit is always the built SHA
+# (Render passes RENDER_GIT_COMMIT to Docker builds as a build arg; empty elsewhere ->
+# serve.py reports 'unknown'). Deploy verification polls this value.
+ARG RENDER_GIT_COMMIT=""
+ENV SGGS_COMMIT=${RENDER_GIT_COMMIT}
+
 # The host injects $PORT; serve.py honours it (falls back to 7777). Never open a browser here.
 ENV SGGS_OPEN_BROWSER=0
 EXPOSE 7777

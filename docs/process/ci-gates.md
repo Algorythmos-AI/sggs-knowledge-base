@@ -17,6 +17,11 @@ asserts that attestation's `corpus_sha256` matches the committed corpus.
 
 Run the no-PDF subset locally with `make ci`.
 
+## Deploy pipeline
+`deploy-production` (push to `main`) waits for the required checks above **plus `playwright`**
+on the exact commit, then deploys API → verifies → builds web unaliased → smoke → promotes →
+smoke public → tags. Details: [runbook: deploy](runbooks/deploy.md).
+
 ## Not yet wired (roadmap)
 `e2e` (Playwright + axe), `perf` (latency budget + Lighthouse on staging),
 `deploy-verify`, `uptime`, and `release` — see the delivery plan.

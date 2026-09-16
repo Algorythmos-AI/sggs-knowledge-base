@@ -7,7 +7,7 @@
 | API | same process | Render `sggs-api-staging` | Render `sggs-api` |
 | iOS | simulator | TestFlight **Internal** | TestFlight **External** / App Store |
 | DB profile | full | full | full (public profile until the English licence is recorded) |
-| Who deploys | you | auto on merge to `integration` | auto on release PR to `main` |
+| Who deploys | you | `deploy-staging.yml` after gates (planned) | `deploy-production.yml` after gates |
 
 ## Same-origin API (no CORS)
 The browser always calls `/api/*`; Vercel rewrites those to the Render service.
@@ -23,6 +23,8 @@ is needed:
 ```
 
 ## As-code
+- **Deploys are CI-gated** — see [runbook: deploy](runbooks/deploy.md). The platforms' own git
+  auto-deploys are switched off after cutover.
 - Render: `render.yaml` (Blueprint) defines both services from `webapp/Dockerfile`.
 - Vercel: `frontend/vercel.json` (root dir = `frontend/`) — production branch `main`,
   staging a custom environment tracking `integration`.
