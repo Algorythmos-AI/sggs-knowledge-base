@@ -43,6 +43,8 @@ def main():
     ap.add_argument("sha")
     ap.add_argument("--repo", default=None)
     ap.add_argument("--extra", nargs="*", default=[])
+    ap.add_argument("--contexts", nargs="*", default=None,
+                    help="override the required-context list (default: read from main.json)")
     ap.add_argument("--interval", type=int, default=20)
     ap.add_argument("--appear-timeout", type=int, default=900)
     ap.add_argument("--timeout", type=int, default=2700)
@@ -51,7 +53,8 @@ def main():
     repo = a.repo or os.environ.get("GITHUB_REPOSITORY")
     if not repo:
         sys.exit("--repo or GITHUB_REPOSITORY required")
-    want = list(dict.fromkeys(required_contexts() + a.extra))
+    base = a.contexts if a.contexts is not None else required_contexts()
+    want = list(dict.fromkeys(base + a.extra))
     if not want:
         sys.exit("no required contexts found in .github/rulesets/main.json")
     print(f"waiting on {repo}@{a.sha[:7]} for: {', '.join(want)}")

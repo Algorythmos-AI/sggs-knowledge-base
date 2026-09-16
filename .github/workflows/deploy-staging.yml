@@ -1,0 +1,119 @@
+name: deploy-staging
+# CI-gated STAGING deploy. Every push to integration (a merged PR) deploys to the
+# staging API (Render) + staging web (Vercel, aliased to sggs-staging.vercel.app) and
+# smoke-tests it — so you can review integration on a real, isolated URL before opening
+# a release PR to main. No promote, no release. Runbook: docs/process/runbooks/deploy.md.
+on:
+  push:
+    branches: [integration]
+  workflow_dispatch:
+
+concurrency:
+  group: staging
+  cancel-in-progress: true          # only the newest integration commit matters for staging
+
+permissions:
+  contents: read
+
+env:
+  STG_API: https://sggs-api-staging.onrender.com
+  STG_WEB: https://sggs-staging.vercel.app
+  VERCEL_CLI: vercel@59.7.0
+
+jobs:
+  gates:
+    if: github.ref == 'refs/heads/integration'
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    permissions: { contents: read, checks: read }
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - name: Wait for core checks on this commit
+        env: { GH_TOKEN: "${{ github.token }}" }
+        run: python3 scripts/ci/wait_for_checks.py "$GITHUB_SHA" --contexts python frontend integrity --extra playwright
+
+  preflight:
+    if: github.ref == 'refs/heads/integration'
+    runs-on: ubuntu-latest
+    environment: staging
+    timeout-minutes: 5
+    steps:
+      - name: Required staging secrets present
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+          VERCEL_AUTOMATION_BYPASS_SECRET: ${{ secrets.VERCEL_AUTOMATION_BYPASS_SECRET }}
+          RENDER_DEPLOY_HOOK_STAGING: ${{ secrets.RENDER_DEPLOY_HOOK_STAGING }}
+        run: |
+          missing=""
+          for v in VERCEL_TOKEN VERCEL_ORG_ID VERCEL_PROJECT_ID VERCEL_AUTOMATION_BYPASS_SECRET RENDER_DEPLOY_HOOK_STAGING; do
+            [ -n "${!v}" ] || missing="$missing $v"
+          done
+          [ -z "$missing" ] || { echo "::error::missing staging environment secrets:$missing (docs/process/runbooks/deploy.md)"; exit 1; }
+          echo "all staging secrets present"
+
+  deploy-api:
+    needs: [gates, preflight]
+    runs-on: ubuntu-latest
+    environment: staging
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - name: Trigger staging Render deploy of this commit
+        env: { HOOK: "${{ secrets.RENDER_DEPLOY_HOOK_STAGING }}" }
+        run: |
+          case "$HOOK" in *\?*) sep='&' ;; *) sep='?' ;; esac
+          curl -fsS -X POST "${HOOK}${sep}ref=${GITHUB_SHA}" -o /dev/null
+          echo "staging deploy requested for ${GITHUB_SHA::7}"
+      - name: Wait until the staging API runs this commit and is healthy
+        # free tier is slow to build + cold-starts; tolerate the old build's missing commit
+        run: python3 scripts/ci/wait_for_deploy.py "$STG_API" --commit "$GITHUB_SHA" --timeout 1800 --unknown-grace 1800
+
+  deploy-web:
+    needs: deploy-api
+    runs-on: ubuntu-latest
+    environment: staging
+    timeout-minutes: 20
+    env:
+      VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+      VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with: { node-version-file: ".nvmrc" }
+      - run: npm i -g "$VERCEL_CLI"
+      - name: Build + deploy (preview) and alias to the staging domain
+        env: { VERCEL_TOKEN: "${{ secrets.VERCEL_TOKEN }}" }
+        run: |
+          vercel pull --yes --environment=preview --token="$VERCEL_TOKEN"
+          vercel build --token="$VERCEL_TOKEN"
+          vercel deploy --prebuilt --archive=tgz --format=json --token="$VERCEL_TOKEN" > deploy.out 2> deploy.err || { cat deploy.err; exit 1; }
+          cat deploy.err
+          url=$(python3 scripts/ci/vercel_deploy_url.py deploy.out deploy.err)
+          echo "deployed $url"
+          vercel alias set "$url" sggs-staging.vercel.app --token="$VERCEL_TOKEN"
+
+  verify:
+    needs: deploy-web
+    runs-on: ubuntu-latest
+    environment: staging
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with: { node-version-file: ".nvmrc", cache: npm, cache-dependency-path: frontend/package-lock.json }
+      - name: Warm the free-tier staging web + smoke it
+        working-directory: frontend
+        env:
+          PLAYWRIGHT_BASE_URL: ${{ env.STG_WEB }}
+          VERCEL_AUTOMATION_BYPASS_SECRET: ${{ secrets.VERCEL_AUTOMATION_BYPASS_SECRET }}
+        run: |
+          for _ in $(seq 1 20); do
+            code=$(curl -s -o /dev/null -w '%{http_code}' --max-time 30 -H "x-vercel-protection-bypass: $VERCEL_AUTOMATION_BYPASS_SECRET" "$PLAYWRIGHT_BASE_URL/api/health" || true)
+            [ "$code" = "200" ] && { echo "staging warm"; break; }
+            echo "warming staging: /api/health -> $code"; sleep 20
+          done
+          npm ci
+          npx playwright install --with-deps chromium
+          npx playwright test --grep @smoke --project=desktop
