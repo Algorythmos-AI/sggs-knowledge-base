@@ -136,6 +136,9 @@ Use these instead of improvising the flow — they bundle tested scripts and the
 - **sggs-verify-prod** — prove what production serves (commit identity, health, Ang 712 heading, Vercel deployment).
 - **sggs-rebuild-db** — scripture-safe corpus/DB rebuild with byte-level diff, re-baseline, guard, contract, iOS DBs.
 
+## iOS TestFlight / App Store (2026-09-16: TestFlight approved)
+Plan and gates live in `docs/ios/` (`testflight-launch-plan.md`, `testflight-test-plan.md`, `app-store-listing.md`). Build candidates **only** with `make testflight TEAM_ID=… BUILD=N` (`ios/tools/testflight_archive.sh`) or the manual `ios-testflight.yml` workflow: both derive the DB profile, run `check_release_license.sh` on the exact artifact, and prove the DB hash inside the archived `.app`. Default profile is **`public`** (Gurmukhi-only) because the English layer is `LICENSED: false`; never hand-edit `project.yml`'s team/build for an upload. Every build gets the scripture-fidelity charter (Charter S) signed before testers see it.
+
 ## Verify your changes
 
 - Data/DB change → `python3 webapp/serve.py` then check `http://localhost:7777/api/health` (all checks `true`), and re-run `pipeline/reconcile.py` + `pipeline/golden_test.py`.

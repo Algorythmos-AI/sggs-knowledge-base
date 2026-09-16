@@ -19,6 +19,7 @@ standard-library server serves a prebuilt Astro site and a native iOS app.
 | Ship a change | [Branching](process/branching.md) · [Environments](process/environments.md) · [Release](process/release.md) |
 | Rebuild the database | [Runbook: rebuild-db](process/runbooks/rebuild-db.md) |
 | Know what CI checks and why | [CI gates](process/ci-gates.md) |
+| Take the iOS app through TestFlight to the App Store | [Launch plan](ios/testflight-launch-plan.md) · [Test plan](ios/testflight-test-plan.md) · [Listing](ios/app-store-listing.md) |
 | Understand a past decision | [ADRs](adr/) |
 
 ## Repository at a glance
