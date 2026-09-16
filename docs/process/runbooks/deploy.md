@@ -39,6 +39,25 @@ flowchart LR
 2. Optional: Environments → **`production-approval`** → Required reviewers = you.
 3. The Render and Vercel **GitHub Apps must be installed on the `Algorythmos-AI` org** (Render clones the repo to build; `ref=` must exist there).
 
+## Staging (review integration before production)
+Every push to `integration` runs **`deploy-staging.yml`**: gates (core checks on the SHA) →
+staging Render deploy (verified by `/api/health.commit`) → staging web deploy aliased to
+`sggs-staging.vercel.app` → `@smoke`. No promote, no release. Open `sggs-staging.vercel.app`
+logged in to Vercel (it is SSO-protected). Staging web proxies `/api` to `sggs-api-staging`
+via the host-conditioned rewrite in `frontend/vercel.json`.
+
+**One-time staging setup (owner):**
+1. **Render** → New → **Blueprint** → pick the repo. The committed staging-only `render.yaml`
+   creates `sggs-api-staging` (Docker `webapp/Dockerfile`, branch `integration`, auto-deploy off,
+   free plan). Then its Settings → **Deploy Hook** → copy the URL.
+   (Do NOT `render services create` by CLI — it can't set the Dockerfile path and the build fails.)
+2. **Vercel** — the alias `sggs-staging.vercel.app` already exists (claimed via
+   `vercel alias set <deployment> sggs-staging.vercel.app`); CI re-points it each deploy. Nothing to do
+   unless you want a nicer domain.
+3. **GitHub** → Settings → Environments → **`staging`** (deployment branch `integration`). Secrets:
+   `VERCEL_TOKEN`, `VERCEL_ORG_ID`, `VERCEL_PROJECT_ID`, `VERCEL_AUTOMATION_BYPASS_SECRET` (same values
+   as `production`), and `RENDER_DEPLOY_HOOK_STAGING` (from step 1). The preflight job fails clearly if any are missing.
+
 ## Preview checks (optional)
 `deploy-verify.yml` health-checks feature-branch **preview** deployments. Previews are behind
 Vercel Deployment Protection, so it needs a **repo-level** secret (not the `production`

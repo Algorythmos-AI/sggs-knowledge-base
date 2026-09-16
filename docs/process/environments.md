@@ -3,11 +3,11 @@
 | | Local | Staging | Production |
 |---|---|---|---|
 | Branch | working tree | `integration` | `main` |
-| Web | `serve.py` on :7777 | `sggs-staging.vercel.app` | `sggs-knowledge-base.vercel.app` |
-| API | same process | Render `sggs-api-staging` | Render `sggs-api` |
+| Web | `serve.py` on :7777 | `sggs-staging.vercel.app` (SSO-protected; open logged in) | `sggs-knowledge-base.vercel.app` |
+| API | same process | Render `sggs-api-staging.onrender.com` (free; cold-starts) | Render `sggs-knowledge-base.onrender.com` |
 | iOS | simulator | TestFlight **Internal** | TestFlight **External** / App Store |
 | DB profile | full | full | full (public profile until the English licence is recorded) |
-| Who deploys | you | `deploy-staging.yml` after gates (planned) | `deploy-production.yml` after gates |
+| Who deploys | you | `deploy-staging.yml` on push to integration | `deploy-production.yml` on push to main |
 
 ## Same-origin API (no CORS)
 The browser always calls `/api/*`; Vercel rewrites those to the Render service.
