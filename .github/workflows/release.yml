@@ -31,6 +31,9 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           V: ${{ steps.v.outputs.version }}
         run: |
+          # annotated tags need a committer identity; runners have none
+          git config user.name "github-actions[bot]"
+          git config user.email "41898213+github-actions[bot]@users.noreply.github.com"
           git tag -a "v$V" -m "v$V"
           git push origin "v$V"
           gh release create "v$V" --title "v$V" --notes-file RELEASE_NOTES.md --verify-tag

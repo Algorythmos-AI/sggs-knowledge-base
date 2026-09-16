@@ -260,6 +260,9 @@ jobs:
             echo "v$V already tagged — nothing to release"; exit 0
           fi
           python3 scripts/release/release_notes.py "$V" > notes.md || echo "v$V" > notes.md
+          # annotated tags need a committer identity; runners have none
+          git config user.name "github-actions[bot]"
+          git config user.email "41898213+github-actions[bot]@users.noreply.github.com"
           git tag -a "v$V" -m "v$V" "$GITHUB_SHA"
           git push origin "v$V"
           gh release create "v$V" --title "v$V" --notes-file notes.md --verify-tag

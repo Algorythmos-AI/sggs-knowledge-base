@@ -119,6 +119,13 @@ DB also has: `fts`/`fts_en`/`fts_shabad`/`fts_tri`, `translations`, `variants`, 
 
 ---
 
+## Delivery skills (`.claude/skills/`)
+Use these instead of improvising the flow — they bundle tested scripts and the gotchas learned shipping v1.1.x:
+- **sggs-ship** — branch → local gates → PR into `integration` → watch CI → hand the user the merge command.
+- **sggs-release** — preflight → release PR `integration→main` (merge commit) → watch `deploy-production` gate by gate → verify → tag.
+- **sggs-verify-prod** — prove what production serves (commit identity, health, Ang 712 heading, Vercel deployment).
+- **sggs-rebuild-db** — scripture-safe corpus/DB rebuild with byte-level diff, re-baseline, guard, contract, iOS DBs.
+
 ## Verify your changes
 
 - Data/DB change → `python3 webapp/serve.py` then check `http://localhost:7777/api/health` (all checks `true`), and re-run `pipeline/reconcile.py` + `pipeline/golden_test.py`.
