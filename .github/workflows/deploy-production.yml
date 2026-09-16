@@ -158,11 +158,15 @@ jobs:
         run: |
           vercel pull --yes --environment=production --token="$VERCEL_TOKEN"
           vercel build --prod --token="$VERCEL_TOKEN"
-          # --format=json makes the output deterministic (the CLI prints JSON in
-          # non-interactive/agent mode anyway; a bare-URL assumption breaks there).
-          out=$(vercel deploy --prebuilt --prod --skip-domain --format=json --token="$VERCEL_TOKEN")
-          url=$(printf '%s' "$out" | python3 -c "import sys,json; print(json.load(sys.stdin)['deployment']['url'])")
-          case "$url" in https://*.vercel.app) ;; *) echo "::error::could not read deployment URL from: $out"; exit 1 ;; esac
+          # The CLI's stdout shape differs between environments (it broke the first gated
+          # deploy), so capture both streams, log them, and resolve the URL with a tested
+          # helper that accepts any JSON shape and falls back to the "Production" line.
+          if ! vercel deploy --prebuilt --prod --skip-domain --format=json --token="$VERCEL_TOKEN" > deploy.out 2> deploy.err; then
+            cat deploy.err; cat deploy.out; echo "::error::vercel deploy failed"; exit 1
+          fi
+          echo "--- vercel deploy stderr ---"; cat deploy.err
+          echo "--- vercel deploy stdout ---"; cat deploy.out; echo
+          url=$(python3 scripts/ci/vercel_deploy_url.py deploy.out deploy.err)
           echo "url=$url" >> "$GITHUB_OUTPUT"
           echo "built $url (not live)"
 
