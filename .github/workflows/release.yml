@@ -1,0 +1,36 @@
+name: release
+# Manual fallback only. Normal releases are cut by deploy-production.yml AFTER a
+# verified production deploy (a release must never describe code that isn't live).
+# No auto back-merge: releases are merge commits into main, so integration never
+# diverges and a GITHUB_TOKEN-created PR (which cannot trigger checks) is avoided.
+on:
+  workflow_dispatch:
+permissions:
+  contents: write
+concurrency:
+  group: release-main
+  cancel-in-progress: false
+jobs:
+  tag-and-release:
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Derive version + notes
+        id: v
+        run: |
+          VERSION=$(python3 -c "import re;print(re.search(r\"APP_VERSION\s*=\s*'([^']+)'\", open('webapp/serve.py').read()).group(1))")
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          if git rev-parse -q --verify "refs/tags/v$VERSION" >/dev/null; then echo "exists=true" >> "$GITHUB_OUTPUT"; else echo "exists=false" >> "$GITHUB_OUTPUT"; fi
+          python3 scripts/release/release_notes.py "$VERSION" > RELEASE_NOTES.md
+      - name: Create tag + GitHub Release
+        if: steps.v.outputs.exists == 'false'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          V: ${{ steps.v.outputs.version }}
+        run: |
+          git tag -a "v$V" -m "v$V"
+          git push origin "v$V"
+          gh release create "v$V" --title "v$V" --notes-file RELEASE_NOTES.md --verify-tag

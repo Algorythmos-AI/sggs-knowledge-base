@@ -57,6 +57,12 @@ class ShabadEndpoint(unittest.TestCase):
             serve.api("/api/shabad/2844", {})
         self.assertEqual(ctx.exception.status, 404)
 
+    def test_meta_and_health_expose_commit(self):
+        # deploy verification polls this to prove the running build is the tested SHA
+        serve._META_CACHE = None
+        self.assertIn("commit", serve.api("/api/meta", {}))
+        self.assertIn("commit", serve.api("/api/health", {}))
+
     def test_health_all_true(self):
         h = serve.api("/api/health", {})
         self.assertTrue(h["ok"], f"health not ok: {h}")

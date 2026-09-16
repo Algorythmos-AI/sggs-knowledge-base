@@ -1,7 +1,9 @@
 name: scripture-integrity
+# Runs on EVERY PR (not path-filtered): it is a required check, and a required
+# check that is skipped stays "Expected — waiting for status" and blocks the PR
+# forever. The job is cheap and passes trivially when scripture is unchanged.
 on:
   pull_request:
-    paths: ["corpus/**", "db/**", "pipeline/**", "MANIFEST.json", "contract/**", "audit/**", "validation/reconcile-attestation.json"]
   push:
     branches: [integration, main]
 permissions:
@@ -11,9 +13,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-        with:
-          lfs: true
-      - run: git lfs pull --include "db/sggs.sqlite"
+      - uses: ./.github/actions/lfs-db
       - uses: actions/setup-python@v5
         with:
           python-version-file: ".python-version"

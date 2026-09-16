@@ -1,0 +1,9 @@
+# Allowlist: the API image needs only webapp/ and the LFS database (see webapp/Dockerfile).
+# Keeps the build context small and prevents unrelated or sensitive files entering images.
+*
+!webapp/
+!db/sggs.sqlite
+webapp/static.bak/
+webapp/tests/
+**/__pycache__/
+**/*.pyc

@@ -52,3 +52,6 @@ new_shots/
 
 # SwiftPM/Xcode per-user package state
 ios/**/.swiftpm/
+
+# Vercel CLI link state (never commit)
+.vercel/
