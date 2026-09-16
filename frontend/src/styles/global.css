@@ -139,6 +139,8 @@ footer.site {
   background:color-mix(in srgb, var(--bg) 82%, transparent);
   backdrop-filter:blur(10px); -webkit-backdrop-filter:blur(10px);
 }
+footer.site a { color:var(--soft); text-decoration:underline; text-underline-offset:2px; }
+footer.site a:hover { color:var(--ink); }
 .skip-link { position:absolute; left:-9999px; top:auto; z-index:100; background:var(--accent); color:var(--accent-ink);
   padding:8px 16px; border-radius:0 0 12px 0; font-size:14px; font-weight:600; }
 .skip-link:focus { left:0; top:0; }

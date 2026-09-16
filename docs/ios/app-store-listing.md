@@ -67,9 +67,9 @@ repo stays the record.
 
 | Field | Value | Status |
 |---|---|---|
-| Support URL | `https://sggs-knowledge-base.vercel.app/support` | page to be added (work list #8) |
+| Support URL | `https://sggs-knowledge-base.vercel.app/support` | built (`frontend/src/pages/support.astro`); live after the next release to `main` |
 | Marketing URL | `https://sggs-knowledge-base.vercel.app` | live |
-| Privacy Policy URL | `https://sggs-knowledge-base.vercel.app/privacy` | page to be added (work list #8) |
+| Privacy Policy URL | `https://sggs-knowledge-base.vercel.app/privacy` | built (`frontend/src/pages/privacy.astro`); live after the next release to `main` |
 
 Privacy policy content (one paragraph is enough, and must be true): the app collects no data,
 makes no network requests, uses location only on-device for sunrise/sunset when enabled, stores

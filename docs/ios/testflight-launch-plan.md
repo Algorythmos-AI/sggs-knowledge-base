@@ -180,7 +180,7 @@ Ordered; each item is a PR into `integration` unless marked human.
 | 5 | First signed archive + first device run (Phase B checklist) | human | open |
 | 6 | App icon: replace the placeholder ੴ or have the scholar accept it; regenerate via `ios/tools/make_app_icon.swift` | human + repo | open |
 | 7 | Screenshots (6.9", 6.5", iPad 13") from the release-candidate build; store under `ios/AppStore/screenshots/` (git-ignored if large) | human | open |
-| 8 | Support + privacy policy pages on the production site (`/support`, `/privacy`) — the listing needs public URLs | repo | open |
+| 8 | Support + privacy policy pages on the production site (`/support`, `/privacy`) — the listing needs public URLs | repo | built; live on the next release to `main` |
 | 9 | Translation licence: pursue in parallel; on grant, fill the attestation and ship as a point release | human | open |
 | 10 | Post-launch: migrate the loose readiness/build reports into `docs/reports/` | repo | open |
 
