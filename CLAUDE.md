@@ -119,6 +119,16 @@ DB also has: `fts`/`fts_en`/`fts_shabad`/`fts_tri`, `translations`, `variants`, 
 
 ---
 
+## Delivery SOP — how work reaches users (read before shipping)
+**Environments:** `integration` = trunk → auto-deploys **staging** (`sggs-staging.vercel.app`, API `sggs-api-staging.onrender.com`, SSO-protected). `main` = **production** (`sggs-knowledge-base.vercel.app`, API `…onrender.com`). Both deploy **only** through CI (`deploy-staging.yml` / `deploy-production.yml`); the platforms' own git auto-deploys are OFF and Render auto-deploy is OFF. Never deploy by hand except a documented pipeline-outage hotfix.
+
+**The loop (use the skills below; do not improvise it):**
+1. **Ship** (`sggs-ship`): branch from `integration` (`fix/…`, `feat/…`), run local gates, open a PR into `integration`, watch CI green. Corpus/DB change? Use **sggs-rebuild-db** first (scripture proofs). You cannot merge — hand the user the exact `--admin` command (one line, no comments).
+2. The user merges → the push auto-deploys **staging**. Review on `sggs-staging.vercel.app` (open logged in to Vercel).
+3. **Release** (`sggs-release`): preflight → PR `integration→main` as a **merge commit** (never squash — `main` must stay a descendant of `integration`) → the merge runs the gated production deploy → verify with **sggs-verify-prod** and confirm the `vX.Y.Z` tag.
+
+**Invariants:** a deploy is verified by the running **commit** (`/api/health.commit`), not just the version. The release tag is cut only after a verified deploy. Secrets live in GitHub Environments (`production`/`staging`) — never type or echo a value; if one is pasted into chat, treat it as leaked and have the user rotate it. Full detail: `docs/process/runbooks/deploy.md`, `docs/process/branching.md`, ADR-0005.
+
 ## Delivery skills (`.claude/skills/`)
 Use these instead of improvising the flow — they bundle tested scripts and the gotchas learned shipping v1.1.x:
 - **sggs-ship** — branch → local gates → PR into `integration` → watch CI → hand the user the merge command.
