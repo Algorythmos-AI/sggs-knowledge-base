@@ -20,6 +20,11 @@ entries prior to v1.1.0 are the project's original prose style and are preserved
   macOS runner through the same script, keyed by an App Store Connect API key in the
   `testflight` environment.
 
+- **`/support` and `/privacy` pages** (`frontend/src/pages/support.astro`, `privacy.astro`) — the
+  public Support URL and Privacy Policy URL the App Store listing requires; linked from the site
+  footer. Every privacy statement is checked against the code (no network, no analytics, location
+  rounded and on-device, local diagnostics only, hosting-provider server logs disclosed).
+
 ### Data
 - None. `git diff -- corpus db ios/Resources` empty.
 
