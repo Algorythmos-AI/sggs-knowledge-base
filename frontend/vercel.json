@@ -54,5 +54,11 @@
         }
       ]
     }
-  ]
+  ],
+  "git": {
+    "deploymentEnabled": {
+      "main": false,
+      "integration": false
+    }
+  }
 }
