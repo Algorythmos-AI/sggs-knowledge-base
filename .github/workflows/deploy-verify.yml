@@ -1,34 +1,34 @@
 name: deploy-verify
+# Health-checks Vercel PREVIEW deployments (feature branches). Production (and staging)
+# are verified end-to-end by their gated deploy workflows, so they are excluded here.
+# Previews sit behind Vercel Deployment Protection (a 302 to login), so this needs a
+# REPO-level secret VERCEL_AUTOMATION_BYPASS_SECRET (environment secrets aren't readable
+# here, and giving this job an environment would emit deployment events that re-trigger
+# it). Without the secret it posts a notice and passes instead of failing on the redirect.
 on:
   deployment_status:
 permissions:
   contents: read
 jobs:
   verify:
-    # only run when a deployment reports success and exposes a URL
-    # previews only: production is verified end-to-end by deploy-production.yml
     if: github.event.deployment_status.state == 'success' && github.event.deployment_status.environment_url != '' && github.event.deployment_status.environment != 'Production'
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     steps:
-      - uses: actions/checkout@v4
-      - name: Health + version match on the deployed URL
+      - name: Health through the preview URL
         env:
           URL: ${{ github.event.deployment_status.environment_url }}
+          BYPASS: ${{ secrets.VERCEL_AUTOMATION_BYPASS_SECRET }}
         run: |
-          echo "verifying $URL"
-          EXPECT=$(python3 -c "import re;print(re.search(r\"APP_VERSION\s*=\s*'([^']+)'\", open('webapp/serve.py').read()).group(1))")
-          for i in $(seq 1 10); do
-            code=$(curl -s -o /tmp/h.json -w '%{http_code}' --max-time 20 "$URL/api/health" || true)
+          if [ -z "$BYPASS" ]; then
+            echo "::notice::Preview $URL is behind Vercel Deployment Protection and no repo-level VERCEL_AUTOMATION_BYPASS_SECRET is set; skipping (see docs/process/runbooks/deploy.md)."
+            exit 0
+          fi
+          code=000
+          for _ in $(seq 1 10); do
+            code=$(curl -s -o /tmp/h.json -w '%{http_code}' --max-time 20 -H "x-vercel-protection-bypass: $BYPASS" "$URL/api/health" || true)
             [ "$code" = "200" ] && break
-            echo "attempt $i: /api/health -> $code (retrying)"; sleep 15
+            echo "/api/health -> $code (retrying)"; sleep 15
           done
-          python3 - "$EXPECT" <<'PY'
-          import json, sys
-          d=json.load(open('/tmp/h.json'))
-          assert d.get('ok') is True, f"health not ok: {d}"
-          assert all(d.get('checks',{}).values()), f"a health check failed: {d}"
-          exp=sys.argv[1]
-          got=d.get('version')
-          # staging/preview may legitimately be ahead of prod; only warn on mismatch
-          print(f"deployed version {got} (repo APP_VERSION {exp}) — health OK")
-          PY
+          if [ "$code" != "200" ]; then echo "::error::preview /api/health returned $code"; exit 1; fi
+          python3 -c "import json; d=json.load(open('/tmp/h.json')); assert d.get('ok') is True and all(d['checks'].values()), d; print('preview healthy; api version', d.get('version'))"

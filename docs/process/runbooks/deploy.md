@@ -39,6 +39,17 @@ flowchart LR
 2. Optional: Environments → **`production-approval`** → Required reviewers = you.
 3. The Render and Vercel **GitHub Apps must be installed on the `Algorythmos-AI` org** (Render clones the repo to build; `ref=` must exist there).
 
+## Preview checks (optional)
+`deploy-verify.yml` health-checks feature-branch **preview** deployments. Previews are behind
+Vercel Deployment Protection, so it needs a **repo-level** secret (not the `production`
+environment one):
+
+```bash
+gh secret set VERCEL_AUTOMATION_BYPASS_SECRET --repo Algorythmos-AI/sggs-knowledge-base
+```
+Without it the check posts a notice and passes. (Previews proxy `/api` to production, so this
+is a light smoke, not a gate.)
+
 ## Cutover (do in this order)
 1. Merge the pipeline to `integration`, then the release PR to `main` (**merge commit**).
    During this first run the platforms' own git deploys may also fire for the same SHA — harmless.
