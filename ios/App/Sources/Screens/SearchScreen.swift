@@ -62,6 +62,7 @@ struct SearchScreen: View {
     var body: some View {
         NavigationStack {
             content
+                .background(Ink.base.ignoresSafeArea())
                 .navigationTitle("Search")
                 // `.always`: the field never collapses behind a scroll (the horizontal pill
                 // row is the first scroll view under the bar and could hide it)
@@ -132,6 +133,7 @@ struct SearchScreen: View {
                     if let themes = out.relatedThemes, !themes.isEmpty {
                         Section { Text("Related themes: " + themes.joined(separator: " · "))
                             .font(.caption).foregroundStyle(Brand.gold) }
+                            .listRowBackground(Ink.base)
                     }
                     ForEach(out.results, id: \.id) { line in
                         LineRow(gurmukhi: line.gurmukhi, translit: line.translit, meta: line.metaLine,
@@ -139,9 +141,11 @@ struct SearchScreen: View {
                             container.present(.shabad(compId: line.compId, focusLineId: line.id))
                         }
                         .listRowSeparator(.hidden)
+                        .listRowBackground(Ink.base)
                     }
                 }
                 .listStyle(.plain)
+                .inkPlainList()
             }
         }
     }
