@@ -15,7 +15,7 @@ Companion documents:
 
 | Area | State | Source |
 |---|---|---|
-| App target | `org.sggs.app` 1.1.1 + widget `org.sggs.app.widgets`, iOS 17+, iPhone + iPad, Swift 6 strict concurrency | `ios/App/project.yml` |
+| App target | `org.sggs.app` 1.1.3 + widget `org.sggs.app.widgets`, iOS 17+, iPhone + iPad, Swift 6 strict concurrency | `ios/App/project.yml` |
 | Fidelity gate | Swift kit byte-parity with the Python source on the vendored SQLite 3.51.0, 8 golden suites (27,197 vectors); scripture hash `0eff4bae…` pinned in the release gate | `.github/workflows/ios.yml`, `contract/_meta.json` |
 | Tests | kit 17/17 · unit 33 · UI 26 — all green in one uninterrupted simulator run | readiness report §2.5a |
 | Launch integrity | fail-closed SHA-256 of the bundled DB against its manifest; the app refuses to show scripture on mismatch | `ios/App/Sources/Data/LaunchIntegrity.swift` |
