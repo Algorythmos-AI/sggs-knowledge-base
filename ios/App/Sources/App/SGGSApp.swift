@@ -18,6 +18,7 @@ struct SGGSApp: App {
             }
         }
         #endif
+        Brand.applyNavigationTitleFonts()
         _container = State(initialValue: AppContainer())
     }
 

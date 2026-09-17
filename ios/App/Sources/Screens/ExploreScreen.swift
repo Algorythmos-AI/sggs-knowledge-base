@@ -48,7 +48,7 @@ struct ExploreScreen: View {
                         Text("ੴ")
                             .font(Brand.gurmukhi(30, relativeTo: .title))
                             .accessibilityHidden(true)
-                        Text("Explore the Granth").font(.headline)
+                        Text("Explore the Granth").font(Brand.heading(.title3))
                         Text("Index, themes, voices, patterns — six ways into 1,430 Angs.")
                             .font(.caption).opacity(0.9)
                     }

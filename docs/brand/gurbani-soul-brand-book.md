@@ -190,6 +190,7 @@ Once phase 2 lands, a unit test pins `DesignTokens.swift` to the JSON. Decisions
 | 2026-09-18 | Brand red is fill-only; `Ink.negative` stays the text red |
 | 2026-09-18 | G1 passed: icon concept **A** (gold ੴ on warm ink) and **Source Serif 4** for headings chosen by the product owner |
 | 2026-09-18 | `accentDeep` given Increase Contrast legs so the hero label holds 4.5:1 at both gradient ends |
+| 2026-09-18 | Source Serif 4 (variable, SIL OFL 1.1, from adobe-fonts/source-serif) bundled for navigation titles and hero lines only; widgets stay on the system face |
 
 ## 12. Gates before any code
 
