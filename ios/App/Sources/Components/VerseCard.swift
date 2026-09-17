@@ -29,7 +29,7 @@ struct VerseCardView: View {
                 RoundedRectangle(cornerRadius: 1)
                     .fill(AccentPalette.saffron.heroGradient)
                     .frame(width: 44, height: 2.5)
-                Text("Sri Guru Granth Sahib · Ang \(String(ang))")
+                Text("Sri Guru Granth Sahib Ji · Ang \(String(ang))")
                     .font(.system(size: 13, weight: .medium))
                     .foregroundStyle(AccentPalette.gold.accentText)
             }

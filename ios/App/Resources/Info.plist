@@ -13,9 +13,9 @@
   <key>CFBundleDevelopmentRegion</key>
   <string>$(DEVELOPMENT_LANGUAGE)</string>
   <key>CFBundleDisplayName</key>
-  <string>SGGS</string>
+  <string>Sri Guru Sahib</string>
   <key>CFBundleName</key>
-  <string>SGGS</string>
+  <string>Sri Guru Sahib</string>
   <key>CFBundleShortVersionString</key>
   <string>$(MARKETING_VERSION)</string>
   <key>CFBundleVersion</key>

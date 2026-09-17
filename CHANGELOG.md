@@ -3,6 +3,28 @@
 The format below (newest first) follows [Keep a Changelog](https://keepachangelog.com);
 entries prior to v1.1.0 are the project's original prose style and are preserved verbatim.
 
+## [1.1.3] — 2026-09-17
+
+Public name adopted as the full **Sri Guru Granth Sahib Ji** across every user-facing surface,
+ahead of the first public TestFlight → App Store release. Display/metadata only — scripture, the
+DB (`db_sha256` unchanged), and all bundle identifiers are untouched (`git diff -- corpus db`
+empty).
+
+### Changed
+- App Store listing **Name** → `Sri Guru Granth Sahib Ji` (draft in `docs/ios/app-store-listing.md`).
+- iOS on-device Home Screen label (`CFBundleDisplayName`/`CFBundleName`) → `Sri Guru Sahib`
+  (the full name exceeds the icon-label length; the store Name carries the full form).
+- iOS in-app strings (About header, verse-card attribution, share/copy citation, Spotlight
+  subtitle, verify verdict) → full **Sri Guru Granth Sahib Ji**.
+- Web page titles, the site header, and the Study-Trail export header → full form; the
+  Raag-Clock and divergence tabs no longer abbreviate to "SGGS".
+- Widget-group display name → `Sri Guru Sahib` (per-widget tiles "Raag now"/"Hukam verse"
+  unchanged).
+
+### Fixed
+- Reconciled `testAboutShowsVersion` with the shipped version string (was pinned to a stale
+  `1.1.1+1`), so the archive's UI test passes.
+
 ## [1.1.2] — 2026-09-16 — TestFlight launch kit + support/privacy pages
 
 ### Added

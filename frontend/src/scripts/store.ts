@@ -143,7 +143,7 @@ export function toJSON(pins: Pin[], g: Gravity): string {
 }
 export function toText(pins: Pin[], g: Gravity): string {
   const L: string[] = [];
-  L.push('ੴ  Sri Guru Granth Sahib — Study Trail');
+  L.push('ੴ  Sri Guru Granth Sahib Ji — Study Trail');
   L.push('Generated: ' + new Date().toLocaleString());
   L.push('Verses pinned: ' + pins.length);
   L.push('');

@@ -8,8 +8,9 @@ repo stays the record.
 
 | Field | Value | Limit |
 |---|---|---|
-| Name | `Sri Guru Granth Sahib` | 30 |
+| Name | `Sri Guru Granth Sahib Ji` | 30 |
 | Fallbacks if taken | `SGGS — Guru Granth Sahib` · `Gurbani Reader — SGGS` | 30 |
+| On-device label (`CFBundleDisplayName`) | `Sri Guru Sahib` — the Home Screen name; distinct from the store Name above (iOS truncates the icon label) | |
 | Subtitle | `Offline Gurbani reader & search` | 30 |
 | Bundle ID | `org.sggs.app` (widget `org.sggs.app.widgets`) | |
 | SKU | `sggs-ios` | |
