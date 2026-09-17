@@ -55,3 +55,6 @@ ios/**/.swiftpm/
 
 # Vercel CLI link state (never commit)
 .vercel/
+
+# Third-party brand reference material (not ours to publish)
+Brand-files/
