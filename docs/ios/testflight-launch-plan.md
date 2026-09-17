@@ -67,8 +67,11 @@ Sign in to developer.apple.com and App Store Connect with the Apple ID that hold
    automatic signing, exports an `.ipa`, and then proves the version, build, widget version and
    the DB hash *inside* the archived `.app`. If it ends with `OK`, signing works.
 5. **Build-number rule:** `CURRENT_PROJECT_VERSION` in `project.yml` stays at `1` as a floor;
-   every upload passes `BUILD=N` explicitly and N only goes up within a marketing version. Record
-   each upload's `candidate-<version>-<build>.json` line in [the build log](testflight-test-plan.md#7-build-log).
+   every upload passes `BUILD=N` explicitly and N only goes up within a marketing version. The archive
+   script gates this before doing any work — `testflight_ledger.py check <version> <build> --strict`
+   (run automatically on `SGGS_UPLOAD=1`) rejects a reused build number or a lower marketing version,
+   and `make testflight-next` prints the next number. Each upload is recorded in the tracked ledger
+   `ios/testflight-builds.json` (see [the build log](testflight-test-plan.md#7-build-log)); commit it.
 
 ## 2. Phase B — First device run (human, before any tester sees it)
 

@@ -188,8 +188,10 @@ recorded; A11y checklist done on hardware; Charter U passed from the previous bu
 
 ## 7. Build log
 
-Append one row per upload. The JSON comes from `ios/App/build/candidate-<version>-<build>.json`.
-
-| Build | Version | Commit | Profile | db_sha256 (16) | Uploaded | Charter S signed by | Notes |
-|---|---|---|---|---|---|---|---|
-| | | | | | | | |
+Every upload is recorded in the machine-readable ledger **`ios/testflight-builds.json`** — the
+archive script appends a row automatically on `SGGS_UPLOAD=1`, and a Transporter upload is added
+with `python3 ios/tools/testflight_ledger.py record ios/App/build/candidate-<version>-<build>.json --force`.
+The ledger is the source of record and the pre-flight gate: `testflight_ledger.py check <version> <build> --strict`
+rejects a reused build number or a marketing-version downgrade **before** an archive runs, so Apple's
+"CFBundleVersion already used" rejection can't cost you a 20-minute upload. Commit the ledger with the
+release. Charter-S sign-off stays a human step in [§6](#6-exit-criteria).

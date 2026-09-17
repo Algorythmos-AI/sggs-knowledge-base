@@ -54,6 +54,13 @@ release: ## bump the unified version everywhere: make release VERSION=1.2.0
 	python3 scripts/release/bump.py $(VERSION)
 	python3 scripts/release/check_versions.py
 
+MARKETING_VERSION = $(shell python3 -c "import re;print(re.search(r'MARKETING_VERSION:\s*\"([^\"]+)\"',open('ios/App/project.yml').read()).group(1))")
+
+testflight-next: ## the next TestFlight build number for the current marketing version
+	@echo "version $(MARKETING_VERSION) — next build: $$(python3 ios/tools/testflight_ledger.py next $(MARKETING_VERSION))"
+
 testflight: ## archive + gate + export/upload the TestFlight candidate (macOS): make testflight TEAM_ID=… BUILD=N [PROFILE=public] [UPLOAD=1]
-	@test -n "$(TEAM_ID)" -a -n "$(BUILD)" || (echo "usage: make testflight TEAM_ID=ABCDE12345 BUILD=4 [PROFILE=public|personal] [UPLOAD=1]"; exit 1)
+	@test -n "$(TEAM_ID)" || { echo "usage: make testflight TEAM_ID=ABCDE12345 BUILD=N [PROFILE=public|personal] [UPLOAD=1]"; exit 1; }
+	@test -n "$(BUILD)" || { echo "usage: make testflight TEAM_ID=ABCDE12345 BUILD=N [PROFILE=public|personal] [UPLOAD=1]"; \
+		echo "version $(MARKETING_VERSION) — next build: $$(python3 ios/tools/testflight_ledger.py next $(MARKETING_VERSION))"; exit 1; }
 	SGGS_TEAM_ID=$(TEAM_ID) SGGS_BUILD_NUMBER=$(BUILD) SGGS_DB_PROFILE=$(or $(PROFILE),public) SGGS_UPLOAD=$(or $(UPLOAD),0) bash ios/tools/testflight_archive.sh

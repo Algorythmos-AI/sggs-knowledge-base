@@ -384,8 +384,27 @@ final class SGGSUITests: XCTestCase {
         XCTAssertFalse(app.buttons["Done"].waitForExistence(timeout: 2), "the sheet must be gone")
     }
 
+    /// The About screen shows "<CFBundleShortVersionString>+<CFBundleVersion>". The test bundle's
+    /// own Info.plist carries the same MARKETING_VERSION / CURRENT_PROJECT_VERSION as the app
+    /// (see SGGSUITests `info:` in project.yml), so we assert against what was *built* — including
+    /// the per-archive build number — instead of a literal that has to be hand-edited every bump.
+    /// Mirrors LaunchIntegrity.bundleVersionString's "short+build" format on purpose: a change to
+    /// that format should fail here (the UI-test target can't import the app to share the helper).
+    private func expectedVersionLabel() -> String {
+        let info = Bundle(for: type(of: self)).infoDictionary
+        let short = info?["CFBundleShortVersionString"] as? String ?? "?"
+        let build = info?["CFBundleVersion"] as? String ?? "?"
+        return "\(short)+\(build)"
+    }
+
     /// Testers must be able to report which build they are on.
     func testAboutShowsVersion() {
+        let expected = expectedVersionLabel()
+        XCTAssertTrue(
+            expected.range(of: "^[0-9]+\\.[0-9]+\\.[0-9]+\\+[0-9]+$", options: .regularExpression) != nil,
+            "UI-test bundle Info.plist is not carrying MARKETING_VERSION/CURRENT_PROJECT_VERSION "
+            + "(got \(expected)) — check the SGGSUITests `info:` block in project.yml"
+        )
         let app = launchApp()
         openTab(app, "More", expectingNavBar: "More")
         let about = app.buttons["About & credits"].firstMatch
@@ -394,7 +413,7 @@ final class SGGSUITests: XCTestCase {
         XCTAssertTrue(about.waitForExistence(timeout: 4)); about.tap()
         let v = app.staticTexts["aboutVersion"].firstMatch
         XCTAssertTrue(v.waitForExistence(timeout: 8), "version line missing")
-        XCTAssertTrue(v.label.contains("1.1.3+1"), "unexpected version label: \(v.label)")
+        XCTAssertTrue(v.label.contains(expected), "expected \(expected), got version label: \(v.label)")
     }
 
     /// A deep link arriving while the app runs must open the Hukam sheet (no production hook:
