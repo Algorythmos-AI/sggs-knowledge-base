@@ -129,6 +129,8 @@ upload. The app uses no encryption beyond the OS (SHA-256 hashing for integrity 
   (public scripture; see `NOTICE.md`).
 - Sant Lipi typeface © Shabad OS, SIL Open Font License 1.1 (`/fonts/OFL.txt` on the web,
   `ios/App/Resources/OFL.txt` in the app).
+- Source Serif 4 typeface © Adobe, SIL Open Font License 1.1 (headings only;
+  `ios/App/Resources/OFL-SourceSerif4.txt`).
 - SQLite (public domain), vendored.
 - The English translation by Dr. Sant Singh Khalsa is **not** bundled in the public build. If a
   licence is granted later, add it here and in the credits.
@@ -165,8 +167,8 @@ Store the source PNGs under `ios/AppStore/screenshots/<device>/` (add the direct
 > Airplane Mode is a valid way to test it.
 >
 > The Gurmukhi text is reproduced verbatim from the source edition and is verified by SHA-256 at
-> launch (More → About → Integrity shows the checks). The typeface is Sant Lipi (SIL Open Font
-> License 1.1). No third-party translation is bundled in this build.
+> launch (More → About → Integrity shows the checks). The Gurmukhi typeface is Sant Lipi and the
+> heading typeface is Source Serif 4 (both SIL Open Font License 1.1). No third-party translation is bundled in this build.
 >
 > Location: optional, used only by the Raag Clock's solar mode to compute local sunrise and
 > sunset on the device; the value is rounded to about 1 km, never stored beyond that and never

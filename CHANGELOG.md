@@ -3,6 +3,33 @@
 The format below (newest first) follows [Keep a Changelog](https://keepachangelog.com);
 entries prior to v1.1.0 are the project's original prose style and are preserved verbatim.
 
+## [Unreleased]
+
+Gurbani Soul brand system for the iOS app (display layer only — scripture, corpus, DB and API
+untouched; `git diff -- corpus db` empty). Governed by `docs/brand/gurbani-soul-brand-book.md`;
+`docs/brand/tokens.json` is the palette source of truth and `scripts/brand/contrast_report.py`
+proves every pair across light / dark / Increase Contrast.
+
+### Added
+- **Soul Gold** accent palette, now the default for readers who never chose one (a stored choice
+  is kept; Saffron, Gold, Indigo, Teal unchanged). Brand gold `#FFBC0D` is a *fill-only* token
+  (`accentFill`, always bordered) because it measures 1.69:1 on white; tint, icons and borders use
+  `#A87900` in light mode.
+- **Source Serif 4** (SIL OFL 1.1) for navigation titles and hero headings only; body stays the
+  system face and Gurmukhi stays Sant Lipi. `BrandFontTests` pins registration and scaling.
+- App icon **concept A** — gold ੴ on warm ink, flat, no red — and a re-tinted launch logo.
+- `Ink.base` and the `inkGroupedList` / `inkPlainList` / `inkRow` helpers.
+
+### Fixed
+- Dark mode no longer drops to pure black on Search, More, About, Saved, Trail, Divergence,
+  Constellation, Vaars, Insights and the integrity-failure view — all sit on warm ink.
+- The Appearance picker kept its previous tint after an accent change.
+- The hero gradient's deep end now holds 4.5:1 under its label in Increase Contrast.
+
+### Pending before App Store submission
+- Brand-book gates **G3** (Granthi/scholar acceptance of the ੴ icon treatment) and **G4**
+  (professional clearance of the gold-and-red palette; no Arches/Token-like lockup is used).
+
 ## [1.1.3] — 2026-09-17
 
 Brand architecture set ahead of the first public TestFlight → App Store release: the consumer
