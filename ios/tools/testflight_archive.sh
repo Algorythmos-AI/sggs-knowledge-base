@@ -28,9 +28,11 @@
 #                       App Store Connect API key (all three, or none). Needed for CI / an
 #                       unattended upload; a logged-in Xcode account suffices locally.
 #
-# The only tracked file this script touches is ios/Resources/sggs-ios.manifest.json, which
-# build_ios_db.py rewrites next to the DB; it is restored from git on exit so the committed
-# (personal-profile) manifest is never accidentally replaced. NEVER commit the artifacts.
+# Tracked files this script may touch: ios/Resources/sggs-ios.manifest.json (build_ios_db.py
+# rewrites it next to the DB; restored from git on exit so the committed personal-profile
+# manifest is never accidentally replaced), and — only with SGGS_UPLOAD=1 — the append-only
+# ios/testflight-builds.json ledger, which you then commit with the release. NEVER commit the
+# build artifacts under ios/App/build/ or ios/Resources/*.sqlite.
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
@@ -80,6 +82,13 @@ if [ -n "$(git status --porcelain -- ios/App/Sources ios/App/Shared ios/App/Widg
 fi
 echo "  source commit: $(git rev-parse --short HEAD) ($(git branch --show-current))"
 mkdir -p "$BUILD_DIR"
+
+say "0b/6 version + build-number gates (before any work)"
+python3 scripts/release/check_versions.py >/dev/null \
+  || fail "version strings are not unified — run scripts/release/bump.py, or fix the mismatch (scripts/release/check_versions.py shows it)"
+LEDGER_STRICT=(); [ "$UPLOAD" = 1 ] && LEDGER_STRICT=(--strict)
+python3 ios/tools/testflight_ledger.py check "$VERSION" "$BUILD" ${LEDGER_STRICT[@]+"${LEDGER_STRICT[@]}"} \
+  || fail "build number $BUILD is not valid for $VERSION (see above; run: python3 ios/tools/testflight_ledger.py next $VERSION)"
 
 # Restore the committed manifest whatever happens after this point.
 restore_manifest() { git checkout --quiet -- "$MANIFEST" 2>/dev/null || true; }
@@ -154,6 +163,15 @@ cat > "$BUILD_DIR/candidate-$VERSION-$BUILD.json" <<JSON
   "uploaded": $([ "$UPLOAD" = 1 ] && echo true || echo false)
 }
 JSON
+
+if [ "$UPLOAD" = 1 ]; then
+  python3 ios/tools/testflight_ledger.py record "$BUILD_DIR/candidate-$VERSION-$BUILD.json" \
+    || fail "uploaded to App Store Connect but could NOT record the build in ios/testflight-builds.json — add it by hand before the next upload"
+  echo "    ledger: recorded in ios/testflight-builds.json — commit it with the release."
+else
+  echo "    ledger: NOT recorded (no upload). After a Transporter upload, run:"
+  echo "            python3 ios/tools/testflight_ledger.py record $BUILD_DIR/candidate-$VERSION-$BUILD.json --force"
+fi
 
 echo
 echo "OK  SGGS $VERSION ($BUILD) · profile $PROFILE · db_sha256 ${SHIPPED_SHA:0:16}… · commit $(git rev-parse --short HEAD)"

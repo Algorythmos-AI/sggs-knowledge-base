@@ -7,7 +7,9 @@ Updates: webapp/serve.py (APP_VERSION + APP_BUILT), MANIFEST.json (version+built
 frontend/package.json, ios/App/project.yml (MARKETING_VERSION), README badge +
 "Current release" line, MASTER-INDEX header, CLAUDE.md build line. It does NOT
 touch db_sha256/corpus_sha256 (those are stamped by the rebuild) and does NOT
-bump the iOS build number (CI derives that from the run number).
+touch the iOS build number: CURRENT_PROJECT_VERSION stays at its floor "1" and
+each TestFlight upload passes BUILD=N explicitly to ios/tools/testflight_archive.sh,
+which records it (per marketing version, monotonic) in ios/testflight-builds.json.
 
 Usage: python3 scripts/release/bump.py 1.2.0 [--date 2026-09-20]
 """

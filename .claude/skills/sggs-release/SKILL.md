@@ -65,3 +65,15 @@ gh release create vX.Y.Z --repo Algorythmos-AI/sggs-knowledge-base --title "vX.Y
 
 Never tag before a verified deploy; never "fix" a deploy by pushing to main directly or deploying
 by hand from a dirty tree (a manual hotfix is only for a pipeline outage — see runbooks/deploy.md).
+
+## 6. iOS build (only when this release ships app changes — macOS, human)
+The web/API release above does not build the iOS app. When the same version goes to TestFlight,
+after `main` is tagged:
+```bash
+make testflight-next                                   # prints the next build number for this version
+make testflight TEAM_ID=<Team ID> BUILD=<next> UPLOAD=1 # gates → archive → upload → records the ledger
+git add ios/testflight-builds.json && git commit -m "ios: record TestFlight <version> (<next>)"
+```
+The script refuses a reused build number or a marketing-version downgrade *before* archiving, proves
+the version/build/DB-hash inside the `.app`, and appends the upload to `ios/testflight-builds.json`.
+`DEVELOPMENT_TEAM` in `project.yml` stays empty (passed on the command line); default profile `public`.
