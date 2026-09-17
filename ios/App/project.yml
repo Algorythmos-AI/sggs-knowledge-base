@@ -83,7 +83,7 @@ targets:
     info:
       path: Widgets/Info.plist
       properties:
-        CFBundleDisplayName: Sri Guru Sahib
+        CFBundleDisplayName: Gurbani Soul
         # Must track the app's MARKETING_VERSION — App Store validation rejects an extension
         # whose CFBundleShortVersionString differs from the containing app.
         CFBundleShortVersionString: $(MARKETING_VERSION)

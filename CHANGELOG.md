@@ -5,21 +5,26 @@ entries prior to v1.1.0 are the project's original prose style and are preserved
 
 ## [1.1.3] — 2026-09-17
 
-Public name adopted as the full **Sri Guru Granth Sahib Ji** across every user-facing surface,
-ahead of the first public TestFlight → App Store release. Display/metadata only — scripture, the
-DB (`db_sha256` unchanged), and all bundle identifiers are untouched (`git diff -- corpus db`
-empty).
+Brand architecture set ahead of the first public TestFlight → App Store release: the consumer
+**app** becomes **Gurbani Soul**, built by **Algorythmos Pty Ltd** (endorsed brand); the scholarly
+**website/Knowledge Base** stays *Sri Guru Granth Sahib Ji — Knowledge Base*; and scripture inside
+the app is always cited by its full name, *Sri Guru Granth Sahib Ji · Ang N*. Display/metadata
+only — scripture, the DB (`db_sha256` unchanged), and all bundle identifiers are untouched
+(`git diff -- corpus db` empty).
 
 ### Changed
-- App Store listing **Name** → `Sri Guru Granth Sahib Ji` (draft in `docs/ios/app-store-listing.md`).
-- iOS on-device Home Screen label (`CFBundleDisplayName`/`CFBundleName`) → `Sri Guru Sahib`
-  (the full name exceeds the icon-label length; the store Name carries the full form).
-- iOS in-app strings (About header, verse-card attribution, share/copy citation, Spotlight
-  subtitle, verify verdict) → full **Sri Guru Granth Sahib Ji**.
-- Web page titles, the site header, and the Study-Trail export header → full form; the
+- **App (iOS/Android) product name → `Gurbani Soul`.** iOS on-device label
+  (`CFBundleDisplayName`/`CFBundleName`) and widget-group name → `Gurbani Soul` (12 chars, fits
+  under the icon); About screen → "Gurbani Soul" + "Built by Algorythmos", still crediting the
+  scripture as *Sri Guru Granth Sahib Ji*.
+- **App Store listing** (`docs/ios/app-store-listing.md`) rebranded to Gurbani Soul: Name,
+  keyword-dense subtitle, trust-led promotional text + description opening (verified, cited, never
+  AI-invented), keyword field, About/footer credit, and `gurbanisoul.com` URL targets.
+- In-app **scripture citations** (verse-card, share/copy, Spotlight, verify verdict) keep the full
+  **Sri Guru Granth Sahib Ji** wording — they cite the text, not the app.
+- **Website / Knowledge Base** page titles, site header and Study-Trail export header → full
+  *Sri Guru Granth Sahib Ji* (the KB is a distinct property from the Gurbani Soul app); the
   Raag-Clock and divergence tabs no longer abbreviate to "SGGS".
-- Widget-group display name → `Sri Guru Sahib` (per-widget tiles "Raag now"/"Hukam verse"
-  unchanged).
 
 ### Fixed
 - Reconciled `testAboutShowsVersion` with the shipped version string (was pinned to a stale
