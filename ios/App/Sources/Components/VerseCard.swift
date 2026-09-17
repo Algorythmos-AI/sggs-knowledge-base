@@ -14,7 +14,7 @@ struct VerseCardView: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 14) {
-            Text("ੴ").font(Brand.gurmukhi(30)).foregroundStyle(Brand.saffron)
+            Text("ੴ").font(Brand.gurmukhi(30)).foregroundStyle(Brand.primary)
             Text(gurmukhi)
                 .font(Brand.gurmukhi(30))
                 .lineSpacing(16)
@@ -27,7 +27,7 @@ struct VerseCardView: View {
             }
             HStack {
                 RoundedRectangle(cornerRadius: 1)
-                    .fill(AccentPalette.saffron.heroGradient)
+                    .fill(AccentPalette.brandDefault.heroGradient)
                     .frame(width: 44, height: 2.5)
                 Text("Sri Guru Granth Sahib Ji · Ang \(String(ang))")
                     .font(.system(size: 13, weight: .medium))

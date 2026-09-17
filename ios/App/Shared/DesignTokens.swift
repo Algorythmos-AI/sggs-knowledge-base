@@ -57,21 +57,29 @@ extension Color {
     }
 }
 
-// MARK: - Accent palettes (user-selectable; Saffron is the brand default)
+// MARK: - Accent palettes (user-selectable; Soul Gold is the brand default)
 
 /// A curated accent identity. Each palette carries every color a component needs so no
-/// call site ever "adjusts" an accent ad hoc: `accent` for fills/icons (≥3:1 vs surfaces),
-/// `accentText` for accent-colored TEXT on surfaces (≥4.5:1), `onAccent` for labels ON an
-/// accent fill (≥4.5:1 vs the fill), and a two-stop hero gradient.
+/// call site ever "adjusts" an accent ad hoc: `accent` for tint/icons/borders (≥3:1 vs
+/// surfaces), `accentFill` for PROMINENT fills (buttons, selected pills, hero — bordered by
+/// `accent`), `accentText` for accent-colored TEXT on surfaces (≥4.5:1), `onAccent` for
+/// labels ON `accentFill` (≥4.5:1 vs the fill), and a two-stop hero gradient.
+/// Values for `soul` mirror docs/brand/tokens.json (see docs/brand/gurbani-soul-brand-book.md).
 /// Stored in @AppStorage("sggs_accent") by raw value; injected via \.palette.
 enum AccentPalette: String, CaseIterable, Sendable, Identifiable {
-    case saffron, gold, indigo, teal
+    case soul, saffron, gold, indigo, teal
     var id: String { rawValue }
 
     static let storageKey = "sggs_accent"
 
+    /// The brand default: what a reader who never chose an accent sees, what the
+    /// AccentColor asset is pinned to, and what the fixed brand moments (launch, About,
+    /// share card, widgets) use. A stored choice always wins over this.
+    static let brandDefault: AccentPalette = .soul
+
     var label: String {
         switch self {
+        case .soul: "Soul Gold"
         case .saffron: "Saffron"
         case .gold: "Gold"
         case .indigo: "Indigo"
@@ -84,6 +92,7 @@ enum AccentPalette: String, CaseIterable, Sendable, Identifiable {
     /// to clear 3:1 on the Reader's paper); dark legs are lifted so they read on warm ink.
     var accent: Color {
         switch self {
+        case .soul:    Color(light: 0xA87900, dark: 0xFFBC0D, lightHC: 0x8A6100, darkHC: 0xFFC72C)
         case .saffron: Color(light: 0xE06E09, dark: 0xFF8F2E, lightHC: 0xA85108, darkHC: 0xFFA85C)
         case .gold:    Color(light: 0xB07D12, dark: 0xD9A93C, lightHC: 0x8F650E, darkHC: 0xE7BE63)
         case .indigo:  Color(light: 0x4A55C9, dark: 0x8B93F5, lightHC: 0x3A43A8, darkHC: 0xA7ADF8)
@@ -91,10 +100,22 @@ enum AccentPalette: String, CaseIterable, Sendable, Identifiable {
         }
     }
 
+    /// PROMINENT fills (primary button, selected pill, hero, swatch). For Soul Gold this
+    /// is the literal brand gold #FFBC0D, which is only 1.69:1 on white — so it is never
+    /// used for tint/icons/text and always carries an `accent` border in light mode. Every
+    /// other palette's fill IS its accent.
+    var accentFill: Color {
+        switch self {
+        case .soul: Color(light: 0xFFBC0D, dark: 0xFFBC0D, lightHC: 0x8A6100, darkHC: 0xFFC72C)
+        default: accent
+        }
+    }
+
     /// Accent used AS TEXT on app surfaces — darker (light) / lighter (dark) than the
     /// fill so it clears 4.5:1 on paper and ink alike.
     var accentText: Color {
         switch self {
+        case .soul:    Color(light: 0x8A6100, dark: 0xFFBC0D, lightHC: 0x5C4100, darkHC: 0xFFC72C)
         case .saffron: Color(light: 0xA0530A, dark: 0xFFA24F, lightHC: 0x7E4108, darkHC: 0xFFB877)
         case .gold:    Color(light: 0x7E5A0C, dark: 0xE3BC5F, lightHC: 0x64470A, darkHC: 0xEDCD86)
         case .indigo:  Color(light: 0x4149B8, dark: 0xA7ADF8, lightHC: 0x333A96, darkHC: 0xBFC3FA)
@@ -109,7 +130,7 @@ enum AccentPalette: String, CaseIterable, Sendable, Identifiable {
     /// can no longer clear 4.5 — the label flips to white there, verified by test.
     var onAccent: Color {
         switch self {
-        case .saffron, .gold:
+        case .soul, .saffron, .gold:
             return Color(light: 0x2B1A05, dark: 0x2B1A05, lightHC: 0xFFFFFF, darkHC: 0x2B1A05)
         case .indigo:
             return Color(light: 0xFFFFFF, dark: 0x11133A)
@@ -118,9 +139,10 @@ enum AccentPalette: String, CaseIterable, Sendable, Identifiable {
         }
     }
 
-    /// The second hero-gradient stop (deeper partner hue; used with `accent`).
+    /// The second hero-gradient stop (deeper partner hue; used with `accentFill`).
     var accentDeep: Color {
         switch self {
+        case .soul:    Color(light: 0xFFB81C, dark: 0xC08B00, lightHC: 0x6E4E00, darkHC: 0xD9A200)
         case .saffron: Color(light: 0xB07D12, dark: 0xD9A93C)   // saffron → gold: the brand ramp
         case .gold:    Color(light: 0x8A5E0B, dark: 0xB08A2E)
         case .indigo:  Color(light: 0x36349B, dark: 0x6D6FD6)
@@ -131,7 +153,7 @@ enum AccentPalette: String, CaseIterable, Sendable, Identifiable {
     /// Signature hero gradient — used in exactly a few hero moments (Hukam/now cards,
     /// Explore header, share-card rule). Restraint is the premium signal.
     var heroGradient: LinearGradient {
-        LinearGradient(colors: [accent, accentDeep], startPoint: .topLeading, endPoint: .bottomTrailing)
+        LinearGradient(colors: [accentFill, accentDeep], startPoint: .topLeading, endPoint: .bottomTrailing)
     }
 
     /// Subtle wash for selected-but-not-prominent states (chip backgrounds, highlights).
@@ -141,7 +163,7 @@ enum AccentPalette: String, CaseIterable, Sendable, Identifiable {
 // MARK: - \.palette environment injection
 
 private struct PaletteKey: EnvironmentKey {
-    static let defaultValue: AccentPalette = .saffron
+    static let defaultValue: AccentPalette = .brandDefault
 }
 
 extension EnvironmentValues {

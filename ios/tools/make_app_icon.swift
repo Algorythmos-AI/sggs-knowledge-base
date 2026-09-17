@@ -1,7 +1,7 @@
-// Deterministic app-icon generator — ੴ set in Sant Lipi over the brand ramp.
+// Deterministic app-icon generator — ੴ set in Sant Lipi, brand gold on warm ink (concept A).
 // Produces the three iOS 18 appearance legs at 1024×1024:
-//   icon-1024.png        light: saffron→gold diagonal gradient, paper glyph
-//   icon-1024-dark.png   dark: warm-ink field, lifted-saffron glyph
+//   icon-1024.png        light: warm-ink field #171412, brand-gold glyph #FFBC0D
+//   icon-1024-dark.png   dark: deepest ink #0E0C0A, brand-gold glyph
 //   icon-1024-tinted.png tinted: grayscale glyph on black (system applies the tint)
 // Colors MUST match AccentPalette/Ink in ios/App/Shared/DesignTokens.swift.
 // Usage: swift make_app_icon.swift <path-to-SantLipi.ttf> <outdir>
@@ -51,19 +51,18 @@ func render(_ name: String, background: (CGContext) -> Void, glyphColor: NSColor
 
 let full = CGRect(x: 0, y: 0, width: SIZE, height: SIZE)
 
-// light — the brand ramp (saffron → gold), paper glyph
+// light — brand-book icon concept A: warm-ink field, brand-gold glyph. Flat (no gradient),
+// and never a gold mark on red (see docs/brand/gurbani-soul-brand-book.md §5).
 render("icon-1024", background: { ctx in
-    let colors = [rgb(0xE06E09).cgColor, rgb(0xB07D12).cgColor] as CFArray
-    let grad = CGGradient(colorsSpace: CGColorSpace(name: CGColorSpace.sRGB)!, colors: colors, locations: [0, 1])!
-    ctx.drawLinearGradient(grad, start: CGPoint(x: 0, y: CGFloat(SIZE)),
-                           end: CGPoint(x: CGFloat(SIZE), y: 0), options: [])
-}, glyphColor: rgb(0xFBF7F0))
-
-// dark — warm ink field, lifted saffron glyph
-render("icon-1024-dark", background: { ctx in
     ctx.setFillColor(rgb(0x171412).cgColor)
     ctx.fill(full)
-}, glyphColor: rgb(0xFF8F2E))
+}, glyphColor: rgb(0xFFBC0D))
+
+// dark — deepest ink field (Ink.paper darkHC), brand-gold glyph
+render("icon-1024-dark", background: { ctx in
+    ctx.setFillColor(rgb(0x0E0C0A).cgColor)
+    ctx.fill(full)
+}, glyphColor: rgb(0xFFBC0D))
 
 // tinted — grayscale on black; iOS applies the user's tint to the glyph luminance
 render("icon-1024-tinted", background: { ctx in

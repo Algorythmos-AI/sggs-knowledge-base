@@ -6,6 +6,9 @@ import SwiftUI
 /// The light saffron is #E06E09 (2% deeper than the web's #E8730C) so it clears 3:1 on
 /// the paper surfaces; the AccentColor asset is pinned to these values by ThemeContrastTests.
 enum Brand {
+    /// The fixed brand colour (tint/icon/stroke weight, ≥3:1) and its prominent-fill partner.
+    static let primary = AccentPalette.brandDefault.accent
+    static let primaryFill = AccentPalette.brandDefault.accentFill
     static let saffron = AccentPalette.saffron.accent
     static let gold = AccentPalette.gold.accent
 
@@ -19,7 +22,7 @@ enum Brand {
 /// token discipline). Add here, use everywhere; never hard-code a spacing/radius/band constant
 /// in a screen.
 enum Theme {
-    static let accent = Brand.saffron
+    static let accent = Brand.primary
     static let gold = Brand.gold
 
     /// Spacing scale (pt). Matches the 4-pt web rhythm.

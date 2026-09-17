@@ -64,7 +64,7 @@ final class ThemeContrastTests: XCTestCase {
 
     func testOnAccentLabelsReadOnTheirFill() {
         for p in AccentPalette.allCases {
-            assertRatio(p.onAccent, on: p.accent, atLeast: 4.5, "\(p.rawValue).onAccent on accent fill")
+            assertRatio(p.onAccent, on: p.accentFill, atLeast: 4.5, "\(p.rawValue).onAccent on accentFill")
         }
     }
 
@@ -72,6 +72,24 @@ final class ThemeContrastTests: XCTestCase {
         for p in AccentPalette.allCases {
             assertRatio(p.accent, on: Ink.card, atLeast: 3.0, "\(p.rawValue).accent fill on card")
             assertRatio(p.accent, on: Ink.paper, atLeast: 3.0, "\(p.rawValue).accent fill on paper")
+        }
+    }
+
+    /// A prominent fill may be paler than 3:1 against its surface (brand gold is) ONLY
+    /// because its `accent` border carries the edge — and that border is held to ≥3:1 by
+    /// the test above. What must never happen is a palette whose fill differs from its
+    /// accent while the hero gradient's deep end stops reading under the label.
+    func testOnAccentLabelsReadOnHeroGradientEndOfBrandDefault() {
+        let p = AccentPalette.brandDefault
+        assertRatio(p.onAccent, on: p.accentDeep, atLeast: 4.5, "\(p.rawValue).onAccent on accentDeep")
+    }
+
+    /// Existing palettes keep fill == accent, so the token split cannot move them.
+    func testOnlyBrandGoldSplitsFillFromAccent() {
+        let light = Leg(style: .light, contrast: .normal)
+        for p in AccentPalette.allCases where p != .soul {
+            XCTAssertEqual(luminance(p.accentFill, light), luminance(p.accent, light), accuracy: 0.0001,
+                           "\(p.rawValue).accentFill must equal accent")
         }
     }
 
@@ -104,18 +122,18 @@ final class ThemeContrastTests: XCTestCase {
     // MARK: asset-catalog ↔ code parity (kills silent drift)
 
     /// AccentColor.colorset is what the OS reads for system chrome before any code runs;
-    /// it must resolve to exactly the code palette's saffron in both schemes.
-    func testAccentColorAssetMatchesCodeSaffron() throws {
+    /// it must resolve to exactly the brand-default palette's accent in both schemes.
+    func testAccentColorAssetMatchesBrandDefault() throws {
         let asset = try XCTUnwrap(UIColor(named: "AccentColor"), "AccentColor missing from catalog")
         for leg in [Leg(style: .light, contrast: .normal), Leg(style: .dark, contrast: .normal)] {
             var ar: CGFloat = 0, ag: CGFloat = 0, ab: CGFloat = 0, aa: CGFloat = 0
             var cr: CGFloat = 0, cg: CGFloat = 0, cb: CGFloat = 0, ca: CGFloat = 0
             asset.resolvedColor(with: leg.traits).getRed(&ar, green: &ag, blue: &ab, alpha: &aa)
-            UIColor(AccentPalette.saffron.accent).resolvedColor(with: leg.traits)
+            UIColor(AccentPalette.brandDefault.accent).resolvedColor(with: leg.traits)
                 .getRed(&cr, green: &cg, blue: &cb, alpha: &ca)
-            XCTAssertEqual(ar, cr, accuracy: 0.005, "AccentColor asset drifted from code saffron (red, \(leg))")
-            XCTAssertEqual(ag, cg, accuracy: 0.005, "AccentColor asset drifted from code saffron (green, \(leg))")
-            XCTAssertEqual(ab, cb, accuracy: 0.005, "AccentColor asset drifted from code saffron (blue, \(leg))")
+            XCTAssertEqual(ar, cr, accuracy: 0.005, "AccentColor asset drifted from the brand-default accent (red, \(leg))")
+            XCTAssertEqual(ag, cg, accuracy: 0.005, "AccentColor asset drifted from the brand-default accent (green, \(leg))")
+            XCTAssertEqual(ab, cb, accuracy: 0.005, "AccentColor asset drifted from the brand-default accent (blue, \(leg))")
         }
     }
 }

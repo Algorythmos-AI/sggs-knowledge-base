@@ -79,7 +79,7 @@ struct TrailScreen: View {
             }
         }
         .padding()
-        .background(Brand.saffron.opacity(0.08))
+        .background(Brand.primary.opacity(0.08))
         .overlay(Rectangle().frame(height: 1).foregroundStyle(Ink.hairline), alignment: .bottom)
     }
 

@@ -86,7 +86,7 @@ struct RaagNowView: View {
                 Image(systemName: "clock").font(.caption2)
                 Text(Pahar.label(entry.pahar)).font(.caption.weight(.semibold))
             }
-            .foregroundStyle(AccentPalette.saffron.accentText)
+            .foregroundStyle(AccentPalette.brandDefault.accentText)
             Text(Pahar.range(entry.pahar)).font(.caption2).foregroundStyle(.tertiary)
             Spacer(minLength: 2)
             if entry.raags.isEmpty {
@@ -152,14 +152,14 @@ struct HukamView: View {
                 Text(s.hukamTranslit).font(.caption2).foregroundStyle(.secondary).lineLimit(2)
                 HStack(spacing: 6) {
                     RoundedRectangle(cornerRadius: 1)
-                        .fill(AccentPalette.saffron.heroGradient)
+                        .fill(AccentPalette.brandDefault.heroGradient)
                         .frame(width: 22, height: 2)
                     Text("Ang \(String(s.hukamAng)) · tap to read")
                         .font(.caption2).foregroundStyle(AccentPalette.gold.accentText)
                 }
             } else {
                 Text("ੴ").font(.custom("SantLipi-ExtraLight", size: 28))
-                    .foregroundStyle(AccentPalette.saffron.accent)
+                    .foregroundStyle(AccentPalette.brandDefault.accent)
                 Text("Open SGGS once to load a Hukam.").font(.footnote).foregroundStyle(.secondary)
             }
         }

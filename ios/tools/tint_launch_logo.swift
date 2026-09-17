@@ -1,4 +1,4 @@
-// Tints the white launch-screen ੴ glyph into the brand saffron (light + dark legs) so it
+// Tints the white launch-screen ੴ glyph into the brand accent (light + dark legs) so it
 // reads on the paper/ink launch backgrounds. Deterministic: white-alpha source × flat color.
 // Usage: swift tint_launch_logo.swift <source.png> <outdir>
 import AppKit
@@ -31,6 +31,7 @@ func tinted(_ image: NSImage, rgb: (CGFloat, CGFloat, CGFloat), name: String) {
     print("wrote \(outDir)/\(name).png")
 }
 
-// Brand saffron — MUST match AccentPalette.saffron in ios/App/Shared/DesignTokens.swift.
-tinted(src, rgb: (0xE0 / 255.0, 0x6E / 255.0, 0x09 / 255.0), name: "launch_logo")
-tinted(src, rgb: (0xFF / 255.0, 0x8F / 255.0, 0x2E / 255.0), name: "launch_logo_dark")
+// Brand accent — MUST match AccentPalette.soul.accent in ios/App/Shared/DesignTokens.swift
+// (light #A87900 reads 3.64:1 on the paper launch background; literal gold would not).
+tinted(src, rgb: (0xA8 / 255.0, 0x79 / 255.0, 0x00 / 255.0), name: "launch_logo")
+tinted(src, rgb: (0xFF / 255.0, 0xBC / 255.0, 0x0D / 255.0), name: "launch_logo_dark")

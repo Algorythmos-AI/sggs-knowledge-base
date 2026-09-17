@@ -7,7 +7,7 @@ struct MoreScreen: View {
     @AppStorage("sggs_show_english") private var showEnglish = true
     @AppStorage("sggs_gurmukhi_size") private var gurmukhiSize = 24.0
     @AppStorage("sggs_appearance") private var appearance = "system"
-    @AppStorage(AccentPalette.storageKey) private var accentChoice = AccentPalette.saffron.rawValue
+    @AppStorage(AccentPalette.storageKey) private var accentChoice = AccentPalette.brandDefault.rawValue
 
     var body: some View {
         NavigationStack {
@@ -49,6 +49,9 @@ struct MoreScreen: View {
                     Picker("Appearance", selection: $appearance) {
                         Text("System").tag("system"); Text("Light").tag("light"); Text("Dark").tag("dark")
                     }
+                    // The menu label is UIKit-backed and caches its tint at creation — re-key
+                    // just this control so an accent change repaints it (nav state untouched).
+                    .id(accentChoice)
 
                     VStack(alignment: .leading, spacing: Theme.Space.s) {
                         Text("Accent")
@@ -58,7 +61,7 @@ struct MoreScreen: View {
                                     accentChoice = p.rawValue
                                 } label: {
                                     Circle()
-                                        .fill(p.accent)
+                                        .fill(p.accentFill)
                                         .frame(width: 32, height: 32)
                                         .overlay {
                                             if accentChoice == p.rawValue {
@@ -67,7 +70,7 @@ struct MoreScreen: View {
                                                     .foregroundStyle(p.onAccent)
                                             }
                                         }
-                                        .overlay(Circle().strokeBorder(Ink.hairline))
+                                        .overlay(Circle().strokeBorder(p.accent))
                                 }
                                 .buttonStyle(.plain)
                                 .accessibilityLabel("\(p.label) accent")
@@ -109,7 +112,7 @@ struct AboutScreen: View {
         List {
             Section {
                 VStack(spacing: 8) {
-                    Text("ੴ").font(Brand.gurmukhi(64)).foregroundStyle(Brand.saffron)
+                    Text("ੴ").font(Brand.gurmukhi(64)).foregroundStyle(Brand.primary)
                     Text("Gurbani Soul").font(.headline).multilineTextAlignment(.center)
                     Text("Sri Guru Granth Sahib Ji · 1430 Angs · verbatim · offline").font(.caption).foregroundStyle(.secondary).multilineTextAlignment(.center)
                     Text("Built by Algorythmos").font(.caption2).foregroundStyle(.secondary)
