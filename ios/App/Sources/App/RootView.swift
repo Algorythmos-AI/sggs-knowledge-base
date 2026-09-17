@@ -4,10 +4,10 @@ import SwiftUI
 struct RootView: View {
     @Environment(AppContainer.self) private var container
     @AppStorage("sggs_appearance") private var appearance = "system"
-    @AppStorage(AccentPalette.storageKey) private var accentChoice = AccentPalette.saffron.rawValue
+    @AppStorage(AccentPalette.storageKey) private var accentChoice = AccentPalette.brandDefault.rawValue
     @State private var savedStoreNoticeDismissed = false
 
-    private var palette: AccentPalette { AccentPalette(rawValue: accentChoice) ?? .saffron }
+    private var palette: AccentPalette { AccentPalette(rawValue: accentChoice) ?? .brandDefault }
 
     var body: some View {
         @Bindable var c = container
@@ -29,7 +29,7 @@ struct RootView: View {
             } else if container.integrity == nil {
                 // Still verifying — do NOT present scripture before the integrity check passes.
                 VStack(spacing: 14) {
-                    Text("ੴ").font(Brand.gurmukhi(64)).foregroundStyle(Brand.saffron)
+                    Text("ੴ").font(Brand.gurmukhi(64)).foregroundStyle(Brand.primary)
                     ProgressView()
                     Text("Verifying scripture integrity…").font(.caption).foregroundStyle(.secondary)
                 }

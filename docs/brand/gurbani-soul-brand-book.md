@@ -67,7 +67,7 @@ In dark mode all three gold tokens are the same `#FFBC0D` (10–11:1 on warm ink
 | `accent` | `#A87900` | `#FFBC0D` | `#8A6100` | `#FFC72C` |
 | `accentText` | `#8A6100` | `#FFBC0D` | `#5C4100` | `#FFC72C` |
 | `onAccent` | `#2B1A05` | `#2B1A05` | `#FFFFFF` | `#2B1A05` |
-| `accentDeep` (hero second stop) | `#FFB81C` | `#C08B00` | — | — |
+| `accentDeep` (hero second stop) | `#FFB81C` | `#C08B00` | `#6E4E00` | `#D9A200` |
 
 Worst-case measured ratios: `accentText` 4.96 (light canvas); `accent` 3.64 (light paper);
 `onAccent` 5.54 (light Increase Contrast). Full table in the contrast report.
@@ -188,6 +188,8 @@ Once phase 2 lands, a unit test pins `DesignTokens.swift` to the JSON. Decisions
 | 2026-09-18 | Accent split into `accentFill` / `accent` after literal gold measured 1.69:1 on white |
 | 2026-09-18 | New palette case `soul`; existing `gold` palette left untouched |
 | 2026-09-18 | Brand red is fill-only; `Ink.negative` stays the text red |
+| 2026-09-18 | G1 passed: icon concept **A** (gold ੴ on warm ink) and **Source Serif 4** for headings chosen by the product owner |
+| 2026-09-18 | `accentDeep` given Increase Contrast legs so the hero label holds 4.5:1 at both gradient ends |
 
 ## 12. Gates before any code
 

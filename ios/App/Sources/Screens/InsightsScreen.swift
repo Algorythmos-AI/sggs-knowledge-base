@@ -75,7 +75,7 @@ private struct ContributorsView: View {
                 Chart(authors.prefix(12)) { a in
                     BarMark(x: .value("Lines", a.nLines),
                             y: .value("Author", InsightsScreen.shortAuthor(a.author)))
-                        .foregroundStyle(Brand.saffron.gradient)
+                        .foregroundStyle(Brand.primary.gradient)
                 }
                 .chartXAxisLabel("Lines")
                 .frame(height: 300)

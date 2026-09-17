@@ -28,10 +28,10 @@ struct ModePill: View {
             .padding(.horizontal, Theme.Space.m)
             .padding(.vertical, 7)
             .background(
-                Capsule().fill(isSelected ? AnyShapeStyle(palette.accent)
+                Capsule().fill(isSelected ? AnyShapeStyle(palette.accentFill)
                                           : AnyShapeStyle(Ink.raised))
             )
-            .overlay(Capsule().strokeBorder(isSelected ? Color.clear : Ink.hairline))
+            .overlay(Capsule().strokeBorder(isSelected ? palette.accent : Ink.hairline))
             .foregroundStyle(isSelected ? palette.onAccent : .primary)
             .contentShape(Capsule())
         }
