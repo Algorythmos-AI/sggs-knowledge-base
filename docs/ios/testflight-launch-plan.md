@@ -15,7 +15,7 @@ Companion documents:
 
 | Area | State | Source |
 |---|---|---|
-| App target | `org.sggs.app` 1.1.1 + widget `org.sggs.app.widgets`, iOS 17+, iPhone + iPad, Swift 6 strict concurrency | `ios/App/project.yml` |
+| App target | `org.sggs.app` 1.1.3 + widget `org.sggs.app.widgets`, iOS 17+, iPhone + iPad, Swift 6 strict concurrency | `ios/App/project.yml` |
 | Fidelity gate | Swift kit byte-parity with the Python source on the vendored SQLite 3.51.0, 8 golden suites (27,197 vectors); scripture hash `0eff4bae…` pinned in the release gate | `.github/workflows/ios.yml`, `contract/_meta.json` |
 | Tests | kit 17/17 · unit 33 · UI 26 — all green in one uninterrupted simulator run | readiness report §2.5a |
 | Launch integrity | fail-closed SHA-256 of the bundled DB against its manifest; the app refuses to show scripture on mismatch | `ios/App/Sources/Data/LaunchIntegrity.swift` |
@@ -67,8 +67,11 @@ Sign in to developer.apple.com and App Store Connect with the Apple ID that hold
    automatic signing, exports an `.ipa`, and then proves the version, build, widget version and
    the DB hash *inside* the archived `.app`. If it ends with `OK`, signing works.
 5. **Build-number rule:** `CURRENT_PROJECT_VERSION` in `project.yml` stays at `1` as a floor;
-   every upload passes `BUILD=N` explicitly and N only goes up within a marketing version. Record
-   each upload's `candidate-<version>-<build>.json` line in [the build log](testflight-test-plan.md#7-build-log).
+   every upload passes `BUILD=N` explicitly and N only goes up within a marketing version. The archive
+   script gates this before doing any work — `testflight_ledger.py check <version> <build> --strict`
+   (run automatically on `SGGS_UPLOAD=1`) rejects a reused build number or a lower marketing version,
+   and `make testflight-next` prints the next number. Each upload is recorded in the tracked ledger
+   `ios/testflight-builds.json` (see [the build log](testflight-test-plan.md#7-build-log)); commit it.
 
 ## 2. Phase B — First device run (human, before any tester sees it)
 

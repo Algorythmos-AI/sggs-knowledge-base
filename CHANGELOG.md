@@ -3,6 +3,43 @@
 The format below (newest first) follows [Keep a Changelog](https://keepachangelog.com);
 entries prior to v1.1.0 are the project's original prose style and are preserved verbatim.
 
+## [1.1.3] — 2026-09-17
+
+Brand architecture set ahead of the first public TestFlight → App Store release: the consumer
+**app** becomes **Gurbani Soul**, built by **Algorythmos Pty Ltd** (endorsed brand); the scholarly
+**website/Knowledge Base** stays *Sri Guru Granth Sahib Ji — Knowledge Base*; and scripture inside
+the app is always cited by its full name, *Sri Guru Granth Sahib Ji · Ang N*. Display/metadata
+only — scripture, the DB (`db_sha256` unchanged), and all bundle identifiers are untouched
+(`git diff -- corpus db` empty).
+
+### Changed
+- **App (iOS/Android) product name → `Gurbani Soul`.** iOS on-device label
+  (`CFBundleDisplayName`/`CFBundleName`) and widget-group name → `Gurbani Soul` (12 chars, fits
+  under the icon); About screen → "Gurbani Soul" + "Built by Algorythmos", still crediting the
+  scripture as *Sri Guru Granth Sahib Ji*.
+- **App Store listing** (`docs/ios/app-store-listing.md`) rebranded to Gurbani Soul: Name,
+  keyword-dense subtitle, trust-led promotional text + description opening (verified, cited, never
+  AI-invented), keyword field, About/footer credit, and `gurbanisoul.com` URL targets.
+- In-app **scripture citations** (verse-card, share/copy, Spotlight, verify verdict) keep the full
+  **Sri Guru Granth Sahib Ji** wording — they cite the text, not the app.
+- **Website / Knowledge Base** page titles, site header and Study-Trail export header → full
+  *Sri Guru Granth Sahib Ji* (the KB is a distinct property from the Gurbani Soul app); the
+  Raag-Clock and divergence tabs no longer abbreviate to "SGGS".
+- **iOS build-number hygiene.** New tracked ledger `ios/testflight-builds.json` +
+  `ios/tools/testflight_ledger.py` are now the source of record for every App Store Connect upload.
+  `ios/tools/testflight_archive.sh` gains a pre-work gate (step 0b): it runs `check_versions.py`
+  and refuses a reused CFBundleVersion or a marketing-version downgrade **before** archiving, then
+  records the upload on `SGGS_UPLOAD=1`. `make testflight-next` prints the next build number;
+  `ios.yml` fails if a committed `Info.plist` drifts from the XcodeGen spec.
+
+### Fixed
+- `testAboutShowsVersion` no longer hardcodes the version string (it was pinned to a stale
+  `1.1.1+1`, then hand-edited to `1.1.3+1`). The `SGGSUITests` bundle now carries the app's
+  `MARKETING_VERSION`/`CURRENT_PROJECT_VERSION` in its own `Info.plist`, and the test reads the
+  built version from it — so it passes for any archive/build number and can't silently rot.
+  `check_versions.py` now also enforces the `CURRENT_PROJECT_VERSION` floor and bans `x.y.z+n`
+  literals in the UI tests (8 version strings → 10 checks).
+
 ## [1.1.2] — 2026-09-16 — TestFlight launch kit + support/privacy pages
 
 ### Added

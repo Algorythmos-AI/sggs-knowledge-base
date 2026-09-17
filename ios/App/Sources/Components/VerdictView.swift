@@ -31,7 +31,7 @@ struct VerdictView: View {
     }
     private var explanation: String {
         if base.hasPrefix("VERIFIED") { return "This is scripture, verified against the canonical corpus." }
-        if base == "NOT_FOUND" { return "No such line found in Sri Guru Granth Sahib. Treat the quote as unverified." }
+        if base == "NOT_FOUND" { return "No such line found in Sri Guru Granth Sahib Ji. Treat the quote as unverified." }
         return "A close match was found — compare carefully below."
     }
 

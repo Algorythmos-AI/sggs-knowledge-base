@@ -101,7 +101,7 @@ struct LineRow: View {
     /// Shared text carries the Ang citation (never bare scripture without its source).
     private var shareText: String {
         var out = gurmukhi
-        if ang > 0 { out += "\n— Sri Guru Granth Sahib, Ang \(ang)" }
+        if ang > 0 { out += "\n— Sri Guru Granth Sahib Ji, Ang \(ang)" }
         return out
     }
 

@@ -110,8 +110,9 @@ struct AboutScreen: View {
             Section {
                 VStack(spacing: 8) {
                     Text("ੴ").font(Brand.gurmukhi(64)).foregroundStyle(Brand.saffron)
-                    Text("Sri Guru Granth Sahib — Knowledge Base").font(.headline).multilineTextAlignment(.center)
-                    Text("1430 Angs · verbatim Gurmukhi · fully offline").font(.caption).foregroundStyle(.secondary)
+                    Text("Gurbani Soul").font(.headline).multilineTextAlignment(.center)
+                    Text("Sri Guru Granth Sahib Ji · 1430 Angs · verbatim · offline").font(.caption).foregroundStyle(.secondary).multilineTextAlignment(.center)
+                    Text("Built by Algorythmos").font(.caption2).foregroundStyle(.secondary)
                     Text("Version \(LaunchIntegrity.bundleVersionString())")
                         .font(.caption2).foregroundStyle(.tertiary).monospacedDigit()
                         .accessibilityIdentifier("aboutVersion")

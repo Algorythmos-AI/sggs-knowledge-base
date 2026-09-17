@@ -86,7 +86,20 @@ jobs:
             echo '```json'
             cat ios/App/build/candidate-*.json 2>/dev/null || echo '{"status":"no candidate record — the script failed before step 6"}'
             echo '```'
+            echo ''
+            echo 'The runner cannot commit. Download the candidate artifact and append it to'
+            echo 'ios/testflight-builds.json on a branch with:'
+            echo '    python3 ios/tools/testflight_ledger.py record candidate-VERSION-BUILD.json'
+            echo '(add --force if this run did not upload).'
           } >> "$GITHUB_STEP_SUMMARY"
+      - name: Upload the candidate record (append it to ios/testflight-builds.json)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: SGGS-candidate-build-${{ inputs.build_number }}
+          path: ios/App/build/candidate-*.json
+          if-no-files-found: warn
+          retention-days: 90
       - name: Keep the .ipa when not uploading
         if: ${{ !inputs.upload }}
         uses: actions/upload-artifact@v4

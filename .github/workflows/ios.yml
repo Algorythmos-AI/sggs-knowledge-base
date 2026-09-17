@@ -68,6 +68,10 @@ jobs:
         run: brew install xcodegen
       - name: Generate SGGS.xcodeproj
         run: xcodegen generate --spec ios/App/project.yml --project ios/App
+      - name: Committed Info.plists match the spec (version keys can't silently drift)
+        run: |
+          git diff --exit-code -- ios/App/Tests/UI/Info.plist ios/App/Widgets/Info.plist \
+            || { echo "::error::a committed Info.plist differs from what XcodeGen generates — commit the regenerated file"; exit 1; }
       - name: Resolve an available iPhone simulator
         run: |
           UDID=$(xcrun simctl list devices available -j | python3 -c "

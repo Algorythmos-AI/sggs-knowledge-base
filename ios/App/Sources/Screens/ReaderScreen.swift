@@ -250,7 +250,11 @@ struct ReaderScreen: View {
             .background(Ink.paper.ignoresSafeArea())
             .navigationTitle("Ang \(String(router.readerAng))")
             .navigationBarTitleDisplayMode(.inline)
-            .toolbar(chromeHidden ? .hidden : .visible, for: .navigationBar)
+            // The navigation bar stays visible. Toggling it from scroll offsets re-lays-out the
+            // scroll view (the top inset changes by the bar height), which the scroll handler read
+            // as a reverse scroll → show → hide … an endless update loop that froze the app on a
+            // 120 Hz device (TestFlight 1.1.3 (1), watchdog 0x8BADF00D). Only the bottom page bar
+            // fades — opacity/offset don't change layout, so it cannot feed back.
             .onChange(of: router.readerAng) { _, _ in landingId = nil; showChrome() }   // page turn: fresh position, chrome back
             .onChange(of: focusMode) { _, _ in showChrome() }
             .onChange(of: container.presentation?.id) { _, id in if id == nil { showChrome() } }
