@@ -35,10 +35,13 @@ struct TrailScreen: View {
                             Text("Descriptive relatedness by English-meaning similarity — not a ranking of scripture.")
                                 .font(.caption2)
                         }
+                        .inkRow()
                     }
                     .listStyle(.insetGrouped)
+                    .inkGroupedList()
                 }
             }
+            .background(Ink.base.ignoresSafeArea())
             .navigationTitle("Related verses")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
