@@ -103,7 +103,7 @@ const doVerify = guard(async (qIn: string) => {
       <div class="vv">${esc(v.replace(/\+/g, ' + '))}</div>
       ${v.startsWith('NOT_FOUND') ? '' : `<div class="vc">confidence ${(d.confidence * 100).toFixed(1)}%</div>`}
       <div class="vh">${v.startsWith('VERIFIED') ? 'This is scripture, verified against the canonical corpus.' :
-      v.startsWith('NOT_FOUND') ? 'No such line exists in Sri Guru Granth Sahib (this edition). Treat the quote as unverified.' :
+      v.startsWith('NOT_FOUND') ? 'No such line exists in Sri Guru Granth Sahib Ji (this edition). Treat the quote as unverified.' :
         'Close match found — compare carefully below.'}</div></div>`;
   if (d.gurmukhi) {
     h += `<div class="count">Canonical line:</div>

@@ -20,9 +20,25 @@ This project is a knowledge base of **Sri Guru Granth Sahib Ji**, the living Gur
 
 An **offline, "sovereign," zero-dependency** study app over the full Granth (Angs 1–1430). A reproducible pipeline extracts the PDF into a corpus, builds a SQLite/FTS5 database, and a Python stdlib server serves a prebuilt Astro multi-page UI (search, reader, themes, lineage, study trail, concept constellation, insights).
 
-- **Current build:** `APP_VERSION = 1.1.2`, `APP_BUILT = 2026-09-16` (see `webapp/serve.py`). The traditional-saroop display toggle is **default-ON** as of v2.10.1 (reader can switch to verbatim).
+- **Current build:** `APP_VERSION = 1.1.3`, `APP_BUILT = 2026-09-17` (see `webapp/serve.py`). The traditional-saroop display toggle is **default-ON** as of v2.10.1 (reader can switch to verbatim).
 - **Corpus:** 60,658 line records · 1,430 Angs · FTS5 full-text.
 - **Source of record:** the user's `Siri-Guru-Granth-Sahib-in-Gurmukhi-with-Index.pdf` (1,483 pp), which lives **one level above this repo** (`../`), not inside it.
+
+---
+
+## Brand & domains (product identity — read before touching names/URLs)
+
+Endorsed-brand architecture, set 2026-09-17 ahead of the first public TestFlight/App Store release:
+
+- **Company:** **Algorythmos Pty Ltd** — the Australian legal entity that owns the IP, the Apple/Google developer accounts, and the infrastructure. Credited as an *endorsed brand* ("Built by Algorythmos"). Its strongest trademark asset is the coined word **"Algorythmos"** itself.
+- **Consumer app (iOS/Android):** **Gurbani Soul** — the product users download. This is the App Store **Name**, the iOS on-device label (`CFBundleDisplayName`/`CFBundleName` = `Gurbani Soul`), the widget-group name, and the About-screen title. Positioning leads with **trust** ("verbatim, cited by Ang, never AI-invented"), not "AI".
+- **Website / Knowledge Base (this repo):** stays **"Sri Guru Granth Sahib Ji — Knowledge Base"** — a *distinct, scholarly property* from the consumer app. Its page titles/header use the full scripture name. Do **not** rename the KB site to "Gurbani Soul".
+- **Scripture citations, everywhere (web + app):** always the full **"Sri Guru Granth Sahib Ji · Ang N"**. "Gurbani Soul" names the *app*, never the *text*. Keep this separation.
+- **Product domain:** **`gurbanisoul.com`** — registered 2026-09-17 at **Hostinger** (registrar), **2-year term, auto-renew on, WHOIS privacy on**. DNS is delegated to **Cloudflare** (account label *"Company-Domains"*), nameservers `jamie.ns.cloudflare.com` / `luke.ns.cloudflare.com`. The Cloudflare **Zone ID / Account ID live in the Cloudflare dashboard, not in this repo** — never paste them (or any API token) into tracked files.
+  - Planned layout: `gurbanisoul.com` (marketing) · `docs.gurbanisoul.com` (sources / translation methodology / AI-safety — helps App Store review) · `api.gurbanisoul.com` (backend, on Algorythmos infra) · `www` redirect. Support/Privacy are **paths** on the apex (`/support`, `/privacy`), so one domain satisfies Apple's URL fields.
+  - `.app` / `.ai` are optional **defensive** buys for later, not on the launch path. Until `gurbanisoul.com` is live, the App Store listing uses the existing KB URLs as interim Support/Privacy targets (see `docs/ios/app-store-listing.md`).
+- **Availability caveats that were verified (Sep 2026, non-authoritative — re-check before spend):** no App Store/Play app named "Gurbani Soul" and no matching company/trademark found. Trademark note: "Gurbani AI" would be descriptive→generic and weak; **India has a religious-susceptibilities bar (TM Act s.9(2)(b))** on Sikh/scriptural terms plus active Akal Takht scrutiny of AI-Gurbani tools — file logos/composites, prioritise protecting "Algorythmos", and get professional clearance in AU/US/India before filing.
+- **Internal identifiers are unchanged and must stay so:** bundle ids `org.sggs.*`, App Group `group.org.sggs`, URL scheme `sggs://`, Xcode targets, npm `sggs-frontend`, the DB filename, and the SKU `sggs-ios`. The brand is a display layer; none of these track it.
 
 ---
 

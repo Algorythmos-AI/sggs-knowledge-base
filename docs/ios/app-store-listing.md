@@ -1,18 +1,30 @@
-# SGGS iOS — App Store listing (draft)
+# Gurbani Soul — App Store listing (draft)
 
 Everything App Store Connect asks for, drafted here so it is reviewed in a PR before it is typed
 into the console. Character limits are Apple's. Update this file when the console changes, so the
 repo stays the record.
 
+## Brand architecture
+
+**Gurbani Soul** is the customer-facing product brand (the app people download); **Algorythmos
+Pty Ltd** is the company — legal owner, developer-account holder, IP and infrastructure owner —
+credited as an *endorsed brand* ("Built by Algorythmos"). This decouples the product from the
+consultancy so it can grow (or be sold/partnered) on its own identity. Note the two properties:
+the iOS/Android **app** is *Gurbani Soul*; the scholarly **website/Knowledge Base** in this repo
+stays *Sri Guru Granth Sahib Ji — Knowledge Base*. Inside the app, scripture is always cited by
+its full name, *Sri Guru Granth Sahib Ji · Ang N* — "Gurbani Soul" names the app, never the text.
+
 ## Identity
 
 | Field | Value | Limit |
 |---|---|---|
-| Name | `Sri Guru Granth Sahib` | 30 |
-| Fallbacks if taken | `SGGS — Guru Granth Sahib` · `Gurbani Reader — SGGS` | 30 |
-| Subtitle | `Offline Gurbani reader & search` | 30 |
-| Bundle ID | `org.sggs.app` (widget `org.sggs.app.widgets`) | |
-| SKU | `sggs-ios` | |
+| Name | `Gurbani Soul` | 30 |
+| Fallbacks if taken | `Gurbani Soul: Verified` · `Gurbani Soul — Sikh` | 30 |
+| On-device label (`CFBundleDisplayName`) | `Gurbani Soul` (12 chars — fits under the icon) | |
+| Subtitle | `Gurbani Search, Nitnem & Hukam` (30) — keyword-dense; alt: `Nitnem, Hukamnama & Gurbani` (27) | 30 |
+| Publisher / seller | `Algorythmos Pty Ltd` (App Store shows this as the developer name) | |
+| Bundle ID | `org.sggs.app` (widget `org.sggs.app.widgets`) — internal, unchanged; users never see it | |
+| SKU | `sggs-ios` — internal, unchanged | |
 | Primary category | Reference (matches `LSApplicationCategoryType`) | |
 | Secondary category | Education | |
 | Primary language | English (U.K.) — pick once, keep | |
@@ -20,13 +32,25 @@ repo stays the record.
 | Age rating | 4+ (questionnaire: no objectionable content, no unrestricted web, no gambling, no contests) | |
 | Copyright | `© 2026 ALGORYTHMOS PTY LTD` (the legal entity on the Apple Developer Program account) | |
 
-## Promotional text (170)
+> **Availability (verify before commit):** no App Store / Play app named "Gurbani Soul" and no
+> "Gurbani Soul" company/trademark were found in a Sep-2026 search; `gurbanisoul.com/.app/.ai`
+> did not resolve (apparently unregistered). Confirm store-name uniqueness in App Store Connect /
+> Play Console and domain/TM status at a registrar and the official registers before purchase.
 
-> The complete Sri Guru Granth Sahib Ji on your device: verbatim Gurmukhi, instant search by word, sound or first letters, daily Hukam, Raag Clock and widgets. No account. No network.
+## Keywords (100, comma-separated, no spaces after commas)
+
+`sikh,gurmukhi,punjabi,shabad,hukamnama,waheguru,sggs,granth,japji,kirtan,sikhism,bani,ang,guru`
+
+(Do **not** repeat words already in the Name/Subtitle — Apple indexes those. So `gurbani`,
+`nitnem`, `hukam`, `search` are deliberately omitted here.)
+
+## Promotional text (170) — trust first (editable any time; NOT indexed for search)
+
+> Every verse verbatim from Sri Guru Granth Sahib Ji, cited by Ang — never AI-invented. Search by word, sound or first letters. Daily Hukamnama, Nitnem and audio. Fully offline.
 
 ## Description (4,000)
 
-> Sri Guru Granth Sahib Ji, all 1,430 Angs, entirely on your device.
+> Gurbani Soul is the complete Sri Guru Granth Sahib Ji on your device — all 1,430 Angs, reproduced verbatim and cited by Ang. Nothing is paraphrased, normalised, or AI-generated: what you read is the scripture, exactly, verified every time the app launches. AI helps you search and navigate — it never writes Gurbani.
 >
 > READ
 > • The full Granth, verbatim, in a beautiful Gurmukhi typeface (Sant Lipi).
@@ -56,20 +80,30 @@ repo stays the record.
 > • The text is reproduced character for character from the source edition and is verified by the app every time it launches. Nothing is corrected, normalised or paraphrased.
 >
 > Works with Siri and Shortcuts: "Today's Hukam", "What raag is it now", "Search Gurbani", "Open Ang".
+>
+> Gurbani Soul is built by Algorythmos, an Australian AI and data-science company building trustworthy knowledge systems.
 
-## Keywords (100, comma-separated, no spaces after commas)
+## Brand credit (About screen / footer / website)
 
-`gurbani,sikh,granth,guru,hukam,hukamnama,gurmukhi,punjabi,raag,shabad,kirtan,japji,sggs,waheguru`
-
-(Do not repeat words from the name or subtitle; Apple indexes those already.)
+- **Footer / credit line:** `Built by Algorythmos` (preferred over "Powered by" — warmer and more
+  accountable for a scripture product where trust is the point).
+- **About screen copy:** "Gurbani Soul is developed and maintained by Algorythmos, an Australian
+  AI and data-science company building trustworthy knowledge systems. Every verse is reproduced
+  verbatim from Sri Guru Granth Sahib Ji and cited by its Ang — nothing is paraphrased,
+  normalised, or AI-generated."
 
 ## URLs
 
+Target product domain is **`gurbanisoul.com`** (marketing), with `docs.gurbanisoul.com`
+(sources / translation methodology / AI-safety — genuinely helps App Store review) and
+`api.gurbanisoul.com` (backend). Until that domain is live, the existing Knowledge Base URLs
+serve as the support/privacy targets; swap them once `gurbanisoul.com` is up.
+
 | Field | Value | Status |
 |---|---|---|
-| Support URL | `https://sggs-knowledge-base.vercel.app/support` | built (`frontend/src/pages/support.astro`); live after the next release to `main` |
-| Marketing URL | `https://sggs-knowledge-base.vercel.app` | live |
-| Privacy Policy URL | `https://sggs-knowledge-base.vercel.app/privacy` | built (`frontend/src/pages/privacy.astro`); live after the next release to `main` |
+| Support URL | `https://gurbanisoul.com/support` (interim: `https://sggs-knowledge-base.vercel.app/support`) | interim built (`frontend/src/pages/support.astro`); repoint when the product domain is live |
+| Marketing URL | `https://gurbanisoul.com` (interim: `https://sggs-knowledge-base.vercel.app`) | pending domain purchase |
+| Privacy Policy URL | `https://gurbanisoul.com/privacy` (interim: `https://sggs-knowledge-base.vercel.app/privacy`) | interim built (`frontend/src/pages/privacy.astro`); repoint when live |
 
 Privacy policy content (one paragraph is enough, and must be true): the app collects no data,
 makes no network requests, uses location only on-device for sunrise/sunset when enabled, stores

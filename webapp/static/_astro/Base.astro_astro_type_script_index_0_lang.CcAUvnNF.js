@@ -1,4 +1,4 @@
-import{$ as o,g as M,a as y,p as F,e as d}from"./core.DsxD4iDU.js";import{p as P,t as J,s as K,r as z,i as C,c as X,g as D,e as Y,a as G,b as Q,d as Z,f as tt,h as et,m as nt,l as st,M as it}from"./store.C80oRSwx.js";function H(e){return e.map(t=>`<div class="sline ${t.is_rahao?"rahao":""}${t.is_header?"":" haspin"}"${t.is_header?"":` data-line-id="${t.id}"`}>
+import{$ as o,g as M,a as y,p as F,e as d}from"./core.DsxD4iDU.js";import{p as P,t as J,s as K,r as z,i as C,c as X,g as D,e as Y,a as G,b as Q,d as Z,f as tt,h as et,m as nt,l as st,M as it}from"./store.DB2EdKlg.js";function H(e){return e.map(t=>`<div class="sline ${t.is_rahao?"rahao":""}${t.is_header?"":" haspin"}"${t.is_header?"":` data-line-id="${t.id}"`}>
       ${t.is_header?"":P(t.id,t.ang,t.comp_id,t.gurmukhi)}
       <div class="g gm ${t.is_header&&t.gurmukhi.startsWith("ੴ")?"invoc":""}" lang="pa" style="${t.is_header?"color:var(--gold);font-weight:600;text-align:center":""}">${d(t.gurmukhi)}</div>
       <div class="t" style="${t.is_header?"text-align:center":""}">${d(t.translit)}</div>
