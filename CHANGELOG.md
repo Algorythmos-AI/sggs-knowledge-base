@@ -3,6 +3,34 @@
 The format below (newest first) follows [Keep a Changelog](https://keepachangelog.com);
 entries prior to v1.1.0 are the project's original prose style and are preserved verbatim.
 
+## [1.1.2] — 2026-09-16 — TestFlight launch kit + support/privacy pages
+
+### Added
+- **TestFlight → App Store launch kit** (docs/CI/tooling only; no code, corpus or DB change):
+  `docs/ios/testflight-launch-plan.md` (phased plan with entry/exit gates),
+  `docs/ios/testflight-test-plan.md` (device matrix, test charters incl. the mandatory
+  scripture-fidelity charter, triage rules, build log) and `docs/ios/app-store-listing.md`
+  (metadata, privacy answers, review notes).
+- `ios/tools/testflight_archive.sh` + `make testflight`: derives the chosen DB profile
+  (default `public`, Gurmukhi-only), runs `check_release_license.sh` on that exact artifact,
+  generates the project, archives with the Team ID and build number passed on the command
+  line, exports or uploads to App Store Connect, then proves the version/build/widget version
+  and the DB hash *inside* the archived `.app`.
+- `.github/workflows/ios-testflight.yml`: manual (`workflow_dispatch`) upload on a hosted
+  macOS runner through the same script, keyed by an App Store Connect API key in the
+  `testflight` environment.
+
+- **`/support` and `/privacy` pages** (`frontend/src/pages/support.astro`, `privacy.astro`) — the
+  public Support URL and Privacy Policy URL the App Store listing requires; linked from the site
+  footer. Every privacy statement is checked against the code (no network, no analytics, location
+  rounded and on-device, local diagnostics only, hosting-provider server logs disclosed).
+
+### Data
+- None. Scripture, corpus and DB unchanged (`db_sha256` 883f6f80…).
+
+### Versions
+- `APP_VERSION` 1.1.2 · `MANIFEST.json` 1.1.2 · iOS `MARKETING_VERSION` 1.1.2 · built 2026-09-16.
+
 ## [1.1.1] — 2026-09-15 — Deploy foundations
 
 ### Added

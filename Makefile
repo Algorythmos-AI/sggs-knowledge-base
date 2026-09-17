@@ -3,7 +3,7 @@
 PIPELINE_PY ?= /usr/bin/python3
 PDF ?= ../Siri-Guru-Granth-Sahib-in-Gurmukhi-with-Index.pdf
 
-.PHONY: help doctor ci check-versions test-web test-frontend contract verify guard reconcile rebuild ios-db release
+.PHONY: help doctor ci check-versions test-web test-frontend contract verify guard reconcile rebuild ios-db release testflight
 help: ## list targets
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | awk 'BEGIN{FS=":.*?## "}{printf "  \033[36m%-16s\033[0m %s\n",$$1,$$2}'
 
@@ -53,3 +53,7 @@ release: ## bump the unified version everywhere: make release VERSION=1.2.0
 	@test -n "$(VERSION)" || (echo "usage: make release VERSION=X.Y.Z"; exit 1)
 	python3 scripts/release/bump.py $(VERSION)
 	python3 scripts/release/check_versions.py
+
+testflight: ## archive + gate + export/upload the TestFlight candidate (macOS): make testflight TEAM_ID=… BUILD=N [PROFILE=public] [UPLOAD=1]
+	@test -n "$(TEAM_ID)" -a -n "$(BUILD)" || (echo "usage: make testflight TEAM_ID=ABCDE12345 BUILD=4 [PROFILE=public|personal] [UPLOAD=1]"; exit 1)
+	SGGS_TEAM_ID=$(TEAM_ID) SGGS_BUILD_NUMBER=$(BUILD) SGGS_DB_PROFILE=$(or $(PROFILE),public) SGGS_UPLOAD=$(or $(UPLOAD),0) bash ios/tools/testflight_archive.sh

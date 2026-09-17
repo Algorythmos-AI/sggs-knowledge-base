@@ -20,7 +20,7 @@ This project is a knowledge base of **Sri Guru Granth Sahib Ji**, the living Gur
 
 An **offline, "sovereign," zero-dependency** study app over the full Granth (Angs 1–1430). A reproducible pipeline extracts the PDF into a corpus, builds a SQLite/FTS5 database, and a Python stdlib server serves a prebuilt Astro multi-page UI (search, reader, themes, lineage, study trail, concept constellation, insights).
 
-- **Current build:** `APP_VERSION = 1.1.1`, `APP_BUILT = 2026-09-15` (see `webapp/serve.py`). The traditional-saroop display toggle is **default-ON** as of v2.10.1 (reader can switch to verbatim).
+- **Current build:** `APP_VERSION = 1.1.2`, `APP_BUILT = 2026-09-16` (see `webapp/serve.py`). The traditional-saroop display toggle is **default-ON** as of v2.10.1 (reader can switch to verbatim).
 - **Corpus:** 60,658 line records · 1,430 Angs · FTS5 full-text.
 - **Source of record:** the user's `Siri-Guru-Granth-Sahib-in-Gurmukhi-with-Index.pdf` (1,483 pp), which lives **one level above this repo** (`../`), not inside it.
 
@@ -135,6 +135,9 @@ Use these instead of improvising the flow — they bundle tested scripts and the
 - **sggs-release** — preflight → release PR `integration→main` (merge commit) → watch `deploy-production` gate by gate → verify → tag.
 - **sggs-verify-prod** — prove what production serves (commit identity, health, Ang 712 heading, Vercel deployment).
 - **sggs-rebuild-db** — scripture-safe corpus/DB rebuild with byte-level diff, re-baseline, guard, contract, iOS DBs.
+
+## iOS TestFlight / App Store (2026-09-16: TestFlight approved)
+Plan and gates live in `docs/ios/` (`testflight-launch-plan.md`, `testflight-test-plan.md`, `app-store-listing.md`). Build candidates **only** with `make testflight TEAM_ID=… BUILD=N` (`ios/tools/testflight_archive.sh`) or the manual `ios-testflight.yml` workflow: both derive the DB profile, run `check_release_license.sh` on the exact artifact, and prove the DB hash inside the archived `.app`. Default profile is **`public`** (Gurmukhi-only) because the English layer is `LICENSED: false`; never hand-edit `project.yml`'s team/build for an upload. Every build gets the scripture-fidelity charter (Charter S) signed before testers see it.
 
 ## Verify your changes
 
