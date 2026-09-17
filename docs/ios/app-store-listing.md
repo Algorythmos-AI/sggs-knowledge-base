@@ -18,7 +18,7 @@ repo stays the record.
 | Primary language | English (U.K.) — pick once, keep | |
 | Price | Free, no in-app purchases | |
 | Age rating | 4+ (questionnaire: no objectionable content, no unrestricted web, no gambling, no contests) | |
-| Copyright | `© {year} Algorythmos AI` (edit to the actual rights holder line) | |
+| Copyright | `© 2026 ALGORYTHMOS PTY LTD` (the legal entity on the Apple Developer Program account) | |
 
 ## Promotional text (170)
 

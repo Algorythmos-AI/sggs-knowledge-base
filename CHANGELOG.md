@@ -3,7 +3,7 @@
 The format below (newest first) follows [Keep a Changelog](https://keepachangelog.com);
 entries prior to v1.1.0 are the project's original prose style and are preserved verbatim.
 
-## [Unreleased]
+## [1.1.2] — 2026-09-16 — TestFlight launch kit + support/privacy pages
 
 ### Added
 - **TestFlight → App Store launch kit** (docs/CI/tooling only; no code, corpus or DB change):
@@ -26,7 +26,10 @@ entries prior to v1.1.0 are the project's original prose style and are preserved
   rounded and on-device, local diagnostics only, hosting-provider server logs disclosed).
 
 ### Data
-- None. `git diff -- corpus db ios/Resources` empty.
+- None. Scripture, corpus and DB unchanged (`db_sha256` 883f6f80…).
+
+### Versions
+- `APP_VERSION` 1.1.2 · `MANIFEST.json` 1.1.2 · iOS `MARKETING_VERSION` 1.1.2 · built 2026-09-16.
 
 ## [1.1.1] — 2026-09-15 — Deploy foundations
 

@@ -45,7 +45,9 @@ edition, Sant Lipi is SIL OFL 1.1, and SQLite is public domain.
 
 ## 1. Phase A — Accounts, identifiers, signing (human, once)
 
-Entry: Apple Developer Program membership active. Exit: a signed archive exists on a Mac.
+Entry: Apple Developer Program membership active (Company/Organization membership for ALGORYTHMOS PTY LTD, active since 2026-09-16). Exit: a signed archive exists on a Mac.
+
+Sign in to developer.apple.com and App Store Connect with the Apple ID that holds the membership — it is recorded in the private, git-ignored `apple-developer/` folder outside this repo, never here. The Team ID is on the Membership details page; it is passed on the command line at archive time and is not committed.
 
 1. **App Store Connect → Apps → New App.** Platform iOS, bundle ID `org.sggs.app`, SKU
    `sggs-ios`, primary language English (UK or US — pick one and keep it), name per the
