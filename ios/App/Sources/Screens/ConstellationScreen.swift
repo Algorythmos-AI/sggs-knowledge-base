@@ -42,6 +42,8 @@ struct ConstellationScreen: View {
             }
             Spacer(minLength: 0)
         }
+        .frame(maxWidth: .infinity)
+        .background(Ink.base.ignoresSafeArea())
         .navigationTitle("Constellation")
         .navigationBarTitleDisplayMode(.inline)
         .task { await container.loadMeta() }
@@ -133,8 +135,10 @@ struct ClusterSheet: View {
                     container.present(.shabad(compId: v.compId, focusLineId: v.id))
                 }
                 .listRowSeparator(.hidden)
+                .listRowBackground(Ink.base)
             }
             .listStyle(.plain)
+            .inkPlainList()
             .navigationTitle("\(center.capitalized) + \(cluster.co.capitalized)")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar { ToolbarItem(placement: .topBarTrailing) { Button("Done") { dismiss() } } }

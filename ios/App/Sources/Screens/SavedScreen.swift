@@ -21,6 +21,7 @@ struct SavedScreen: View {
                             container.present(.shabad(compId: item.compId, focusLineId: item.lineId))
                         }
                         .listRowSeparator(.hidden)
+                        .listRowBackground(Ink.base)
                     }
                     .onDelete { idx in
                         for i in idx {
@@ -31,8 +32,10 @@ struct SavedScreen: View {
                     }
                 }
                 .listStyle(.plain)
+                .inkPlainList()
             }
         }
+        .background(Ink.base.ignoresSafeArea())
         .navigationTitle("Saved")
         .navigationBarTitleDisplayMode(.inline)
     }

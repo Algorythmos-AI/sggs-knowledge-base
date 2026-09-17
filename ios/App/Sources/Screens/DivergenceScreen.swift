@@ -25,6 +25,7 @@ struct DivergenceScreen: View {
                                 Text("Where the sources place a raag in different watches, every claim is kept with its citation.")
                                     .font(.caption).foregroundStyle(.secondary)
                             }
+                            .inkRow()
                             ForEach(divergence.raags) { entry in
                                 Section {
                                     ForEach(Array(entry.claims.enumerated()), id: \.offset) { _, c in
@@ -61,13 +62,16 @@ struct DivergenceScreen: View {
                                     }
                                     .textCase(nil)
                                 }
+                                .inkRow()
                             }
                         }
+                        .inkGroupedList()
                     }
                 } else {
                     ProgressView().frame(maxWidth: .infinity, maxHeight: .infinity)
                 }
             }
+            .background(Ink.base.ignoresSafeArea())
             .navigationTitle("Where traditions disagree")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar { ToolbarItem(placement: .confirmationAction) { Button("Done") { dismiss() } } }

@@ -112,5 +112,7 @@ struct IntegrityFailView: View {
                 .font(.caption).foregroundStyle(.tertiary)
         }
         .padding(32)
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .background(Ink.canvas.ignoresSafeArea())
     }
 }

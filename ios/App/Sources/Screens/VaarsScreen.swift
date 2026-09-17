@@ -36,12 +36,15 @@ struct VaarsScreen: View {
                                     .font(.caption).foregroundStyle(.secondary)
                             }
                         }
+                        .inkRow()
                     }
+                    .inkGroupedList()
                 }
             } else {
                 ProgressView().frame(maxWidth: .infinity, maxHeight: .infinity)
             }
         }
+        .background(Ink.base.ignoresSafeArea())
         .navigationTitle("Vaars")
         .task {
             guard vaars == nil, let corpus = container.corpus else { return }
@@ -73,6 +76,7 @@ struct VaarAnatomyScreen: View {
                                 .font(.caption2).foregroundStyle(.tertiary)
                         }
                     }
+                    .inkRow()
                     Section {
                         ForEach(anatomy.units, id: \.seq) { u in
                             Button {
@@ -107,11 +111,14 @@ struct VaarAnatomyScreen: View {
                     } header: {
                         Text("Anatomy in reading order")
                     }
+                    .inkRow()
                 }
+                .inkGroupedList()
             } else {
                 ProgressView().frame(maxWidth: .infinity, maxHeight: .infinity)
             }
         }
+        .background(Ink.base.ignoresSafeArea())
         .navigationTitle(summary.roman.map { "Vaar · \($0)" } ?? "Vaar")
         .navigationBarTitleDisplayMode(.inline)
         .task {
