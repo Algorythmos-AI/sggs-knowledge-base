@@ -81,6 +81,7 @@ struct MoreScreen: View {
                     }
                     .accessibilityIdentifier("accentPicker")
                 }
+                .inkRow()
                 Section {
                     // Insights & Constellation moved to the Explore tab (nav restructure)
                     if container.modelContainer != nil {
@@ -99,7 +100,9 @@ struct MoreScreen: View {
                     }
                     NavigationLink { AboutScreen() } label: { Label("About & credits", systemImage: "info.circle") }
                 }
+                .inkRow()
             }
+            .inkGroupedList()
             .navigationTitle("More")
         }
     }
@@ -122,6 +125,7 @@ struct AboutScreen: View {
                 }
                 .frame(maxWidth: .infinity)
             }
+            .inkRow()
             if let report = container.integrity {
                 Section("Integrity") {
                     ForEach(report.checks) { c in
@@ -143,6 +147,7 @@ struct AboutScreen: View {
                     Text("Diagnostics collected on this device: \(String(diag)) (local only, never sent)")
                         .font(.caption2).foregroundStyle(.tertiary)
                 }
+                .inkRow()
             }
             Section("Credits") {
                 Text("Gurmukhi text: verbatim from the source edition, cited by Ang.")
@@ -150,9 +155,12 @@ struct AboutScreen: View {
                     Text("English translation by Dr. Sant Singh Khalsa (sourced via BaniDB) — a separate labelled layer, never the scripture.")
                 }
                 Text("Font: Sant Lipi © Shabad OS, SIL Open Font License 1.1.")
+                Text("Headings: Source Serif 4 © Adobe, SIL Open Font License 1.1.")
                 Text("No accounts. No network. No tracking. Ever.").foregroundStyle(.secondary)
             }
+            .inkRow()
         }
+        .inkGroupedList()
         .navigationTitle("About")
         .navigationBarTitleDisplayMode(.inline)
     }

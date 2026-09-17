@@ -183,6 +183,10 @@ extension EnvironmentValues {
 /// legs are the designed warm-ink ramp.
 enum Ink {
     // MARK: surfaces
+    /// Ground behind PLAIN (non-grouped) lists and full-bleed screens: the native
+    /// systemBackground in light, the same warm ink as `canvas` in dark — so a plain List
+    /// never drops to the system's pure black.
+    static let base = Color(lightSystem: .systemBackground, dark: 0x151210)
     /// Screen canvas behind custom (non-List) layouts.
     static let canvas = Color(lightSystem: .systemGroupedBackground, dark: 0x151210)
     /// Cards that draw their own background.

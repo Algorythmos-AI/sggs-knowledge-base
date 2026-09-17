@@ -59,6 +59,23 @@ enum Brand {
     }
 }
 
+extension View {
+    /// A grouped/inset List on the warm-ink canvas. Light mode is pixel-identical to the
+    /// native grouped look (the tokens alias the same system colours); dark swaps the
+    /// system's black/cool-grey for the designed ramp. Pair with `.inkRow()` on Sections.
+    func inkGroupedList() -> some View {
+        scrollContentBackground(.hidden).background(Ink.canvas.ignoresSafeArea())
+    }
+
+    /// A plain List / full-bleed screen on `Ink.base`.
+    func inkPlainList() -> some View {
+        scrollContentBackground(.hidden).background(Ink.base.ignoresSafeArea())
+    }
+
+    /// Row ground for a Section inside `inkGroupedList()`.
+    func inkRow() -> some View { listRowBackground(Ink.card) }
+}
+
 /// Semantic design tokens — the single vocabulary every screen draws from (mirrors the web's
 /// token discipline). Add here, use everywhere; never hard-code a spacing/radius/band constant
 /// in a screen.
