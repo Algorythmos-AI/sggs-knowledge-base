@@ -25,12 +25,18 @@ struct LineRow: View {
     @Environment(\.colorScheme) private var colorScheme
     @AppStorage("sggs_translit") private var translitPref = true
     @AppStorage("sggs_show_english") private var englishPref = true
+    @Environment(\.palette) private var palette
+
+    /// ਰਹਾਉ marks the shabad's central line — it gets a quiet accent rule in the margin.
+    /// The scripture itself stays ink (brand book: never colour the text).
+    private var isRahao: Bool { meta.hasPrefix("ਰਹਾਉ") }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 6) {
+        VStack(alignment: .leading, spacing: 5) {
             GurmukhiText(verbatim: gurmukhi, size: 22)
             if showTranslit && translitPref && !translit.isEmpty {
                 Text(translit).font(.subheadline).foregroundStyle(.secondary)
+                    .padding(.top, 1)
                     .fixedSize(horizontal: false, vertical: true)
                     .accessibilityHidden(true)            // a reading aid, not scripture
             }
@@ -44,6 +50,13 @@ struct LineRow: View {
             }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(.leading, isRahao ? Theme.Space.m : 0)
+        .overlay(alignment: .leading) {
+            if isRahao {
+                RoundedRectangle(cornerRadius: 1.5).fill(palette.accent)
+                    .frame(width: 3).accessibilityHidden(true)
+            }
+        }
         .contentShape(Rectangle())
         .onTapGesture { onTap?() }
         .contextMenu {

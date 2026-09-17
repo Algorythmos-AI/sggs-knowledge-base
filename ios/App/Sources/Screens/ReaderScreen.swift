@@ -135,7 +135,7 @@ struct ReaderScreen: View {
                             // an eager VStack of ~60 fully-labelled rows made accessibility snapshots
                             // stall for minutes (XCUITest 15-min Reader tests) — lazy keeps the a11y
                             // tree to what is on screen.
-                            LazyVStack(alignment: .leading, spacing: 14) {
+                            LazyVStack(alignment: .leading, spacing: 18) {
                                 if let raag = page.raag {
                                     HStack(spacing: Theme.Space.s) {
                                         Text(raag).font(.subheadline.weight(.semibold))
@@ -164,12 +164,21 @@ struct ReaderScreen: View {
                                         .overlay(Capsule().strokeBorder(AccentPalette.gold.accentText.opacity(0.45)))
                                         .foregroundStyle(AccentPalette.gold.accentText)
                                 }
-                                ForEach(page.lines, id: \.id) { line in
-                                    if line.isHeader {
-                                        GurmukhiText(verbatim: line.gurmukhi, size: 20, weight: .semibold)
-                                            .frame(maxWidth: .infinity, alignment: .center)
-                                            .padding(.vertical, 4)
-                                            .id(line.id)
+                                ForEach(Array(page.lines.enumerated()), id: \.element.id) { index, line in
+                                    if VerseTypography.rendersAsHeading(line.gurmukhi, flaggedHeader: line.isHeader) {
+                                        // A heading run opens a composition: a hairline + air above its
+                                        // FIRST line separates shabads; the run itself stays tight.
+                                        let opensRun = index > 0 && !VerseTypography.rendersAsHeading(
+                                            page.lines[index - 1].gurmukhi, flaggedHeader: page.lines[index - 1].isHeader)
+                                        VStack(spacing: Theme.Space.m) {
+                                            if opensRun {
+                                                Rectangle().fill(Ink.hairline).frame(width: 56, height: 1)
+                                                    .padding(.top, Theme.Space.s).accessibilityHidden(true)
+                                            }
+                                            VerseHeading(verbatim: line.gurmukhi)
+                                        }
+                                        .frame(maxWidth: .infinity, alignment: .center)
+                                        .id(line.id)
                                     } else {
                                         LineRow(gurmukhi: line.gurmukhi,
                                                 translit: focusMode ? "" : line.translit,
@@ -205,6 +214,7 @@ struct ReaderScreen: View {
                             }
                             .scrollTargetLayout()
                             .padding()
+                            .readingColumn()
                             .background(GeometryReader { g in
                                 Color.clear.preference(key: ReaderContentHeightKey.self, value: g.size.height)
                             })

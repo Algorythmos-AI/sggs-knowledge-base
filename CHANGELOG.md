@@ -20,9 +20,23 @@ proves every pair across light / dark / Increase Contrast.
 - App icon **concept A** — gold ੴ on warm ink, flat, no red — and a re-tinted launch logo.
 - `Ink.base` and the `inkGroupedList` / `inkPlainList` / `inkRow` helpers.
 
+### Changed
+- **Reader typography (display only — text, ids, copy/share/search and VoiceOver stay verbatim).**
+  A centred 640-pt reading column on iPad; verses spaced as units (tighter wrapped lines, more
+  air between verses); a hairline + heading where a new shabad opens; the ੴ invocation set at
+  full verse size; a quiet accent rule beside the ਰਹਾਉ line; and a closing `॥੧॥` / `॥ ਰਹਾਉ ॥`
+  can no longer wrap onto a line of its own (WORD JOINER-guarded spaces — Sant Lipi's U+00A0
+  has zero advance, so a no-break space would have closed the gap before the danda).
+  `VerseTypographyTests` prove the display form reduces to the verbatim line.
+
 ### Fixed
 - Dark mode no longer drops to pure black on Search, More, About, Saved, Trail, Divergence,
   Constellation, Vaars, Insights and the integrity-failure view — all sit on warm ink.
+- ~230 verses were drawn as centred bold headings mid-shabad (the corpus `is_header` flag
+  fires on a composition-type word inside a verse — ਵਾਰ, ਅਨੰਦੁ, a leading raag name). A display
+  guard now styles them as verses in the Reader and the shabad sheet; the corpus flag itself
+  (which also splits those shabads' `comp_id`) is tracked separately.
+- iPad Raag Clock: the dial floated in ~700 pt of empty space; content is now a centred column.
 - The Appearance picker kept its previous tint after an accent change.
 - The hero gradient's deep end now holds 4.5:1 under its label in Increase Contrast.
 
