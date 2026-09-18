@@ -455,6 +455,7 @@ final class SGGSUITests: XCTestCase {
         field.typeText("\n")                                     // keyboard covers the tab bar
         openTab(app, "More", expectingNavBar: "More")
         let saved = app.buttons["Saved verses"].firstMatch
+        for _ in 0..<3 where !saved.exists { app.swipeUp() }     // below the Nitnem + Display sections
         XCTAssertTrue(saved.waitForExistence(timeout: 10))
         // the row can sit under the floating tab bar — bring it clear, then verify the push
         for _ in 0..<3 where !app.navigationBars["Saved"].exists {
@@ -512,6 +513,7 @@ final class SGGSUITests: XCTestCase {
         let app = launchApp()
         openTab(app, "More", expectingNavBar: "More")
         let about = app.buttons["About & credits"].firstMatch
+        for _ in 0..<3 where !about.exists { app.swipeUp() }     // last row: below Nitnem + Display
         XCTAssertTrue(about.waitForExistence(timeout: 12))
         app.swipeUp()                                   // last row can sit under the floating tab bar
         XCTAssertTrue(about.waitForExistence(timeout: 4)); about.tap()
