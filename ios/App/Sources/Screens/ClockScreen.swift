@@ -129,8 +129,11 @@ struct ClockScreen: View {
                     Haptics.tap()
                     detailPahar = PaharSelection(p: tapped)
                 }
-                .frame(maxWidth: 420)                 // iPad/landscape: never taller than a screen
+                // Square FIRST, then cap: capping the width before the aspect ratio let the
+                // GeometryReader-backed dial claim a full-width-tall slot on iPad (a small dial
+                // floating in ~700 pt of empty space).
                 .aspectRatio(1, contentMode: .fit)
+                .frame(maxWidth: 420)                 // iPad/landscape: never taller than a screen
                 .frame(maxWidth: .infinity)
                 .padding(.horizontal, Theme.Space.xl)
                 .accessibilityHidden(true)   // decorative — the list below is the a11y path
@@ -139,6 +142,8 @@ struct ClockScreen: View {
                 footer
             }
             .padding(Theme.Space.l)
+            .frame(maxWidth: 760)                     // iPad: a centred column, not edge-to-edge
+            .frame(maxWidth: .infinity)
         }
         .background(Ink.canvas)
         .contentMargins(.bottom, Theme.Space.xl, for: .scrollContent)
