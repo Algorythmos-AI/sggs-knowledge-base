@@ -5,6 +5,16 @@ entries prior to v1.1.0 are the project's original prose style and are preserved
 
 ## [Unreleased] — Nitnem, next level (premium pass)
 
+### Added — My Nitnem
+- **Customisable daily sets** (More → Nitnem → My Nitnem): reorder the banis in the morning,
+  Rehras or Sohila set, hide one, or add any bani from the library (e.g. Sukhmani Sahib in the
+  morning). The home screen and the widgets both follow the customised set, and the completion
+  rings and reminders count against it. Every bani stays in the library — hiding only affects the
+  daily set. Edits live in a new `nitnem-plan.json` sibling file; the reading-history file is never
+  migrated, so an older build can never lose progress. Unknown keys are dropped, a bani added in a
+  later app version is appended, and the Rehras variant is honoured.
+
+
 ### Added — gentle reminders
 - **Opt-in Nitnem reminders**: a quiet, local nudge for the morning banis, Rehras or Sohila at a
   time you choose (More → Nitnem → Reminders). Entirely on-device — no account, no network, no

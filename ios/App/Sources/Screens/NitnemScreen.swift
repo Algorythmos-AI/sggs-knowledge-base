@@ -53,11 +53,22 @@ struct NitnemScreen: View {
         }
     }
 
+    /// The banis to show for a category: the reader's customised set for the three daily bands,
+    /// the default filter for Popular / Ceremony (which are not customisable).
+    private func resolved(_ cat: BaniCategory, from banis: [BaniSummary]) -> [BaniSummary] {
+        switch cat {
+        case .nitnemMorning, .nitnemEvening, .nitnemNight:
+            return NitnemSets.resolved(category: cat, plan: container.nitnemPlan.entries(for: cat),
+                                       registry: banis, rehrasVariant: rehrasVariant)
+        default:
+            return visible(banis).filter { $0.category == cat }
+        }
+    }
+
     @ViewBuilder
     private func content(_ banis: [BaniSummary], at date: Date) -> some View {
         let band = NitnemSchedule.band(at: date)
-        let rows = visible(banis)
-        let focus = rows.filter { $0.category == band.focus }
+        let focus = resolved(band.focus, from: banis)
         let next = focus.first { !container.nitnem.isCompleted($0.id, on: date) }
         ScrollView {
             if sizeClass == .regular {
@@ -68,7 +79,7 @@ struct NitnemScreen: View {
                         journeyCard
                     }
                     .frame(width: 400)
-                    VStack(spacing: Theme.Space.l) { sections(band: band, rows: rows, date: date) }
+                    VStack(spacing: Theme.Space.l) { sections(band: band, banis: banis, date: date) }
                         .frame(maxWidth: .infinity)
                 }
                 .padding(Theme.Space.l)
@@ -78,7 +89,7 @@ struct NitnemScreen: View {
                     hero(band: band, date: date, focus: focus, next: next)
                     hukamCard
                     journeyCard
-                    sections(band: band, rows: rows, date: date)
+                    sections(band: band, banis: banis, date: date)
                 }
                 .padding(Theme.Space.l)
                 .frame(maxWidth: 720).frame(maxWidth: .infinity)
@@ -88,12 +99,12 @@ struct NitnemScreen: View {
     }
 
     @ViewBuilder
-    private func sections(band: NitnemBand, rows: [BaniSummary], date: Date) -> some View {
+    private func sections(band: NitnemBand, banis: [BaniSummary], date: Date) -> some View {
         ForEach(band.order, id: \.self) { cat in
-            section(cat: cat, rows: rows.filter { $0.category == cat }, date: date)
+            section(cat: cat, rows: resolved(cat, from: banis), date: date)
         }
-        section(cat: .popular, rows: rows.filter { $0.category == .popular }, date: date)
-        section(cat: .ceremony, rows: rows.filter { $0.category == .ceremony }, date: date)
+        section(cat: .popular, rows: resolved(.popular, from: banis), date: date)
+        section(cat: .ceremony, rows: resolved(.ceremony, from: banis), date: date)
         Text("Sri Guru Granth Sahib Ji lines are shown verbatim from the verified corpus and cited by Ang. \(NitnemReview.extraLayerLabel)")
             .font(.caption2).foregroundStyle(.tertiary)
             .frame(maxWidth: .infinity, alignment: .leading)

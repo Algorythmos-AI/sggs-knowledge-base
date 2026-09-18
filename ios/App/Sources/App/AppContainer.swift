@@ -30,6 +30,8 @@ final class AppContainer {
     var meta: CorpusMeta?
     /// Nitnem reading positions + completed days (App Group JSON; never SwiftData).
     let nitnem = NitnemProgressStore()
+    /// "My Nitnem" customised sets (order/hidden/added). Sibling file, never a progress migration.
+    let nitnemPlan = NitnemPlanStore()
     /// Gentle local reminders (opt-in, no entitlement, no network). Under `SGGS_UITEST` a fake
     /// scheduler stands in so tests never touch the real notification center.
     let reminders: NitnemReminderController
@@ -84,6 +86,10 @@ final class AppContainer {
             #endif
             Task { await remindersRef.reschedule(completedToday: await completed()) }
         }
+        // A change to the customised sets re-resolves the widget snapshot and refreshes reminders.
+        nitnemPlan.onChange = { [weak self] in
+            Task { await self?.refreshWidgetSnapshot(); await self?.refreshReminders() }
+        }
         #if canImport(UserNotifications)
         let router = self.router
         let container = self
@@ -100,7 +106,7 @@ final class AppContainer {
         let rows = await corpus.banis().banis
         let rehras = UserDefaults.standard.string(forKey: NitnemPrefs.rehrasVariantKey) ?? NitnemPrefs.rehrasDefault
         func done(_ cat: BaniCategory) -> Bool {
-            let set = rows.filter { $0.category == cat && ($0.key == "rehras" ? $0.variant == NitnemPrefs.variant(for: "rehras", rehras: rehras) : $0.isDefault) }
+            let set = NitnemSets.resolved(category: cat, plan: nitnemPlan.entries(for: cat), registry: rows, rehrasVariant: rehras)
             return !set.isEmpty && set.allSatisfy { nitnem.isCompleted($0.id) }
         }
         var out: Set<NitnemBand> = []
@@ -261,8 +267,8 @@ final class AppContainer {
             let rehras = UserDefaults.standard.string(forKey: NitnemPrefs.rehrasVariantKey) ?? NitnemPrefs.rehrasDefault
             let rows = await corpus.banis().banis
             func brief(_ cat: BaniCategory) -> [NitnemWidgetData.Bani] {
-                rows.filter { $0.category == cat && ($0.key == "rehras" ? $0.variant == NitnemPrefs.variant(for: "rehras", rehras: rehras) : $0.isDefault) }
-                    .sorted { $0.orderNo < $1.orderNo }
+                // honour the reader's customised set so the widget and the home never disagree
+                NitnemSets.resolved(category: cat, plan: nitnemPlan.entries(for: cat), registry: rows, rehrasVariant: rehras)
                     .map { NitnemWidgetData.Bani(id: $0.id, key: $0.key, titleEn: $0.titleEn, titleGm: $0.titleGm, minutes: $0.estimatedMinutes, nLines: $0.nLines) }
             }
             nitnemData = NitnemWidgetData(sets: ["morning": brief(.nitnemMorning), "evening": brief(.nitnemEvening), "night": brief(.nitnemNight)])

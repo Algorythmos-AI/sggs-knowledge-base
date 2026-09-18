@@ -128,6 +128,23 @@ final class SGGSUITests: XCTestCase {
             .waitForExistence(timeout: 8), "Dasam source label missing")
     }
 
+    /// My Nitnem: the editor opens from More and shows the set picker, the morning banis and the
+    /// "Add a bani" affordance. (Reorder/hide/add persistence is covered by NitnemSetsTests and
+    /// validated on-device.)
+    func testMyNitnemEditorOpens() {
+        let app = launchApp(selectSearch: false)
+        openTab(app, "More", expectingNavBar: "More")
+        let link = app.buttons["nitnemSetsLink"].firstMatch
+        XCTAssertTrue(link.waitForExistence(timeout: 12), "My Nitnem link missing in More")
+        link.tap()
+        XCTAssertTrue(app.navigationBars["My Nitnem"].waitForExistence(timeout: 8), "My Nitnem did not open")
+        XCTAssertTrue(app.buttons["nitnemSetsAdd"].firstMatch.waitForExistence(timeout: 6), "Add a bani missing")
+        XCTAssertTrue(app.staticTexts["Japji Sahib"].firstMatch.exists, "morning set not shown")
+        // switch to the Sohila set and confirm the header changes
+        app.buttons["Sohila"].firstMatch.tap()
+        XCTAssertTrue(app.staticTexts["Kirtan Sohila"].firstMatch.waitForExistence(timeout: 6), "Sohila set not shown")
+    }
+
     /// Reminders: the screen opens from More and shows a toggle for each of the three daily sets
     /// plus the calm, offline footer. (Toggling → scheduling is covered by NitnemRemindersTests
     /// and validated on-device; a SwiftUI Toggle is not reliably tappable from XCUITest here.)

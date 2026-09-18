@@ -17,6 +17,7 @@ struct SGGSApp: App {
                 UserDefaults.standard.removeObject(forKey: key)
             }
             NitnemProgressStore.wipe()
+            NitnemPlanStore.wipe()
         }
         #endif
         Brand.applyNavigationTitleFonts()
