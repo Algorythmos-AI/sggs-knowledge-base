@@ -258,17 +258,37 @@ BHAGATS = {'ਕਬੀਰ':'Bhagat Kabir Ji','ਨਾਮਦੇਵ':'Bhagat Namdev 
  'ਰਵਿਦਾਸ':'Bhagat Ravidas Ji','ਫਰੀਦ':'Sheikh Farid Ji','ਤ੍ਰਿਲੋਚਨ':'Bhagat Trilochan Ji',
  'ਬੇਣੀ':'Bhagat Beni Ji','ਧੰਨਾ':'Bhagat Dhanna Ji','ਜੈਦੇਵ':'Bhagat Jaidev Ji','ਭੀਖਨ':'Bhagat Bhikhan Ji',
  'ਸੈਣੁ':'Bhagat Sain Ji','ਪੀਪਾ':'Bhagat Pipa Ji','ਸਧਨਾ':'Bhagat Sadhna Ji','ਰਾਮਾਨੰਦ':'Bhagat Ramanand Ji',
- 'ਪਰਮਾਨੰਦ':'Bhagat Parmanand Ji','ਸੂਰਦਾਸ':'Bhagat Surdas Ji','ਮਰਦਾਨਾ':'Bhai Mardana','ਸੁੰਦਰੁ':'Baba Sundar Ji',
+ 'ਪਰਮਾਨੰਦ':'Bhagat Parmanand Ji','ਸੂਰਦਾਸ':'Bhagat Surdas Ji','ਮਰਦਾਨਾ':'Bhai Mardana',
  'ਸਤਾ':'Satta & Balwand','ਬਲਵੰਡਿ':'Satta & Balwand'}
 COMP_TYPES = ['ਅਸਟਪਦੀਆ','ਅਸਟਪਦੀ','ਛੰਤ','ਪਉੜੀ','ਸਲੋਕੁ','ਸਲੋਕ','ਵਾਰ','ਸੋਲਹੇ','ਪੜਤਾਲ',
  'ਅਲਾਹਣੀਆ','ਘੋੜੀਆ','ਕਰਹਲੇ','ਵਣਜਾਰਾ','ਬਿਰਹੜੇ','ਪਟੀ','ਬਾਰਹ ਮਾਹਾ','ਥਿਤੀ','ਥਿਤੰੀ','ਦਿਨ ਰੈਣਿ',
  'ਸੁਖਮਨੀ','ਬਾਵਨ ਅਖਰੀ','ਓਅੰਕਾਰੁ','ਸਿਧ ਗੋਸਟਿ','ਅਨੰਦੁ','ਸਦੁ','ਕੁਚਜੀ','ਸੁਚਜੀ','ਗੁਣਵੰਤੀ',
  'ਕਾਫੀ','ਦਖਣੀ','ਰੁਤੀ','ਸਵਈਏ','ਗਾਥਾ','ਫੁਨਹੇ','ਚਉਬੋਲੇ','ਮੁੰਦਾਵਣੀ','ਰਾਗ ਮਾਲਾ']
+_BHAGAT_LABELS = {'ਬਾਣੀ', 'ਸਲੋਕ', 'ਸਲੋਕੁ', 'ਵਾਰ', 'ੴ', 'ਮਹਲਾ', 'ਮਹਲੇ'}
 GHAR_RE = re.compile(r'ਘਰੁ\s+([੦-੯]+)')
 
-def detect_header(text):
-    """-> dict of detected metadata if this unit is a structural header, else {}."""
+# A composition-type word (ਵਾਰ, ਅਨੰਦੁ, ਪਉੜੀ …) or a leading raag name (ਆਸਾ, ਬਸੰਤੁ …) also occurs
+# inside ordinary verses ("… ਜੇ ਸੋਚੀ ਲਖ ਵਾਰ", "ਆਸਾ ਮਨਸਾ ਬਾਂਧੋ ਬਾਰੁ"). On their own they make a
+# header only for a short label ("ਪਉੜੀ", "ਮਾਰੂ ਸੋਲਹੇ ੩"), a line printed without a closing ॥,
+# or a line carrying one of these attribution/label signals.
+_ATTRIB_RE = re.compile(r'ਮਹਲਾ|ਮਹਲੇ|ਮਃ|ੴ|ਰਾਗੁ|ਘਰੁ|ਕੀ ਵਾਰ')
+_LABEL_TOKENS = {'ਬਾਣੀ', 'ਇਕਤੁਕੇ'}        # whole words: ਗੁਰਬਾਣੀ is not a label
+# weak-signal labels kept verbatim as headers (flagged for scholarly review, like TRAILING_RUBRICS)
+_KNOWN_LABELS = {'ਗਉੜੀ ਭੀ ਸੋਰਠਿ ਭੀ', 'ਸੋਲਹ ਅਸਟਪਦੀਆ ਗੁਆਰੇਰੀ ਗਉੜੀ ਕੀਆ', 'ਏਹੁ ਸਲੋਕੁ ਆਦਿ ਅੰਤਿ ਪੜਣਾ'}
+
+def _weak_label_ok(text, no_danda):
+    if no_danda or text in _KNOWN_LABELS or _ATTRIB_RE.search(text): return True
+    words = [w for w in text.split() if not all(ch in GDIGITS for ch in w)]
+    if len(words) <= 2: return True
+    return any(w in _LABEL_TOKENS or w.endswith('ਪਦੇ') for w in words)
+
+def detect_header(text, no_danda=False):
+    """-> dict of detected metadata if this unit is a structural header, else {}.
+    no_danda: the print sets this unit without a closing ॥ (a title line).
+    A verse that merely contains a comp-type word / leading raag name comes back as
+    {'weak_verse': True} -- not a header, no metadata."""
     h = {}
+    weak_raag = False
     if not text: return h
     m = MAHALA_RE.search(text)
     if m: h['author'] = MAHALA_NAME[m.group(1) or m.group(2)]
@@ -277,17 +297,30 @@ def detect_header(text):
         if m:
             h['author'] = MAHALA_NAME[{'ਪਹਿਲ': '੧', 'ਦੂਜ': '੨', 'ਤੀਜ': '੩',
                                        'ਚਉਥ': '੪', 'ਪੰਜਵ': '੫'}[m.group(1)]]
+    toks = text.split()
+    # the pre-v1.1.4 (substring) form of the Bhagat rule, kept ONLY so build_corpus can burn
+    # the comp_id such a verse used to open and keep every later comp_id stable
+    legacy_bhagat = any(re.search(r'(^|\s)' + bg + r'(\s|$)', text)
+                        for bg in list(BHAGATS) + ['ਸੁੰਦਰੁ']) and \
+        any(q in text for q in ('ਬਾਣੀ', 'ਸਲੋਕ', 'ਪਦੇ', 'ਵਾਰ', 'ਜੀ', 'ੴ', 'ਮਹਲਾ'))
     for bg, name in BHAGATS.items():
-        if re.search(r'(^|\s)' + bg + r'(\s|$)', text) and \
-           ('ਬਾਣੀ' in text or 'ਸਲੋਕ' in text or 'ਪਦੇ' in text or 'ਵਾਰ' in text
-                or 'ਜੀ' in text or 'ੴ' in text or 'ਮਹਲਾ' in text):
+        # the name must be a whole word, qualified by a whole-word label (ਬਾਣੀ, ਸਲੋਕ, …ਪਦੇ,
+        # ਵਾਰ, ੴ, ਮਹਲਾ) or by the honorific ਜੀ/ਜੀਉ directly after it -- substrings such as
+        # ਜੀ in ਜੀਵਨ/ਬਾਜੀ or ਵਾਰ in ਉਰਵਾਰ/ਗਵਾਰੁ turned verses into headers (fixed v1.1.4)
+        if bg not in toks: continue
+        after = {toks[i + 1] for i, t in enumerate(toks[:-1]) if t == bg}
+        if (any(t in _BHAGAT_LABELS or t.endswith('ਪਦੇ') for t in toks)
+                or after & {'ਜੀ', 'ਜੀਉ'}):
             h.setdefault('author', name)
             break
     if text.startswith(('ਸਵਈਏ', 'ਸਵਯੇ')) and 'ਮਹਲੇ' in text:
         h['author'] = 'The Bhatts (ਭਟ)'   # swaiyye in PRAISE of the Gurus, composed by the Bhatts
     for r in RAAGS:
-        if re.search(r'(^|\s)ਰਾਗੁ?\s+' + r, text) or text.startswith(r + ' '):
+        if re.search(r'(^|\s)ਰਾਗੁ\s+' + r, text):
             h['raag'] = r; break
+        if re.search(r'(^|\s)ਰਾਗ\s+' + r, text) or text.startswith(r + ' '):
+            # bare ਰਾਗ (no aunkar) also occurs in verse: ਪ੍ਰਥਮ ਰਾਗ ਭੈਰਉ ਵੈ ਕਰਹੀ (Raagmala)
+            h['raag'] = r; weak_raag = True; break
     for s in SECTIONS:
         # bare title | title-initial with attribution | title embedded in an attributed header
         if (text == s
@@ -303,6 +336,11 @@ def detect_header(text):
         h['invocation'] = True            # ੴ … ਗੁਰ ਪ੍ਰਸਾਦਿ — always a header line
     if text in RUBRICS or (len(text.split()) == 1 and text in RAAGS):
         h['rubric'] = True                # tally/colophon labels: ਜੁਮਲਾ, ਦੁਤੁਕੇ, ਸੋਰਠਿ …
+    strong = [k for k in h if k not in ('comp_type', 'ghar') and not (k == 'raag' and weak_raag)]
+    if h and not strong and not _weak_label_ok(text, no_danda):
+        return {'weak_verse': True}
+    if legacy_bhagat and not strong:
+        return {'weak_verse': True}
     is_hdr = bool(h) and (('author' in h) or ('raag' in h) or ('section' in h)
                           or ('comp_type' in h) or ('invocation' in h) or ('rubric' in h))
     # headers are short metadata lines; verses with ਮਃ inline are not headers

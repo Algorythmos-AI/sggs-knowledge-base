@@ -3,7 +3,7 @@
 The format below (newest first) follows [Keep a Changelog](https://keepachangelog.com);
 entries prior to v1.1.0 are the project's original prose style and are preserved verbatim.
 
-## [Unreleased]
+## [1.1.4] — 2026-09-18 — Header-detector fix (DB rebuilt) + Gurbani Soul brand system
 
 Gurbani Soul brand system for the iOS app (display layer only — scripture, corpus, DB and API
 untouched; `git diff -- corpus db` empty). Governed by `docs/brand/gurbani-soul-brand-book.md`;
@@ -25,6 +25,38 @@ proves every pair across light / dark / Increase Contrast.
   Constellation, Vaars, Insights and the integrity-failure view — all sit on warm ink.
 - The Appearance picker kept its previous tint after an accent change.
 - The hero gradient's deep end now holds 4.5:1 under its label in Increase Contrast.
+
+### Data — header detector fix (metadata only; scripture byte-identical, DB rebuilt)
+- `detect_header` no longer takes a verse for a heading when it merely contains a
+  composition-type word (ਵਾਰ, ਅਨੰਦੁ, ਪਉੜੀ, ਗੁਣਵੰਤੀ, ਵਣਜਾਰਾ, ਰੁਤੀ …), starts with a raag name
+  (ਆਸਾ ਮਨਸਾ …, ਬਸੰਤੁ ਹਮਾਰੈ …), or matches a Bhagat name qualified only by a *substring*
+  (ਜੀ inside ਜੀਵਨ/ਬਾਜੀ, ਵਾਰ inside ਉਰਵਾਰ/ਗਵਾਰੁ). Those signals now need a short label line,
+  a title printed without ॥, an attribution (ਮਹਲਾ/ਮਹਲੇ/ਮਃ/ੴ/ਰਾਗੁ/ਘਰੁ/ਕੀ ਵਾਰ), a whole-word
+  label (ਬਾਣੀ, …ਪਦੇ, ਇਕਤੁਕੇ) or the honorific ਜੀ/ਜੀਉ directly after the name. `ਸੁੰਦਰੁ` is
+  dropped from the Bhagat table (no heading in the print names Baba Sundar; the entry only
+  ever matched verses in M4/M5 shabads). Bare `ਰਾਗ` + raag name (Raagmala verse) is weak.
+- Result: **233 verses** `is_header` 1→0 (5,380 → 5,147 headers); no line becomes a header.
+  Shabads those false headers had split are whole again (distinct comps 4,706 → 4,527, e.g.
+  Ang 396 `comp_id` 1484 rejoins 1482; Japji is one composition). Every `comp_id` a demoted
+  verse used to open is **burned as a permanent gap** (5377–5380 among them), so no other
+  composition's id moves: no `comp_id` increases, no gap is reused, no heading changes id.
+  `comp_type` corrects on 18,178 lines (the false headers had been overwriting it —
+  the known Japji ਰੁਤੀ/ਵਾਰ mislabel), `author` on 232 lines (Baba Sundar → M4/M5; stale
+  Vaar-author on Angs 1279/1416; Kabir/Namdev → M5 on Angs 1192/1376), `ghar` on 7.
+  `raag` and `section` unchanged on every line. Full before/after list for scholar review:
+  `validation/header-fix-review/`.
+- Gates: `reconcile.py` char-exact, golden suite (+22 detector checks) all-pass,
+  `diff_scripture.py` shows only the columns above changed, `verify_regroup.py --invariants`
+  updated to the 4,527 comps.
+- `build_vaars.py`: a Vaar now ends at any Bhagat-bani section heading (`ਬਾਣੀ ਭਗਤ…`), not
+  only Basant's — the Ramkali (Satta & Balwand) and Malar Vaars had been ending by accident
+  on verses mis-flagged as ਪਟੀ headers. Malar Ki Vaar regains its 28th pauri and two saloks
+  (vaar_units 1,423 → 1,426); the other 21 Vaars are unit-for-unit identical.
+- Re-baselined: `audit/scripture-baseline.json`, `contract/*` (Homebrew python 3.14), `MANIFEST`
+  `db_sha256` → `f8135f62…`, iOS manifests (`scripture_sha256` **unchanged** `0eff4bae…`),
+  `variants` pin 79,666 → 79,840 (built from `is_header=0` lines). Harnesses: round-trip
+  99.3 % / 100 % (unchanged); casual-quote within seed noise of the old DB.
+- iOS: the `rendersAsHeading` display guard stays until this DB ships in the app bundle.
 
 ### Pending before App Store submission
 - Brand-book gates **G3** (Granthi/scholar acceptance of the ੴ icon treatment) and **G4**

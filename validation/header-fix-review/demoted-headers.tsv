@@ -1,0 +1,234 @@
+id	ang	gurmukhi (verbatim, unchanged)	changed	before	after
+5	1	ਸੋਚੈ ਸੋਚਿ ਨ ਹੋਵਈ ਜੇ ਸੋਚੀ ਲਖ ਵਾਰ ॥	is_header,comp_id,line_no,comp_type	{"is_header": 1, "comp_id": 3, "line_no": 1, "comp_type": "ਵਾਰ"}	{"is_header": 0, "comp_id": 2, "line_no": 5, "comp_type": null}
+130	3	ਵਾਰਿਆ ਨ ਜਾਵਾ ਏਕ ਵਾਰ ॥	is_header,comp_id,line_no,comp_type	{"is_header": 1, "comp_id": 4, "line_no": 1, "comp_type": "ਵਾਰ"}	{"is_header": 0, "comp_id": 2, "line_no": 130, "comp_type": null}
+142	4	ਵਾਰਿਆ ਨ ਜਾਵਾ ਏਕ ਵਾਰ ॥	is_header,comp_id,line_no,comp_type	{"is_header": 1, "comp_id": 5, "line_no": 1, "comp_type": "ਵਾਰ"}	{"is_header": 0, "comp_id": 2, "line_no": 142, "comp_type": null}
+154	4	ਵਾਰਿਆ ਨ ਜਾਵਾ ਏਕ ਵਾਰ ॥	is_header,comp_id,line_no,comp_type	{"is_header": 1, "comp_id": 6, "line_no": 1, "comp_type": "ਵਾਰ"}	{"is_header": 0, "comp_id": 2, "line_no": 154, "comp_type": null}
+169	4	ਵਾਰਿਆ ਨ ਜਾਵਾ ਏਕ ਵਾਰ ॥	is_header,comp_id,line_no,comp_type	{"is_header": 1, "comp_id": 7, "line_no": 1, "comp_type": "ਵਾਰ"}	{"is_header": 0, "comp_id": 2, "line_no": 169, "comp_type": null}
+191	4	ਕਵਣਿ ਸਿ ਰੁਤੀ ਮਾਹੁ ਕਵਣੁ ਜਿਤੁ ਹੋਆ ਆਕਾਰੁ ॥	is_header,comp_id,line_no,comp_type	{"is_header": 1, "comp_id": 8, "line_no": 1, "comp_type": "ਰੁਤੀ"}	{"is_header": 0, "comp_id": 2, "line_no": 191, "comp_type": null}
+307	7	ਜੋ ਕਿਛੁ ਪਾਇਆ ਸੁ ਏਕਾ ਵਾਰ ॥	is_header,comp_id,line_no,comp_type	{"is_header": 1, "comp_id": 9, "line_no": 1, "comp_type": "ਵਾਰ"}	{"is_header": 0, "comp_id": 2, "line_no": 307, "comp_type": null}
+325	7	ਰਾਤੀ ਰੁਤੀ ਥਿਤੀ ਵਾਰ ॥	is_header,comp_id,line_no,comp_type	{"is_header": 1, "comp_id": 10, "line_no": 1, "comp_type": "ਵਾਰ"}	{"is_header": 0, "comp_id": 2, "line_no": 325, "comp_type": null}
+347	7	ਤਿਥੈ ਨਾਦ ਬਿਨੋਦ ਕੋਡ ਅਨੰਦੁ ॥	is_header,comp_id,line_no,comp_type	{"is_header": 1, "comp_id": 11, "line_no": 1, "comp_type": "ਅਨੰਦੁ"}	{"is_header": 0, "comp_id": 2, "line_no": 347, "comp_type": null}
+363	8	ਕਰਹਿ ਅਨੰਦੁ ਸਚਾ ਮਨਿ ਸੋਇ ॥	is_header,comp_id,line_no,comp_type	{"is_header": 1, "comp_id": 12, "line_no": 1, "comp_type": "ਅਨੰਦੁ"}	{"is_header": 0, "comp_id": 2, "line_no": 363, "comp_type": null}
+551	12	ਵਿਸੁਏ ਚਸਿਆ ਘੜੀਆ ਪਹਰਾ ਥਿਤੀ ਵਾਰੀ ਮਾਹੁ ਹੋਆ ॥	is_header,comp_id,line_no,comp_type	{"is_header": 1, "comp_id": 28, "line_no": 1, "comp_type": "ਥਿਤੀ"}	{"is_header": 0, "comp_id": 27, "line_no": 6, "comp_type": "ਸਲੋਕੁ"}
+612	14	ਕੁਸਾ ਕਟੀਆ ਵਾਰ ਵਾਰ ਪੀਸਣਿ ਪੀਸਾ ਪਾਇ ॥	is_header,comp_id,line_no,comp_type	{"is_header": 1, "comp_id": 35, "line_no": 1, "comp_type": "ਵਾਰ"}	{"is_header": 0, "comp_id": 34, "line_no": 7, "comp_type": "ਸਲੋਕੁ"}
+718	17	ਗੁਣਵੰਤੀ ਗੁਣ ਵੀਥਰੈ ਅਉਗੁਣਵੰਤੀ ਝੂਰਿ ॥	is_header,comp_type	{"is_header": 1, "comp_type": "ਗੁਣਵੰਤੀ"}	{"is_header": 0, "comp_type": "ਸਲੋਕੁ"}
+726	17	ਗੁਰੁ ਪਉੜੀ ਬੇੜੀ ਗੁਰੂ ਗੁਰੁ ਤੁਲਹਾ ਹਰਿ ਨਾਉ ॥	is_header,comp_id,line_no,comp_type	{"is_header": 1, "comp_id": 44, "line_no": 1, "comp_type": "ਪਉੜੀ"}	{"is_header": 0, "comp_id": 43, "line_no": 10, "comp_type": "ਸਲੋਕੁ"}
+1489	36	ਤਿਨਾ ਅਨੰਦੁ ਸਦਾ ਸੁਖੁ ਹੈ ਜਿਨਾ ਸਚੁ ਨਾਮੁ ਆਧਾਰੁ ॥	is_header	{"is_header": 1}	{"is_header": 0}
+1493	36	ਮਨ ਰੇ ਸਦਾ ਅਨੰਦੁ ਗੁਣ ਗਾਇ ॥	is_header,comp_id,line_no	{"is_header": 1, "comp_id": 97, "line_no": 1}	{"is_header": 0, "comp_id": 96, "line_no": 6}
+1508	36	ਗੁਣਵੰਤੀ ਸਚੁ ਪਾਇਆ ਤ੍ਰਿਸਨਾ ਤਜਿ ਵਿਕਾਰ ॥	is_header,comp_type	{"is_header": 1, "comp_type": "ਗੁਣਵੰਤੀ"}	{"is_header": 0, "comp_type": "ਅਨੰਦੁ"}
+1770	43	ਆਸਾ ਸਭੇ ਲਾਹਿ ਕੈ ਇਕਾ ਆਸ ਕਮਾਉ ॥	is_header,comp_id,line_no,comp_type	{"is_header": 1, "comp_id": 116, "line_no": 1, "comp_type": "ਗੁਣਵੰਤੀ"}	{"is_header": 0, "comp_id": 115, "line_no": 4, "comp_type": "ਅਨੰਦੁ"}
+2283	56	ਸਭਿ ਗੁਣਵੰਤੀ ਆਖੀਅਹਿ ਮੈ ਗੁਣੁ ਨਾਹੀ ਕੋਇ ॥	is_header,comp_id,line_no,comp_type	{"is_header": 1, "comp_id": 148, "line_no": 1, "comp_type": "ਗੁਣਵੰਤੀ"}	{"is_header": 0, "comp_id": 147, "line_no": 25, "comp_type": "ਅਸਟਪਦੀਆ"}
+2361	58	ਸਬਦਿ ਮਰੈ ਸੋ ਮਰਿ ਰਹੈ ਫਿਰਿ ਮਰੈ ਨ ਦੂਜੀ ਵਾਰ ॥	is_header,comp_id,line_no,comp_type	{"is_header": 1, "comp_id": 152, "line_no": 1, "comp_type": "ਵਾਰ"}	{"is_header": 0, "comp_id": 151, "line_no": 22, "comp_type": "ਅਸਟਪਦੀਆ"}
+2389	59	ਆਸਾ ਮਨਸਾ ਮੋਹਣੀ ਗੁਰਿ ਠਾਕੀ ਸਚੁ ਬੋਲੁ ॥	is_header,comp_id,line_no,comp_type	{"is_header": 1, "comp_id": 154, "line_no": 1, "comp_type": "ਵਾਰ"}	{"is_header": 0, "comp_id": 153, "line_no": 23, "comp_type": "ਅਸਟਪਦੀਆ"}
+2502	61	ਆਸਾ ਅੰਦਰਿ ਜੰਮਿਆ ਆਸਾ ਰਸ ਕਸ ਖਾਇ ॥	is_header,comp_id,line_no,comp_type	{"is_header": 1, "comp_id": 160, "line_no": 1, "comp_type": "ਵਾਰ"}	{"is_header": 0, "comp_id": 158, "line_no": 22, "comp_type": "ਅਸਟਪਦੀਆ"}
+2503	61	ਆਸਾ ਬੰਧਿ ਚਲਾਈਐ ਮੁਹੇ ਮੁਹਿ ਚੋਟਾ ਖਾਇ ॥	is_header,comp_id,line_no,comp_type	{"is_header": 1, "comp_id": 160, "line_no": 2, "comp_type": "ਵਾਰ"}	{"is_header": 0, "comp_id": 158, "line_no": 23, "comp_type": "ਅਸਟਪਦੀਆ"}
+2567	63	ਊਚਉ ਪਰਬਤੁ ਗਾਖੜੋ ਨਾ ਪਉੜੀ ਤਿਤੁ ਤਾਸੁ ॥	is_header,comp_id,line_no,comp_type	{"is_header": 1, "comp_id": 164, "line_no": 1, "comp_type": "ਪਉੜੀ"}	{"is_header": 0, "comp_id": 163, "line_no": 3, "comp_type": "ਅਸਟਪਦੀਆ"}
+2762	68	ਗੁਣਵੰਤੀ ਸਾਲਾਹਿਆ ਸਚੇ ਸਚੀ ਸੋਇ ॥	is_header,comp_id,line_no,comp_type	{"is_header": 1, "comp_id": 174, "line_no": 1, "comp_type": "ਗੁਣਵੰਤੀ"}	{"is_header": 0, "comp_id": 173, "line_no": 23, "comp_type": "ਅਸਟਪਦੀਆ"}
+3418	85	ਬਿਸਟਾ ਅੰਦਰਿ ਕੀਟ ਸੇ ਪਇ ਪਚਹਿ ਵਾਰੋ ਵਾਰ ॥	is_header,comp_id,line_no,comp_type	{"is_header": 1, "comp_id": 220, "line_no": 1, "comp_type": "ਵਾਰ"}	{"is_header": 0, "comp_id": 219, "line_no": 5, "comp_type": "ਸਲੋਕ"}
+3644	91	ਹਰਿ ਭਗਤਾ ਨੋ ਦੇਇ ਅਨੰਦੁ ਥਿਰੁ ਘਰੀ ਬਹਾਲਿਅਨੁ ॥	is_header,comp_id,line_no,comp_type	{"is_header": 1, "comp_id": 256, "line_no": 1, "comp_type": "ਅਨੰਦੁ"}	{"is_header": 0, "comp_id": 255, "line_no": 4, "comp_type": "ਪਉੜੀ"}
+3893	97	ਸਾ ਗੁਣਵੰਤੀ ਸਾ ਵਡਭਾਗਣਿ ॥	is_header,comp_id,line_no,comp_type	{"is_header": 1, "comp_id": 283, "line_no": 1, "comp_type": "ਗੁਣਵੰਤੀ"}	{"is_header": 0, "comp_id": 282, "line_no": 5, "comp_type": "ਪਉੜੀ"}
+5016	123	ਕਾਮਣਿ ਗੁਣਵੰਤੀ ਹਰਿ ਪਾਏ ॥	is_header,comp_id,line_no,comp_type	{"is_header": 1, "comp_id": 347, "line_no": 1, "comp_type": "ਗੁਣਵੰਤੀ"}	{"is_header": 0, "comp_id": 346, "line_no": 13, "comp_type": "ਅਸਟਪਦੀਆ"}
+5322	130	ਰਸਨਾ ਗੁਣਵੰਤੀ ਗੁਣ ਗਾਵੈ ॥	is_header,comp_id,line_no,comp_type	{"is_header": 1, "comp_id": 359, "line_no": 1, "comp_type": "ਗੁਣਵੰਤੀ"}	{"is_header": 0, "comp_id": 358, "line_no": 19, "comp_type": "ਅਸਟਪਦੀਆ"}
+5463	133	ਚੇਤਿ ਗੋਵਿੰਦੁ ਅਰਾਧੀਐ ਹੋਵੈ ਅਨੰਦੁ ਘਣਾ ॥	is_header,comp_id,line_no,comp_type	{"is_header": 1, "comp_id": 368, "line_no": 1, "comp_type": "ਅਨੰਦੁ"}	{"is_header": 0, "comp_id": 367, "line_no": 13, "comp_type": "ਬਾਰਹ ਮਾਹਾ"}
+5754	140	ਮਾਹਾ ਰੁਤੀ ਸਭ ਤੂੰ ਘੜੀ ਮੂਰਤ ਵੀਚਾਰਾ ॥	is_header,comp_type	{"is_header": 1, "comp_type": "ਰੁਤੀ"}	{"is_header": 0, "comp_type": "ਪਉੜੀ"}
+6162	148	ਮਾਰੂ ਮੀਹਿ ਨ ਤ੍ਰਿਪਤਿਆ ਅਗੀ ਲਹੈ ਨ ਭੁਖ ॥	is_header	{"is_header": 1}	{"is_header": 0}
+6263	150	ਰਾਤਿ ਦਿਹੈ ਕੈ ਵਾਰ ਧੁਰਹੁ ਫੁਰਮਾਇਆ ॥	is_header,comp_id,line_no,comp_type	{"is_header": 1, "comp_id": 461, "line_no": 1, "comp_type": "ਵਾਰ"}	{"is_header": 0, "comp_id": 460, "line_no": 3, "comp_type": "ਪਉੜੀ"}
+6420	153	ਗੁਰ ਕੀ ਪਉੜੀ ਊਚੋ ਊਚਾ ॥	is_header,comp_id,line_no,comp_type	{"is_header": 1, "comp_id": 472, "line_no": 1, "comp_type": "ਪਉੜੀ"}	{"is_header": 0, "comp_id": 471, "line_no": 11, "comp_type": "ਦਖਣੀ"}
+6471	154	ਆਸਾ ਮਾਹਿ ਨਿਰਾਸੁ ਬੁਝਾਇਆ ॥	is_header,comp_id,line_no,comp_type	{"is_header": 1, "comp_id": 476, "line_no": 1, "comp_type": "ਪਉੜੀ"}	{"is_header": 0, "comp_id": 475, "line_no": 17, "comp_type": "ਦਖਣੀ"}
+6878	163	ਸਹਜੁ ਅਨੰਦੁ ਸਦਾ ਗੁਰਮਤੀ ਹਰਿ ਹਰਿ ਮਨਿ ਧਿਆਇਆ ॥	is_header,comp_id,line_no,comp_type	{"is_header": 1, "comp_id": 506, "line_no": 1, "comp_type": "ਅਨੰਦੁ"}	{"is_header": 0, "comp_id": 505, "line_no": 16, "comp_type": "ਦਖਣੀ"}
+7075	168	ਜਿਸੁ ਮਿਲਿਐ ਮਨਿ ਹੋਇ ਅਨੰਦੁ ਸੋ ਸਤਿਗੁਰੁ ਕਹੀਐ ॥	is_header,comp_type	{"is_header": 1, "comp_type": "ਅਨੰਦੁ"}	{"is_header": 0, "comp_type": "ਦਖਣੀ"}
+7472	178	ਆਸਾ ਬੰਧੀ ਮੂਰਖ ਦੇਹ ॥	is_header,comp_id,line_no,comp_type	{"is_header": 1, "comp_id": 551, "line_no": 1, "comp_type": "ਅਨੰਦੁ"}	{"is_header": 0, "comp_id": 550, "line_no": 8, "comp_type": "ਦਖਣੀ"}
+7535	179	ਨਟ ਨਾਟਿਕ ਆਖਾਰੇ ਗਾਇਆ ॥	is_header,comp_id,line_no,comp_type	{"is_header": 1, "comp_id": 555, "line_no": 1, "comp_type": "ਅਨੰਦੁ"}	{"is_header": 0, "comp_id": 554, "line_no": 10, "comp_type": "ਦਖਣੀ"}
+8483	197	ਆਸਾ ਮਾਣੁ ਤਾਣੁ ਧਨੁ ਏਕ ॥	is_header,comp_id,line_no,comp_type	{"is_header": 1, "comp_id": 630, "line_no": 1, "comp_type": "ਅਨੰਦੁ"}	{"is_header": 0, "comp_id": 629, "line_no": 8, "comp_type": "ਦਖਣੀ"}
+9389	217	ਤੂੰ ਸਚਾ ਸਾਹੁ ਭਗਤੁ ਵਣਜਾਰਾ ਜੀਉ ॥	is_header,comp_id,line_no,comp_type	{"is_header": 1, "comp_id": 725, "line_no": 1, "comp_type": "ਵਣਜਾਰਾ"}	{"is_header": 0, "comp_id": 724, "line_no": 15, "comp_type": "ਛੰਤ"}
+10217	234	ਕਰਹਲੇ ਮਨ ਪਰਦੇਸੀਆ ਕਿਉ ਮਿਲੀਐ ਹਰਿ ਮਾਇ ॥	is_header	{"is_header": 1}	{"is_header": 0}
+10254	235	ਅੰਤਰਿ ਨਿਧਾਨੁ ਮਨ ਕਰਹਲੇ ਭ੍ਰਮਿ ਭਵਹਿ ਬਾਹਰਿ ਭਾਲਿ ॥	is_header,comp_id,line_no	{"is_header": 1, "comp_id": 777, "line_no": 1}	{"is_header": 0, "comp_id": 776, "line_no": 17}
+10256	235	ਰੰਗਿ ਰਤੜੇ ਮਨ ਕਰਹਲੇ ਹਰਿ ਰੰਗੁ ਸਦਾ ਸਮਾਲਿ ॥	is_header,comp_id,line_no	{"is_header": 1, "comp_id": 778, "line_no": 1}	{"is_header": 0, "comp_id": 776, "line_no": 19}
+10258	235	ਹਮ ਪੰਖੀ ਮਨ ਕਰਹਲੇ ਹਰਿ ਤਰਵਰੁ ਪੁਰਖੁ ਅਕਾਲਿ ॥	is_header,comp_id,line_no	{"is_header": 1, "comp_id": 779, "line_no": 1}	{"is_header": 0, "comp_id": 776, "line_no": 21}
+10352	237	ਜਾ ਕੈ ਸਹਜਿ ਮਨਿ ਭਇਆ ਅਨੰਦੁ ॥	is_header,comp_id,line_no,comp_type	{"is_header": 1, "comp_id": 784, "line_no": 1, "comp_type": "ਅਨੰਦੁ"}	{"is_header": 0, "comp_id": 783, "line_no": 22, "comp_type": "ਅਸਟਪਦੀਆ"}
+10390	237	ਸਦਾ ਅਨੰਦੁ ਨਿਹਚਲੁ ਸਚੁ ਥਾਨਾ ॥	is_header,comp_id,line_no,comp_type	{"is_header": 1, "comp_id": 786, "line_no": 1, "comp_type": "ਅਨੰਦੁ"}	{"is_header": 0, "comp_id": 785, "line_no": 25, "comp_type": "ਅਸਟਪਦੀਆ"}
+10554	240	ਸੁੰਦਰੁ ਸੁਘੜੁ ਚਤੁਰੁ ਜੀਅ ਦਾਤਾ ॥	is_header,comp_id,line_no,author,comp_type	{"is_header": 1, "comp_id": 794, "line_no": 1, "author": "Baba Sundar Ji", "comp_type": "ਅਨੰਦੁ"}	{"is_header": 0, "comp_id": 793, "line_no": 8, "author": "Guru Arjan Dev Ji (M5)", "comp_type": "ਅਸਟਪਦੀਆ"}
+11072	252	ਯਾਸੁ ਜਪਤ ਮਨਿ ਹੋਇ ਅਨੰਦੁ ਬਿਨਸੈ ਦੂਜਾ ਭਾਉ ॥	is_header,comp_type	{"is_header": 1, "comp_type": "ਅਨੰਦੁ"}	{"is_header": 0, "comp_type": "ਸਲੋਕੁ"}
+11180	254	ਛਾਤੀ ਸੀਤਲ ਮਨੁ ਸੁਖੀ ਛੰਤ ਗੋਬਿਦ ਗੁਨ ਗਾਇ ॥	is_header,comp_type	{"is_header": 1, "comp_type": "ਛੰਤ"}	{"is_header": 0, "comp_type": "ਸਲੋਕੁ"}
+11523	260	ਹਉ ਛੁਟਕੈ ਹੋਇ ਅਨੰਦੁ ਤਿਹ ਹਉ ਨਾਹੀ ਤਹ ਆਪਿ ॥	is_header,comp_id,line_no,comp_type	{"is_header": 1, "comp_id": 920, "line_no": 1, "comp_type": "ਅਨੰਦੁ"}	{"is_header": 0, "comp_id": 919, "line_no": 4, "comp_type": "ਪਉੜੀ"}
+11608	262	ਸੁਖਮਨੀ ਸੁਖ ਅੰਮ੍ਰਿਤ ਪ੍ਰਭ ਨਾਮੁ ॥	is_header,comp_id,line_no,comp_type	{"is_header": 1, "comp_id": 935, "line_no": 1, "comp_type": "ਸੁਖਮਨੀ"}	{"is_header": 0, "comp_id": 934, "line_no": 12, "comp_type": "ਅਸਟਪਦੀ"}
+12340	275	ਸਦਾ ਅਨੰਦੁ ਤਹ ਨਹੀ ਬਿਓਗੁ ॥	is_header,comp_id,line_no,comp_type	{"is_header": 1, "comp_id": 952, "line_no": 1, "comp_type": "ਅਨੰਦੁ"}	{"is_header": 0, "comp_id": 951, "line_no": 65, "comp_type": "ਅਸਟਪਦੀ"}
+13557	295	ਉਤਮ ਸਲੋਕ ਸਾਧ ਕੇ ਬਚਨ ॥	is_header,comp_id,line_no,comp_type	{"is_header": 1, "comp_id": 983, "line_no": 1, "comp_type": "ਸਲੋਕ"}	{"is_header": 0, "comp_id": 982, "line_no": 22, "comp_type": "ਅਸਟਪਦੀ"}
+13579	295	ਸੁਖਮਨੀ ਸਹਜ ਗੋਬਿੰਦ ਗੁਨ ਨਾਮ ॥	is_header,comp_id,line_no,comp_type	{"is_header": 1, "comp_id": 984, "line_no": 1, "comp_type": "ਸੁਖਮਨੀ"}	{"is_header": 0, "comp_id": 982, "line_no": 44, "comp_type": "ਅਸਟਪਦੀ"}
+13634	296	ਕਰਉ ਬੰਦਨਾ ਅਨਿਕ ਵਾਰ ਸਰਨਿ ਪਰਉ ਹਰਿ ਰਾਇ ॥	is_header,comp_type	{"is_header": 1, "comp_type": "ਵਾਰ"}	{"is_header": 0, "comp_type": "ਸਲੋਕੁ"}
+14229	311	ਗਉੜੀ ਰਾਗਿ ਸੁਲਖਣੀ ਜੇ ਖਸਮੈ ਚਿਤਿ ਕਰੇਇ ॥	is_header	{"is_header": 1}	{"is_header": 0}
+15105	329	ਕਹਤ ਕਬੀਰ ਭਲੇ ਅਸਵਾਰਾ ॥	is_header,comp_id,line_no	{"is_header": 1, "comp_id": 1224, "line_no": 1}	{"is_header": 0, "comp_id": 1223, "line_no": 8}
+15468	338	ਕਹਿ ਕਬੀਰ ਜੀਵਨ ਪਦ ਕਾਰਨਿ ਹਰਿ ਕੀ ਭਗਤਿ ਕਰੀਜੈ ॥	is_header,comp_id,line_no	{"is_header": 1, "comp_id": 1261, "line_no": 1}	{"is_header": 0, "comp_id": 1260, "line_no": 6}
+15718	343	ਪੰਦ੍ਰਹ ਥਿਤੀਂ ਸਾਤ ਵਾਰ ॥	is_header,comp_type	{"is_header": 1, "comp_type": "ਵਾਰ"}	{"is_header": 0, "comp_type": "ਸਲੋਕੁ"}
+15719	343	ਕਹਿ ਕਬੀਰ ਉਰਵਾਰ ਨ ਪਾਰ ॥	is_header,comp_type	{"is_header": 1, "comp_type": "ਵਾਰ"}	{"is_header": 0, "comp_type": "ਸਲੋਕੁ"}
+16035	350	ਹੋਇ ਅਨੰਦੁ ਸਦਾ ਮਨਿ ਚਾਉ ॥	is_header,comp_id,line_no,comp_type	{"is_header": 1, "comp_id": 1299, "line_no": 1, "comp_type": "ਅਨੰਦੁ"}	{"is_header": 0, "comp_id": 1298, "line_no": 3, "comp_type": "ਵਾਰ"}
+16107	351	ਸਚ ਪਉੜੀ ਸਾਚਉ ਮੁਖਿ ਨਾਂਉ ॥	is_header,comp_id,line_no,comp_type	{"is_header": 1, "comp_id": 1305, "line_no": 1, "comp_type": "ਪਉੜੀ"}	{"is_header": 0, "comp_id": 1304, "line_no": 4, "comp_type": "ਵਾਰ"}
+16322	356	ਆਸਾ ਮਨਸਾ ਦੋਊ ਬਿਨਾਸਤ ਤ੍ਰਿਹੁ ਗੁਣ ਆਸ ਨਿਰਾਸ ਭਈ ॥	is_header,comp_id,line_no,comp_type	{"is_header": 1, "comp_id": 1317, "line_no": 1, "comp_type": "ਪਉੜੀ"}	{"is_header": 0, "comp_id": 1316, "line_no": 10, "comp_type": "ਵਾਰ"}
+16416	357	ਵਿਸੁਏ ਚਸਿਆ ਘੜੀਆ ਪਹਰਾ ਥਿਤੀ ਵਾਰੀ ਮਾਹੁ ਭਇਆ ॥	is_header,comp_id,line_no,comp_type	{"is_header": 1, "comp_id": 1326, "line_no": 1, "comp_type": "ਥਿਤੀ"}	{"is_header": 0, "comp_id": 1325, "line_no": 6, "comp_type": "ਵਾਰ"}
+16656	363	ਗੁਰ ਪਉੜੀ ਸਭ ਦੂ ਊਚਾ ਹੋਇ ॥	is_header,comp_id,line_no,comp_type	{"is_header": 1, "comp_id": 1348, "line_no": 1, "comp_type": "ਪਉੜੀ"}	{"is_header": 0, "comp_id": 1347, "line_no": 18, "comp_type": "ਵਾਰ"}
+16988	370	ਮਹਾ ਅਨੰਦੁ ਗੁਰ ਸਬਦੁ ਵੀਚਾਰਿ ॥	is_header,comp_id,line_no,comp_type	{"is_header": 1, "comp_id": 1379, "line_no": 1, "comp_type": "ਅਨੰਦੁ"}	{"is_header": 0, "comp_id": 1378, "line_no": 14, "comp_type": "ਕਾਫੀ"}
+18244	396	ਮਿਟਿਆ ਸੋਗੁ ਮਹਾ ਅਨੰਦੁ ਥੀਆ ॥	is_header,comp_id,line_no,comp_type	{"is_header": 1, "comp_id": 1484, "line_no": 1, "comp_type": "ਅਨੰਦੁ"}	{"is_header": 0, "comp_id": 1482, "line_no": 9, "comp_type": "ਕਾਫੀ"}
+18245	396	ਗੁਰਬਾਣੀ ਸਖੀ ਅਨੰਦੁ ਗਾਵੈ ॥	is_header,comp_id,line_no,comp_type	{"is_header": 1, "comp_id": 1484, "line_no": 2, "comp_type": "ਅਨੰਦੁ"}	{"is_header": 0, "comp_id": 1482, "line_no": 10, "comp_type": "ਕਾਫੀ"}
+19052	413	ਆਸਾ ਮਨਸਾ ਸਬਦਿ ਜਲਾਏ ॥	is_header,comp_id,line_no	{"is_header": 1, "comp_id": 1564, "line_no": 1}	{"is_header": 0, "comp_id": 1563, "line_no": 10}
+19515	423	ਆਸਾ ਆਸ ਕਰੇ ਸਭੁ ਕੋਈ ॥	is_header	{"is_header": 1}	{"is_header": 0}
+19517	423	ਆਸਾ ਵਿਚਿ ਸੁਤੇ ਕਈ ਲੋਈ ॥	is_header,comp_id,line_no	{"is_header": 1, "comp_id": 1589, "line_no": 1}	{"is_header": 0, "comp_id": 1588, "line_no": 4}
+19976	436	ਸਖੀਹੋ ਸਹੇਲੜੀਹੋ ਮੇਰਾ ਪਿਰੁ ਵਣਜਾਰਾ ਰਾਮ ॥	is_header,comp_id,line_no,comp_type	{"is_header": 1, "comp_id": 1615, "line_no": 1, "comp_type": "ਵਣਜਾਰਾ"}	{"is_header": 0, "comp_id": 1614, "line_no": 15, "comp_type": "ਛੰਤ"}
+20161	441	ਮਹਾ ਅਨੰਦੁ ਸਹਜੁ ਭਇਆ ਮਨਿ ਤਨਿ ਸੁਖੁ ਪਾਇਆ ॥	is_header,comp_id,line_no,comp_type	{"is_header": 1, "comp_id": 1626, "line_no": 1, "comp_type": "ਅਨੰਦੁ"}	{"is_header": 0, "comp_id": 1625, "line_no": 46, "comp_type": "ਛੰਤ"}
+20417	449	ਧਨੁ ਧੰਨੁ ਵਣਜਾਰਾ ਵਣਜੁ ਹੈ ਗੁਰੁ ਸਾਹੁ ਸਾਬਾਸੇ ॥	is_header,comp_id,line_no,comp_type	{"is_header": 1, "comp_id": 1640, "line_no": 1, "comp_type": "ਵਣਜਾਰਾ"}	{"is_header": 0, "comp_id": 1639, "line_no": 4, "comp_type": "ਛੰਤ"}
+20419	449	ਸਚੁ ਸਾਹੁ ਹਮਾਰਾ ਤੂੰ ਧਣੀ ਸਭੁ ਜਗਤੁ ਵਣਜਾਰਾ ਰਾਮ ਰਾਜੇ ॥	is_header,comp_id,line_no,comp_type	{"is_header": 1, "comp_id": 1641, "line_no": 1, "comp_type": "ਵਣਜਾਰਾ"}	{"is_header": 0, "comp_id": 1639, "line_no": 6, "comp_type": "ਛੰਤ"}
+20887	462	ਬਲਿਹਾਰੀ ਗੁਰ ਆਪਣੇ ਦਿਉਹਾੜੀ ਸਦ ਵਾਰ ॥	is_header,comp_type	{"is_header": 1, "comp_type": "ਵਾਰ"}	{"is_header": 0, "comp_type": "ਸਲੋਕੁ"}
+21190	468	ਜੇ ਇਕੁ ਹੋਇ ਤ ਉਗਵੈ ਰੁਤੀ ਹੂ ਰੁਤਿ ਹੋਇ ॥	is_header,comp_id,line_no,comp_type	{"is_header": 1, "comp_id": 1711, "line_no": 1, "comp_type": "ਰੁਤੀ"}	{"is_header": 0, "comp_id": 1710, "line_no": 4, "comp_type": "ਸਲੋਕੁ"}
+21372	472	ਜਿਉ ਜੋਰੂ ਸਿਰਨਾਵਣੀ ਆਵੈ ਵਾਰੋ ਵਾਰ ॥	is_header,comp_type	{"is_header": 1, "comp_type": "ਵਾਰ"}	{"is_header": 0, "comp_type": "ਸਲੋਕੁ"}
+21408	473	ਸੁਚਾ ਹੋਇ ਕੈ ਜੇਵਿਆ ਲਗਾ ਪੜਣਿ ਸਲੋਕੁ ॥	is_header,comp_id,line_no	{"is_header": 1, "comp_id": 1743, "line_no": 1}	{"is_header": 0, "comp_id": 1742, "line_no": 4}
+21900	484	ਕਹਤ ਕਬੀਰ ਬਹੂ ਤਬ ਜੀਤੈ ॥	is_header,comp_id,line_no	{"is_header": 1, "comp_id": 1806, "line_no": 1}	{"is_header": 0, "comp_id": 1805, "line_no": 10}
+22039	487	ਕਹਿ ਰਵਿਦਾਸ ਬਾਜੀ ਜਗੁ ਭਾਈ ॥	is_header,comp_id,line_no	{"is_header": 1, "comp_id": 1822, "line_no": 1}	{"is_header": 0, "comp_id": 1821, "line_no": 16}
+23002	514	ਵਾਹੁ ਵਾਹੁ ਕਰਤਿਆ ਸਦਾ ਅਨੰਦੁ ਹੋਵੈ ਮੇਰੀ ਮਾਇ ॥	is_header,comp_id,line_no,comp_type	{"is_header": 1, "comp_id": 1948, "line_no": 1, "comp_type": "ਅਨੰਦੁ"}	{"is_header": 0, "comp_id": 1947, "line_no": 3, "comp_type": "ਸਲੋਕੁ"}
+23077	516	ਗੂਜਰੀ ਜਾਤਿ ਗਵਾਰਿ ਜਾ ਸਹੁ ਪਾਏ ਆਪਣਾ ॥	is_header	{"is_header": 1}	{"is_header": 0}
+23081	516	ਓਹ ਕੁਚਜੀ ਕੁਲਖਣੀ ਪਰਹਰਿ ਛੋਡੀ ਭਤਾਰਿ ॥	is_header,comp_id,line_no,comp_type	{"is_header": 1, "comp_id": 1962, "line_no": 1, "comp_type": "ਕੁਚਜੀ"}	{"is_header": 0, "comp_id": 1961, "line_no": 6, "comp_type": "ਸਲੋਕੁ"}
+23125	517	ਆਸਾ ਕਰਤਾ ਜਗੁ ਮੁਆ ਆਸਾ ਮਰੈ ਨ ਜਾਇ ॥	is_header	{"is_header": 1}	{"is_header": 0}
+23128	517	ਆਸਾ ਮਨਸਾ ਮਰਿ ਜਾਇਸੀ ਜਿਨਿ ਕੀਤੀ ਸੋ ਲੈ ਜਾਇ ॥	is_header	{"is_header": 1}	{"is_header": 0}
+23132	517	ਆਪੇ ਸਾਹੁ ਆਪੇ ਵਣਜਾਰਾ ਆਪੇ ਹੀ ਹਰਿ ਹਾਟੁ ॥	is_header,comp_id,line_no,comp_type	{"is_header": 1, "comp_id": 1976, "line_no": 1, "comp_type": "ਵਣਜਾਰਾ"}	{"is_header": 0, "comp_id": 1975, "line_no": 3, "comp_type": "ਪਉੜੀ"}
+24082	543	ਆਸਾ ਪਿਆਸੀ ਰੈਨਿ ਦਿਨੀਅਰੁ ਰਹਿ ਨ ਸਕੀਐ ਇਕੁ ਤਿਲੈ ॥	is_header,comp_id,line_no	{"is_header": 1, "comp_id": 2126, "line_no": 1}	{"is_header": 0, "comp_id": 2125, "line_no": 12}
+24543	555	ਸੋਈ ਸਾਹੁ ਸਚਾ ਵਣਜਾਰਾ ਜਿਨਿ ਵਖਰੁ ਲਦਿਆ ਹਰਿ ਨਾਮੁ ਧਨੁ ਤੇਰੀ ॥	is_header,comp_id,line_no,comp_type	{"is_header": 1, "comp_id": 2184, "line_no": 1, "comp_type": "ਵਣਜਾਰਾ"}	{"is_header": 0, "comp_id": 2183, "line_no": 5, "comp_type": "ਪਉੜੀ"}
+24639	557	ਗੁਣਵੰਤੀ ਸਹੁ ਰਾਵਿਆ ਨਿਰਗੁਣਿ ਕੂਕੇ ਕਾਇ ॥	is_header,comp_type	{"is_header": 1, "comp_type": "ਗੁਣਵੰਤੀ"}	{"is_header": 0, "comp_type": "ਪਉੜੀ"}
+24658	558	ਅੰਮਾਲੀ ਹਉ ਖਰੀ ਸੁਚਜੀ ਤੈ ਸਹ ਏਕਿ ਨ ਭਾਵਾ ॥	is_header,comp_id,line_no,comp_type	{"is_header": 1, "comp_id": 2205, "line_no": 1, "comp_type": "ਸੁਚਜੀ"}	{"is_header": 0, "comp_id": 2204, "line_no": 11, "comp_type": "ਪਉੜੀ"}
+24701	559	ਆਸਾ ਮਨਸਾ ਏਹੁ ਸਰੀਰੁ ਹੈ ਅੰਤਰਿ ਜੋਤਿ ਜਗਾਏ ॥	is_header,comp_id,line_no,comp_type	{"is_header": 1, "comp_id": 2210, "line_no": 1, "comp_type": "ਸੁਚਜੀ"}	{"is_header": 0, "comp_id": 2209, "line_no": 10, "comp_type": "ਪਉੜੀ"}
+24710	559	ਗੁਣਵੰਤੀ ਨਿਤ ਗੁਣ ਰਵੈ ਹਿਰਦੈ ਨਾਮੁ ਵਸਾਇ ॥	is_header,comp_id,line_no,comp_type	{"is_header": 1, "comp_id": 2212, "line_no": 1, "comp_type": "ਗੁਣਵੰਤੀ"}	{"is_header": 0, "comp_id": 2211, "line_no": 8, "comp_type": "ਪਉੜੀ"}
+24779	561	ਜਿਨਿ ਗੁਣਵੰਤੀ ਮੇਰਾ ਪ੍ਰੀਤਮੁ ਪਾਇਆ ॥	is_header,comp_id,line_no,comp_type	{"is_header": 1, "comp_id": 2220, "line_no": 1, "comp_type": "ਗੁਣਵੰਤੀ"}	{"is_header": 0, "comp_id": 2219, "line_no": 9, "comp_type": "ਪਉੜੀ"}
+25052	567	ਸਾਰੰਗ ਜਿਉ ਪਗੁ ਧਰੈ ਠਿਮਿ ਠਿਮਿ ਆਪਿ ਆਪੁ ਸੰਧੂਰਏ ॥	is_header,comp_id,line_no	{"is_header": 1, "comp_id": 2241, "line_no": 1}	{"is_header": 0, "comp_id": 2240, "line_no": 51}
+25790	588	ਸਤਿਗੁਰ ਸੀਤਲ ਜੇ ਮਿਲੈ ਫਿਰਿ ਜਲੈ ਨ ਦੂਜੀ ਵਾਰ ॥	is_header,comp_id,line_no,comp_type	{"is_header": 1, "comp_id": 2294, "line_no": 1, "comp_type": "ਵਾਰ"}	{"is_header": 0, "comp_id": 2293, "line_no": 3, "comp_type": "ਸਲੋਕ"}
+25972	592	ਸਬਦੈ ਸਾਦੁ ਨ ਆਇਓ ਮਰਿ ਜਨਮੈ ਵਾਰੋ ਵਾਰ ॥	is_header,comp_id,line_no,comp_type	{"is_header": 1, "comp_id": 2328, "line_no": 1, "comp_type": "ਵਾਰ"}	{"is_header": 0, "comp_id": 2327, "line_no": 3, "comp_type": "ਸਲੋਕੁ"}
+26043	594	ਜਿਨ ਕਾਰਣਿ ਗੁਰੂ ਵਿਸਾਰਿਆ ਸੇ ਨ ਉਪਕਰੇ ਅੰਤੀ ਵਾਰ ॥	is_header,comp_id,line_no,comp_type	{"is_header": 1, "comp_id": 2342, "line_no": 1, "comp_type": "ਵਾਰ"}	{"is_header": 0, "comp_id": 2341, "line_no": 4, "comp_type": "ਸਲੋਕੁ"}
+26249	600	ਭਗਤਾ ਕਾ ਕਾਰਜੁ ਹਰਿ ਅਨੰਦੁ ਹੈ ਅਨਦਿਨੁ ਹਰਿ ਗੁਣ ਗਾਈ ॥	is_header,comp_id,line_no,comp_type	{"is_header": 1, "comp_id": 2362, "line_no": 1, "comp_type": "ਅਨੰਦੁ"}	{"is_header": 0, "comp_id": 2361, "line_no": 3, "comp_type": "ਪਉੜੀ"}
+26384	604	ਵਣਜਾਰਾ ਜਗੁ ਆਪਿ ਹੈ ਪਿਆਰਾ ਆਪੇ ਸਾਚਾ ਸਾਹੁ ॥	is_header,comp_id,line_no,comp_type	{"is_header": 1, "comp_id": 2374, "line_no": 1, "comp_type": "ਵਣਜਾਰਾ"}	{"is_header": 0, "comp_id": 2373, "line_no": 4, "comp_type": "ਪਉੜੀ"}
+26429	605	ਆਪੇ ਸਾਹੁ ਆਪੇ ਵਣਜਾਰਾ ਆਪੇ ਵਣਜੁ ਕਰਾਇਆ ॥	is_header,comp_id,line_no,comp_type	{"is_header": 1, "comp_id": 2378, "line_no": 1, "comp_type": "ਵਣਜਾਰਾ"}	{"is_header": 0, "comp_id": 2377, "line_no": 3, "comp_type": "ਪਉੜੀ"}
+27032	622	ਸੰਤ ਕਾ ਮਾਰਗੁ ਧਰਮ ਕੀ ਪਉੜੀ ਕੋ ਵਡਭਾਗੀ ਪਾਏ ॥	is_header,comp_id,line_no	{"is_header": 1, "comp_id": 2441, "line_no": 1}	{"is_header": 0, "comp_id": 2440, "line_no": 8}
+27635	633	ਆਸਾ ਮਨਸਾ ਸਗਲ ਤਿਆਗੈ ਜਗ ਤੇ ਰਹੈ ਨਿਰਾਸਾ ॥	is_header,comp_id,line_no	{"is_header": 1, "comp_id": 2496, "line_no": 1}	{"is_header": 0, "comp_id": 2495, "line_no": 6}
+27685	635	ਆਸਾ ਮਨਸਾ ਬੰਧਨੀ ਭਾਈ ਕਰਮ ਧਰਮ ਬੰਧਕਾਰੀ ॥	is_header	{"is_header": 1}	{"is_header": 0}
+27927	642	ਸੋਰਠਿ ਸਦਾ ਸੁਹਾਵਣੀ ਜੇ ਸਚਾ ਮਨਿ ਹੋਇ ॥	is_header	{"is_header": 1}	{"is_header": 0}
+27935	642	ਸੋਰਠਿ ਤਾਮਿ ਸੁਹਾਵਣੀ ਜਾ ਹਰਿ ਨਾਮੁ ਢੰਢੋਲੇ ॥	is_header	{"is_header": 1}	{"is_header": 0}
+28113	646	ਆਸਾ ਮਨਸਾ ਜਲਾਇ ਤੂ ਹੋਇ ਰਹੁ ਮਿਹਮਾਣੁ ॥	is_header,comp_id,line_no	{"is_header": 1, "comp_id": 2548, "line_no": 1}	{"is_header": 0, "comp_id": 2547, "line_no": 5}
+28210	649	ਅਗੈ ਪਿਛੈ ਸੁਖੁ ਨਹੀ ਮਰਿ ਜੰਮਹਿ ਵਾਰੋ ਵਾਰ ॥	is_header,comp_id,line_no,comp_type	{"is_header": 1, "comp_id": 2568, "line_no": 1, "comp_type": "ਵਾਰ"}	{"is_header": 0, "comp_id": 2567, "line_no": 3, "comp_type": "ਸਲੋਕੁ"}
+30392	704	ਆਸਾ ਮਨਸਾ ਸਗਲ ਪੂਰੀ ਪ੍ਰਿਅ ਅੰਕਿ ਅੰਕੁ ਮਿਲਾਈ ॥	is_header,comp_id,line_no	{"is_header": 1, "comp_id": 2787, "line_no": 1}	{"is_header": 0, "comp_id": 2786, "line_no": 24}
+32478	756	ਹਉਮੈ ਮੈਲਾ ਜਗੁ ਫਿਰੈ ਮਰਿ ਜੰਮੈ ਵਾਰੋ ਵਾਰ ॥	is_header,comp_id,line_no,comp_type	{"is_header": 1, "comp_id": 3026, "line_no": 1, "comp_type": "ਵਾਰ"}	{"is_header": 0, "comp_id": 3025, "line_no": 41, "comp_type": "ਅਸਟਪਦੀਆ"}
+32609	759	ਆਸਾ ਅੰਦੇਸਾ ਬੰਧਿ ਪਰਾਨਾ ॥	is_header,comp_id,line_no	{"is_header": 1, "comp_id": 3034, "line_no": 1}	{"is_header": 0, "comp_id": 3033, "line_no": 13}
+32708	762	ਮੰਞੁ ਕੁਚਜੀ ਅੰਮਾਵਣਿ ਡੋਸੜੇ ਹਉ ਕਿਉ ਸਹੁ ਰਾਵਣਿ ਜਾਉ ਜੀਉ ॥	is_header	{"is_header": 1}	{"is_header": 0}
+32772	764	ਸੰਜੋਗੀ ਮੇਲਾ ਥਾਨਿ ਸੁਹੇਲਾ ਗੁਣਵੰਤੀ ਗੁਰ ਗਿਆਨੇ ॥	is_header,comp_id,line_no,comp_type	{"is_header": 1, "comp_id": 3049, "line_no": 1, "comp_type": "ਗੁਣਵੰਤੀ"}	{"is_header": 0, "comp_id": 3048, "line_no": 24, "comp_type": "ਛੰਤ"}
+32855	766	ਗੁਰ ਕੀ ਪਉੜੀ ਸਾਚ ਕੀ ਸਾਚਾ ਸੁਖੁ ਹੋਈ ॥	is_header,comp_id,line_no,comp_type	{"is_header": 1, "comp_id": 3057, "line_no": 1, "comp_type": "ਪਉੜੀ"}	{"is_header": 0, "comp_id": 3056, "line_no": 3, "comp_type": "ਛੰਤ"}
+33116	773	ਸਹਜ ਅਨੰਦੁ ਹੋਆ ਵਡਭਾਗੀ ਮਨਿ ਹਰਿ ਹਰਿ ਮੀਠਾ ਲਾਇਆ ॥	is_header,comp_id,line_no,comp_type	{"is_header": 1, "comp_id": 3070, "line_no": 1, "comp_type": "ਅਨੰਦੁ"}	{"is_header": 0, "comp_id": 3069, "line_no": 6, "comp_type": "ਛੰਤ"}
+33202	776	ਗੁਰੁ ਸੁੰਦਰੁ ਮੋਹਨੁ ਪਾਇ ਕਰੇ ਹਰਿ ਪ੍ਰੇਮ ਬਾਣੀ ਮਨੁ ਮਾਰਿਆ ॥	is_header,comp_id,line_no,author,ghar	{"is_header": 1, "comp_id": 3077, "line_no": 1, "author": "Baba Sundar Ji", "ghar": null}	{"is_header": 0, "comp_id": 3076, "line_no": 15, "author": "Guru Ram Das Ji (M4)", "ghar": "੫"}
+33318	779	ਠਾਕੁਰ ਭਾਣੀ ਸਾ ਗੁਣਵੰਤੀ ਤਿਨ ਹੀ ਸਭ ਰੰਗ ਮਾਣਾ ॥	is_header,comp_id,line_no,comp_type	{"is_header": 1, "comp_id": 3086, "line_no": 1, "comp_type": "ਗੁਣਵੰਤੀ"}	{"is_header": 0, "comp_id": 3085, "line_no": 19, "comp_type": "ਛੰਤ"}
+33485	784	ਮੇਰਾ ਸੁੰਦਰੁ ਸੁਆਮੀ ਜੀ ਹਉ ਚਰਨ ਕਮਲ ਪਗ ਛਾਰਾ ॥	is_header,comp_id,line_no,author	{"is_header": 1, "comp_id": 3095, "line_no": 1, "author": "Baba Sundar Ji"}	{"is_header": 0, "comp_id": 3094, "line_no": 10, "author": "Guru Arjan Dev Ji (M5)"}
+34479	806	ਸਗਲ ਅਨੰਦੁ ਕੀਆ ਪਰਮੇਸਰਿ ਅਪਣਾ ਬਿਰਦੁ ਸਮ੍ਹਾਰਿਆ ॥	is_header,comp_type	{"is_header": 1, "comp_type": "ਅਨੰਦੁ"}	{"is_header": 0, "comp_type": "ਪੜਤਾਲ"}
+34825	815	ਆਸਾ ਭਰਮ ਬਿਕਾਰ ਮੋਹ ਇਨ ਮਹਿ ਲੋਭਾਨਾ ॥	is_header,comp_id,line_no,comp_type	{"is_header": 1, "comp_id": 3263, "line_no": 1, "comp_type": "ਅਨੰਦੁ"}	{"is_header": 0, "comp_id": 3262, "line_no": 6, "comp_type": "ਪੜਤਾਲ"}
+35915	842	ਪੰਦ੍ਰਹ ਥਿਤੀਂ ਤੈ ਸਤ ਵਾਰ ॥	is_header,comp_id,line_no	{"is_header": 1, "comp_id": 3366, "line_no": 1}	{"is_header": 0, "comp_id": 3364, "line_no": 59}
+35916	842	ਮਾਹਾ ਰੁਤੀ ਆਵਹਿ ਵਾਰ ਵਾਰ ॥	is_header,comp_id,line_no	{"is_header": 1, "comp_id": 3366, "line_no": 2}	{"is_header": 0, "comp_id": 3364, "line_no": 60}
+35960	842	ਥਿਤੀ ਵਾਰ ਸਭਿ ਸਬਦਿ ਸੁਹਾਏ ॥	is_header,comp_id,line_no	{"is_header": 1, "comp_id": 3368, "line_no": 1}	{"is_header": 0, "comp_id": 3367, "line_no": 40}
+35962	842	ਥਿਤੀ ਵਾਰ ਸਭਿ ਆਵਹਿ ਜਾਹਿ ॥	is_header,comp_id,line_no	{"is_header": 1, "comp_id": 3369, "line_no": 1}	{"is_header": 0, "comp_id": 3367, "line_no": 42}
+35964	842	ਥਿਤੀ ਵਾਰ ਤਾ ਜਾ ਸਚਿ ਰਾਤੇ ॥	is_header,comp_id,line_no	{"is_header": 1, "comp_id": 3370, "line_no": 1}	{"is_header": 0, "comp_id": 3367, "line_no": 44}
+35979	843	ਏਹਿ ਥਿਤੀ ਵਾਰ ਦੂਜਾ ਦੋਇ ॥	is_header,comp_id,line_no	{"is_header": 1, "comp_id": 3371, "line_no": 1}	{"is_header": 0, "comp_id": 3367, "line_no": 59}
+35981	843	ਥਿਤੀ ਵਾਰ ਸੇਵਹਿ ਮੁਗਧ ਗਵਾਰ ॥	is_header,comp_id,line_no	{"is_header": 1, "comp_id": 3372, "line_no": 1}	{"is_header": 0, "comp_id": 3367, "line_no": 61}
+36205	849	ਬਿਲਾਵਲੁ ਤਬ ਹੀ ਕੀਜੀਐ ਜਬ ਮੁਖਿ ਹੋਵੈ ਨਾਮੁ ॥	is_header	{"is_header": 1}	{"is_header": 0}
+36223	849	ਬਿਲਾਵਲੁ ਕਰਿਹੁ ਤੁਮ੍ਹ ਪਿਆਰਿਹੋ ਏਕਸੁ ਸਿਉ ਲਿਵ ਲਾਇ ॥	is_header	{"is_header": 1}	{"is_header": 0}
+36225	849	ਸਦਾ ਬਿਲਾਵਲੁ ਅਨੰਦੁ ਹੈ ਜੇ ਚਲਹਿ ਸਤਿਗੁਰ ਭਾਇ ॥	is_header,comp_id,line_no,comp_type	{"is_header": 1, "comp_id": 3399, "line_no": 1, "comp_type": "ਅਨੰਦੁ"}	{"is_header": 0, "comp_id": 3398, "line_no": 4, "comp_type": "ਸਲੋਕ"}
+36230	849	ਸਭੁ ਕੋਈ ਹਰਿ ਕੈ ਵਸਿ ਭਗਤਾ ਕੈ ਅਨੰਦੁ ਘਰਿ ॥	is_header,comp_id,line_no,comp_type	{"is_header": 1, "comp_id": 3401, "line_no": 1, "comp_type": "ਅਨੰਦੁ"}	{"is_header": 0, "comp_id": 3400, "line_no": 3, "comp_type": "ਪਉੜੀ"}
+36279	851	ਆਸਾ ਮਨਸਾ ਜਗਿ ਮੋਹਣੀ ਜਿਨਿ ਮੋਹਿਆ ਸੰਸਾਰੁ ॥	is_header	{"is_header": 1}	{"is_header": 0}
+36592	859	ਆਸਾ ਮਨਸਾ ਸਭ ਤੇਰੀ ਮੇਰੇ ਸੁਆਮੀ ਜੈਸੀ ਤੂ ਆਸ ਕਰਾਵਹਿ ਤੈਸੀ ਕੋ ਆਸ ਕਰਾਈ ॥	is_header,comp_id,line_no	{"is_header": 1, "comp_id": 3460, "line_no": 1}	{"is_header": 0, "comp_id": 3459, "line_no": 14}
+36611	860	ਹਰਿ ਸਿਮਰਤ ਸਦਾ ਹੋਇ ਅਨੰਦੁ ਸੁਖੁ ਅੰਤਰਿ ਸਾਂਤਿ ਸੀਤਲ ਮਨੁ ਅਪਨਾ ॥	is_header,comp_type	{"is_header": 1, "comp_type": "ਅਨੰਦੁ"}	{"is_header": 0, "comp_type": "ਪਉੜੀ"}
+37068	869	ਸੰਤਨ ਕੈ ਮਨਿ ਮਹਾ ਅਨੰਦੁ ॥	is_header,comp_id,line_no,comp_type	{"is_header": 1, "comp_id": 3493, "line_no": 1, "comp_type": "ਅਨੰਦੁ"}	{"is_header": 0, "comp_id": 3492, "line_no": 13, "comp_type": "ਅਸਟਪਦੀਆ"}
+37349	874	ਭੈਰਉ ਭੂਤ ਸੀਤਲਾ ਧਾਵੈ ॥	is_header,comp_type	{"is_header": 1, "comp_type": "ਅਨੰਦੁ"}	{"is_header": 0, "comp_type": "ਅਸਟਪਦੀਆ"}
+37476	877	ਆਸਾ ਮਾਹਿ ਨਿਰਾਸੁ ਵਲਾਏ ॥	is_header,comp_id,line_no,comp_type	{"is_header": 1, "comp_id": 3527, "line_no": 1, "comp_type": "ਅਨੰਦੁ"}	{"is_header": 0, "comp_id": 3526, "line_no": 14, "comp_type": "ਅਸਟਪਦੀਆ"}
+38222	893	ਸਦਾ ਅਨੰਦੁ ਨ ਹੋਵੀ ਸੋਗੁ ॥	is_header,comp_id,line_no,comp_type	{"is_header": 1, "comp_id": 3578, "line_no": 1, "comp_type": "ਅਨੰਦੁ"}	{"is_header": 0, "comp_id": 3577, "line_no": 4, "comp_type": "ਅਸਟਪਦੀਆ"}
+39335	917	ਅਨੰਦੁ ਭਇਆ ਮੇਰੀ ਮਾਏ ਸਤਿਗੁਰੂ ਮੈ ਪਾਇਆ ॥	is_header	{"is_header": 1}	{"is_header": 0}
+39491	921	ਹਰਿ ਰਾਸਿ ਮੇਰੀ ਮਨੁ ਵਣਜਾਰਾ ॥	is_header,comp_id,line_no,comp_type	{"is_header": 1, "comp_id": 3643, "line_no": 1, "comp_type": "ਵਣਜਾਰਾ"}	{"is_header": 0, "comp_id": 3641, "line_no": 159, "comp_type": "ਅਨੰਦੁ"}
+39492	921	ਹਰਿ ਰਾਸਿ ਮੇਰੀ ਮਨੁ ਵਣਜਾਰਾ ਸਤਿਗੁਰ ਤੇ ਰਾਸਿ ਜਾਣੀ ॥	is_header,comp_id,line_no,comp_type	{"is_header": 1, "comp_id": 3643, "line_no": 2, "comp_type": "ਵਣਜਾਰਾ"}	{"is_header": 0, "comp_id": 3641, "line_no": 160, "comp_type": "ਅਨੰਦੁ"}
+39709	927	ਰੁਤੀ ਮਾਹ ਮੂਰਤ ਘੜੀ ਗੁਣ ਉਚਰਤ ਸੋਭਾਵੰਤ ਜੀਉ ॥	is_header,comp_id,line_no,comp_type	{"is_header": 1, "comp_id": 3658, "line_no": 1, "comp_type": "ਰੁਤੀ"}	{"is_header": 0, "comp_id": 3657, "line_no": 9, "comp_type": "ਸਲੋਕੁ"}
+39801	929	ਓਅੰਕਾਰੁ ਕੀਆ ਜਿਨਿ ਚਿਤਿ ॥	is_header,comp_id,line_no	{"is_header": 1, "comp_id": 3668, "line_no": 1}	{"is_header": 0, "comp_id": 3667, "line_no": 4}
+39868	931	ਪ੍ਰੇਮਿ ਬੁਲਾਈ ਰਲੀ ਸਿਉ ਮਨ ਮਹਿ ਸਬਦੁ ਅਨੰਦੁ ॥	is_header,comp_id,line_no,comp_type	{"is_header": 1, "comp_id": 3669, "line_no": 1, "comp_type": "ਅਨੰਦੁ"}	{"is_header": 0, "comp_id": 3667, "line_no": 71, "comp_type": "ਓਅੰਕਾਰੁ"}
+39908	932	ਗੁਣਵੰਤੀ ਗੁਣ ਸਾਰੇ ਨੀਤ ॥	is_header,comp_id,line_no,comp_type	{"is_header": 1, "comp_id": 3670, "line_no": 1, "comp_type": "ਗੁਣਵੰਤੀ"}	{"is_header": 0, "comp_id": 3667, "line_no": 111, "comp_type": "ਓਅੰਕਾਰੁ"}
+40056	934	ਧੰਧਾ ਧਾਵਤ ਰਹਿ ਗਏ ਮਨ ਮਹਿ ਸਬਦੁ ਅਨੰਦੁ ॥	is_header,comp_id,line_no,comp_type	{"is_header": 1, "comp_id": 3671, "line_no": 1, "comp_type": "ਅਨੰਦੁ"}	{"is_header": 0, "comp_id": 3667, "line_no": 259, "comp_type": "ਓਅੰਕਾਰੁ"}
+40195	938	ਸਚੀ ਪਟੀ ਸਚੁ ਮਨਿ ਪੜੀਐ ਸਬਦੁ ਸੁ ਸਾਰੁ ॥	is_header,comp_id,line_no,comp_type	{"is_header": 1, "comp_id": 3672, "line_no": 1, "comp_type": "ਪਟੀ"}	{"is_header": 0, "comp_id": 3667, "line_no": 398, "comp_type": "ਓਅੰਕਾਰੁ"}
+40357	941	ਨਾਮਿ ਰਤੇ ਸਿਧ ਗੋਸਟਿ ਹੋਇ ॥	is_header,comp_id,line_no	{"is_header": 1, "comp_id": 3675, "line_no": 1}	{"is_header": 0, "comp_id": 3674, "line_no": 161}
+40397	942	ਤਨੁ ਹਟੜੀ ਇਹੁ ਮਨੁ ਵਣਜਾਰਾ ॥	is_header,comp_id,line_no,comp_type	{"is_header": 1, "comp_id": 3676, "line_no": 1, "comp_type": "ਵਣਜਾਰਾ"}	{"is_header": 0, "comp_id": 3674, "line_no": 201, "comp_type": "ਸਿਧ ਗੋਸਟਿ"}
+40744	950	ਰਾਮਕਲੀ ਰਾਮੁ ਮਨਿ ਵਸਿਆ ਤਾ ਬਨਿਆ ਸੀਗਾਰੁ ॥	is_header	{"is_header": 1}	{"is_header": 0}
+41067	956	ਆਸਾ ਅੰਦਰਿ ਸਭੁ ਕੋ ਕੋਇ ਨਿਰਾਸਾ ਹੋਇ ॥	is_header	{"is_header": 1}	{"is_header": 0}
+41634	968	ਆਪੇ ਪਟੀ ਕਲਮ ਆਪਿ ਆਪਿ ਲਿਖਣਹਾਰਾ ਹੋਆ ॥	is_header,comp_id,line_no,comp_type	{"is_header": 1, "comp_id": 3824, "line_no": 1, "comp_type": "ਪਟੀ"}	{"is_header": 0, "comp_id": 3823, "line_no": 84, "comp_type": "ਵਾਰ"}
+42595	994	ਮਾਰੂ ਤੇ ਸੀਤਲੁ ਕਰੇ ਮਨੂਰਹੁ ਕੰਚਨੁ ਹੋਇ ॥	is_header	{"is_header": 1}	{"is_header": 0}
+43171	1009	ਹਉਮੈ ਮੇਰਾ ਮਰੀ ਮਰੁ ਮਰਿ ਜੰਮੈ ਵਾਰੋ ਵਾਰ ॥	is_header,comp_id,line_no,comp_type	{"is_header": 1, "comp_id": 3965, "line_no": 1, "comp_type": "ਵਾਰ"}	{"is_header": 0, "comp_id": 3963, "line_no": 14, "comp_type": "ਅਸਟਪਦੀਆ"}
+43172	1009	ਗੁਰ ਕੈ ਸਬਦੇ ਜੇ ਮਰੈ ਫਿਰਿ ਮਰੈ ਨ ਦੂਜੀ ਵਾਰ ॥	is_header,comp_id,line_no,comp_type	{"is_header": 1, "comp_id": 3965, "line_no": 2, "comp_type": "ਵਾਰ"}	{"is_header": 0, "comp_id": 3963, "line_no": 15, "comp_type": "ਅਸਟਪਦੀਆ"}
+43211	1010	ਸਚੁ ਚੁਗੈ ਅੰਮ੍ਰਿਤੁ ਪੀਐ ਉਡੈ ਤ ਏਕਾ ਵਾਰ ॥	is_header,comp_id,line_no,comp_type	{"is_header": 1, "comp_id": 3967, "line_no": 1, "comp_type": "ਵਾਰ"}	{"is_header": 0, "comp_id": 3966, "line_no": 26, "comp_type": "ਅਸਟਪਦੀਆ"}
+43418	1015	ਸਭੇ ਰੁਤੀ ਚੰਗੀਆ ਜਿਤੁ ਸਚੇ ਸਿਉ ਨੇਹੁ ॥	is_header,comp_id,line_no,comp_type	{"is_header": 1, "comp_id": 3977, "line_no": 1, "comp_type": "ਰੁਤੀ"}	{"is_header": 0, "comp_id": 3976, "line_no": 12, "comp_type": "ਕਾਫੀ"}
+43783	1024	ਆਸਾ ਬੰਧੇ ਦਾਨੁ ਕਰਾਏ ॥	is_header,comp_id,line_no	{"is_header": 1, "comp_id": 3997, "line_no": 1}	{"is_header": 0, "comp_id": 3996, "line_no": 27}
+44101	1031	ਆਸਾ ਮਨਸਾ ਬੰਧਿ ਚਲਾਇਆ ॥	is_header,comp_id,line_no	{"is_header": 1, "comp_id": 4004, "line_no": 1}	{"is_header": 0, "comp_id": 4003, "line_no": 45}
+44368	1036	ਪੂਰੈ ਤੋਲਿ ਤੋਲੈ ਵਣਜਾਰਾ ॥	is_header,comp_id,line_no,comp_type	{"is_header": 1, "comp_id": 4011, "line_no": 1, "comp_type": "ਵਣਜਾਰਾ"}	{"is_header": 0, "comp_id": 4010, "line_no": 12, "comp_type": "ਦਖਣੀ"}
+44444	1038	ਇਹ ਗੁਰ ਕੀ ਪਉੜੀ ਜਾਣੈ ਜਨੁ ਕੋਈ ॥	is_header,comp_id,line_no,comp_type	{"is_header": 1, "comp_id": 4013, "line_no": 1, "comp_type": "ਪਉੜੀ"}	{"is_header": 0, "comp_id": 4012, "line_no": 39, "comp_type": "ਦਖਣੀ"}
+44538	1040	ਆਪੇ ਸਾਹੁ ਆਪੇ ਵਣਜਾਰਾ ॥	is_header,comp_id,line_no,comp_type	{"is_header": 1, "comp_id": 4016, "line_no": 1, "comp_type": "ਵਣਜਾਰਾ"}	{"is_header": 0, "comp_id": 4015, "line_no": 35, "comp_type": "ਦਖਣੀ"}
+44668	1043	ਆਸਾ ਮਾਹਿ ਨਿਰਾਸੁ ਰਹੀਜੈ ॥	is_header,comp_id,line_no,comp_type	{"is_header": 1, "comp_id": 4020, "line_no": 1, "comp_type": "ਵਣਜਾਰਾ"}	{"is_header": 0, "comp_id": 4019, "line_no": 27, "comp_type": "ਦਖਣੀ"}
+46063	1073	ਕਰੈ ਅਨੰਦੁ ਅਨੰਦੀ ਮੇਰਾ ॥	is_header,comp_type	{"is_header": 1, "comp_type": "ਅਨੰਦੁ"}	{"is_header": 0, "comp_type": "ਸੋਲਹੇ"}
+46663	1087	ਕੇਦਾਰਾ ਰਾਗਾ ਵਿਚਿ ਜਾਣੀਐ ਭਾਈ ਸਬਦੇ ਕਰੇ ਪਿਆਰੁ ॥	is_header	{"is_header": 1}	{"is_header": 0}
+46712	1088	ਮਹਲ ਕੁਚਜੀ ਮੜਵੜੀ ਕਾਲੀ ਮਨਹੁ ਕਸੁਧ ॥	is_header,comp_type	{"is_header": 1, "comp_type": "ਕੁਚਜੀ"}	{"is_header": 0, "comp_type": "ਸਲੋਕੁ"}
+46786	1089	ਮਾਰੂ ਮਾਰਣ ਜੋ ਗਏ ਮਾਰਿ ਨ ਸਕਹਿ ਗਵਾਰ ॥	is_header	{"is_header": 1}	{"is_header": 0}
+47116	1096	ਅਨੰਦੁ ਭਇਆ ਸੁਖੁ ਪਾਇਆ ਮਿਲਿ ਗੁਰ ਗੋਵਿੰਦਾ ॥	is_header,comp_id,line_no,comp_type	{"is_header": 1, "comp_id": 4176, "line_no": 1, "comp_type": "ਅਨੰਦੁ"}	{"is_header": 0, "comp_id": 4175, "line_no": 8, "comp_type": "ਪਉੜੀ"}
+47276	1100	ਓਸੁ ਸਦਾ ਸਦਾ ਘਰਿ ਅਨੰਦੁ ਹੈ ਹਰਿ ਸਖਾ ਸਹਾਈ ॥	is_header,comp_id,line_no,comp_type	{"is_header": 1, "comp_id": 4212, "line_no": 1, "comp_type": "ਅਨੰਦੁ"}	{"is_header": 0, "comp_id": 4211, "line_no": 6, "comp_type": "ਪਉੜੀ"}
+47519	1105	ਕਹਿ ਕਬੀਰ ਚੇਤੈ ਨਹੀ ਮੂਰਖੁ ਮੁਗਧੁ ਗਵਾਰੁ ॥	is_header,comp_id,line_no	{"is_header": 1, "comp_id": 4249, "line_no": 1}	{"is_header": 0, "comp_id": 4248, "line_no": 10}
+47631	1109	ਗੁਣਵੰਤੀ ਗੁਣ ਰਵੈ ਮੈ ਪਿਰੁ ਨਿਹਚਲੁ ਭਾਵਏ ॥	is_header,comp_id,line_no,comp_type	{"is_header": 1, "comp_id": 4258, "line_no": 1, "comp_type": "ਗੁਣਵੰਤੀ"}	{"is_header": 0, "comp_id": 4257, "line_no": 76, "comp_type": "ਛੰਤ"}
+47654	1109	ਬੇ ਦਸ ਮਾਹ ਰੁਤੀ ਥਿਤੀ ਵਾਰ ਭਲੇ ॥	is_header,comp_id,line_no,comp_type	{"is_header": 1, "comp_id": 4259, "line_no": 1, "comp_type": "ਵਾਰ"}	{"is_header": 0, "comp_id": 4257, "line_no": 99, "comp_type": "ਛੰਤ"}
+48426	1131	ਸਦਾ ਅਨੰਦੁ ਰਾਮ ਰਸਿ ਰਾਤੇ ॥	is_header,comp_id,line_no,comp_type	{"is_header": 1, "comp_id": 4328, "line_no": 1, "comp_type": "ਅਨੰਦੁ"}	{"is_header": 0, "comp_id": 4327, "line_no": 4, "comp_type": "ਛੰਤ"}
+49363	1149	ਸਦਾ ਅਨੰਦੁ ਨਾਹੀ ਕਿਛੁ ਸੋਗੁ ॥	is_header,comp_id,line_no,comp_type	{"is_header": 1, "comp_id": 4393, "line_no": 1, "comp_type": "ਅਨੰਦੁ"}	{"is_header": 0, "comp_id": 4392, "line_no": 12, "comp_type": "ਛੰਤ"}
+49991	1162	ਬਿਜੁਲੀ ਚਮਕੈ ਹੋਇ ਅਨੰਦੁ ॥	is_header,comp_id,line_no,comp_type	{"is_header": 1, "comp_id": 4420, "line_no": 1, "comp_type": "ਅਨੰਦੁ"}	{"is_header": 0, "comp_id": 4419, "line_no": 5, "comp_type": "ਅਸਟਪਦੀ"}
+50306	1168	ਮਾਹਾ ਰੁਤੀ ਆਵਣਾ ਵੇਖਹੁ ਕਰਮ ਕਮਾਇ ॥	is_header,comp_id,line_no,comp_type	{"is_header": 1, "comp_id": 4429, "line_no": 1, "comp_type": "ਰੁਤੀ"}	{"is_header": 0, "comp_id": 4428, "line_no": 11, "comp_type": "ਅਸਟਪਦੀ"}
+50481	1172	ਮਾਹਾ ਰੁਤੀ ਮਹਿ ਸਦ ਬਸੰਤੁ ॥	is_header,comp_type	{"is_header": 1, "comp_type": "ਰੁਤੀ"}	{"is_header": 0, "comp_type": "ਅਸਟਪਦੀ"}
+50724	1176	ਇਤੁ ਮਨਿ ਮਉਲਿਐ ਭਇਆ ਅਨੰਦੁ ॥	is_header,comp_id,line_no,comp_type	{"is_header": 1, "comp_id": 4458, "line_no": 1, "comp_type": "ਅਨੰਦੁ"}	{"is_header": 0, "comp_id": 4457, "line_no": 6, "comp_type": "ਅਸਟਪਦੀ"}
+50753	1176	ਬਸੰਤੁ ਚੜਿਆ ਫੂਲੀ ਬਨਰਾਇ ॥	is_header,comp_type	{"is_header": 1, "comp_type": "ਅਨੰਦੁ"}	{"is_header": 0, "comp_type": "ਅਸਟਪਦੀ"}
+51050	1183	ਬਸੰਤੁ ਹਮਾਰੈ ਰਾਮ ਰੰਗੁ ॥	is_header,comp_id,line_no,comp_type	{"is_header": 1, "comp_id": 4486, "line_no": 1, "comp_type": "ਅਨੰਦੁ"}	{"is_header": 0, "comp_id": 4485, "line_no": 6, "comp_type": "ਅਸਟਪਦੀ"}
+51156	1185	ਬਸੰਤ ਰੁਤਿ ਆਈ ॥	is_header,comp_id,line_no,comp_type	{"is_header": 1, "comp_id": 4496, "line_no": 1, "comp_type": "ਅਨੰਦੁ"}	{"is_header": 0, "comp_id": 4495, "line_no": 10, "comp_type": "ਅਸਟਪਦੀ"}
+51266	1187	ਆਸਾ ਮਨਸਾ ਬਾਂਧੋ ਬਾਰੁ ॥	is_header,comp_id,line_no	{"is_header": 1, "comp_id": 4509, "line_no": 1}	{"is_header": 0, "comp_id": 4508, "line_no": 27}
+51514	1192	ਨਾਮਦੇਵ ਹਰਿ ਜੀਉ ਬਸਹਿ ਸੰਗਿ ॥	is_header,comp_id,line_no,author,ghar	{"is_header": 1, "comp_id": 4522, "line_no": 1, "author": "Bhagat Namdev Ji", "ghar": null}	{"is_header": 0, "comp_id": 4521, "line_no": 34, "author": "Guru Arjan Dev Ji (M5)", "ghar": "੧"}
+53411	1241	ਸਭੇ ਰਾਤੀ ਸਭਿ ਦਿਹ ਸਭਿ ਥਿਤੀ ਸਭਿ ਵਾਰ ॥	is_header,comp_type	{"is_header": 1, "comp_type": "ਵਾਰ"}	{"is_header": 0, "comp_type": "ਸਲੋਕ"}
+53412	1241	ਸਭੇ ਰੁਤੀ ਮਾਹ ਸਭਿ ਸਭਿ ਧਰਤੀਂ ਸਭਿ ਭਾਰ ॥	is_header,comp_type	{"is_header": 1, "comp_type": "ਰੁਤੀ"}	{"is_header": 0, "comp_type": "ਸਲੋਕ"}
+53439	1242	ਸਭਿ ਕਾਰਣ ਕਰਤਾ ਕਰੇ ਦੇਖੈ ਵਾਰੋ ਵਾਰ ॥	is_header,comp_id,line_no,comp_type	{"is_header": 1, "comp_id": 4762, "line_no": 1, "comp_type": "ਵਾਰ"}	{"is_header": 0, "comp_id": 4761, "line_no": 3, "comp_type": "ਸਲੋਕ"}
+53712	1248	ਵਿਣੁ ਸਤਿਗੁਰ ਸੇਵੇ ਸੁਖੁ ਨਹੀ ਮਰਿ ਜੰਮਹਿ ਵਾਰੋ ਵਾਰ ॥	is_header,comp_type	{"is_header": 1, "comp_type": "ਵਾਰ"}	{"is_header": 0, "comp_type": "ਸਲੋਕ"}
+53765	1249	ਆਸਾ ਵਿਚਿ ਅਤਿ ਦੁਖੁ ਘਣਾ ਮਨਮੁਖਿ ਚਿਤੁ ਲਾਇਆ ॥	is_header	{"is_header": 1}	{"is_header": 0}
+53826	1250	ਹਰਿ ਕੀਰਤਿ ਭਗਤਿ ਅਨੰਦੁ ਹੈ ਸਦਾ ਸੁਖੁ ਵਸੈ ਮਨਿ ਆਇ ॥	is_header,comp_id,line_no,comp_type	{"is_header": 1, "comp_id": 4832, "line_no": 1, "comp_type": "ਅਨੰਦੁ"}	{"is_header": 0, "comp_id": 4831, "line_no": 7, "comp_type": "ਸਲੋਕ"}
+54825	1276	ਬਿਨੁ ਨਾਵੈ ਜਮ ਡੰਡੁ ਸਹੈ ਮਰਿ ਜਨਮੈ ਵਾਰੋ ਵਾਰ ॥	is_header,comp_id,line_no,comp_type	{"is_header": 1, "comp_id": 4932, "line_no": 1, "comp_type": "ਵਾਰ"}	{"is_header": 0, "comp_id": 4931, "line_no": 3, "comp_type": "ਅਸਟਪਦੀਆ"}
+54924	1279	ਮੂਲੁ ਰਹੈ ਗੁਰੁ ਸੇਵਿਐ ਗੁਰ ਪਉੜੀ ਬੋਹਿਥੁ ॥	is_header,comp_id,line_no,author,comp_type	{"is_header": 1, "comp_id": 4940, "line_no": 1, "author": "Guru Nanak Dev Ji (M1)", "comp_type": "ਪਉੜੀ"}	{"is_header": 0, "comp_id": 4939, "line_no": 13, "author": "Guru Amar Das Ji (M3)", "comp_type": "ਸਲੋਕ"}
+54927	1279	ਹੇਕੋ ਪਾਧਰੁ ਹੇਕੁ ਦਰੁ ਗੁਰ ਪਉੜੀ ਨਿਜ ਥਾਨੁ ॥	is_header,comp_type	{"is_header": 1, "comp_type": "ਪਉੜੀ"}	{"is_header": 0, "comp_type": "ਸਲੋਕ"}
+55011	1280	ਸੋ ਹਰਿ ਸਦਾ ਸਰੇਵੀਐ ਜਿਸੁ ਕਰਤ ਨ ਲਾਗੈ ਵਾਰ ॥	is_header,comp_type	{"is_header": 1, "comp_type": "ਵਾਰ"}	{"is_header": 0, "comp_type": "ਪਉੜੀ"}
+55017	1281	ਓਥੈ ਸਤਿਗੁਰੁ ਬੇਲੀ ਹੋਵੈ ਕਢਿ ਲਏ ਅੰਤੀ ਵਾਰ ॥	is_header,comp_id,line_no,comp_type	{"is_header": 1, "comp_id": 4960, "line_no": 1, "comp_type": "ਵਾਰ"}	{"is_header": 0, "comp_id": 4959, "line_no": 8, "comp_type": "ਪਉੜੀ"}
+55142	1283	ਬਾਬੀਹਾ ਗੁਣਵੰਤੀ ਮਹਲੁ ਪਾਇਆ ਅਉਗਣਵੰਤੀ ਦੂਰਿ ॥	is_header,comp_type	{"is_header": 1, "comp_type": "ਗੁਣਵੰਤੀ"}	{"is_header": 0, "comp_type": "ਸਲੋਕ"}
+55186	1284	ਇਕਿ ਵਣ ਖੰਡਿ ਬੈਸਹਿ ਜਾਇ ਸਦੁ ਨ ਦੇਵਹੀ ॥	is_header,comp_type	{"is_header": 1, "comp_type": "ਸਦੁ"}	{"is_header": 0, "comp_type": "ਪਉੜੀ"}
+55506	1291	ਆਪੇ ਪਟੀ ਕਲਮ ਆਪਿ ਉਪਰਿ ਲੇਖੁ ਭਿ ਤੂੰ ॥	is_header,comp_type	{"is_header": 1, "comp_type": "ਪਟੀ"}	{"is_header": 0, "comp_type": "ਸਲੋਕ"}
+56318	1314	ਹਰਿ ਖੇਲੁ ਕੀਆ ਹਰਿ ਆਪੇ ਵਰਤੈ ਸਭੁ ਜਗਤੁ ਕੀਆ ਵਣਜਾਰਾ ॥	is_header,comp_id,line_no,comp_type	{"is_header": 1, "comp_id": 5137, "line_no": 1, "comp_type": "ਵਣਜਾਰਾ"}	{"is_header": 0, "comp_id": 5136, "line_no": 3, "comp_type": "ਪਉੜੀ"}
+56877	1330	ਆਸਾ ਆਵੈ ਮਨਸਾ ਜਾਇ ॥	is_header,comp_id,line_no	{"is_header": 1, "comp_id": 5213, "line_no": 1}	{"is_header": 0, "comp_id": 5212, "line_no": 4}
+57716	1349	ਜਹ ਅਨੰਦੁ ਦੁਖੁ ਦੂਰਿ ਪਇਆਨਾ ॥	is_header,comp_id,line_no,comp_type	{"is_header": 1, "comp_id": 5272, "line_no": 1, "comp_type": "ਅਨੰਦੁ"}	{"is_header": 0, "comp_id": 5271, "line_no": 7, "comp_type": "ਅਸਟਪਦੀਆ"}
+57798	1351	ਪ੍ਰਣਵਤਿ ਨਾਮਦੇਉ ਇਹੁ ਜੀਉ ਚਿਤਵੈ ਸੁ ਲਹੈ ॥	is_header,comp_id,line_no,comp_type	{"is_header": 1, "comp_id": 5281, "line_no": 1, "comp_type": "ਅਨੰਦੁ"}	{"is_header": 0, "comp_id": 5280, "line_no": 10, "comp_type": "ਅਸਟਪਦੀਆ"}
+58130	1360	ਗਾਥਾ ਗੁੰਫ ਗੋਪਾਲ ਕਥੰ ਮਥੰ ਮਾਨ ਮਰਦਨਹ ॥	is_header,comp_id,line_no	{"is_header": 1, "comp_id": 5295, "line_no": 1}	{"is_header": 0, "comp_id": 5294, "line_no": 13}
+58138	1360	ਗਾਥਾ ਗੂੜ ਅਪਾਰੰ ਸਮਝਣੰ ਬਿਰਲਾ ਜਨਹ ॥	is_header,comp_id,line_no	{"is_header": 1, "comp_id": 5296, "line_no": 1}	{"is_header": 0, "comp_id": 5294, "line_no": 21}
+58197	1362	ਆਸਾ ਇਤੀ ਆਸ ਕਿ ਆਸ ਪੁਰਾਈਐ ॥	is_header,comp_id,line_no	{"is_header": 1, "comp_id": 5299, "line_no": 1}	{"is_header": 0, "comp_id": 5298, "line_no": 19}
+58303	1364	ਕਬੀਰ ਡਗਮਗ ਕਿਆ ਕਰਹਿ ਕਹਾ ਡੁਲਾਵਹਿ ਜੀਉ ॥	is_header,comp_id,line_no	{"is_header": 1, "comp_id": 5304, "line_no": 1}	{"is_header": 0, "comp_id": 5303, "line_no": 7}
+58307	1364	ਕਬੀਰ ਐਸਾ ਏਕੁ ਆਧੁ ਜੋ ਜੀਵਤ ਮਿਰਤਕੁ ਹੋਇ ॥	is_header,comp_id,line_no	{"is_header": 1, "comp_id": 5305, "line_no": 1}	{"is_header": 0, "comp_id": 5303, "line_no": 11}
+58309	1364	ਕਬੀਰ ਜਾ ਦਿਨ ਹਉ ਮੂਆ ਪਾਛੈ ਭਇਆ ਅਨੰਦੁ ॥	is_header,comp_id,line_no,comp_type	{"is_header": 1, "comp_id": 5306, "line_no": 1, "comp_type": "ਅਨੰਦੁ"}	{"is_header": 0, "comp_id": 5303, "line_no": 13, "comp_type": "ਸਲੋਕ"}
+58371	1366	ਕਬੀਰ ਗਰਬੁ ਨ ਕੀਜੀਐ ਚਾਮ ਲਪੇਟੇ ਹਾਡ ॥	is_header,comp_id,line_no,comp_type	{"is_header": 1, "comp_id": 5307, "line_no": 1, "comp_type": "ਅਨੰਦੁ"}	{"is_header": 0, "comp_id": 5303, "line_no": 75, "comp_type": "ਸਲੋਕ"}
+58373	1366	ਕਬੀਰ ਗਰਬੁ ਨ ਕੀਜੀਐ ਊਚਾ ਦੇਖਿ ਅਵਾਸੁ ॥	is_header,comp_id,line_no,comp_type	{"is_header": 1, "comp_id": 5308, "line_no": 1, "comp_type": "ਅਨੰਦੁ"}	{"is_header": 0, "comp_id": 5303, "line_no": 77, "comp_type": "ਸਲੋਕ"}
+58375	1366	ਕਬੀਰ ਗਰਬੁ ਨ ਕੀਜੀਐ ਰੰਕੁ ਨ ਹਸੀਐ ਕੋਇ ॥	is_header,comp_id,line_no,comp_type	{"is_header": 1, "comp_id": 5309, "line_no": 1, "comp_type": "ਅਨੰਦੁ"}	{"is_header": 0, "comp_id": 5303, "line_no": 79, "comp_type": "ਸਲੋਕ"}
+58377	1366	ਕਬੀਰ ਗਰਬੁ ਨ ਕੀਜੀਐ ਦੇਹੀ ਦੇਖਿ ਸੁਰੰਗ ॥	is_header,comp_id,line_no,comp_type	{"is_header": 1, "comp_id": 5310, "line_no": 1, "comp_type": "ਅਨੰਦੁ"}	{"is_header": 0, "comp_id": 5303, "line_no": 81, "comp_type": "ਸਲੋਕ"}
+58493	1369	ਕਬੀਰ ਅਵਰਹ ਕਉ ਉਪਦੇਸਤੇ ਮੁਖ ਮੈ ਪਰਿ ਹੈ ਰੇਤੁ ॥	is_header,comp_id,line_no,comp_type	{"is_header": 1, "comp_id": 5311, "line_no": 1, "comp_type": "ਅਨੰਦੁ"}	{"is_header": 0, "comp_id": 5303, "line_no": 197, "comp_type": "ਸਲੋਕ"}
+58559	1371	ਕਬੀਰ ਸਾਕਤ ਸੰਗੁ ਨ ਕੀਜੀਐ ਦੂਰਹਿ ਜਾਈਐ ਭਾਗਿ ॥	is_header,comp_id,line_no,comp_type	{"is_header": 1, "comp_id": 5312, "line_no": 1, "comp_type": "ਅਨੰਦੁ"}	{"is_header": 0, "comp_id": 5303, "line_no": 263, "comp_type": "ਸਲੋਕ"}
+58603	1372	ਕਬੀਰ ਜੈਸੀ ਉਪਜੀ ਪੇਡ ਤੇ ਜਉ ਤੈਸੀ ਨਿਬਹੈ ਓੜਿ ॥	is_header,comp_id,line_no,comp_type	{"is_header": 1, "comp_id": 5313, "line_no": 1, "comp_type": "ਅਨੰਦੁ"}	{"is_header": 0, "comp_id": 5303, "line_no": 307, "comp_type": "ਸਲੋਕ"}
+58609	1372	ਕਬੀਰ ਮਾਇਆ ਤਜੀ ਤ ਕਿਆ ਭਇਆ ਜਉ ਮਾਨੁ ਤਜਿਆ ਨਹੀ ਜਾਇ ॥	is_header,comp_id,line_no,comp_type	{"is_header": 1, "comp_id": 5314, "line_no": 1, "comp_type": "ਅਨੰਦੁ"}	{"is_header": 0, "comp_id": 5303, "line_no": 313, "comp_type": "ਸਲੋਕ"}
+58695	1375	ਕਬੀਰ ਜੀਅ ਜੁ ਮਾਰਹਿ ਜੋਰੁ ਕਰਿ ਕਹਤੇ ਹਹਿ ਜੁ ਹਲਾਲੁ ॥	is_header,comp_id,line_no,comp_type	{"is_header": 1, "comp_id": 5315, "line_no": 1, "comp_type": "ਅਨੰਦੁ"}	{"is_header": 0, "comp_id": 5303, "line_no": 399, "comp_type": "ਸਲੋਕ"}
+58737	1376	ਕਬੀਰ ਕੋਠੇ ਮੰਡਪ ਹੇਤੁ ਕਰਿ ਕਾਹੇ ਮਰਹੁ ਸਵਾਰਿ ॥	is_header,comp_id,line_no,author,comp_type	{"is_header": 1, "comp_id": 5320, "line_no": 1, "author": "Bhagat Kabir Ji", "comp_type": "ਅਨੰਦੁ"}	{"is_header": 0, "comp_id": 5319, "line_no": 10, "author": "Guru Arjan Dev Ji (M5)", "comp_type": "ਸਲੋਕ"}
+58763	1376	ਕਬੀਰ ਦਾਤਾ ਤਰਵਰੁ ਦਯਾ ਫਲੁ ਉਪਕਾਰੀ ਜੀਵੰਤ ॥	is_header,comp_id,line_no,author,comp_type	{"is_header": 1, "comp_id": 5323, "line_no": 1, "author": "Bhagat Kabir Ji", "comp_type": "ਅਨੰਦੁ"}	{"is_header": 0, "comp_id": 5322, "line_no": 20, "author": "Guru Arjan Dev Ji (M5)", "comp_type": "ਸਲੋਕ"}
+60085	1415	ਚਿੰਤਾ ਧਾਵਤ ਰਹਿ ਗਏ ਤਾਂ ਮਨਿ ਭਇਆ ਅਨੰਦੁ ॥	is_header,comp_id,line_no,comp_type	{"is_header": 1, "comp_id": 5358, "line_no": 1, "comp_type": "ਅਨੰਦੁ"}	{"is_header": 0, "comp_id": 5357, "line_no": 100, "comp_type": "ਸਲੋਕ"}
+60101	1416	ਇਹੁ ਮੋਹੁ ਮਾਇਆ ਸਭੁ ਪਸਰਿਆ ਨਾਲਿ ਚਲੈ ਨ ਅੰਤੀ ਵਾਰ ॥	is_header,comp_id,line_no,comp_type	{"is_header": 1, "comp_id": 5359, "line_no": 1, "comp_type": "ਵਾਰ"}	{"is_header": 0, "comp_id": 5357, "line_no": 116, "comp_type": "ਸਲੋਕ"}
+60107	1416	ਹਰਿ ਜੀਉ ਲੇਖੈ ਵਾਰ ਨ ਆਵਈ ਤੂੰ ਬਖਸਿ ਮਿਲਾਵਣਹਾਰੁ ॥	is_header,comp_id,line_no,comp_type	{"is_header": 1, "comp_id": 5360, "line_no": 1, "comp_type": "ਵਾਰ"}	{"is_header": 0, "comp_id": 5357, "line_no": 122, "comp_type": "ਸਲੋਕ"}
+60128	1416	ਗੁਰ ਕੀ ਪਉੜੀ ਜਾਇ ਚੜੈ ਕਰਮਿ ਪਰਾਪਤਿ ਹੋਈ ॥	is_header,comp_id,line_no,author,comp_type	{"is_header": 1, "comp_id": 5361, "line_no": 1, "author": "Bhagat Kabir Ji", "comp_type": "ਪਉੜੀ"}	{"is_header": 0, "comp_id": 5357, "line_no": 143, "author": "Guru Amar Das Ji (M3)", "comp_type": "ਸਲੋਕ"}
+60149	1417	ਮਨਮੁਖਿ ਅਸਥਿਰੁ ਨਾ ਥੀਐ ਮਰਿ ਬਿਨਸਿ ਜਾਇ ਖਿਨ ਵਾਰ ॥	is_header,comp_id,line_no,author,comp_type	{"is_header": 1, "comp_id": 5362, "line_no": 1, "author": "Bhagat Kabir Ji", "comp_type": "ਵਾਰ"}	{"is_header": 0, "comp_id": 5357, "line_no": 164, "author": "Guru Amar Das Ji (M3)", "comp_type": "ਸਲੋਕ"}
+60196	1418	ਮਨਮੁਖ ਮੁਏ ਵਿਕਾਰ ਮਹਿ ਮਰਿ ਜੰਮਹਿ ਵਾਰੋ ਵਾਰ ॥	is_header,comp_id,line_no,author,comp_type	{"is_header": 1, "comp_id": 5363, "line_no": 1, "author": "Bhagat Kabir Ji", "comp_type": "ਵਾਰ"}	{"is_header": 0, "comp_id": 5357, "line_no": 211, "author": "Guru Amar Das Ji (M3)", "comp_type": "ਸਲੋਕ"}
+60205	1419	ਮਾਇਆ ਮੋਹੁ ਨ ਚੁਕਈ ਮਰਿ ਜੰਮਹਿ ਵਾਰੋ ਵਾਰ ॥	is_header,comp_id,line_no,author,comp_type	{"is_header": 1, "comp_id": 5364, "line_no": 1, "author": "Bhagat Kabir Ji", "comp_type": "ਵਾਰ"}	{"is_header": 0, "comp_id": 5357, "line_no": 220, "author": "Guru Amar Das Ji (M3)", "comp_type": "ਸਲੋਕ"}
+60212	1419	ਧਨਾਸਰੀ ਧਨਵੰਤੀ ਜਾਣੀਐ ਭਾਈ ਜਾਂ ਸਤਿਗੁਰ ਕੀ ਕਾਰ ਕਮਾਇ ॥	is_header,comp_id,line_no,author,comp_type	{"is_header": 1, "comp_id": 5365, "line_no": 1, "author": "Bhagat Kabir Ji", "comp_type": "ਵਾਰ"}	{"is_header": 0, "comp_id": 5357, "line_no": 227, "author": "Guru Amar Das Ji (M3)", "comp_type": "ਸਲੋਕ"}
+60425	1425	ਸੋਰਠਿ ਸੋ ਰਸੁ ਪੀਜੀਐ ਕਬਹੂ ਨ ਫੀਕਾ ਹੋਇ ॥	is_header,comp_id,line_no	{"is_header": 1, "comp_id": 5370, "line_no": 1}	{"is_header": 0, "comp_id": 5369, "line_no": 11}
+60601	1429	ਪ੍ਰਥਮ ਰਾਗ ਭੈਰਉ ਵੈ ਕਰਹੀ ॥	is_header,comp_id,line_no	{"is_header": 1, "comp_id": 5377, "line_no": 1}	{"is_header": 0, "comp_id": 5376, "line_no": 5}
+60615	1430	ਧਨਾਸਰੀ ਏ ਪਾਚਉ ਗਾਈ ॥	is_header,comp_id,line_no	{"is_header": 1, "comp_id": 5378, "line_no": 1}	{"is_header": 0, "comp_id": 5376, "line_no": 19}
+60617	1430	ਮਾਰੂ ਮਸਤਅੰਗ ਮੇਵਾਰਾ ॥	is_header,comp_id,line_no	{"is_header": 1, "comp_id": 5379, "line_no": 1}	{"is_header": 0, "comp_id": 5376, "line_no": 21}
+60649	1430	ਸੋਰਠਿ ਗੋਂਡ ਮਲਾਰੀ ਧੁਨੀ ॥	is_header,comp_id,line_no	{"is_header": 1, "comp_id": 5380, "line_no": 1}	{"is_header": 0, "comp_id": 5376, "line_no": 53}

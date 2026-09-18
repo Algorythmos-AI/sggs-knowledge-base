@@ -297,8 +297,10 @@ def build_shabad_neighbors(con, K):
 # ----------------------------------------------------------------------------- integrity
 EXISTING_COUNTS = {
     "lines": 60658, "fts": 60658, "concepts": 54, "concept_lines": None,
-    "variants": 79666, "authors": None, "raags": None,
-}   # 2026-06-19 (audit): akal_kaal split → akal+kaal (concepts 53→54). concept_lines is now
+    "variants": 79840, "authors": None, "raags": None,
+}   # v1.1.4 (2026-09-18): variants 79666→79840 — built from is_header=0 lines, and 233 verses the
+    # header detector had mis-flagged rejoined that set (scripture unchanged; see CHANGELOG).
+    # 2026-06-19 (audit): akal_kaal split → akal+kaal (concepts 53→54). concept_lines is now
     # UNCHECKED (None): the tag count legitimately shifts whenever concept term-lists are curated;
     # integrity is enforced by the scripture guards (lines/fts/translations + the Mool Mantar check).
 def verify_additive(con):

@@ -70,6 +70,19 @@ h = detect_header('ਸਿਰੀਰਾਗੁ ਮਹਲਾ ੧ ਘਰੁ ੧')
 check('header raag', h.get('raag'), 'ਸਿਰੀਰਾਗੁ')
 check('header author', h.get('author'), 'Guru Nanak Dev Ji (M1)')
 check('header ghar', h.get('ghar'), '੧')
+# a comp-type word / leading raag name inside a verse is NOT a header (v1.1.4)
+for v in ['ਸੋਚੈ ਸੋਚਿ ਨ ਹੋਵਈ ਜੇ ਸੋਚੀ ਲਖ ਵਾਰ', 'ਮਿਟਿਆ ਸੋਗੁ ਮਹਾ ਅਨੰਦੁ ਥੀਆ', 'ਗੁਰਬਾਣੀ ਸਖੀ ਅਨੰਦੁ ਗਾਵੈ',
+          'ਆਸਾ ਮਨਸਾ ਬਾਂਧੋ ਬਾਰੁ', 'ਬਸੰਤੁ ਹਮਾਰੈ ਰਾਮ ਰੰਗੁ', 'ਬਸੰਤ ਰੁਤਿ ਆਈ', 'ਮਾਰੂ ਮਸਤਅੰਗ ਮੇਵਾਰਾ',
+          'ਪ੍ਰਥਮ ਰਾਗ ਭੈਰਉ ਵੈ ਕਰਹੀ', 'ਕਹਿ ਕਬੀਰ ਉਰਵਾਰ ਨ ਪਾਰ', 'ਕਬੀਰ ਗਰਬੁ ਨ ਕੀਜੀਐ ਚਾਮ ਲਪੇਟੇ ਹਾਡ',
+          'ਨਾਮਦੇਵ ਹਰਿ ਜੀਉ ਬਸਹਿ ਸੰਗਿ', 'ਸੁੰਦਰੁ ਸੁਘੜੁ ਚਤੁਰੁ ਜੀਅ ਦਾਤਾ']:
+    check('verse is not a header: ' + v[:24], detect_header(v).get('is_header'), None)
+for v in ['ਪਉੜੀ', 'ਸਲੋਕੁ', 'ਗਉੜੀ ਕਬੀਰ ਜੀ ਦੁਪਦੇ', 'ਗਉੜੀ ਭੀ ਸੋਰਠਿ ਭੀ', 'ਗਉੜੀ ਬੈਰਾਗਣਿ ਰਵਿਦਾਸ ਜੀਉ',
+          'ਸਲੋਕ ਵਾਰਾਂ ਤੇ ਵਧੀਕ', 'ਸਲੋਕ ਭਗਤ ਕਬੀਰ ਜੀਉ ਕੇ', 'ਏਹੁ ਸਲੋਕੁ ਆਦਿ ਅੰਤਿ ਪੜਣਾ', 'ਜੁਮਲਾ', 'ਦੁਤੁਕੇ',
+          'ਗਉੜੀ ਮਾਲਾ ੫', 'ਮਾਰੂ ਸੋਲਹੇ ੩', 'ਬਿਲਾਵਲੁ ਬਾਣੀ ਭਗਤਾ ਕੀ', 'ਗਉੜੀ ਬੈਰਾਗਣਿ ਤਿਪਦੇ',
+          'ਗਉੜੀ ਕਬੀਰ ਜੀ', 'ਆਸਾ ਸ੍ਰੀ ਕਬੀਰ ਜੀਉ', 'ਕਬੀਰ ਜੀਉ ਨਾਮਦੇਉ ਜੀਉ ਰਵਿਦਾਸ ਜੀਉ', 'ਸ੍ਰੀਰਾਗ ਬਾਣੀ ਭਗਤ ਬੇਣੀ ਜੀਉ ਕੀ',
+          'ਸਾਰੰਗ ਬਾਣੀ ਨਾਮਦੇਉ ਜੀ ਕੀ', 'ਸਲੋਕੁ ਮਰਦਾਨਾ ੧', 'ਰਾਗ ਮਾਲਾ']:
+    check('label stays a header: ' + v[:24], detect_header(v).get('is_header'), 1)
+check('danda-less title stays a header', detect_header('ਬਸੰਤ ਕੀ ਵਾਰ ਮਹਲੁ ੫', no_danda=True).get('is_header'), 1)
 
 # ---- 8. Ang 1430 (Raagmala) + Mundavani Ang 1429
 ang, raw = page_content(doc, 1482)
