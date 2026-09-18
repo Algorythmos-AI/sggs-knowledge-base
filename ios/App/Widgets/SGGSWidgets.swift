@@ -15,6 +15,9 @@ struct SGGSWidgetsBundle: WidgetBundle {
         RaagNowWidget()
         HukamWidget()
         NitnemWidget()
+        #if canImport(ActivityKit)
+        NitnemLiveActivity()   // Lock Screen + Dynamic Island while reading
+        #endif
     }
 }
 

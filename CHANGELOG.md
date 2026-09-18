@@ -5,6 +5,15 @@ entries prior to v1.1.0 are the project's original prose style and are preserved
 
 ## [Unreleased] — Nitnem, next level (premium pass)
 
+### Added — Live Activity (opt-in)
+- **Reading Live Activity** (More → Nitnem → Live Activity, default OFF): while you read a bani,
+  the Lock Screen and Dynamic Island can show its title and a whole-percent progress bar — never a
+  verse. It starts only after a genuine 20-second dwell, updates on a whole-percent change and at
+  most every 10 seconds, ends on completion or leaving, carries a 20-minute stale date, and any
+  activity left by a previous launch is swept on startup. No push, no server; the shared attributes
+  live in the widget extension. Availability is gated on the opt-in and the system.
+
+
 ### Added — My Nitnem
 - **Customisable daily sets** (More → Nitnem → My Nitnem): reorder the banis in the morning,
   Rehras or Sohila set, hide one, or add any bani from the library (e.g. Sukhmani Sahib in the

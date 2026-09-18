@@ -128,6 +128,15 @@ final class SGGSUITests: XCTestCase {
             .waitForExistence(timeout: 8), "Dasam source label missing")
     }
 
+    /// The Live Activity opt-in is present in More and defaults off (never on without consent).
+    func testLiveActivityToggleDefaultsOff() {
+        let app = launchApp(selectSearch: false)
+        openTab(app, "More", expectingNavBar: "More")
+        let toggle = app.switches["liveActivityToggle"].firstMatch
+        XCTAssertTrue(toggle.waitForExistence(timeout: 12), "Live Activity toggle missing in More")
+        XCTAssertEqual(toggle.value as? String, "0", "Live Activity must default OFF")
+    }
+
     /// My Nitnem: the editor opens from More and shows the set picker, the morning banis and the
     /// "Add a bani" affordance. (Reorder/hide/add persistence is covered by NitnemSetsTests and
     /// validated on-device.)

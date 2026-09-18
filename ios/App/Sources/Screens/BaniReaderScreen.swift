@@ -31,6 +31,8 @@ struct BaniReaderScreen: View {
     @State private var chromeHidden = false
     @State private var saveTask: Task<Void, Never>?
     @State private var completedNow = false
+    @StateObject private var live = ReadingActivityController()
+    @State private var liveStartTask: Task<Void, Never>?
     @StateObject private var autoScroll = AutoScrollController()
     @AppStorage(AutoScrollPace.storageKey) private var paceRaw = AutoScrollPace.steady.rawValue
     @AppStorage("sggs_gurmukhi_size") private var gurmukhiSize = 24.0
@@ -51,9 +53,9 @@ struct BaniReaderScreen: View {
         content
             .task(id: key + "/" + variant) { await load() }
             .onAppear { UIApplication.shared.isIdleTimerDisabled = true }
-            .onDisappear { UIApplication.shared.isIdleTimerDisabled = false; flushSave(); autoScroll.stop() }
+            .onDisappear { UIApplication.shared.isIdleTimerDisabled = false; flushSave(); autoScroll.stop(); liveStartTask?.cancel(); live.end(done: false) }
             .onChange(of: scenePhase) { _, phase in if phase != .active { flushSave(); autoScroll.pause() } }
-            .onChange(of: positionId) { _, _ in scheduleSave() }
+            .onChange(of: positionId) { _, _ in scheduleSave(); live.update(fraction: liveFraction, sectionLabel: liveSection) }
             .onChange(of: focusMode) { _, _ in autoScroll.pause(); showChrome() }
             .onChange(of: paceRaw) { _, _ in autoScroll.pace = pace }
             .onChange(of: gurmukhiSize) { _, _ in autoScroll.fontSize = gurmukhiSize }
@@ -121,6 +123,7 @@ struct BaniReaderScreen: View {
         if let resume = container.nitnem.resumeSeq(for: loaded.summary.id, lines: loaded.lines) {
             chrome.landingInProgress = true
             positionId = resume
+            scheduleLiveStart()
             highlightedId = resume
             DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) { chrome.landingInProgress = false }
             Task { @MainActor in
@@ -170,6 +173,7 @@ struct BaniReaderScreen: View {
         container.nitnem.markComplete(progressId)
         Haptics.success()
         MotionGate.run(Motion.gentle) { completedNow = true }
+        live.end(done: true)
     }
 
     private func showContents() {
@@ -445,6 +449,27 @@ struct BaniReaderScreen: View {
         .appAnimation(Motion.gentle, value: chromeHidden)
         .accessibilityElement(children: .contain)
         .accessibilityIdentifier("baniPageBar")
+    }
+
+    /// Live Activity progress inputs (a whole-percent bar; never a verse).
+    private var liveFraction: Double {
+        guard let bani, bani.lines.count > 0 else { return 0 }
+        return min(1, Double(positionId ?? (bani.lines.first?.seq ?? 0)) / Double(bani.lines.count))
+    }
+    private var liveSection: String { stanzaCaption(at: positionId ?? 0) ?? "" }
+
+    /// Start the reading Live Activity only after a genuine dwell, and never for a bani already
+    /// read today (the activity is a companion to reading, never a badge).
+    private func scheduleLiveStart() {
+        liveStartTask?.cancel()
+        guard live.isAvailable, let bani else { return }
+        let key = bani.summary.key, en = bani.summary.titleEn, gm = bani.summary.titleGm
+        liveStartTask = Task { @MainActor in
+            try? await Task.sleep(nanoseconds: UInt64(ReadingActivityPolicy.startDelay * 1_000_000_000))
+            guard !Task.isCancelled, self.bani != nil else { return }
+            guard !(completedNow || container.nitnem.isCompleted(progressId)) else { return }
+            live.start(key: key, titleEn: en, titleGm: gm, fraction: liveFraction, sectionLabel: liveSection)
+        }
     }
 
     private func stanzaCaption(at seq: Int) -> String? {
