@@ -46,6 +46,15 @@
       "db_sha256": "f30a2fc090bc2bf039ba4092f2eedcddeb552fd4125b17dfbe25799ecc2e8c7a",
       "uploaded_at": "2026-09-18T07:26:49Z",
       "note": null
+    },
+    {
+      "version": "1.2.1",
+      "build": 1,
+      "source_commit": "274fe3c07111414fe1d934a96a7444d70ccc2028",
+      "profile": "public",
+      "db_sha256": "f30a2fc090bc2bf039ba4092f2eedcddeb552fd4125b17dfbe25799ecc2e8c7a",
+      "uploaded_at": "2026-09-18T10:20:07Z",
+      "note": null
     }
   ]
 }
