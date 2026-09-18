@@ -123,6 +123,14 @@ enum PaharFormat {
         return "\(a)–\(b)"
     }
 
+    /// The face's day/date complication: ("SAT", "19") in the reader's locale and calendar day.
+    static func weekdayDay(_ date: Date, locale: Locale = .current, tz: TimeZone = .current) -> (weekday: String, day: String) {
+        let base = Date.FormatStyle(locale: locale, timeZone: tz)
+        let wd = date.formatted(base.weekday(.abbreviated)).uppercased(with: locale)
+            .trimmingCharacters(in: CharacterSet(charactersIn: "."))
+        return (wd, date.formatted(base.day()))
+    }
+
     /// "in 57 min" · "in 2 h 57 min" · "now".
     static func countdown(minutes: Int) -> String {
         if minutes <= 0 { return "now" }

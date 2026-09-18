@@ -117,6 +117,12 @@ Expected: zero deviations. Sign: name, build, device, date in the build log.
 2. Clock tab: the time in the dial's hollow equals the status-bar clock; a 24-hour device shows
    `14:51` and `06 · 12 · 18 · 00` numerals; a 12-hour device `2:51 PM` and `6 AM · 12 PM · 6 PM · 12 AM`.
    Change the time zone in Settings while the Clock is open — the face redraws.
+3. Analog face: the seconds hand sweeps smoothly; it pauses when the Clock is scrolled off-screen
+   and when the app is backgrounded; with Reduce Motion on it ticks once a second. The day/date
+   complication reads the device date. "Sung in this watch" lists the current watch's raags in full
+   (no clipping) and each row opens the Granth at that raag's Ang.
+4. Solar is the default: a fresh install shows the fixed watches plus the "Use my location" card;
+   granting location (or entering coordinates) switches to solar windows. An explicit Fixed persists.
 2. Widget tap → app opens on the relevant screen.
 3. All four App Intents from Siri and from Shortcuts, including a parameterised "Open Ang 1430".
 4. Every `sggs://` route in the readiness report: `hukam`, `ang/N`, `shabad/N?line=`, `theme/naam`, `clock/<raag>`, `search?q=`, `shabad/999999999` (not-found + Done).

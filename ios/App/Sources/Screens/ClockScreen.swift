@@ -14,7 +14,7 @@ struct ClockScreen: View {
     @Environment(\.palette) private var palette
     @Environment(\.locale) private var locale
     /// "fixed" | "solar" — lives in the App-Group suite so the widgets mirror the choice.
-    @AppStorage(SharedDefaults.clockModeKey, store: SharedDefaults.suite) private var mode = "fixed"
+    @AppStorage(SharedDefaults.clockModeKey, store: SharedDefaults.suite) private var mode = SharedDefaults.defaultClockMode
     @State private var clock: TimingClock?
     /// Lazily created in .task — a `@State = SolarLocation()` default would construct a fresh
     /// CLLocationManager (delegate wired, defaults read) on EVERY ClockScreen struct init,
@@ -94,15 +94,35 @@ struct ClockScreen: View {
 
     private var minutesNow: Int { PaharFormat.minutesOfDay(nowDate) }
 
+    /// True when the clock is pinned (UI tests): the hands show the pinned minute, seconds at
+    /// 0, and nothing animates — deterministic screenshots, no idle-wait stalls.
+    private var handsFrozen: Bool {
+        #if DEBUG
+        let env = ProcessInfo.processInfo.environment
+        return env["SGGS_CLOCK_NOW"] != nil || env["SGGS_UITEST"] == "1"
+        #else
+        return false
+        #endif
+    }
+
+    /// The stored solar location. DEBUG: `SGGS_CLOCK_NO_COORDS=1` makes a UI test see the
+    /// no-location state regardless of what the simulator has stored; never ships in Release.
+    private var coords: (lat: Double, lon: Double)? {
+        #if DEBUG
+        if ProcessInfo.processInfo.environment["SGGS_CLOCK_NO_COORDS"] == "1" { return nil }
+        #endif
+        return location?.coords
+    }
+
     /// Usable sunrise/sunset (solar mode, stored coords, non-polar) — else nil → fixed clock.
     private var sun: (sunrise: Int, sunset: Int)? {
-        guard mode == "solar", let coords = location?.coords else { return nil }
+        guard mode == "solar", let coords = self.coords else { return nil }
         return PaharFormat.usableSun(PaharFormat.sunTimes(on: nowDate, lat: coords.lat, lon: coords.lon))
     }
 
     /// True when solar mode is on but unusable (polar day/night at this latitude).
     private var solarIsPolar: Bool {
-        guard mode == "solar", let coords = location?.coords else { return false }
+        guard mode == "solar", let coords = self.coords else { return false }
         return PaharFormat.sunTimes(on: nowDate, lat: coords.lat, lon: coords.lon).polar
     }
 
@@ -150,7 +170,7 @@ struct ClockScreen: View {
             VStack(alignment: .leading, spacing: Theme.Space.l) {
                 nowCard(clock: clock, pahar: p, boundary: boundary, solarLive: solar != nil)
                 RaagDial(clock: clock, currentPahar: p, minutesNow: minutesNow, now: nowDate,
-                         sun: solar, boundary: boundary) { tapped in
+                         sun: solar, handsFrozen: handsFrozen, epoch: clockEpoch) { tapped in
                     Haptics.tap()
                     detailPahar = PaharSelection(p: tapped)
                 }
@@ -161,6 +181,8 @@ struct ClockScreen: View {
                 .frame(maxWidth: 420)                 // iPad/landscape: never taller than a screen
                 .frame(maxWidth: .infinity)
                 .padding(.horizontal, Theme.Space.m)
+                readoutRow(pahar: p, boundary: boundary)
+                currentRaagList(clock: clock, pahar: p)
                 paharList(clock: clock, current: p)
                 seasonalSection(clock: clock)
                 footer
@@ -207,16 +229,6 @@ struct ClockScreen: View {
                     Text(unknownRaagNote).font(.caption).foregroundStyle(.secondary)
                         .accessibilityIdentifier("unknownRaagNote")
                 }
-                let raags = clock.raags(forPahar: p)
-                if raags.isEmpty {
-                    Text(p == 7 ? "Deliberately silent — no raags are assigned to this watch."
-                                : "No primary claims for this watch.")
-                        .font(.subheadline).foregroundStyle(.secondary)
-                } else {
-                    FlowChips(raags: raags) { claim in
-                        if let ang = claim.firstAng { container.router.openAng(ang) }
-                    }
-                }
                 Text("next: \(Pahar.label(boundary.nextPahar)) \(PaharFormat.countdown(minutes: boundary.minutes))")
                     .font(.caption).foregroundStyle(.secondary)
                 if mode == "solar" {
@@ -225,22 +237,25 @@ struct ClockScreen: View {
             }
     }
 
+    /// Solar status. With no location yet this is the ONE-TAP CARD: location is never requested
+    /// on its own — only from this explicit button (offline guardrail), or entered by hand.
     @ViewBuilder private func solarControls(live: Bool) -> some View {
-        VStack(alignment: .leading, spacing: Theme.Space.xs) {
+        VStack(alignment: .leading, spacing: Theme.Space.s) {
             if live {
                 Text("Solar watches from your stored location (rounded ~1 km; never leaves this device).")
                     .font(.caption2).foregroundStyle(.tertiary)
-            } else if location?.coords == nil {
-                HStack(spacing: Theme.Space.s) {
-                    Button("Use my location") { location?.requestOnce() }
-                        .buttonStyle(.bordered).font(.caption)
-                    Button("Enter manually") { showManualLocation = true }
-                        .buttonStyle(.bordered).font(.caption)
+            } else if coords == nil {
+                Text("Sun-accurate watches need your location once. It is rounded to about 1 km, stored on this device, and never sent.")
+                    .font(.caption).foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+                ViewThatFits(in: .horizontal) {
+                    HStack(spacing: Theme.Space.s) { locationButtons }
+                    VStack(alignment: .leading, spacing: Theme.Space.s) { locationButtons }
                 }
-                if location?.denied == true {
-                    Text("Location denied — enter coordinates manually, or stay on the fixed clock.")
-                        .font(.caption2).foregroundStyle(.secondary)
-                }
+                Text(location?.denied == true
+                     ? "Location is off for Gurbani Soul — enter coordinates manually, or stay on the fixed clock."
+                     : "Until then: showing the fixed clock (pahar 1 at 6 AM).")
+                    .font(.caption2).foregroundStyle(.secondary)
             } else if solarIsPolar {
                 Text("Polar day/night at this latitude — showing the fixed clock.")
                     .font(.caption2).foregroundStyle(.secondary)
@@ -253,6 +268,77 @@ struct ClockScreen: View {
             ManualLocationSheet { lat, lon in location?.setManually(lat: lat, lon: lon) }
                 .presentationDetents([.medium])
         }
+    }
+
+    @ViewBuilder private var locationButtons: some View {
+        Button { location?.requestOnce() } label: {
+            Label("Use my location", systemImage: "location.fill")
+                .font(.subheadline.weight(.semibold))
+                .foregroundStyle(palette.onAccent)
+                .padding(.horizontal, Theme.Space.m).padding(.vertical, Theme.Space.s)
+                .background(Capsule().fill(palette.accentFill))
+                .overlay(Capsule().strokeBorder(palette.accent, lineWidth: 1))   // brand: fill always bordered
+        }
+        .buttonStyle(.plain)
+        .accessibilityIdentifier("useMyLocation")
+        Button("Enter manually") { showManualLocation = true }
+            .buttonStyle(.bordered).font(.subheadline)
+            .accessibilityIdentifier("enterLocationManually")
+    }
+
+    // MARK: readout + the current watch's raags
+
+    /// The digital local time and the watch, under the dial (the face itself stays clean).
+    private func readoutRow(pahar p: Int, boundary: Pahar.Boundary) -> some View {
+        HStack(alignment: .firstTextBaseline, spacing: Theme.Space.s) {
+            Text(PaharFormat.time(nowDate, locale: locale))
+                .font(Brand.heading(.title3, weight: 650)).monospacedDigit()
+            Text("·").foregroundStyle(.secondary)
+            Text(Pahar.label(p)).font(.subheadline.weight(.semibold))
+        }
+        .lineLimit(1).minimumScaleFactor(0.7)
+        .frame(maxWidth: .infinity)
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel("It is \(PaharFormat.time(nowDate, locale: locale)). \(Pahar.label(p)). "
+            + "Next watch, \(Pahar.label(boundary.nextPahar)), \(PaharFormat.countdownSpoken(minutes: boundary.minutes)).")
+        .accessibilityIdentifier("clockNowReadout")
+    }
+
+    /// "Sung in this watch": the current pahar's primary raags as a readable list — full
+    /// names, never clipped, each a one-tap way into the Granth at that raag's first Ang.
+    private func currentRaagList(clock: TimingClock, pahar p: Int) -> some View {
+        let raags = clock.raags(forPahar: p)
+        return VStack(alignment: .leading, spacing: Theme.Space.s) {
+            HStack(alignment: .firstTextBaseline) {
+                Text("Sung in this watch").font(.headline)
+                Spacer()
+                if !raags.isEmpty {
+                    Text("\(raags.count) raag\(raags.count == 1 ? "" : "s")")
+                        .font(.caption).foregroundStyle(.secondary)
+                }
+            }
+            VStack(spacing: 0) {
+                if raags.isEmpty {
+                    Text(p == 7 ? "Deliberately silent — no raags are assigned to this watch."
+                                : "No primary claims for this watch.")
+                        .font(.subheadline).foregroundStyle(.secondary)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .padding(Theme.Space.m)
+                }
+                ForEach(Array(raags.enumerated()), id: \.offset) { i, claim in
+                    CurrentRaagRow(claim: claim) { ang in container.router.openAng(ang) }
+                    if i < raags.count - 1 { Divider().overlay(Ink.hairline).padding(.leading, Theme.Space.m) }
+                }
+            }
+            .background(RoundedRectangle(cornerRadius: Theme.Radius.card).fill(Ink.card))
+            .overlay(RoundedRectangle(cornerRadius: Theme.Radius.card).strokeBorder(Ink.hairline))
+            Button { detailPahar = PaharSelection(p: p) } label: {
+                Label("All claims and sources for this watch", systemImage: "text.book.closed")
+                    .font(.footnote)
+            }
+            .accessibilityIdentifier("currentWatchSources")
+        }
+        .accessibilityIdentifier("currentRaagList")
     }
 
     private func paharList(clock: TimingClock, current: Int) -> some View {
@@ -301,7 +387,7 @@ struct ClockScreen: View {
             }
             .accessibilityIdentifier("divergenceLink")
             Text("Pahars were traditionally solar — four equal watches of daylight and four of night. "
-                 + "The fixed-clock view anchors pahar 1 at 6 AM as a modern rendering. The dial is a "
+                 + "Solar is the default; the fixed-clock view anchors pahar 1 at 6 AM as a modern rendering. The dial is a "
                  + "24-hour face on your local clock: noon at the top, midnight at the bottom. Every placement "
                  + "here is an attributed scholarly claim with its citation — where traditions disagree, "
                  + "both are kept.")
@@ -324,11 +410,16 @@ struct RaagDial: View {
     let minutesNow: Int
     let now: Date
     let sun: (sunrise: Int, sunset: Int)?
-    let boundary: Pahar.Boundary
+    /// Pinned clock / UI tests: hands at `now`, seconds 0, no animation.
+    var handsFrozen = false
+    /// Bumped on a system time-zone/clock change so the hands restart from the new clock.
+    var epoch = 0
     var onTap: (Int) -> Void
     @Environment(\.palette) private var palette
     @Environment(\.locale) private var locale
-    @Environment(\.dynamicTypeSize) private var typeSize
+    @Environment(\.scenePhase) private var scenePhase
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @State private var visible = false
 
     private var model: PaharDialModel {
         var beads: [Int: Int] = [:]
@@ -339,11 +430,6 @@ struct RaagDial: View {
         return .fixed(current: currentPahar, minutesNow: minutesNow, beads: beads)
     }
 
-    private var spoken: String {
-        "It is \(PaharFormat.time(now, locale: locale)). \(Pahar.label(currentPahar)). "
-        + "Next watch, \(Pahar.label(boundary.nextPahar)), \(PaharFormat.countdownSpoken(minutes: boundary.minutes))."
-    }
-
     var body: some View {
         GeometryReader { geo in
             let size = min(geo.size.width, geo.size.height)
@@ -351,15 +437,14 @@ struct RaagDial: View {
             let m = DialMetrics(size: size, center: center, style: .full)
             ZStack {
                 PaharDialRenderer(model: model, style: .full, palette: palette,
-                                  numerals: PaharFormat.dialNumerals(locale: locale))
-                    .accessibilityHidden(true)
-                readout(m)
-                    .position(center)
+                                  numerals: PaharFormat.dialNumerals(locale: locale), faceDate: now)
+                hands
             }
+            .accessibilityHidden(true)      // decorative: the readout row + lists carry the content
             .contentShape(Circle())
             .onTapGesture { pt in
                 // hit-test: angle → minutes → pahar (respect the active mode's windows);
-                // the hollow (readout) is not a target
+                // the face in the hollow is not a target
                 guard let minute = m.minute(at: pt) else { return }
                 if let s = sun {
                     onTap(Pahar.paharSolar(minute, sunrise: s.sunrise, sunset: s.sunset))
@@ -368,30 +453,74 @@ struct RaagDial: View {
                 }
             }
         }
+        .onAppear { visible = true }
+        .onDisappear { visible = false }
     }
 
-    /// The live readout on the analog face: the watch above the hub, the digital local time
-    /// below it (the face's numerals + hands are painted by the renderer).
-    private func readout(_ m: DialMetrics) -> some View {
-        let r = m.faceRadius
-        return ZStack {
-            Text(Pahar.label(currentPahar))
-                .font(.system(size: max(9, r * 0.11), weight: .semibold, design: .rounded))
-                .lineLimit(1).minimumScaleFactor(0.7)
-                .frame(width: r * 0.9)
-                .offset(y: -r * 0.42)
-            Text(PaharFormat.time(now, locale: locale))
-                .font(Brand.heading(.callout, weight: 650))
-                .monospacedDigit()
-                .lineLimit(1).minimumScaleFactor(0.6)
-                .frame(width: r * 0.9)
-                .offset(y: r * 0.42)
+    /// ONLY this layer animates. Smooth sweep at ≤30 fps while the dial is on screen and the app
+    /// is active; one tick per second under Reduce Motion; frozen for pinned/test clocks.
+    @ViewBuilder private var hands: some View {
+        if handsFrozen {
+            ClockHandsLayer(date: now, style: .full, palette: palette, showSeconds: false)
+        } else if reduceMotion {
+            TimelineView(.periodic(from: .now, by: 1)) { ctx in
+                ClockHandsLayer(date: Self.wholeSecond(ctx.date), style: .full, palette: palette)
+            }
+            .id(epoch)
+        } else {
+            TimelineView(.animation(minimumInterval: 1.0 / 30, paused: !visible || scenePhase != .active)) { ctx in
+                ClockHandsLayer(date: ctx.date, style: .full, palette: palette)
+            }
+            .id(epoch)
         }
-        .foregroundStyle(.primary)
-        .frame(width: r * 2, height: r * 2)
+    }
+
+    private static func wholeSecond(_ d: Date) -> Date {
+        Date(timeIntervalSinceReferenceDate: d.timeIntervalSinceReferenceDate.rounded(.down))
+    }
+}
+
+/// One row of "Sung in this watch": the raag's Gurmukhi name (verbatim, ink Sant Lipi) over its
+/// roman form, and a way in. The whole row is a single button for VoiceOver and Switch Control.
+struct CurrentRaagRow: View {
+    let claim: TimingClaim
+    var onOpenAng: (Int) -> Void
+
+    var body: some View {
+        Button {
+            if let ang = claim.firstAng { Haptics.tap(); onOpenAng(ang) }
+        } label: {
+            ViewThatFits(in: .horizontal) {
+                HStack(alignment: .center, spacing: Theme.Space.m) { names; Spacer(minLength: Theme.Space.s); read }
+                VStack(alignment: .leading, spacing: Theme.Space.xs) { names; read }
+            }
+            .padding(.horizontal, Theme.Space.m).padding(.vertical, Theme.Space.s + 2)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .disabled(claim.firstAng == nil)
         .accessibilityElement(children: .ignore)
-        .accessibilityLabel(spoken)
-        .accessibilityIdentifier("clockNowReadout")
+        .accessibilityLabel("Raag \(claim.roman ?? claim.raagName ?? "")"
+            + (claim.firstAng.map { ", read from Ang \(String($0))" } ?? ""))
+        .accessibilityAddTraits(.isButton)
+    }
+
+    private var names: some View {
+        VStack(alignment: .leading, spacing: 1) {
+            if let name = claim.raagName { GurmukhiText(verbatim: name, size: 21) }
+            if let roman = claim.roman { Text(roman).font(.caption).foregroundStyle(.secondary) }
+        }
+    }
+
+    @ViewBuilder private var read: some View {
+        if let ang = claim.firstAng {
+            HStack(spacing: 4) {
+                Text("Ang \(String(ang))").font(.caption.weight(.medium)).monospacedDigit()
+                Image(systemName: "chevron.right").font(.caption2.weight(.semibold))
+            }
+            .foregroundStyle(.secondary)
+        }
     }
 }
 
@@ -475,31 +604,6 @@ struct Badge: View {
             .padding(.horizontal, Theme.Space.s).padding(.vertical, 2)
             .background(Capsule().fill(color.opacity(0.15)))
             .foregroundStyle(color)
-    }
-}
-
-/// Primary-claim raag chips for the now card.
-struct FlowChips: View {
-    let raags: [TimingClaim]
-    var onTap: (TimingClaim) -> Void
-    var body: some View {
-        ScrollView(.horizontal, showsIndicators: false) {
-            HStack(spacing: Theme.Space.s) {
-                ForEach(Array(raags.enumerated()), id: \.offset) { _, c in
-                    Button { onTap(c) } label: {
-                        VStack(spacing: 2) {
-                            GurmukhiText(verbatim: c.raagName ?? "", size: 18)
-                            if let roman = c.roman { Text(roman).font(.caption2).foregroundStyle(.secondary) }
-                        }
-                        .padding(.horizontal, Theme.Space.m).padding(.vertical, Theme.Space.s)
-                        .background(RoundedRectangle(cornerRadius: Theme.Radius.chip).fill(Ink.raised))
-                        .overlay(RoundedRectangle(cornerRadius: Theme.Radius.chip).strokeBorder(Ink.hairline))
-                    }
-                    .buttonStyle(.pressableCard)
-                    .accessibilityLabel("Raag \(c.roman ?? c.raagName ?? ""), read from Ang \(String(c.firstAng ?? 0))")
-                }
-            }
-        }
     }
 }
 

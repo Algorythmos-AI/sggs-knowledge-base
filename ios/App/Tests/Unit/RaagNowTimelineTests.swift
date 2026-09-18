@@ -96,6 +96,34 @@ final class RaagNowTimelineTests: XCTestCase {
         XCTAssertFalse(RaagNowTimeline.entry(at: .now, config: noCoords, snapshot: nil).solar)
     }
 
+    /// Solar is the default for a reader who never chose; an explicit choice always wins; with
+    /// no coordinates the widget shows the fixed clock. App and widget read ONE constant.
+    func testSolarIsTheDefaultAndExplicitChoiceWins() {
+        XCTAssertEqual(SharedDefaults.defaultClockMode, "solar")
+        let suite = SharedDefaults.suite
+        let savedMode = suite.string(forKey: SharedDefaults.clockModeKey)
+        let savedCoords = suite.string(forKey: SharedDefaults.solarCoordsKey)
+        defer {
+            if let savedMode { suite.set(savedMode, forKey: SharedDefaults.clockModeKey) } else { suite.removeObject(forKey: SharedDefaults.clockModeKey) }
+            if let savedCoords { suite.set(savedCoords, forKey: SharedDefaults.solarCoordsKey) } else { suite.removeObject(forKey: SharedDefaults.solarCoordsKey) }
+        }
+        suite.removeObject(forKey: SharedDefaults.clockModeKey)
+        guard suite.string(forKey: SharedDefaults.clockModeKey) == nil else { return }   // a lower defaults domain pins it on this device
+        XCTAssertEqual(SharedDefaults.clockMode, "solar")
+        XCTAssertTrue(RaagClockConfig.current(snapshot: nil).solar)
+
+        suite.removeObject(forKey: SharedDefaults.solarCoordsKey)
+        if SharedDefaults.solarCoords() == nil {
+            let e = RaagNowTimeline.entry(at: .now, config: .current(snapshot: nil), snapshot: nil)
+            XCTAssertFalse(e.solar, "solar default with no location → fixed clock")
+        }
+        SharedDefaults.storeSolarCoords(lat: 31.63, lon: 74.87)
+        XCTAssertNotNil(RaagClockConfig.current(snapshot: nil).lat)
+
+        suite.set("fixed", forKey: SharedDefaults.clockModeKey)
+        XCTAssertFalse(RaagClockConfig.current(snapshot: nil).solar, "an explicit Fixed is respected")
+    }
+
     func testOldSnapshotStillDecodes() throws {
         let legacy = """
         {"generatedAt":0,"hukamGurmukhi":"x","hukamTranslit":"","hukamAng":1,"hukamCompId":2,"paharRaags":{"4":["maajh"]}}

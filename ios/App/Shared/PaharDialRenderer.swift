@@ -66,7 +66,7 @@ struct DialMetrics {
     /// Diameter available to the hollow readout.
     var hollowWidth: CGFloat { max(inner * 2 - 10, 0) }
     /// Radius of the analog face drawn in the hollow.
-    var faceRadius: CGFloat { inner - (style == .full ? 7 : 4) }
+    var faceRadius: CGFloat { inner - (style == .full ? 7 : 3) }
     var tickInner: CGFloat { outer + 3 }
     var tickMinor: CGFloat { outer + 7 }
     var tickMajor: CGFloat { outer + 10 }
@@ -103,6 +103,8 @@ struct PaharDialRenderer: View {
     /// Draw the classic 12-hour analog face (numerals 1–12, hour + minute hands) in the hollow,
     /// so the modern clock and the eight Sikhi watches read on one face. Off for `.mono`.
     var analogFace = true
+    /// The date shown by the face's day/date complication (nil hides it).
+    var faceDate: Date? = nil
 
     private var mono: Bool { monochrome || style == .mono }
 
@@ -119,65 +121,49 @@ struct PaharDialRenderer: View {
         }
     }
 
-    // MARK: the 12-hour face
+    // MARK: the 12-hour face (static part — the hands live in `ClockHandsLayer`)
 
-    /// A wall clock in the hollow: ink numerals 1–12 (12 at the top), 60 minute ticks, an ink
-    /// hour hand and minute hand, a gold hub. It shares the centre with the 24-hour ring, so
-    /// the gold pointer on the ring and the ink hands always agree (both are `minutesNow`).
+    /// The Apple-clean face in the hollow: a quiet surface, 60 rim ticks with bold hour bars,
+    /// thin SF numerals 1–12 and a small day/date complication. No hands here — they are a
+    /// separate layer so the app can sweep the seconds without redrawing the ring.
     private func drawAnalogFace(_ ctx: inout GraphicsContext, _ m: DialMetrics) {
-        let r = m.inner - (style == .full ? 7 : 3)          // face radius
-        guard r > 14 else { return }
-        let handsOnly = r < 30                                // e.g. the small widget: hands + 4 ticks
-        let c = m.center
-        // face
+        let f = FaceMetrics(dial: m)
+        guard f.drawsFace else { return }
+        let r = f.r, c = f.center
         let face = Path(ellipseIn: CGRect(x: c.x - r, y: c.y - r, width: r * 2, height: r * 2))
-        ctx.fill(face, with: .color(Ink.card))
+        ctx.fill(face, with: .color(FaceMetrics.faceColor))
         ctx.stroke(face, with: .color(Ink.hairline), lineWidth: 1)
-        // minute ticks (every 5th is an hour tick)
-        let compact = r < 60
+        // rim ticks: 60 minutes, the 12 hours as bold rounded bars
         for i in 0..<60 {
             let hourTick = i % 5 == 0
-            if compact && !hourTick { continue }
-            if r < 48 && i % 15 != 0 { continue }
-            if handsOnly && i % 15 != 0 { continue }
+            if !hourTick && !f.showsMinuteTicks { continue }
+            if (f.quartersOnly || f.handsOnly) && i % 15 != 0 { continue }
             let a = Double(i) / 60 * 2 * .pi - .pi / 2
-            let outerR = r - 3
-            let innerR = outerR - (hourTick ? (compact ? 4 : 6) : 3)
             var t = Path()
-            t.move(to: CGPoint(x: c.x + CGFloat(cos(a)) * outerR, y: c.y + CGFloat(sin(a)) * outerR))
-            t.addLine(to: CGPoint(x: c.x + CGFloat(cos(a)) * innerR, y: c.y + CGFloat(sin(a)) * innerR))
-            ctx.stroke(t, with: .color(Color.primary.opacity(hourTick ? 0.9 : 0.3)),
-                       style: StrokeStyle(lineWidth: hourTick ? 1.5 : 0.75, lineCap: .round))
+            t.move(to: f.point(angle: a, radius: r - 2.5))
+            t.addLine(to: f.point(angle: a, radius: r - (hourTick ? max(6, r * 0.085) : max(4, r * 0.05))))
+            ctx.stroke(t, with: .color(Color.primary.opacity(hourTick ? 0.95 : 0.35)),
+                       style: StrokeStyle(lineWidth: hourTick ? max(1.5, r * 0.028) : 0.75, lineCap: .round))
         }
-        // numerals 1–12 (quarters only on a tiny face, e.g. the small widget)
-        let tiny = r < 48
-        let numR = r - (compact ? 12 : 19)
-        let size: CGFloat = compact ? max(8, r * 0.2) : max(11, r * 0.17)
-        for h in 1...12 where (!tiny || h % 3 == 0) && !handsOnly {
-            let a = Double(h) / 12 * 2 * .pi - .pi / 2
-            let pt = CGPoint(x: c.x + CGFloat(cos(a)) * numR, y: c.y + CGFloat(sin(a)) * numR)
-            let t = Text("\(h)").font(.system(size: size, weight: .bold, design: .rounded))
-                .monospacedDigit().foregroundStyle(Color.primary)
-            ctx.draw(ctx.resolve(t), at: pt, anchor: .center)
+        // numerals: thin and airy (SF), quarters only on a tiny face
+        if !f.handsOnly {
+            let weight: Font.Weight = r >= 110 ? .light : .regular
+            for h in 1...12 where !f.quartersOnly || h % 3 == 0 {
+                let a = Double(h) / 12 * 2 * .pi - .pi / 2
+                let t = Text("\(h)").font(.system(size: f.numeralSize, weight: weight))
+                    .monospacedDigit().foregroundStyle(Color.primary)
+                ctx.draw(ctx.resolve(t), at: f.point(angle: a, radius: f.numeralRadius), anchor: .center)
+            }
         }
-        // hands
-        let minute = Double(((model.minutesNow % 1440) + 1440) % 1440)
-        let hourA = (minute.truncatingRemainder(dividingBy: 720)) / 720 * 2 * .pi - .pi / 2
-        let minA = (minute.truncatingRemainder(dividingBy: 60)) / 60 * 2 * .pi - .pi / 2
-        func hand(_ a: Double, len: CGFloat, tail: CGFloat, width: CGFloat) {
-            var p = Path()
-            p.move(to: CGPoint(x: c.x - CGFloat(cos(a)) * tail, y: c.y - CGFloat(sin(a)) * tail))
-            p.addLine(to: CGPoint(x: c.x + CGFloat(cos(a)) * len, y: c.y + CGFloat(sin(a)) * len))
-            ctx.stroke(p, with: .color(Ink.card), style: StrokeStyle(lineWidth: width + 2.5, lineCap: .round))
-            ctx.stroke(p, with: .color(Color.primary), style: StrokeStyle(lineWidth: width, lineCap: .round))
+        // day/date complication between the hub and the "3"
+        if f.showsDate, let faceDate {
+            let (weekday, day) = PaharFormat.weekdayDay(faceDate)
+            let size = max(9, r * 0.105)
+            let t = Text(weekday + " ").font(.system(size: size, weight: .medium)).foregroundStyle(Color.secondary)
+                + Text(day).font(.system(size: size, weight: .semibold)).monospacedDigit()
+                    .foregroundStyle(mono ? Color.primary : palette.accentText)
+            ctx.draw(ctx.resolve(t), at: CGPoint(x: c.x + r * 0.40, y: c.y), anchor: .center)
         }
-        hand(hourA, len: r * 0.52, tail: r * 0.12, width: handsOnly ? 2.2 : (compact ? 3 : 4.5))
-        hand(minA, len: r * 0.78, tail: r * 0.12, width: handsOnly ? 1.5 : (compact ? 2 : 3))
-        let hub: CGFloat = handsOnly ? 2 : (compact ? 3 : 4.5)
-        ctx.fill(Path(ellipseIn: CGRect(x: c.x - hub, y: c.y - hub, width: hub * 2, height: hub * 2)),
-                 with: .color(palette.accent))
-        ctx.fill(Path(ellipseIn: CGRect(x: c.x - hub * 0.4, y: c.y - hub * 0.4, width: hub * 0.8, height: hub * 0.8)),
-                 with: .color(Ink.card))
     }
 
     // MARK: layers
