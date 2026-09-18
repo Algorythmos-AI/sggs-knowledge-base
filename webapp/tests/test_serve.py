@@ -73,5 +73,55 @@ class ShabadEndpoint(unittest.TestCase):
         self.assertGreater(len(r.get("results", [])), 0)
 
 
+@skip_no_db
+class BaniEndpoints(unittest.TestCase):
+    """Nitnem registry: SGGS lines are verbatim pointers, non-SGGS text is a labelled layer."""
+
+    def test_list_is_available_and_ordered(self):
+        d = serve.api("/api/banis", {})
+        self.assertTrue(d["available"])
+        keys = [b["key"] for b in d["banis"]]
+        self.assertEqual(keys[:5], ["japji", "jaap", "savaiye", "chaupai", "anand"])
+        self.assertEqual(sum(1 for b in d["banis"] if b["key"] == "rehras"), 2)
+
+    def test_japji_is_lines_1_to_385_verbatim(self):
+        d = serve.api("/api/bani/japji", {})
+        self.assertEqual([ln["id"] for ln in d["lines"]], list(range(1, 386)))
+        self.assertTrue(d["lines"][0]["gurmukhi"].startswith("ੴ ਸਤਿ ਨਾਮੁ ਕਰਤਾ ਪੁਰਖੁ"))
+        self.assertEqual((d["ang_first"], d["ang_last"]), (1, 8))
+        self.assertTrue(all(ln["source"] == "sggs" for ln in d["lines"]))
+
+    def test_rehras_default_and_variant(self):
+        d = serve.api("/api/bani/rehras", {})
+        self.assertEqual(d["bani"]["variant"], "sgpc")
+        self.assertEqual(d["variants"], ["sgpc", "taksal"])
+        t = serve.api("/api/bani/rehras", {"variant": ["taksal"]})
+        self.assertGreater(len(t["lines"]), len(d["lines"]))
+
+    def test_extra_lines_are_labelled_and_never_carry_english(self):
+        d = serve.api("/api/bani/rehras", {})
+        extra = [ln for ln in d["lines"] if ln["source"] != "sggs"]
+        self.assertTrue(extra, "Rehras should contain the Dasam layer")
+        for ln in extra:
+            self.assertIn(ln["source"], ("dasam", "ardaas"))
+            self.assertNotIn("en", ln)
+            self.assertNotIn("ang", ln)          # never cited as an Ang
+            self.assertIn("extra_id", ln)
+
+    def test_unknown_key_is_404_and_bad_input_rejected(self):
+        with self.assertRaises(serve.ApiError) as ctx:
+            serve.api("/api/bani/no_such_bani", {})
+        self.assertEqual(ctx.exception.status, 404)
+        with self.assertRaises(ValueError):
+            serve.api("/api/bani/../etc", {})
+        with self.assertRaises(ValueError):
+            serve.api("/api/bani/rehras", {"variant": ["x' OR 1=1"]})
+
+    def test_meta_and_health_flag_the_registry(self):
+        serve._META_CACHE = None
+        self.assertTrue(serve.api("/api/meta", {})["banis_available"])
+        self.assertTrue(serve.api("/api/health", {})["checks"]["banis_ok"])
+
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)

@@ -1,0 +1,17 @@
+{
+  "_comment": [
+    "Explicit resolutions for ShabadOS SGGS lines the matcher cannot place automatically.",
+    "Each entry maps ONE ShabadOS line id to the list of OUR verbatim lines.id values it",
+    "corresponds to, in printed order. An empty list means the line's text is already",
+    "covered by the previous entry (the two editions break the same text differently).",
+    "Every entry carries a reason. This file never changes scripture — only pointers."
+  ],
+  "overrides": [
+    {"shabados_line_id": "DWWY", "line_ids": [21410, 21411], "ang": 473,
+     "reason": "Line break differs: our edition prints 'ਅੰਨੁ ਦੇਵਤਾ … ਲੂਣੁ ਪੰਜਵਾ ਪਾਇਆ ਘਿਰਤੁ ॥' then 'ਤਾ ਹੋਆ ਪਾਕੁ ਪਵਿਤੁ ॥'; ShabadOS breaks after ਲੂਣੁ. Both of our lines cover DWWY + VHZ5 exactly once."},
+    {"shabados_line_id": "VHZ5", "line_ids": [], "ang": 473,
+     "reason": "Consumed by DWWY (see above)."},
+    {"shabados_line_id": "P1HB", "line_ids": [21506], "ang": 475,
+     "reason": "Spelling of the subjoined ha: our edition prints ਇਕਨ੍ਹੀ / ਚੁਲ੍ਹੈ / ਰਹਨ੍ਹਿ (੍ਹ); ShabadOS writes the udaat sign (ੑ). Same words; below the fuzzy threshold because three tokens differ."}
+  ]
+}

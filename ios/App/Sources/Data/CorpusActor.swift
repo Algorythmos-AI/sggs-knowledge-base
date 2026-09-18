@@ -71,6 +71,11 @@ actor CorpusActor {
     func timingDivergence() -> TimingDivergence { db.timingDivergence() }
     func forms(compId: Int) -> ShabadForms { db.forms(compId: compId) }
 
+    // Nitnem / Gutka registry (v1.2.0, ADR-0006) — pointers into the verbatim corpus plus a
+    // separate labelled non-SGGS layer. Gated by `capabilities.hasBanis`.
+    func banis() -> BaniList { db.fetchBanis() }
+    func bani(key: String, variant: String = "") -> Bani? { db.fetchBani(key: key, variant: variant) }
+
     func theme(_ name: String) throws -> ThemeSearchResult {
         let t = try db.themeSearch(name, limit: 200, offset: 0)
         return ThemeSearchResult(concept: t.concept, lines: db.attachTranslations(t.lines))

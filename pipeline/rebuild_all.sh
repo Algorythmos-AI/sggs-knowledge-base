@@ -85,6 +85,11 @@ python3 pipeline/timing/apply_migration.py  --db "$ANALYTICS_DB" --allow-live --
 python3 pipeline/timing/seed_timing.py      --db "$ANALYTICS_DB" --skip-baseline
 python3 pipeline/timing/derive_bani_forms.py --db "$ANALYTICS_DB" --skip-baseline
 
+echo "── 7c/8 Nitnem bani registry (additive NEW tables: banis, bani_lines, extra_lines; scripture untouched)"
+# Needs the ShabadOS database.sqlite in the repo root (git-ignored; NOTICE.md says how to fetch it).
+python3 pipeline/banis/build_banis.py --db "$ANALYTICS_DB" --skip-baseline --report docs/nitnem/review-pack/sggs-placements.json
+python3 pipeline/banis/guard_banis.py --db "$ANALYTICS_DB"
+
 echo "── 8/8 install + manifest"
 cp "$ANALYTICS_DB" db/sggs.sqlite
 python3 - <<'EOF'

@@ -46,3 +46,5 @@ jobs:
         run: python3 pipeline/timing/guard_scripture.py
       - name: Timing-layer tests
         run: python3 pipeline/timing/test_timing_layer.py
+      - name: Guard — Nitnem bani registry invariants
+        run: python3 pipeline/banis/guard_banis.py

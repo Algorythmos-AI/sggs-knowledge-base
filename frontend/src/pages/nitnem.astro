@@ -1,0 +1,25 @@
+---
+import Base from '../layouts/Base.astro';
+---
+<Base title="ੴ Sri Guru Granth Sahib Ji — Nitnem">
+  <section id="v-nitnem">
+    <div id="nitnemList" class="nitnem-list"></div>
+    <div id="nitnemReader" class="nitnem-reader" hidden>
+      <div class="toolbar">
+        <div class="nav">
+          <button id="nitnemBack" type="button" aria-label="Back to the bani list">‹ Banis</button>
+          <span id="nitnemVariants" class="of"></span>
+        </div>
+        <div class="right">
+          <div class="tgl" id="tglT" role="switch" tabindex="0" aria-checked="true" aria-label="show transliteration">
+            <span class="sw"></span> transliteration</div>
+          <button id="fontMinus" type="button" title="smaller text" aria-label="smaller text">ਅ−</button>
+          <button id="fontPlus" type="button" title="larger text" aria-label="larger text">ਅ+</button>
+        </div>
+      </div>
+      <div id="baniHead" class="raagbanner"></div>
+      <div id="baniOut"></div>
+    </div>
+  </section>
+  <script>import '../scripts/nitnem';</script>
+</Base>

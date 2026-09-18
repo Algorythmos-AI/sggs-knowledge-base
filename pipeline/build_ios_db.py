@@ -36,6 +36,9 @@ TRANSLATION_LAYER = ['translations', 'fts_en']
 # Timing-layer tables expected from DB v2.12.0+ (additive; informational detection only).
 TIMING_TABLES = ['timing_sources', 'raag_timing_claims', 'shabd_raag_map',
                  'shabd_musical_markers', 'shabd_structural_form', 'shabd_poetic_genre']
+# Nitnem bani registry (migration 002; additive). `extra_lines` is non-SGGS text (Sri Dasam
+# Granth / Ardaas) — a separate labelled layer that must never carry an English column.
+BANI_TABLES = ['banis', 'bani_lines', 'extra_lines']
 
 
 def scripture_checksum(con):
@@ -110,6 +113,8 @@ def main():
     dst_ck = scripture_checksum(con)
     dst_inv = invariants(con)
     remaining = {r[0] for r in con.execute("SELECT name FROM sqlite_master WHERE type IN ('table','view')")}
+    extra_cols = ({r[1] for r in con.execute("PRAGMA table_info('extra_lines')")}
+                  if 'extra_lines' in remaining else set())
     con.close()
 
     assert dst_ck == src_ck, 'SCRIPTURE CHANGED — aborting (this must never happen)'
@@ -120,6 +125,10 @@ def main():
 
     en_bundled = 'translations' in remaining and 'fts_en' in remaining
     timing_bundled = all(t in remaining for t in TIMING_TABLES)
+    banis_bundled = all(t in remaining for t in BANI_TABLES)
+    if banis_bundled:
+        assert not (extra_cols & {'en', 'english', 'translation'}), 'extra_lines must never carry English'
+        assert not any(t.startswith('extra_trans') for t in remaining), 'no translations for extra text'
     if profile == 'public':
         assert not en_bundled and 'translations' not in remaining and 'fts_en' not in remaining, \
             'translation layer not removed from the PUBLIC profile'
@@ -132,6 +141,7 @@ def main():
         'profile': profile,
         'en_bundled': en_bundled,
         'timing_bundled': timing_bundled,
+        'banis_bundled': banis_bundled,
         'derived_from': os.path.relpath(src_path, ROOT),
         'dropped': drop,
         'bytes': os.path.getsize(dest),
@@ -148,7 +158,7 @@ def main():
     src_mb = os.path.getsize(src_path) / 1e6
     dst_mb = manifest['bytes'] / 1e6
     layer = 'translations kept ✓' if en_bundled else 'translations removed ✓'
-    print(f'OK  scripture byte-identical ✓  invariants ✓  {layer}  timing={"✓" if timing_bundled else "ABSENT"}')
+    print(f'OK  scripture byte-identical ✓  invariants ✓  {layer}  timing={"✓" if timing_bundled else "ABSENT"}  banis={"✓" if banis_bundled else "ABSENT"}')
     print(f'    size {src_mb:.1f} MB -> {dst_mb:.1f} MB   db_sha256={db_sha[:16]}…')
     print(f'    manifest -> {mpath}')
     if en_bundled:

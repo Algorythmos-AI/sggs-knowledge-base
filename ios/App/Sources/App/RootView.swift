@@ -1,6 +1,7 @@
 import SwiftUI
 
-/// The tab shell + the single shared composition sheet + the fail-closed integrity gate.
+/// The tab shell (Nitnem · Reader · Search · Explore · More) + the single shared composition
+/// sheet + the fail-closed integrity gate.
 struct RootView: View {
     @Environment(AppContainer.self) private var container
     @AppStorage("sggs_appearance") private var appearance = "system"
@@ -39,9 +40,9 @@ struct RootView: View {
                 })
             } else {
                 TabView(selection: $router.selectedTab) {
+                    NitnemScreen().tabItem { Label("Nitnem", systemImage: "sun.horizon") }.tag(Tab.nitnem)
                     ReaderScreen().tabItem { Label("Reader", systemImage: "book") }.tag(Tab.reader)
                     SearchScreen().tabItem { Label("Search", systemImage: "magnifyingglass") }.tag(Tab.search)
-                    ClockScreen().tabItem { Label("Clock", systemImage: "clock") }.tag(Tab.clock)
                     ExploreScreen().tabItem { Label("Explore", systemImage: "square.grid.2x2") }.tag(Tab.explore)
                     MoreScreen().tabItem { Label("More", systemImage: "ellipsis") }.tag(Tab.more)
                 }

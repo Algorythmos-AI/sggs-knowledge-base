@@ -1,0 +1,300 @@
+{
+  "_comment": [
+    "Reviewable registry of the Nitnem / Gutka banis shipped by the app.",
+    "Titles and descriptions here are this project's own words.",
+    "shabados_bani_id points at the `banis` table of the ShabadOS open database",
+    "(github.com/shabados/database, release 4.8.7). It is used for WHICH lines belong",
+    "to a bani and in what groups; every Sri Guru Granth Sahib Ji line is then resolved",
+    "to OUR verbatim `lines.id` and rendered from our corpus. Only Sri Dasam Granth /",
+    "Ardaas text is taken from ShabadOS (converted, unfolded) into `extra_lines`.",
+    "Editorial choices are explicit fields, never inherited silently:",
+    "  prepend_line_ranges — SGGS line-id ranges read BEFORE the ShabadOS set (e.g. the",
+    "  ਗੁਰਦੇਵ ਮਾਤਾ salok that gutkas print before Sukhmani Sahib).",
+    "  append_line_ranges — SGGS line-id ranges read AFTER the ShabadOS set.",
+    "Estimated minutes are typical unhurried reading times, for planning only."
+  ],
+  "source": {
+    "name": "ShabadOS database",
+    "release": "4.8.7",
+    "url": "https://github.com/shabados/database",
+    "notes": "Bani membership + Sri Dasam Granth / Ardaas text. Licence recorded in NOTICE.md."
+  },
+  "banis": [
+    {
+      "key": "japji",
+      "variant": "",
+      "is_default": 1,
+      "shabados_bani_id": 1,
+      "title_gm": "ਜਪੁਜੀ ਸਾਹਿਬ",
+      "title_en": "Japji Sahib",
+      "category": "nitnem_morning",
+      "order": 10,
+      "estimated_minutes": 20,
+      "description_en": "The opening composition of Sri Guru Granth Sahib Ji, recited at Amrit Vela."
+    },
+    {
+      "key": "jaap",
+      "variant": "",
+      "is_default": 1,
+      "shabados_bani_id": 2,
+      "title_gm": "ਜਾਪੁ ਸਾਹਿਬ",
+      "title_en": "Jaap Sahib",
+      "category": "nitnem_morning",
+      "order": 20,
+      "estimated_minutes": 25,
+      "description_en": "Morning composition from Sri Dasam Granth."
+    },
+    {
+      "key": "savaiye",
+      "variant": "",
+      "is_default": 1,
+      "shabados_bani_id": 3,
+      "title_gm": "ਤ੍ਵ ਪ੍ਰਸਾਦਿ ਸਵੱਯੇ",
+      "title_en": "Tav-Prasad Savaiye",
+      "category": "nitnem_morning",
+      "order": 30,
+      "estimated_minutes": 4,
+      "description_en": "Ten savaiye from Sri Dasam Granth (Sravag Sudh)."
+    },
+    {
+      "key": "chaupai",
+      "variant": "",
+      "is_default": 1,
+      "shabados_bani_id": 4,
+      "title_gm": "ਬੇਨਤੀ ਚੌਪਈ ਸਾਹਿਬ",
+      "title_en": "Chaupai Sahib",
+      "category": "nitnem_morning",
+      "order": 40,
+      "estimated_minutes": 6,
+      "description_en": "Benti Chaupai from Sri Dasam Granth, read morning and evening."
+    },
+    {
+      "key": "anand",
+      "variant": "",
+      "is_default": 1,
+      "shabados_bani_id": 5,
+      "title_gm": "ਅਨੰਦੁ ਸਾਹਿਬ",
+      "title_en": "Anand Sahib",
+      "category": "nitnem_morning",
+      "order": 50,
+      "estimated_minutes": 15,
+      "description_en": "All forty pauris, Raag Ramkali, Sri Guru Granth Sahib Ji Ang 917–922."
+    },
+    {
+      "key": "rehras",
+      "variant": "sgpc",
+      "is_default": 1,
+      "shabados_bani_id": 7,
+      "title_gm": "ਰਹਰਾਸਿ ਸਾਹਿਬ",
+      "title_en": "Rehras Sahib",
+      "category": "nitnem_evening",
+      "order": 60,
+      "estimated_minutes": 20,
+      "description_en": "Evening prayer as printed in the SGPC Nitnem Gutka."
+    },
+    {
+      "key": "rehras",
+      "variant": "taksal",
+      "is_default": 0,
+      "shabados_bani_id": 8,
+      "title_gm": "ਰਹਰਾਸਿ ਸਾਹਿਬ",
+      "title_en": "Rehras Sahib (Taksal)",
+      "category": "nitnem_evening",
+      "order": 61,
+      "estimated_minutes": 25,
+      "description_en": "Evening prayer in the Damdami Taksal tradition (longer)."
+    },
+    {
+      "key": "sohila",
+      "variant": "",
+      "is_default": 1,
+      "shabados_bani_id": 11,
+      "title_gm": "ਕੀਰਤਨ ਸੋਹਿਲਾ",
+      "title_en": "Kirtan Sohila",
+      "category": "nitnem_night",
+      "order": 70,
+      "estimated_minutes": 5,
+      "description_en": "Night prayer, Sri Guru Granth Sahib Ji Ang 12–13."
+    },
+    {
+      "key": "sukhmani",
+      "variant": "",
+      "is_default": 1,
+      "shabados_bani_id": 12,
+      "title_gm": "ਸੁਖਮਨੀ ਸਾਹਿਬ",
+      "title_en": "Sukhmani Sahib",
+      "category": "popular",
+      "order": 100,
+      "estimated_minutes": 90,
+      "prepend_line_ranges": [
+        [
+          11579,
+          11588
+        ]
+      ],
+      "description_en": "Twenty-four ashtapadis in Raag Gauri, Ang 262–296. The ਗੁਰਦੇਵ ਮਾਤਾ salok is read at the start and again at the end, as its rubric (ਏਹੁ ਸਲੋਕੁ ਆਦਿ ਅੰਤਿ ਪੜਣਾ) and the printed gutkas direct.",
+      "append_line_ranges": [
+        [
+          11579,
+          11588
+        ]
+      ]
+    },
+    {
+      "key": "asa_di_vaar",
+      "variant": "kirtan",
+      "is_default": 1,
+      "shabados_bani_id": 13,
+      "title_gm": "ਆਸਾ ਦੀ ਵਾਰ",
+      "title_en": "Asa Di Vaar",
+      "category": "popular",
+      "order": 110,
+      "estimated_minutes": 60,
+      "description_en": "The Vaar in Raag Asa (Ang 462–475) in its kirtan form, with the chhants from Ang 448–451 between the pauris."
+    },
+    {
+      "key": "anand_short",
+      "variant": "",
+      "is_default": 1,
+      "shabados_bani_id": 6,
+      "title_gm": "ਅਨੰਦੁ ਸਾਹਿਬ (ਛੇ ਪਉੜੀਆਂ)",
+      "title_en": "Anand Sahib (six pauris)",
+      "category": "popular",
+      "order": 120,
+      "estimated_minutes": 4,
+      "description_en": "The first five pauris and the fortieth, as read at the close of a diwan."
+    },
+    {
+      "key": "ardaas",
+      "variant": "",
+      "is_default": 1,
+      "shabados_bani_id": 14,
+      "title_gm": "ਅਰਦਾਸ",
+      "title_en": "Ardaas",
+      "category": "popular",
+      "order": 130,
+      "estimated_minutes": 5,
+      "description_en": "The congregational prayer, opening with the first pauri of Chandi Di Vaar."
+    },
+    {
+      "key": "salok_m9",
+      "variant": "",
+      "is_default": 1,
+      "shabados_bani_id": 15,
+      "title_gm": "ਸਲੋਕ ਮਹਲਾ ੯",
+      "title_en": "Salok Mahalla 9",
+      "category": "popular",
+      "order": 140,
+      "estimated_minutes": 10,
+      "description_en": "Fifty-seven saloks of Guru Tegh Bahadur Ji, Ang 1426–1429."
+    },
+    {
+      "key": "shabad_hazare",
+      "variant": "",
+      "is_default": 1,
+      "shabados_bani_id": 16,
+      "title_gm": "ਸ਼ਬਦ ਹਜ਼ਾਰੇ",
+      "title_en": "Shabad Hazare",
+      "category": "popular",
+      "order": 150,
+      "estimated_minutes": 10,
+      "description_en": "Seven shabads from Sri Guru Granth Sahib Ji read together."
+    },
+    {
+      "key": "shabad_hazare_p10",
+      "variant": "",
+      "is_default": 1,
+      "shabados_bani_id": 17,
+      "title_gm": "ਸ਼ਬਦ ਹਜ਼ਾਰੇ ਪਾਤਿਸ਼ਾਹੀ ੧੦",
+      "title_en": "Shabad Hazare Patshahi 10",
+      "category": "popular",
+      "order": 160,
+      "estimated_minutes": 8,
+      "description_en": "Ten shabads from Sri Dasam Granth."
+    },
+    {
+      "key": "savaiye_deenan",
+      "variant": "",
+      "is_default": 1,
+      "shabados_bani_id": 18,
+      "title_gm": "ਤ੍ਵ ਪ੍ਰਸਾਦਿ ਸਵੱਯੇ (ਦੀਨਨ ਕੀ)",
+      "title_en": "Tav-Prasad Savaiye (Deenan Ki)",
+      "category": "popular",
+      "order": 170,
+      "estimated_minutes": 4,
+      "description_en": "Savaiye from Sri Dasam Granth."
+    },
+    {
+      "key": "bavan_akhri",
+      "variant": "",
+      "is_default": 1,
+      "shabados_bani_id": 20,
+      "title_gm": "ਬਾਵਨ ਅਖਰੀ",
+      "title_en": "Bavan Akhri",
+      "category": "popular",
+      "order": 180,
+      "estimated_minutes": 40,
+      "description_en": "Guru Arjan Dev Ji's acrostic in Raag Gauri, Ang 250–262."
+    },
+    {
+      "key": "sidh_gosht",
+      "variant": "",
+      "is_default": 1,
+      "shabados_bani_id": 21,
+      "title_gm": "ਸਿਧ ਗੋਸਟਿ",
+      "title_en": "Sidh Gosht",
+      "category": "popular",
+      "order": 190,
+      "estimated_minutes": 30,
+      "description_en": "Guru Nanak Dev Ji's dialogue with the Siddhas, Raag Ramkali, Ang 938–946."
+    },
+    {
+      "key": "oankaar",
+      "variant": "",
+      "is_default": 1,
+      "shabados_bani_id": 22,
+      "title_gm": "ਓਅੰਕਾਰੁ",
+      "title_en": "Dakhni Oankaar",
+      "category": "popular",
+      "order": 200,
+      "estimated_minutes": 30,
+      "description_en": "Raag Ramkali Dakhni, Ang 929–938."
+    },
+    {
+      "key": "barah_maha",
+      "variant": "",
+      "is_default": 1,
+      "shabados_bani_id": 23,
+      "title_gm": "ਬਾਰਹ ਮਾਹਾ",
+      "title_en": "Barah Maha",
+      "category": "popular",
+      "order": 210,
+      "estimated_minutes": 10,
+      "description_en": "The twelve months, Raag Majh, Ang 133–136."
+    },
+    {
+      "key": "lavan",
+      "variant": "",
+      "is_default": 1,
+      "shabados_bani_id": 25,
+      "title_gm": "ਲਾਵਾਂ",
+      "title_en": "Lavan",
+      "category": "ceremony",
+      "order": 300,
+      "estimated_minutes": 3,
+      "description_en": "The four Lavan of the Anand Karaj, Raag Suhi, Ang 773–774."
+    },
+    {
+      "key": "aarti",
+      "variant": "",
+      "is_default": 1,
+      "shabados_bani_id": 9,
+      "title_gm": "ਆਰਤੀ",
+      "title_en": "Aarti",
+      "category": "ceremony",
+      "order": 310,
+      "estimated_minutes": 6,
+      "description_en": "Aarti shabads as sung at the close of Rehras."
+    }
+  ]
+}

@@ -18,6 +18,11 @@ struct LineRow: View {
     var lineId: Int? = nil
     var ang: Int = 0
     var compId: Int = 0
+    /// Set for a line that is NOT from Sri Guru Granth Sahib Ji (the Nitnem extra layer:
+    /// Sri Dasam Granth / Ardaas). The row then cites this label instead of an Ang, offers
+    /// no Save / Share-as-card / Explore-related (those are scripture-only), and never asserts
+    /// on the missing line identity.
+    var sourceLabel: String? = nil
     var onTap: (() -> Void)? = nil
 
     @Environment(\.modelContext) private var modelContext
@@ -72,10 +77,11 @@ struct LineRow: View {
                                                                scheme: colorScheme) {
                     presentShareSheet(items: [img])
                 } else {
-                    assert(ang > 0, "LineRow used without line identity — pass lineId/ang/compId")
+                    assert(ang > 0 || sourceLabel != nil, "LineRow used without line identity — pass lineId/ang/compId")
                     presentShareSheet(items: [shareText])
                 }
             } label: { Label("Share as card", systemImage: "photo") }
+                .disabled(sourceLabel != nil)       // the card is a Sri Guru Granth Sahib Ji citation
             if let lineId {
                 // Save needs a live SwiftData container; when even the in-memory fallback failed
                 // the action is hidden rather than crashing on \.modelContext access.
@@ -114,7 +120,8 @@ struct LineRow: View {
     /// Shared text carries the Ang citation (never bare scripture without its source).
     private var shareText: String {
         var out = gurmukhi
-        if ang > 0 { out += "\n— Sri Guru Granth Sahib Ji, Ang \(ang)" }
+        if let sourceLabel { out += "\n— \(sourceLabel)" }
+        else if ang > 0 { out += "\n— Sri Guru Granth Sahib Ji, Ang \(ang)" }
         return out
     }
 
@@ -127,6 +134,7 @@ struct LineRow: View {
             out += AttributedString(". English translation: \(en)")
         }
         if !meta.isEmpty { out += AttributedString(". \(meta)") }
+        else if let sourceLabel { out += AttributedString(". \(sourceLabel)") }
         else if ang > 0 { out += AttributedString(". Ang \(ang)") }
         return out
     }
