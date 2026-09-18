@@ -184,6 +184,7 @@ final class AppContainer {
     /// the fixed-clock pahar→raags table. Widgets NEVER open the corpus DB.
     /// Runs post-launch (after integrity passes) and is cheap enough to run every launch.
     func refreshWidgetSnapshot() async {
+        SharedDefaults.migrateFromStandard()   // clock mode + solar coords moved to the App Group
         guard let corpus, integrity?.ok == true else { return }
         guard let hukam = try? await corpus.randomHukam(),
               let firstVerse = hukam.lines.first(where: { !$0.isHeader }) else { return }
@@ -204,7 +205,10 @@ final class AppContainer {
             hukamAng: firstVerse.ang,
             hukamCompId: hukam.compId,
             paharRaags: paharRaags,
-            paharRaagsGurmukhi: paharRaagsGurmukhi))
+            paharRaagsGurmukhi: paharRaagsGurmukhi,
+            clockMode: SharedDefaults.clockMode,
+            solarLat: SharedDefaults.solarCoords()?.lat,
+            solarLon: SharedDefaults.solarCoords()?.lon))
         #if canImport(WidgetKit)
         WidgetCenter.shared.reloadAllTimelines()
         #endif

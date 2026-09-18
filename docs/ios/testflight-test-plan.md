@@ -110,6 +110,13 @@ Expected: zero deviations. Sign: name, build, device, date in the build log.
 
 ### W — Widgets, Siri, deep links
 1. Both widgets in small/medium; timeline advances across a pahar boundary (check at the boundary time).
+   Raag now also in **large** and on the **lock screen** (circular, rectangular, inline): the digital
+   time matches the status bar and keeps ticking; the hand is never more than 15 min stale; switching
+   Fixed/Solar in the app re-renders the widget (solar needs a stored location); the tinted lock
+   screen stays legible.
+2. Clock tab: the time in the dial's hollow equals the status-bar clock; a 24-hour device shows
+   `14:51` and `06 · 12 · 18 · 00` numerals; a 12-hour device `2:51 PM` and `6 AM · 12 PM · 6 PM · 12 AM`.
+   Change the time zone in Settings while the Clock is open — the face redraws.
 2. Widget tap → app opens on the relevant screen.
 3. All four App Intents from Siri and from Shortcuts, including a parameterised "Open Ang 1430".
 4. Every `sggs://` route in the readiness report: `hukam`, `ang/N`, `shabad/N?line=`, `theme/naam`, `clock/<raag>`, `search?q=`, `shabad/999999999` (not-found + Done).
