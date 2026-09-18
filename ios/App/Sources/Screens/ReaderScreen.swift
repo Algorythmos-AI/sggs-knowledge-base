@@ -4,38 +4,38 @@ import GurbaniSearchKit
 
 @MainActor @Observable
 final class ReaderModel {
-    var state: LoadState<AngPage> = .loading
-    /// Timing chip data for the current page's raag (metadata-only; nil = no chip).
-    var timing: RaagTiming?
-    /// Adjacent-Ang cache: page turns paint from here (no spinner), and the "continues on
-    /// Ang N+1" pill reads the next page's boundary field. Bounded, evicted by distance.
+    /// Ang cache shared across the pager's live pages: a page turn paints instantly from here,
+    /// the "continues on Ang N+1" pill reads the next page's boundary field, and neighbours are
+    /// pre-warmed so a fast double-swipe never shows a skeleton. Bounded, evicted by distance
+    /// from the anchor (the current Ang).
     private(set) var pages: [Int: AngPage] = [:]
     private var inflight: Set<Int> = []
+    /// The Ang eviction measures distance from — kept near the reader so live pages survive.
+    private var anchor = 1
     private let corpus: CorpusActor?
-    init(corpus: CorpusActor?) { self.corpus = corpus }
+    let hasTiming: Bool
+    init(corpus: CorpusActor?) { self.corpus = corpus; self.hasTiming = corpus?.capabilities.hasTiming ?? false }
 
-    func load(_ ang: Int) async {
-        guard let corpus else { state = .failed("No database"); return }
-        // Page turns keep the current page on screen while the next loads (local SQLite,
-        // ~ms) — no spinner flash mid-read. The spinner only shows on first entry.
-        if case .loaded = state {} else { state = .loading }
-        do {
-            let page: AngPage
-            if let cached = pages[ang] { page = cached }
-            else {
-                page = try await corpus.ang(ang)
-                if Task.isCancelled { return }
-                remember(page)
-            }
-            MotionGate.run(Motion.gentle) { state = .loaded(page) }
-            prefetchNeighbours(of: ang)
-            timing = nil
-            if corpus.capabilities.hasTiming, let raag = page.raag {
-                let t = await corpus.timingRaag(name: raag)
-                if !Task.isCancelled, t.available, !t.claims.isEmpty { timing = t }
-            }
+    var isReady: Bool { corpus != nil }
+    func page(_ ang: Int) -> AngPage? { pages[ang] }
+
+    /// Load `ang` into the cache if absent (local SQLite, ~ms), then pre-warm ±2. Idempotent and
+    /// cancellation-safe; the pager calls this per page as it comes on screen.
+    func ensure(_ ang: Int) async {
+        anchor = ang
+        if pages[ang] == nil, !inflight.contains(ang), let corpus {
+            inflight.insert(ang)
+            if let p = try? await corpus.ang(ang) { remember(p) }
+            inflight.remove(ang)
         }
-        catch { state = .failed(UserMessage.load(error)) }
+        prefetchNeighbours(of: ang)
+    }
+
+    /// Timing claims for a raag (metadata-only; nil = no chip). Not cached — cheap, per page.
+    func timing(forRaag raag: String) async -> RaagTiming? {
+        guard hasTiming, let corpus else { return nil }
+        let t = await corpus.timingRaag(name: raag)
+        return (t.available && !t.claims.isEmpty) ? t : nil
     }
 
     /// True when the composition at the end of `ang` carries on into the next Ang. Derived
@@ -48,17 +48,16 @@ final class ReaderModel {
 
     private func remember(_ page: AngPage) {
         pages[page.ang] = page
-        guard pages.count > 5 else { return }
-        // evict the farthest from the page just remembered
-        let current: Int = { if case .loaded(let p) = state { return p.ang } else { return page.ang } }()
-        if let far = pages.keys.filter({ $0 != current }).max(by: { abs($0 - current) < abs($1 - current) }) {
+        guard pages.count > 7 else { return }        // current ±2 live + slack
+        if let far = pages.keys.filter({ $0 != anchor }).max(by: { abs($0 - anchor) < abs($1 - anchor) }) {
             pages.removeValue(forKey: far)
         }
     }
 
-    /// Warm ang±1 in their own tasks (the view's `.task` is cancelled on every page turn).
+    /// Warm ang±1 and ±2 in their own tasks so a fast swipe never hits an unloaded page.
     private func prefetchNeighbours(of ang: Int) {
-        for n in [ang + 1, ang - 1] where (1...1430).contains(n) && pages[n] == nil && !inflight.contains(n) {
+        for n in [ang + 1, ang - 1, ang + 2, ang - 2]
+        where (1...1430).contains(n) && pages[n] == nil && !inflight.contains(n) {
             inflight.insert(n)
             Task { [weak self] in
                 guard let self, let corpus = self.corpus else { return }
@@ -68,9 +67,8 @@ final class ReaderModel {
         }
     }
 
-    /// The chip line for the raag banner, from the first primary claim (or seasonal note).
-    var timingChipText: String? {
-        guard let t = timing else { return nil }
+    /// The chip line for a raag's timing, from the first primary claim (or seasonal note).
+    static func timingChipText(_ t: RaagTiming) -> String? {
         if let primary = t.claims.first(where: { $0.claimType == "primary" }), let p = primary.pahar {
             return "\(Pahar.label(p)) · \(Pahar.range(p))"
         }
@@ -93,156 +91,47 @@ struct ReaderScreen: View {
     @AppStorage("sggs_focus_mode") private var focusMode = false
     /// Resume where the reader left off (persisted on every Ang change; 1 = never read).
     @AppStorage("sggs_last_ang") private var lastAng = 1
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @State private var showJump = false
     @State private var resumed = false
-    /// Which edge the incoming page enters from (next → trailing, previous → leading).
-    @State private var turnEdge: Edge = .trailing
-    /// Landing highlight for a requested verse (deep link / "Open Ang N in Reader").
-    @State private var highlightedId: Int?
-    @AccessibilityFocusState private var voFocus: Int?
-    /// Ambient chrome: hidden while reading downwards, restored on any upward scroll.
+    /// Ambient chrome (the bottom page bar): hidden while reading downwards, restored on any
+    /// upward scroll. Driven only by the CURRENT page's scroll (AngPageView gates its reports).
     @State private var chromeHidden = false
     @State private var lastOffset: CGFloat = 0
     @State private var downRun: CGFloat = 0
     @State private var upRun: CGFloat = 0
     @State private var contentHeight: CGFloat = 0
     @State private var viewportHeight: CGFloat = 0
-    /// True while the Reader tab's content is actually on screen (TabView keeps other tabs
-    /// mounted): a landing scroll issued while off screen is a silent no-op that would consume
-    /// the pending verse, so landing waits for visibility.
-    @State private var readerVisible = false
-    /// `scrollPosition` binding: written ONLY when landing on a requested verse (SwiftUI applies
-    /// a value present at the ScrollView's first layout as its initial offset — no timing games).
-    @State private var landingId: Int?
-    /// The landing scroll is programmatic: it must never trip the ambient-chrome "reading down" rule.
-    @State private var landingInProgress = false
 
     var body: some View {
         @Bindable var router = container.router
         NavigationStack {
             Group {
                 if let model {
-                    LoadStateView(state: model.state,
-                                  onRetry: { Task { await model.load(router.readerAng) } }) { page in
-                        ScrollView {
-                            // zero-height offset probe (iOS 17-safe ambient-chrome tracker)
-                            GeometryReader { g in
-                                Color.clear.preference(key: ReaderScrollOffsetKey.self,
-                                                       value: -g.frame(in: .named("readerScroll")).minY)
-                            }
-                            .frame(height: 0)
-                            // LazyVStack + scrollTargetLayout: `scrollPosition(id:)` resolves ids the
-                            // layout has not materialised yet (unlike ScrollViewReader.scrollTo), and
-                            // an eager VStack of ~60 fully-labelled rows made accessibility snapshots
-                            // stall for minutes (XCUITest 15-min Reader tests) — lazy keeps the a11y
-                            // tree to what is on screen.
-                            LazyVStack(alignment: .leading, spacing: 18) {
-                                if let raag = page.raag {
-                                    // Brand rule: Gurmukhi is always ink Sant Lipi — never a coloured
-                                    // "link". The raag banner is a real affordance (opens Jump to Ang),
-                                    // with the roman name alongside when meta is loaded.
-                                    ViewThatFits(in: .horizontal) {
-                                        HStack(spacing: Theme.Space.s) { raagBanner(raag); timingChip }
-                                        VStack(alignment: .leading, spacing: Theme.Space.xs) { raagBanner(raag); timingChip }
-                                    }
-                                }
-                                if let from = page.continuedFrom {
-                                    ContinuationPill(text: "Shabad starts on Ang \(String(from))",
-                                                     systemImage: "arrow.up.backward",
-                                                     identifier: "continuesFromPill",
-                                                     hint: "Goes to the beginning of this shabad") {
-                                        Haptics.tap()
-                                        router.openAng(from, lineId: page.continuedFromLineId)
-                                    }
-                                }
-                                ForEach(Array(page.lines.enumerated()), id: \.element.id) { index, line in
-                                    if VerseTypography.rendersAsHeading(line.gurmukhi, flaggedHeader: line.isHeader) {
-                                        // A heading run opens a composition: a hairline + air above its
-                                        // FIRST line separates shabads; the run itself stays tight.
-                                        let opensRun = index > 0 && !VerseTypography.rendersAsHeading(
-                                            page.lines[index - 1].gurmukhi, flaggedHeader: page.lines[index - 1].isHeader)
-                                        VStack(spacing: Theme.Space.m) {
-                                            if opensRun {
-                                                Rectangle().fill(Ink.hairline).frame(width: 56, height: 1)
-                                                    .padding(.top, Theme.Space.s).accessibilityHidden(true)
-                                            }
-                                            VerseHeading(verbatim: line.gurmukhi)
-                                        }
-                                        .frame(maxWidth: .infinity, alignment: .center)
-                                        .id(line.id)
-                                    } else {
-                                        LineRow(gurmukhi: line.gurmukhi,
-                                                translit: focusMode ? "" : line.translit,
-                                                meta: line.isRahao ? "ਰਹਾਉ · refrain" : "",
-                                                en: focusMode ? nil : line.en,
-                                                lineId: line.id, ang: line.ang, compId: line.compId) {
-                                            container.present(.shabad(compId: line.compId, focusLineId: line.id))
-                                        }
-                                        .padding(.vertical, focusMode ? Theme.Space.s : 0)
-                                        .focusHighlight(highlightedId == line.id)
-                                        .accessibilityFocused($voFocus, equals: line.id)
-                                        .id(line.id)
-                                    }
-                                }
-                                // fixed-height slot: the pill appears without shifting the verses above
-                                HStack {
-                                    Spacer()
-                                    if page.ang < 1430, model.continuesOn(after: page.ang) {
-                                        ContinuationPill(text: "Continues on Ang \(String(page.ang + 1))",
-                                                         systemImage: "arrow.down.forward",
-                                                         identifier: "continuesOnPill",
-                                                         hint: "Goes to the next Ang") {
-                                            turnEdge = .trailing; Haptics.tap(); router.openAng(page.ang + 1)
-                                        }
-                                    }
-                                }
-                                .frame(minHeight: 44)        // reserved slot; grows with Dynamic Type
-                            }
-                            .scrollTargetLayout()
-                            .padding()
-                            .readingColumn()
-                            .background(GeometryReader { g in
-                                Color.clear.preference(key: ReaderContentHeightKey.self, value: g.size.height)
-                            })
-                            // same-Ang landing (the sheet's "Open Ang N" while already on Ang N) and
-                            // re-selection of an already-mounted Reader tab with a verse pending
-                            .onChange(of: router.pendingReaderLineId) { _, _ in land(on: page) }
-                            .onChange(of: router.selectedTab) { _, tab in
-                                if tab == .reader { DispatchQueue.main.async { land(on: page) } }
-                            }
-                        }
-                        .scrollPosition(id: $landingId, anchor: .center)
-                        .coordinateSpace(name: "readerScroll")
-                        .modifier(ReaderScrollTracking(
-                            onScroll: { y, content, viewport in
-                                if content > 0 { contentHeight = content }
-                                if viewport > 0 { viewportHeight = viewport }
-                                handleScroll(offset: y)
-                            },
-                            onContentHeight: { h in contentHeight = h }))
-                        .id(page.ang)   // page identity — drives the turn transition below
-                        .transition(.asymmetric(
-                            insertion: .move(edge: turnEdge).combined(with: .opacity),
-                            removal: .opacity))
-                        // horizontal page-turn; plain .gesture so vertical scrolling always wins
-                        .gesture(DragGesture(minimumDistance: 40).onEnded { v in
-                            guard abs(v.translation.width) > 60,
-                                  abs(v.translation.width) > abs(v.translation.height) * 2 else { return }
-                            let forward = v.translation.width < 0
-                            let next = router.readerAng + (forward ? 1 : -1)
-                            guard (1...1430).contains(next) else { return }   // no haptic on a no-op edge swipe
-                            turnEdge = forward ? .trailing : .leading
-                            Haptics.tap()
-                            router.openAng(next)
-                        })
-                        .contentMargins(.bottom, Theme.Space.xl, for: .scrollContent)
+                    // Finger-tracked Ang-to-Ang paging (UIPageViewController): each page is a live
+                    // AngPageView, so a swipe follows the finger, rubber-bands at 1/1430, and a
+                    // page's scroll position survives a swipe-back. `readerAng` is the single source
+                    // of truth — the pager writes it via `pagerSettled` on a swipe, and external
+                    // navigation (Jump, deep link, chevrons, pills) drives the pager through it.
+                    AngPager(index: $router.readerAng, bounds: 1...1430, reduceMotion: reduceMotion) { ang in
+                        AngPageView(ang: ang, model: model,
+                                    onOpenJump: { showJump = true },
+                                    onScroll: { y, content, viewport in
+                                        if content > 0 { contentHeight = content }
+                                        if viewport > 0 { viewportHeight = viewport }
+                                        if !y.isNaN { handleScroll(offset: y) }
+                                    })
+                            .environment(container)
+                            .environment(\.palette, palette)
+                    } onSettle: { n in
+                        Haptics.tap(.soft)
+                        router.pagerSettled(on: n)
                     }
+                    .ignoresSafeArea(edges: .horizontal)
                 } else { Color.clear }
             }
             .background(GeometryReader { g in Color.clear.onAppear { viewportHeight = g.size.height }
                 .onChange(of: g.size.height) { _, h in viewportHeight = h } })
-            .onAppear { readerVisible = true }
-            .onDisappear { readerVisible = false }
             .background(Ink.paper.ignoresSafeArea())
             .navigationTitle("Ang \(String(router.readerAng))")
             .navigationBarTitleDisplayMode(.inline)
@@ -251,7 +140,7 @@ struct ReaderScreen: View {
             // as a reverse scroll → show → hide … an endless update loop that froze the app on a
             // 120 Hz device (TestFlight 1.1.3 (1), watchdog 0x8BADF00D). Only the bottom page bar
             // fades — opacity/offset don't change layout, so it cannot feed back.
-            .onChange(of: router.readerAng) { _, _ in landingId = nil; showChrome() }   // page turn: fresh position, chrome back
+            .onChange(of: router.readerAng) { _, _ in showChrome() }   // page turn: chrome back
             .onChange(of: focusMode) { _, _ in showChrome() }
             .onChange(of: container.presentation?.id) { _, id in if id == nil { showChrome() } }
             // Page controls live in a bottom safe-area inset, NOT a `.bottomBar` toolbar: inside a
@@ -261,7 +150,7 @@ struct ReaderScreen: View {
             .safeAreaInset(edge: .bottom) {
                 if !focusMode {
                     HStack {
-                        Button { turnEdge = .leading; router.openAng(router.readerAng - 1) }
+                        Button { Haptics.tap(); router.openAng(router.readerAng - 1) }
                             label: { Image(systemName: "chevron.left").frame(minWidth: 44, minHeight: 44) }
                             .disabled(router.readerAng <= 1)
                             .accessibilityLabel("Previous Ang")
@@ -270,7 +159,7 @@ struct ReaderScreen: View {
                             Label("Hukam", systemImage: "sparkles").lineLimit(1).frame(minHeight: 44)
                         }
                         Spacer()
-                        Button { turnEdge = .trailing; router.openAng(router.readerAng + 1) }
+                        Button { Haptics.tap(); router.openAng(router.readerAng + 1) }
                             label: { Image(systemName: "chevron.right").frame(minWidth: 44, minHeight: 44) }
                             .disabled(router.readerAng >= 1430)
                             .accessibilityLabel("Next Ang")
@@ -286,6 +175,7 @@ struct ReaderScreen: View {
                     .opacity(chromeHidden ? 0 : 1)
                     .offset(y: chromeHidden ? 40 : 0)
                     .allowsHitTesting(!chromeHidden)
+                    .accessibilityHidden(chromeHidden)   // leaves the a11y tree when faded out
                     .appAnimation(Motion.gentle, value: chromeHidden)
                     .accessibilityIdentifier("readerPageBar")
                 }
@@ -331,73 +221,23 @@ struct ReaderScreen: View {
                 if !container.router.navigatedToAngExplicitly,
                    container.router.readerAng == 1, lastAng > 1 {
                     container.router.readerAng = lastAng
-                    return   // the task re-fires with the resumed Ang
+                    return   // the task re-fires with the resumed Ang; the pager builds from it
                 }
             }
-            lastAng = container.router.readerAng
-            // Returning to the tab re-fires this task; skip the reload (and the loading
-            // flash + scroll reset) when the page for this Ang is already on screen.
-            if let model, case .loaded(let page) = model.state, page.ang == container.router.readerAng {
-                land(on: page)                    // same page already on screen → nil-then-set scroll
-                return
-            }
-            // A requested verse becomes the page's INITIAL scroll position: present before the
-            // ScrollView's first layout, so the insertion transition cannot drop it.
-            landingId = container.router.pendingReaderLineId
-            await model?.load(container.router.readerAng)
-            if let model, case .loaded(let page) = model.state { finishLanding(page) }
+            lastAng = container.router.readerAng   // per-page loading + landing live in AngPageView
         }
     }
 }
 
 extension ReaderScreen {
-    /// The raag banner: ink Gurmukhi (Sant Lipi) + roman name, tappable → Jump to Ang. A real
-    /// affordance sized for touch (≥44 pt), not a decorative coloured word.
-    @ViewBuilder func raagBanner(_ raag: String) -> some View {
-        let roman = container.meta?.raags.first(where: { $0.name == raag })?.roman
-        Button { Haptics.tap(); showJump = true } label: {
-            HStack(spacing: Theme.Space.s) {
-                Text(raag).font(Brand.gurmukhi(20, relativeTo: .title3)).foregroundStyle(.primary)
-                if let roman { Text(roman).font(.subheadline).foregroundStyle(.secondary) }
-                Image(systemName: "chevron.right").font(.caption2).foregroundStyle(.secondary)
-            }
-            .frame(minHeight: 44)
-            .contentShape(Rectangle())
-        }
-        .buttonStyle(.plain)
-        .accessibilityLabel("Raag \(roman ?? raag). Jump to another Ang.")
-    }
-
-    /// The traditional-singing-time chip (metadata, not scripture): dashed, web-parity, opens the
-    /// Raag Clock. A real 44 pt hit target with a trailing chevron.
-    @ViewBuilder var timingChip: some View {
-        if showTiming, let model, let chip = model.timingChipText, let t = model.timing {
-            Button { Haptics.tap(); container.router.openClock(raag: t.roman ?? t.raag) } label: {
-                HStack(spacing: Theme.Space.xs) {
-                    Label(chip, systemImage: "clock").font(.footnote)
-                    Image(systemName: "chevron.right").font(.caption2)
-                }
-                .padding(.horizontal, Theme.Space.s).padding(.vertical, Theme.Space.xs)
-                .frame(minHeight: 44)
-                .overlay(RoundedRectangle(cornerRadius: Theme.Radius.chip)
-                    .strokeBorder(style: StrokeStyle(lineWidth: 1, dash: [3])))
-                .foregroundStyle(.secondary)
-                .contentShape(Rectangle())
-            }
-            .buttonStyle(.plain)
-            .accessibilityIdentifier("timingChip")
-            .accessibilityLabel("Traditional singing time: \(chip). Opens the Raag Clock.")
-        }
-    }
-
-    /// Ambient chrome. Hide only when the reader is clearly reading downwards (> 24 pt run,
-    /// past 80 pt, on a page taller than the viewport + 120 so short Angs never flicker);
-    /// restore on ≥ 8 pt upwards or at the top. Never for VoiceOver / Switch Control users —
-    /// the chrome is their navigation. Reduce Motion: MotionGate makes the change instant.
+    /// Ambient chrome (bottom page bar only — never the nav bar; see the watchdog note above).
+    /// Hide when clearly reading downwards (> 24 pt run, past 80 pt, on a page taller than the
+    /// viewport + 120 so short Angs never flicker); restore on ≥ 8 pt upwards or at the top. Never
+    /// for VoiceOver / Switch Control users — the chrome is their navigation. Fed only by the
+    /// current page (AngPageView gates its scroll reports).
     fileprivate func handleScroll(offset: CGFloat) {
         let delta = offset - lastOffset
         lastOffset = offset
-        if landingInProgress { downRun = 0; upRun = 0; return }       // programmatic landing scroll
         if UIAccessibility.isVoiceOverRunning || UIAccessibility.isSwitchControlRunning { showChrome(); return }
         if delta > 0 { downRun += delta; upRun = 0 } else if delta < 0 { upRun += -delta; downRun = 0 }
         if !chromeHidden, downRun > 24, offset > 80, contentHeight > viewportHeight + 120 {
@@ -410,45 +250,6 @@ extension ReaderScreen {
     fileprivate func showChrome() {
         downRun = 0; upRun = 0
         if chromeHidden { MotionGate.run(Motion.gentle) { chromeHidden = false } }
-    }
-
-    /// Land on a pending verse when the page is already on screen: nil-then-set the
-    /// `scrollPosition` binding (a same-value assignment does not re-scroll). Only while the
-    /// Reader tab is selected — an off-screen scroll would consume the request silently.
-    fileprivate func land(on page: AngPage) {
-        guard readerVisible, container.router.selectedTab == .reader,
-              let id = container.router.pendingReaderLineId, page.ang == container.router.readerAng,
-              page.lines.contains(where: { $0.id == id }) else { return }
-        landingId = nil
-        DispatchQueue.main.async {
-            MotionGate.run(Motion.gentle) { landingId = id }
-            finishLanding(page)
-        }
-    }
-
-    /// Consume the pending verse: highlight it, keep the chrome, move VoiceOver to it. A verse
-    /// id that is not on this page is dropped without scrolling or highlighting.
-    fileprivate func finishLanding(_ page: AngPage) {
-        guard let id = container.router.pendingReaderLineId else { return }
-        container.router.pendingReaderLineId = nil
-        guard page.lines.contains(where: { $0.id == id }) else { landingId = nil; return }
-        showChrome()
-        landingInProgress = true
-        DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) { landingInProgress = false }
-        // Re-assert once the page's insertion transition has settled (≤ 0.3 s; instant under
-        // Reduce Motion): a position set during the animated insert is not always honoured.
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) {
-            landingId = nil
-            DispatchQueue.main.async { MotionGate.run(Motion.gentle) { landingId = id } }
-        }
-        highlightedId = id
-        if UIAccessibility.isVoiceOverRunning {
-            DispatchQueue.main.asyncAfter(deadline: .now() + FocusLanding.voiceOverDelaySeconds) { voFocus = id }
-        }
-        Task { @MainActor in
-            try? await Task.sleep(for: .seconds(FocusLanding.highlightSeconds))
-            if highlightedId == id { highlightedId = nil }
-        }
     }
 }
 

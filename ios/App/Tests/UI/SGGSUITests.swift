@@ -758,17 +758,24 @@ final class SGGSUITests: XCTestCase {
     }
 
     /// Ambient chrome: reading downwards hides the navigation bar; scrolling back reveals it.
+    /// The bottom reading chrome (Prev · Hukam · Next) fades while reading downward and returns on
+    /// scroll-up. With the finger-tracked pager the top navigation bar deliberately PERSISTS (the
+    /// Ang number + Go/AA stay for orientation; the nav bar is never toggled from scroll — that
+    /// caused the 120 Hz watchdog freeze), so the immersive-reading affordance is the bottom bar.
     func testReaderChromeReturnsOnScrollUp() {
         let app = launchApp()
         tab(app, "Reader").tap()
-        let jump = app.buttons["jumpToAng"].firstMatch
-        XCTAssertTrue(jump.waitForExistence(timeout: 15))
+        let hukam = app.buttons["Hukam"].firstMatch      // lives in the bottom page bar
+        XCTAssertTrue(hukam.waitForExistence(timeout: 15))
+        XCTAssertTrue(hukam.isHittable, "chrome should start visible")
         let scroll = app.scrollViews.firstMatch
         scroll.swipeUp(); scroll.swipeUp()
-        let gone = XCTNSPredicateExpectation(predicate: NSPredicate(format: "exists == 0"), object: jump)
-        XCTAssertEqual(XCTWaiter().wait(for: [gone], timeout: 5), .completed, "chrome should hide while reading down")
+        // faded chrome keeps `exists` true (opacity 0) but is not hittable — assert on that.
+        let hidden = XCTNSPredicateExpectation(predicate: NSPredicate(format: "isHittable == false"), object: hukam)
+        XCTAssertEqual(XCTWaiter().wait(for: [hidden], timeout: 5), .completed, "bottom chrome should hide while reading down")
         scroll.swipeDown()
-        XCTAssertTrue(jump.waitForExistence(timeout: 5), "chrome must return on scroll up")
+        let shown = XCTNSPredicateExpectation(predicate: NSPredicate(format: "isHittable == true"), object: hukam)
+        XCTAssertEqual(XCTWaiter().wait(for: [shown], timeout: 5), .completed, "chrome must return on scroll up")
     }
 
     /// A deep link must beat resume-last-Ang even on a launch WITHOUT the test env (which
