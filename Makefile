@@ -29,8 +29,16 @@ contract: ## regenerate golden vectors and fail if they drift
 verify: ## structural regroup invariants on the current DB
 	python3 pipeline/verify_regroup.py --invariants db/sggs.sqlite
 
-guard: ## pre-existing tables byte-identical to the committed baseline
+guard: ## pre-existing tables byte-identical to the committed baseline (+ bani registry invariants)
 	python3 pipeline/timing/guard_scripture.py
+	python3 pipeline/banis/guard_banis.py
+
+banis: ## (re)build the Nitnem bani registry into db/sggs.sqlite (needs ./database.sqlite from ShabadOS)
+	python3 pipeline/banis/build_banis.py --report docs/nitnem/review-pack/sggs-placements.json
+	python3 pipeline/banis/guard_banis.py
+
+test-banis: ## gate tests for the bani registry on a throwaway copy of the DB
+	python3 pipeline/banis/test_banis_layer.py
 
 ci: check-versions verify guard test-web contract ## run the gates CI runs (no PDF needed)
 	@echo "make ci: PASS"

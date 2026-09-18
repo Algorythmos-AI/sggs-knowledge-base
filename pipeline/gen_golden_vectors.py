@@ -369,6 +369,41 @@ def timing_vectors():
 
 
 # ---------------------------------------------------------------------------
+# 6b. bani vectors — the Nitnem registry the native app reads offline: the list,
+#     every bani+variant as [seq, line_id, extra_id, is_header] plus a SHA-256 of
+#     the concatenated Gurmukhi (byte-parity for extra_lines without dumping the
+#     Dasam text into the contract), the default-variant resolution, and misses.
+# ---------------------------------------------------------------------------
+def bani_vectors():
+    serve.DB = DB
+    serve.HAVE_FTS = None
+    out = []
+    lst = serve.api('/api/banis', {})
+    out.append({'kind': 'list', 'payload': lst})
+    if not lst.get('available'):
+        return out
+    for b in lst['banis']:
+        for variant in ({''} | {b['variant']}) if b['is_default'] else {b['variant']}:
+            r = serve.api('/api/bani/' + b['key'], {'variant': [variant]} if variant else {})
+            h = hashlib.sha256()
+            for ln in r['lines']:
+                h.update(ln['gurmukhi'].encode('utf-8')); h.update(b'\n')
+            out.append({'kind': 'bani', 'key': b['key'], 'variant': variant,
+                        'resolved_variant': r['bani']['variant'], 'variants': r['variants'],
+                        'n_lines': len(r['lines']), 'ang_first': r['ang_first'], 'ang_last': r['ang_last'],
+                        'gurmukhi_sha256': h.hexdigest(),
+                        'rows': [[ln['seq'], ln['line_group'], ln.get('id'), ln.get('extra_id'),
+                                  ln['is_header'], ln['source']] for ln in r['lines']]})
+    for key, variant in (('no_such_bani', ''), ('japji', 'taksal')):
+        try:
+            serve.api('/api/bani/' + key, {'variant': [variant]} if variant else {})
+            out.append({'kind': 'miss', 'key': key, 'variant': variant, 'status': 200})
+        except serve.ApiError as e:
+            out.append({'kind': 'miss', 'key': key, 'variant': variant, 'status': e.status})
+    return out
+
+
+# ---------------------------------------------------------------------------
 # 7. analytics vectors — the Insight-Engine endpoints the native app ports next:
 #    progression (computed on the fly — the float/int-sensitive port), author
 #    profiles (radar + distinctive terms), resonance (chord), vaars (anatomy).
@@ -431,6 +466,7 @@ SUITES = {
     'search':     ('golden_search.ndjson',     search_vectors),
     'reader':     ('golden_reader.ndjson',     reader_vectors),
     'timing':     ('golden_timing.ndjson',     timing_vectors),
+    'banis':      ('golden_banis.ndjson',      bani_vectors),
     'analytics':  ('golden_analytics.ndjson',  analytics_vectors),
 }
 

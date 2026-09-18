@@ -14,6 +14,7 @@ on:
       - "ios/**"
       - "contract/**"
       - "pipeline/build_ios_db.py"
+      - "pipeline/banis/**"                     # Nitnem registry feeds the bundled DB
       - "pipeline/gen_golden_vectors.py"
       - "pipeline/check_release_license.sh"
       - "frontend/src/scripts/pahar.js"          # source of the golden_pahar contract

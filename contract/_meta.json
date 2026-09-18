@@ -1,7 +1,8 @@
 {
-  "db_sha256": "f8135f62cc00eaef845765e7e9c13c8ebe480736806a18a4da73399baea376bb",
+  "db_sha256": "d863fed55190c59086461e48047c8dd5367c23c50cce3027ad9543209788a480",
   "files": {
     "golden_analytics.ndjson": 56,
+    "golden_banis.ndjson": 27,
     "golden_difflib.ndjson": 49,
     "golden_pahar.ndjson": 2183,
     "golden_reader.ndjson": 27,

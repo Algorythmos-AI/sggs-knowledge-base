@@ -11,7 +11,14 @@
 #   (b) scripture_sha256 differs from the certified corpus value — scripture must be
 #       byte-identical to the proven corpus, always;
 #   (c) the DB artifact's sha256 doesn't match its manifest;
-#   (d) any golden-vector suite recorded in contract/_meta.json is missing or empty.
+#   (d) any golden-vector suite recorded in contract/_meta.json is missing or empty;
+#   (e) the bundled DB carries the Nitnem registry with NON-SGGS text (extra_lines) and
+#       either that table has an English column (never allowed) or the scholar review
+#       is not attested with `REVIEWED: true` in ios/Resources/NITNEM-REVIEW.md
+#       (override with $SGGS_NITNEM_ATTESTATION) — Sri Dasam Granth / Ardaas text is
+#       not covered by the SGGS reconcile proof. Unreviewed text is a WARNING for
+#       TestFlight builds (the app labels it "under review") and a hard FAIL when
+#       SGGS_RELEASE_CHANNEL=appstore (App Store submission).
 #
 # Usage:  pipeline/check_release_license.sh [manifest] [db]
 #   defaults: ios/Resources/sggs-ios-public.manifest.json + its sibling .sqlite
@@ -23,6 +30,7 @@ MANIFEST="${1:-ios/Resources/sggs-ios-public.manifest.json}"
 DB="${2:-${MANIFEST%.manifest.json}.sqlite}"
 CERTIFIED_SCRIPTURE_SHA="0eff4bae60cfcf1c63ae4ac14c2ecf255a9457edc0bebaf627aa28dedb89c84f"
 ATTESTATION="${SGGS_LICENSE_ATTESTATION:-ios/Resources/TRANSLATION-LICENSE.md}"
+NITNEM_ATTESTATION="${SGGS_NITNEM_ATTESTATION:-ios/Resources/NITNEM-REVIEW.md}"
 
 fail=0
 say() { echo "  $1"; }
@@ -65,6 +73,29 @@ if [ -f "$DB" ]; then
 else
   say "✗ DB artifact missing: $DB (build it: python3 pipeline/build_ios_db.py --profile public)"
   fail=1
+fi
+
+BANIS=$(python3 -c "import json;print(json.load(open('$MANIFEST')).get('banis_bundled', False))")
+if [ "$BANIS" = "True" ] && [ -f "$DB" ]; then
+  EXTRA_EN=$(sqlite3 "$DB" "SELECT count(*) FROM pragma_table_info('extra_lines') WHERE name IN ('en','english','translation');")
+  N_EXTRA=$(sqlite3 "$DB" "SELECT count(*) FROM extra_lines;")
+  if [ "$EXTRA_EN" != "0" ]; then
+    say "✗ extra_lines carries an English column — non-SGGS text must never bundle a translation"
+    fail=1
+  elif [ "$N_EXTRA" != "0" ]; then
+    if [ -f "$NITNEM_ATTESTATION" ] && grep -qE '^REVIEWED:[[:space:]]*true[[:space:]]*$' "$NITNEM_ATTESTATION"; then
+      say "✓ Nitnem non-SGGS text ($N_EXTRA lines) is scholar-reviewed ($NITNEM_ATTESTATION)"
+    elif [ "${SGGS_RELEASE_CHANNEL:-testflight}" = "appstore" ]; then
+      say "✗ Nitnem non-SGGS text ($N_EXTRA lines: Sri Dasam Granth / Ardaas) is NOT yet scholar-reviewed."
+      say "  An App Store submission needs docs/nitnem/review-pack/ completed and 'REVIEWED: true' in $NITNEM_ATTESTATION."
+      fail=1
+    else
+      say "⚠ Nitnem non-SGGS text ($N_EXTRA lines) is NOT yet scholar-reviewed — allowed for TestFlight only."
+      say "  The app labels these lines 'under review'. Set SGGS_RELEASE_CHANNEL=appstore to enforce the gate."
+    fi
+  else
+    say "✓ Nitnem registry bundled with SGGS pointers only"
+  fi
 fi
 
 python3 - <<'PY' || fail=1

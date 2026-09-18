@@ -16,3 +16,27 @@ The pipeline and web app code (everything in `pipeline/` and `webapp/` except da
 
 ## Attribution line shown in the app
 “English translation by Dr. Sant Singh Khalsa (sourced via BaniDB).”
+
+## Nitnem bani layer (v1.2.0)
+
+`banis` / `bani_lines` / `extra_lines` tables (pipeline/banis/, migration 002):
+
+- **Bani membership** (which lines make up Japji Sahib, Rehras Sahib, Sukhmani Sahib, …
+  and in what order) comes from the **ShabadOS open database** (github.com/shabados/database,
+  release 4.8.7, `banis` + `bani_lines`). Every Sri Guru Granth Sahib Ji line is resolved to
+  this project's own verbatim `lines.id` and rendered from **our** reconciled corpus; the
+  ShabadOS text is used only as a match key, never displayed.
+- **Non-SGGS text** — Sri Dasam Granth banis (Jaap Sahib, Tav-Prasad Savaiye, Benti Chaupai,
+  Shabad Hazare Patshahi 10, the Dasam portions of Rehras Sahib) and Ardaas — is converted
+  from the same ShabadOS dataset into `extra_lines`, **unfolded** (nukta, addak and udaat kept)
+  and labelled by source. It is a separate layer: never mixed into `lines`, never indexed by
+  FTS, never cited as an Ang, and it carries **no English translation**. It is **not** covered
+  by the character-for-character reconcile proof; it ships in a public build only after the
+  scholar review recorded in `ios/Resources/NITNEM-REVIEW.md` (`REVIEWED: true`).
+- **Licence.** The ShabadOS repository publishes its code under the MIT licence and states
+  that the contents of its `data` folder are free of known copyright restrictions (public
+  domain). Record the exact licence text of the release used before any public wording
+  claims "public domain"; the `sources` row `shabados-nitnem` in the DB points here.
+  The Ardaas wording follows the SGPC Sikh Rehat Maryada.
+- Required in-app attribution: "Bani ordering and Sri Dasam Granth / Ardaas text via the
+  ShabadOS open database. Sri Guru Granth Sahib Ji text is this project's own verified corpus."
