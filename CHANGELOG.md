@@ -3,7 +3,13 @@
 The format below (newest first) follows [Keep a Changelog](https://keepachangelog.com);
 entries prior to v1.1.0 are the project's original prose style and are preserved verbatim.
 
-## [Unreleased] — Nitnem, next level (premium pass)
+## [1.3.0] — 2026-09-19 — Nitnem, next level (premium pass)
+
+The daily-prayer (Nitnem) experience rebuilt end to end: a time-of-day paper home, derived
+pauri/ashtapadi numbering with a Contents jump, reading settings and paper tones, a quiet
+completion seal, a reading journey, Home-Screen and Lock-Screen widgets, hands-free auto-scroll,
+gentle on-device reminders, customisable "My Nitnem" sets, and an opt-in reading Live Activity.
+iOS display layer only — scripture, corpus, DB and API untouched (`git diff -- corpus db` empty).
 
 ### Added — Live Activity (opt-in)
 - **Reading Live Activity** (More → Nitnem → Live Activity, default OFF): while you read a bani,
