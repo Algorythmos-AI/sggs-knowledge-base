@@ -359,6 +359,10 @@ final class SGGSUITests: XCTestCase {
         XCTAssertTrue(readout.label.contains("4:40 PM"), "readout should show the pinned local time, got: \(readout.label)")
         XCTAssertTrue(readout.label.contains("4th pahar of day"), "readout should name the current watch")
         XCTAssertTrue(readout.label.contains("Next watch, 1st pahar of night"), "readout should name the next watch")
+        // the current watch's raags are a readable list under the clock (never clipped chips)
+        let raagRow = app.buttons.matching(NSPredicate(format: "label BEGINSWITH %@", "Raag ")).firstMatch
+        XCTAssertTrue(raagRow.waitForExistence(timeout: 8), "\"Sung in this watch\" list missing")
+        XCTAssertTrue(raagRow.label.contains("read from Ang"), "raag rows lead into the Granth")
         // the accessible pahar list is the content path — open P7 (deliberately silent)
         let p7 = app.buttons.matching(NSPredicate(format: "label BEGINSWITH %@", "3rd pahar of night")).firstMatch
         XCTAssertTrue(p7.waitForExistence(timeout: 8), "pahar list missing")
@@ -373,6 +377,23 @@ final class SGGSUITests: XCTestCase {
         div.tap()
         XCTAssertTrue(app.navigationBars["Where traditions disagree"].waitForExistence(timeout: 10),
                       "divergence sheet did not open")
+    }
+
+    /// Solar is the default. With no stored location the clock shows the fixed watches and the
+    /// one-tap location card — location is never requested on its own.
+    func testRaagClockDefaultsToSolarPrompt() {
+        let app = XCUIApplication()
+        app.launchEnvironment["SGGS_CLOCK_NOW"] = "1000"
+        app.launchEnvironment["SGGS_CLOCK_MODE"] = "solar"
+        app.launchEnvironment["SGGS_CLOCK_NO_COORDS"] = "1"   // DEBUG: ignore any stored location
+        app.launchEnvironment["SGGS_UITEST"] = "1"
+        app.launchArguments += ["-AppleLanguages", "(en)", "-AppleLocale", "en_US"]
+        app.launch()
+        openClock(app)
+        XCTAssertTrue(app.buttons["useMyLocation"].waitForExistence(timeout: 20), "one-tap location card missing")
+        XCTAssertTrue(app.buttons["enterLocationManually"].exists)
+        XCTAssertTrue(app.staticTexts["4th pahar of day  ·  3–6 PM"].waitForExistence(timeout: 8),
+                      "with no location the fixed windows are shown")
     }
 
     /// The Explore hub reaches every browse surface (nav-restructure gate).

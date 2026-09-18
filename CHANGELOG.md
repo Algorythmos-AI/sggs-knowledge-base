@@ -3,6 +3,32 @@
 The format below (newest first) follows [Keep a Changelog](https://keepachangelog.com);
 entries prior to v1.1.0 are the project's original prose style and are preserved verbatim.
 
+## [1.2.1] — 2026-09-18 — Apple-clean clock face, readable raag list, Solar by default
+
+iOS display + widget layer only — scripture, corpus, DB and API untouched (`git diff -- corpus db` empty).
+
+### Changed
+- **The clock in the pahar ring is now an Apple-style analog face**: a quiet surface, bold hour ticks
+  with thin minute ticks on the rim, thin SF numerals 1–12, tapered white hour and minute hands, a small
+  **day/date complication** ("SAT 19") and a ringed hub. On the app it carries a **thin gold seconds hand
+  that sweeps smoothly** (≤30 fps); the hands are their own layer (`ClockHandsLayer`) so only they animate —
+  the ring redraws once a minute. The sweep pauses when the screen is scrolled away, when the app is
+  backgrounded, and under Reduce Motion (then it ticks once a second). Widgets show hour and minute hands
+  (WidgetKit cannot animate) at the entry minute.
+- **The current watch's raags moved out of the clipped hero chip row into a readable "Sung in this watch"
+  list under the clock**: one row per primary raag, the Gurmukhi name (verbatim, ink Sant Lipi) over its
+  roman form, the first Ang, the whole row a single tap into the Granth. A "All claims and sources for this
+  watch" link opens the full detail sheet.
+- **Solar is now the default** clock mode (the traditional, sun-accurate reckoning). A reader who never chose
+  gets Solar; an explicit Fixed/Solar choice is always respected. With no stored location the clock shows the
+  fixed watches plus a one-tap **"Use my location"** card (location is still requested only on that tap, or
+  entered by hand; rounded to ~1 km, on-device, never sent). App, snapshot and widgets read one
+  `SharedDefaults.defaultClockMode` constant.
+
+### Fixed
+- The digital time and pahar label moved from inside the clock face to a readout row beneath it, so the face
+  stays uncluttered like a real watch.
+
 ## [1.2.0] — 2026-09-18 — Raag Clock v2: a real local clock inside the pahar dial
 
 iOS display + widget layer only — scripture, corpus, DB and API untouched (`git diff -- corpus db` empty).

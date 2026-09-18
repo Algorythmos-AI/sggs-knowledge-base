@@ -139,7 +139,7 @@ Permitted colours: brand gold, warm ink `#171412`, paper `#FBF7F0`, white.
 | Explore hero | **Flat `accentFill`**, `onAccent` text. Gradient `accentFill -> accentDeep` allowed only here and on the share-card rule |
 | Focus highlight | `accent` at 18% |
 | Share card (VerseCard) | Paper surface, ink Gurmukhi, gold rule, full citation "Sri Guru Granth Sahib Ji · Ang N" |
-| Widgets | Card surface, gold rule, `accentText` labels; same tokens as the app. The Raag Now dial (`PaharDialRenderer`) is the same face as the app: `accentFill` current watch with an `accent` stroke, `accent` hand; lock-screen accessories render it mono |
+| Widgets | Card surface, gold rule, `accentText` labels; same tokens as the app. The Raag Now dial (`PaharDialRenderer`) is the same face as the app: `accentFill` current watch with an `accent` stroke, `accent` hand; lock-screen accessories render it mono. The 12-hour analog face (`ClockHandsLayer`) uses ink tapered hands and an `accent` seconds hand (app only; widgets show hour/minute at the entry minute); the day/date number is `accentText`. |
 | Badge / count | Brand red fill, white label — the only routine use of red |
 
 ## 7. Voice
