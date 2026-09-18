@@ -444,6 +444,59 @@ final class SGGSUITests: XCTestCase {
         XCTAssertTrue(app.navigationBars["Ang 1429"].waitForExistence(timeout: 12), "swipe page-turn failed")
     }
 
+    /// Open Reader → jump to an Ang that continues a shabad (164) → the "Shabad starts on Ang N"
+    /// pill is a real control that navigates back to the shabad's start (163). Regression guard for
+    /// the dead-label bug where this chip did nothing on any Ang.
+    func testContinuesFromPillGoesToShabadStart() {
+        let app = launchApp()
+        tab(app, "Reader").tap(); XCTAssertTrue(app.buttons["Hukam"].waitForExistence(timeout: 12), "Reader did not open")
+        let jump = app.buttons["jumpToAng"].firstMatch
+        XCTAssertTrue(jump.waitForExistence(timeout: 15)); jump.tap()
+        let field = app.textFields["angField"].firstMatch
+        XCTAssertTrue(field.waitForExistence(timeout: 8))
+        field.tap(); field.typeText("164")
+        app.buttons["goToAng"].tap()
+        XCTAssertTrue(app.navigationBars["Ang 164"].waitForExistence(timeout: 12), "jump to 164 failed")
+        let pill = app.buttons["continuesFromPill"].firstMatch
+        XCTAssertTrue(pill.waitForExistence(timeout: 8), "Continues-from pill missing on Ang 164")
+        pill.tap()
+        XCTAssertTrue(app.navigationBars["Ang 163"].waitForExistence(timeout: 12),
+                      "Continues-from pill did not navigate to the shabad's start Ang")
+    }
+
+    /// The Jump sheet's fine-tune steppers reach an exact Ang without typing, and the primary
+    /// action restates the destination ("Go to Ang 12") and lands there.
+    func testJumpSteppersAndGoLabel() {
+        let app = launchApp()
+        tab(app, "Reader").tap(); XCTAssertTrue(app.buttons["Hukam"].waitForExistence(timeout: 12), "Reader did not open")
+        let jump = app.buttons["jumpToAng"].firstMatch
+        XCTAssertTrue(jump.waitForExistence(timeout: 15)); jump.tap()
+        let go = app.buttons["goToAng"].firstMatch
+        XCTAssertTrue(go.waitForExistence(timeout: 8))
+        // from Ang 1: +10, +1 → 12
+        app.buttons["Forward 10"].firstMatch.tap()
+        app.buttons["Forward 1"].firstMatch.tap()
+        XCTAssertTrue(waitLabel(go, hasPrefix: "Go to Ang 12", timeout: 6),
+                      "Go label should restate the destination, got \(go.label)")
+        go.tap()
+        XCTAssertTrue(app.navigationBars["Ang 12"].waitForExistence(timeout: 12), "steppers did not land on Ang 12")
+    }
+
+    /// At the largest accessibility text size the Jump sheet stays usable: the primary Go action
+    /// is present and hittable (nothing truncates it off-screen).
+    func testJumpSheetAtAX5() {
+        let app = XCUIApplication()
+        app.launchEnvironment["SGGS_UITEST"] = "1"
+        app.launchArguments += ["-UIPreferredContentSizeCategoryName", "UICTContentSizeCategoryAccessibilityXXXL"]
+        app.launch()
+        tab(app, "Reader").tap(); XCTAssertTrue(app.buttons["Hukam"].waitForExistence(timeout: 15), "Reader did not open")
+        let jump = app.buttons["jumpToAng"].firstMatch
+        XCTAssertTrue(jump.waitForExistence(timeout: 15)); jump.tap()
+        let go = app.buttons["goToAng"].firstMatch
+        XCTAssertTrue(go.waitForExistence(timeout: 10), "Go action missing at AX5")
+        XCTAssertTrue(go.isHittable, "Go action must stay hittable at the largest text size")
+    }
+
     /// Raag Clock: pinned wall clock (16:40 → 4th pahar of day), now card + pahar list +
     /// detail sheet + divergence sheet all reachable.
     func testRaagClock() {

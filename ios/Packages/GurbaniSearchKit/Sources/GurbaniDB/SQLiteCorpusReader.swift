@@ -96,12 +96,21 @@ extension SQLiteCandidateSource: CorpusReader, AnalyticsSource {
             sqlite3_bind_int($0, 1, Int32(ang))
         })
         var continuedFrom: Int? = nil
+        var continuedFromLineId: Int? = nil
         if let first = rs.first, !first.isHeader {
             var stmt: OpaquePointer?
-            if sqlite3_prepare_v2(handle, "SELECT min(ang) FROM lines WHERE comp_id = ?", -1, &stmt, nil) == SQLITE_OK {
+            // min(ang) is the composition's start Ang; min(id) is its FIRST line (headings/verses
+            // are id-ordered), i.e. the shabad's opening line on that start Ang.
+            if sqlite3_prepare_v2(handle, "SELECT min(ang), min(id) FROM lines WHERE comp_id = ?", -1, &stmt, nil) == SQLITE_OK {
                 sqlite3_bind_int(stmt, 1, Int32(first.compId))
                 if sqlite3_step(stmt) == SQLITE_ROW, sqlite3_column_type(stmt, 0) != SQLITE_NULL {
-                    let m = Int(sqlite3_column_int64(stmt, 0)); if m < ang { continuedFrom = m }
+                    let m = Int(sqlite3_column_int64(stmt, 0))
+                    if m < ang {
+                        continuedFrom = m
+                        if sqlite3_column_type(stmt, 1) != SQLITE_NULL {
+                            continuedFromLineId = Int(sqlite3_column_int64(stmt, 1))
+                        }
+                    }
                 }
                 sqlite3_finalize(stmt)
             }
@@ -113,6 +122,7 @@ extension SQLiteCandidateSource: CorpusReader, AnalyticsSource {
         }
         let authors = Set(rs.compactMap { $0.author }).sorted()
         return AngPage(ang: ang, lines: rs, continuedFrom: continuedFrom,
+                       continuedFromLineId: continuedFromLineId,
                        raag: majority { $0.raag }, section: majority { $0.section }, authors: authors)
     }
 
