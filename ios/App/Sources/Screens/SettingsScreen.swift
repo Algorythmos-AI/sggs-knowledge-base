@@ -9,6 +9,7 @@ struct MoreScreen: View {
     @AppStorage("sggs_appearance") private var appearance = "system"
     @AppStorage(AccentPalette.storageKey) private var accentChoice = AccentPalette.brandDefault.rawValue
     @AppStorage(NitnemPrefs.rehrasVariantKey) private var rehrasVariant = NitnemPrefs.rehrasDefault
+    @AppStorage(ReadingActivityController.enabledKey) private var liveActivity = false
 
     var body: some View {
         NavigationStack {
@@ -21,6 +22,22 @@ struct MoreScreen: View {
                         }
                         .id(accentChoice)
                         .accessibilityIdentifier("rehrasVariantPicker")
+                        NavigationLink { NitnemSetsScreen() } label: {
+                            Label("My Nitnem", systemImage: "list.bullet.rectangle")
+                        }
+                        .accessibilityIdentifier("nitnemSetsLink")
+                        NavigationLink { NitnemRemindersScreen() } label: {
+                            Label("Reminders", systemImage: "bell")
+                        }
+                        .accessibilityIdentifier("nitnemRemindersLink")
+                        Toggle(isOn: $liveActivity) {
+                            VStack(alignment: .leading) {
+                                Text("Live Activity while reading")
+                                Text("Show progress on the Lock Screen and Dynamic Island. Title and percentage only — never the verse.")
+                                    .font(.caption).foregroundStyle(.secondary)
+                            }
+                        }
+                        .accessibilityIdentifier("liveActivityToggle")
                     } header: {
                         Text("Nitnem")
                     } footer: {

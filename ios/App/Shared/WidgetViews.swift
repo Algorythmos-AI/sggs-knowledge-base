@@ -16,14 +16,18 @@ enum WidgetType {
     static let eyebrow: Font = .system(size: 10, weight: .semibold, design: .default)
 }
 
-/// The paper ground every widget sits on: `Ink.paper` plus a faint gold light in one corner —
-/// the only decoration, at ≤8% so scripture always leads.
+/// The paper ground every widget (and the Nitnem hero) sits on: `Ink.paper` plus a faint gold
+/// light in one corner — the only decoration, at ≤14% so scripture always leads (a glow over an
+/// AA-checked surface, never a text background; brand book §6 "Glow").
 struct PaperGround: View {
+    var palette: AccentPalette = .brandDefault
+    var intensity: Double = 0.14
+    var center: UnitPoint = .topTrailing
     var body: some View {
         ZStack {
             Ink.paper
-            RadialGradient(colors: [AccentPalette.brandDefault.accentFill.opacity(0.14), .clear],
-                           center: .topTrailing, startRadius: 0, endRadius: 260)
+            RadialGradient(colors: [palette.accentFill.opacity(intensity), .clear],
+                           center: center, startRadius: 0, endRadius: 260)
         }
     }
 }

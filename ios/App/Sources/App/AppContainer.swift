@@ -30,6 +30,15 @@ final class AppContainer {
     var meta: CorpusMeta?
     /// Nitnem reading positions + completed days (App Group JSON; never SwiftData).
     let nitnem = NitnemProgressStore()
+    /// "My Nitnem" customised sets (order/hidden/added). Sibling file, never a progress migration.
+    let nitnemPlan = NitnemPlanStore()
+    /// Gentle local reminders (opt-in, no entitlement, no network). Under `SGGS_UITEST` a fake
+    /// scheduler stands in so tests never touch the real notification center.
+    let reminders: NitnemReminderController
+    #if canImport(UserNotifications)
+    /// Retained delegate that routes a tapped reminder to `sggs://nitnem`.
+    private var notificationRouter: NotificationRouter?
+    #endif
 
     /// The SwiftData store for saved verses. Built explicitly (never via the implicit
     /// `.modelContainer(for:)` result-builder, which fatalErrors on a corrupt store): a broken
@@ -58,6 +67,58 @@ final class AppContainer {
         self.savedStoreDestroyed = opened.destroyed
         // count consecutive persistent-open failures; a clean open resets the ladder
         defaults.set(opened.degraded && !opened.destroyed ? prior + 1 : 0, forKey: Self.savedStoreFailKey)
+        // Gentle reminders: a fake scheduler under UI test, the real notification center otherwise.
+        #if canImport(UserNotifications)
+        let uiTest = ProcessInfo.processInfo.environment["SGGS_UITEST"] == "1"
+        let scheduler: NotificationScheduling = uiTest ? FakeNotificationScheduler() : SystemNotificationScheduler()
+        #else
+        let scheduler: NotificationScheduling = FakeNotificationScheduler()
+        #endif
+        self.reminders = NitnemReminderController(scheduler: scheduler)
+
+        // Reload the Nitnem widget AND refresh reminders the moment a bani is marked read
+        // (today's reminder for a now-complete band is removed).
+        let remindersRef = self.reminders
+        let completed = { [weak self] in await self?.completedReminderBands() ?? [] }
+        nitnem.onChange = {
+            #if canImport(WidgetKit)
+            WidgetCenter.shared.reloadTimelines(ofKind: "NitnemNow")
+            #endif
+            Task { await remindersRef.reschedule(completedToday: await completed()) }
+        }
+        // A change to the customised sets re-resolves the widget snapshot and refreshes reminders.
+        nitnemPlan.onChange = { [weak self] in
+            Task { await self?.refreshWidgetSnapshot(); await self?.refreshReminders() }
+        }
+        #if canImport(UserNotifications)
+        let router = self.router
+        let container = self
+        let nr = NotificationRouter(onOpen: { url in router.handle(url, container: container) })
+        self.notificationRouter = nr
+        UNUserNotificationCenter.current().delegate = nr
+        #endif
+    }
+
+    /// Which reminder bands have their whole set completed for today's Nitnem day. Used to drop
+    /// today's nudge for a band the reader has already finished. Empty if the registry is absent.
+    func completedReminderBands() async -> Set<NitnemBand> {
+        guard let corpus, corpus.capabilities.hasBanis else { return [] }
+        let rows = await corpus.banis().banis
+        let rehras = UserDefaults.standard.string(forKey: NitnemPrefs.rehrasVariantKey) ?? NitnemPrefs.rehrasDefault
+        func done(_ cat: BaniCategory) -> Bool {
+            let set = NitnemSets.resolved(category: cat, plan: nitnemPlan.entries(for: cat), registry: rows, rehrasVariant: rehras)
+            return !set.isEmpty && set.allSatisfy { nitnem.isCompleted($0.id) }
+        }
+        var out: Set<NitnemBand> = []
+        if done(.nitnemMorning) { out.insert(.amritVela) }
+        if done(.nitnemEvening) { out.insert(.evening) }
+        if done(.nitnemNight) { out.insert(.night) }
+        return out
+    }
+
+    /// Reschedule reminders from current preferences (called on foreground).
+    func refreshReminders() async {
+        await reminders.reschedule(completedToday: await completedReminderBands())
     }
 
     struct SavedStoreOpen {
@@ -200,6 +261,18 @@ final class AppContainer {
                 paharRaagsGurmukhi[p] = claims.compactMap { $0.raagName ?? $0.roman }
             }
         }
+        // Nitnem: resolve the daily sets (registry facts the DB-less widget can't get itself).
+        var nitnemData: NitnemWidgetData? = nil
+        if corpus.capabilities.hasBanis {
+            let rehras = UserDefaults.standard.string(forKey: NitnemPrefs.rehrasVariantKey) ?? NitnemPrefs.rehrasDefault
+            let rows = await corpus.banis().banis
+            func brief(_ cat: BaniCategory) -> [NitnemWidgetData.Bani] {
+                // honour the reader's customised set so the widget and the home never disagree
+                NitnemSets.resolved(category: cat, plan: nitnemPlan.entries(for: cat), registry: rows, rehrasVariant: rehras)
+                    .map { NitnemWidgetData.Bani(id: $0.id, key: $0.key, titleEn: $0.titleEn, titleGm: $0.titleGm, minutes: $0.estimatedMinutes, nLines: $0.nLines) }
+            }
+            nitnemData = NitnemWidgetData(sets: ["morning": brief(.nitnemMorning), "evening": brief(.nitnemEvening), "night": brief(.nitnemNight)])
+        }
         WidgetStore.save(WidgetSnapshot(
             generatedAt: Date(),
             hukamGurmukhi: firstVerse.gurmukhi,     // verbatim — copied, never edited
@@ -210,7 +283,8 @@ final class AppContainer {
             paharRaagsGurmukhi: paharRaagsGurmukhi,
             clockMode: SharedDefaults.clockMode,
             solarLat: SharedDefaults.solarCoords()?.lat,
-            solarLon: SharedDefaults.solarCoords()?.lon))
+            solarLon: SharedDefaults.solarCoords()?.lon,
+            nitnem: nitnemData))
         #if canImport(WidgetKit)
         WidgetCenter.shared.reloadAllTimelines()
         #endif
@@ -232,12 +306,19 @@ enum Presentation: Identifiable {
     case hukam
     case trail(TrailStart)
     case cluster(center: String, cluster: ConstellationCluster)
+    /// The bani reader's Contents sheet (jump to a pauri/ashtapadi) — routed through the one
+    /// sheet host so it can never collide with a deep-linked shabad/hukam.
+    case baniContents(BaniContentsRequest)
+    /// The bani reader's reading-settings sheet (size, spacing, paper tone, toggles).
+    case readingSettings
     var id: String {
         switch self {
         case .shabad(let c, _): return "shabad-\(c)"
         case .hukam: return "hukam"
         case .trail(let t): return "trail-\(t.id)"
         case .cluster(let center, let cl): return "cluster-\(center)-\(cl.co)"
+        case .baniContents(let r): return "contents-\(r.baniId)"
+        case .readingSettings: return "reading-settings"
         }
     }
     /// The shabad/hukam subset, for ShabadSheet.

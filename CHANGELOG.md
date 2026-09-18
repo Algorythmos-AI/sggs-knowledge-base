@@ -3,6 +3,90 @@
 The format below (newest first) follows [Keep a Changelog](https://keepachangelog.com);
 entries prior to v1.1.0 are the project's original prose style and are preserved verbatim.
 
+## [1.3.0] — 2026-09-19 — Nitnem, next level (premium pass)
+
+The daily-prayer (Nitnem) experience rebuilt end to end: a time-of-day paper home, derived
+pauri/ashtapadi numbering with a Contents jump, reading settings and paper tones, a quiet
+completion seal, a reading journey, Home-Screen and Lock-Screen widgets, hands-free auto-scroll,
+gentle on-device reminders, customisable "My Nitnem" sets, and an opt-in reading Live Activity.
+iOS display layer only — scripture, corpus, DB and API untouched (`git diff -- corpus db` empty).
+
+### Added — Live Activity (opt-in)
+- **Reading Live Activity** (More → Nitnem → Live Activity, default OFF): while you read a bani,
+  the Lock Screen and Dynamic Island can show its title and a whole-percent progress bar — never a
+  verse. It starts only after a genuine 20-second dwell, updates on a whole-percent change and at
+  most every 10 seconds, ends on completion or leaving, carries a 20-minute stale date, and any
+  activity left by a previous launch is swept on startup. No push, no server; the shared attributes
+  live in the widget extension. Availability is gated on the opt-in and the system.
+
+
+### Added — My Nitnem
+- **Customisable daily sets** (More → Nitnem → My Nitnem): reorder the banis in the morning,
+  Rehras or Sohila set, hide one, or add any bani from the library (e.g. Sukhmani Sahib in the
+  morning). The home screen and the widgets both follow the customised set, and the completion
+  rings and reminders count against it. Every bani stays in the library — hiding only affects the
+  daily set. Edits live in a new `nitnem-plan.json` sibling file; the reading-history file is never
+  migrated, so an older build can never lose progress. Unknown keys are dropped, a bani added in a
+  later app version is appended, and the Rehras variant is honoured.
+
+
+### Added — gentle reminders
+- **Opt-in Nitnem reminders**: a quiet, local nudge for the morning banis, Rehras or Sohila at a
+  time you choose (More → Nitnem → Reminders). Entirely on-device — no account, no network, no
+  extra entitlement. Each enabled band schedules 14 dated, non-repeating notifications so a band
+  you have already read stays silent; today's is dropped the moment you complete it. Copy carries
+  no Gurmukhi, no counts and no emoji, delivery is passive (never interrupts your reading), and a
+  tap opens Nitnem. Permission is asked only when you turn a reminder on; a denial snaps the toggle
+  back with a link to Settings.
+
+
+### Added — hands-free reading
+- **Auto-scroll** in the bani reader: a play/pause control paces the page at Slow / Steady / Brisk
+  (chosen in Reading settings), scaled by the Gurmukhi size so a larger font never reads faster.
+  It drives the real scroll view from a display link, so lazy loading and progress saving keep
+  working, and it **pauses the instant you touch the page**. It never auto-starts, reaching the end
+  never marks a bani read, and it is hidden entirely under VoiceOver, Switch Control and Reduce
+  Motion, and paused when a sheet opens, the app backgrounds, or you jump to a section.
+
+
+### Added — widgets
+- **Nitnem widgets** (Home Screen small/medium, Lock Screen circular/rectangular/inline): the
+  bani to read now for the time of day, today's set progress as a gold ring, and the next
+  unread bani in ink Sant Lipi — the same paper-and-gold vocabulary as the Hukam widget. Tapping
+  opens the bani (`sggs://bani/<key>`). The widget never opens the corpus DB: it reads the
+  App-Group snapshot (resolved sets, filled by the app) plus the live progress file, and reloads
+  the moment a bani is marked read. Timeline entries at the band boundaries incl. the 03:00
+  Nitnem-day rollover. `NitnemBand` moved to `Shared` (widget-safe).
+
+
+iOS display layer only — scripture, corpus, DB and API untouched (`git diff -- corpus db` empty).
+
+### Added
+- **Time-of-day Nitnem home**: a paper hero with a faint gold glow and the day drawn as an arc
+  (sun/moon at the present moment), a small-caps date eyebrow, a serif band title, larger
+  completion rings, symboled section eyebrows, a per-row "last read" line, a calm skeleton on
+  load, and a two-column iPad layout. `PaperGround` is now palette/intensity-parameterised and
+  reused from the widget vocabulary.
+- **Reader numbering & Contents**: pauri / ashtapadi / salok margin labels and a Contents sheet
+  (jump to any pauri) derived only from the verbatim `markers` via the new `BaniOutline` (Kit).
+  A `baniStanza` caption ("Pauri N of M") under the position bar.
+- **Reading settings**: Gurmukhi size, line spacing (floor 0.40), and paper tone Paper / Warm /
+  Night. New `Ink.paperWarm` token (contrast-proven) and a `gurmukhiLeading` environment.
+- **Quiet completion**: a gold seal closes the ring on "mark as read", and a calm band-complete
+  card ("The morning banis are complete.") when the whole set for the time of day is done.
+- **Reading journey**: a quiet month record (from the data already stored) of the days the
+  morning banis / Rehras / Sohila were completed, with a consecutive-days count. No badges,
+  targets, or sharing. Reached from a home card and honours the locale's first weekday and DST.
+
+### Changed / hardened
+- **One clock, a 03:00 Nitnem day** (`NitnemClock`): Sohila read at 22:00 stays complete past
+  midnight; the night band never splits. Used by the home, reader, and (later) widgets/reminders.
+- **Positions survive a DB rebuild**: progress stores a verbatim anchor + line count and resumes
+  by anchor when the registry changed, else the top; the progress file never overwrites a newer
+  schema. `nitnem-progress.json` stays schema v1.
+- Brand book §6 gains a **Glow** row (≤14% wash, distinct from the Explore-hero gradient) and a
+  Reader-paper row. `docs/nitnem/spec.md` records the frozen identifiers.
+
 ## [1.2.1] — 2026-09-18 — Apple-clean clock face, readable raag list, Solar by default
 
 iOS display + widget layer only — scripture, corpus, DB and API untouched (`git diff -- corpus db` empty).

@@ -20,7 +20,7 @@ This project is a knowledge base of **Sri Guru Granth Sahib Ji**, the living Gur
 
 An **offline, "sovereign," zero-dependency** study app over the full Granth (Angs 1–1430). A reproducible pipeline extracts the PDF into a corpus, builds a SQLite/FTS5 database, and a Python stdlib server serves a prebuilt Astro multi-page UI (search, reader, themes, lineage, study trail, concept constellation, insights).
 
-- **Current build:** `APP_VERSION = 1.2.1`, `APP_BUILT = 2026-09-18` (see `webapp/serve.py`). The traditional-saroop display toggle is **default-ON** as of v2.10.1 (reader can switch to verbatim).
+- **Current build:** `APP_VERSION = 1.3.0`, `APP_BUILT = 2026-09-19` (see `webapp/serve.py`). The traditional-saroop display toggle is **default-ON** as of v2.10.1 (reader can switch to verbatim).
 - **Corpus:** 60,658 line records · 1,430 Angs · FTS5 full-text.
 - **Source of record:** the user's `Siri-Guru-Granth-Sahib-in-Gurmukhi-with-Index.pdf` (1,483 pp), which lives **one level above this repo** (`../`), not inside it.
 
@@ -132,6 +132,7 @@ DB also has: `fts`/`fts_en`/`fts_shabad`/`fts_tri`, `translations`, `variants`, 
 - **`comp_type` is known-mislabeled** in places (Japji tagged `ਰੁਤੀ/ਵਾਰ`; many shabads tagged `ਪਉੜੀ`); it's suppressed at the display layer. Don't rely on it for logic; prefer `comp_id`/`section`.
 - **Japji (385 lines) has `author = null`** (the print has no per-line `ਮਹਲਾ`), so author filters for Guru Nanak miss Japji. Known/deferred.
 - **`corpus/by-raag/` is regenerated but the directory is not cleared first** — stale files from a prior run can linger (two numbering schemes currently coexist). Clear before regenerating.
+- **Nitnem / Gutka (iOS).** The registry lives in `banis`/`bani_lines`/`extra_lines` (ADR-0006): SGGS lines are pointers into the verbatim corpus (cited by Ang), `extra_lines` is a separate labelled Sri Dasam Granth / Ardaas layer (no English, never an Ang, never a bookmark). Pauri/ashtapadi/salok numbers come ONLY from `BaniLine.markers` via `GurbaniSearchKit/BaniOutline` (pure, strict-gate → `[]` rather than a guess, never emits Gurmukhi). One clock: `Shared/NitnemClock` defines "now" and a **03:00 Nitnem day** (`dayKey(now−3h)`) used by the home, reader, widgets and reminders alike. Progress (`nitnem-progress.json`, App Group, schema **v1 frozen**) stores a verbatim `anchor`+`nLines` so a saved position survives a DB rebuild, and never overwrites a newer schema; My-Nitnem sets + the journey go in a separate file (not this one). Reader tones use `Ink.paper`/`Ink.paperWarm` (contrast-proven) or a forced dark scheme; the hero glow is ≤14% (brand book §6 "Glow"). Frozen XCUITest identifiers are listed in `docs/nitnem/spec.md`.
 - **`db/sggs.sqlite` is Git LFS.** Don't commit it as a plain blob; don't bloat the repo with `node_modules`/`dist` (they're git-ignored — keep it that way).
 
 ---

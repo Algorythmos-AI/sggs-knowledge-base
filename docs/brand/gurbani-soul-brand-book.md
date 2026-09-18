@@ -138,6 +138,8 @@ Permitted colours: brand gold, warm ink `#171412`, paper `#FBF7F0`, white.
 | Card | Unchanged: shadow in light, hairline in dark, radius 12 |
 | Explore hero | **Flat `accentFill`**, `onAccent` text. Gradient `accentFill -> accentDeep` allowed only here and on the share-card rule |
 | Focus highlight | `accent` at 18% |
+| Glow | A radial/linear `accentFill` (or `accent`) wash at **≤14%** over an AA-checked surface — a light, never a text background. Used on the Nitnem hero, the Raag Clock now-card, Lineage, and every widget's `PaperGround`. Distinct from the Explore-hero *gradient* (opaque `accentFill→accentDeep`), which stays limited to that hero and the share-card rule. |
+| Reader paper | `Ink.paper` (default), `Ink.paperWarm` (#FDF6E3 light — hue-shifted, still clears every accent pair), or Night (the warm-ink dark scheme forced on the reader subtree; no new colours). |
 | Share card (VerseCard) | Paper surface, ink Gurmukhi, gold rule, full citation "Sri Guru Granth Sahib Ji · Ang N" |
 | Widgets | Card surface, gold rule, `accentText` labels; same tokens as the app. The Raag Now dial (`PaharDialRenderer`) is the same face as the app: `accentFill` current watch with an `accent` stroke, `accent` hand; lock-screen accessories render it mono. The 12-hour analog face (`ClockHandsLayer`) uses ink tapered hands and an `accent` seconds hand (app only; widgets show hour/minute at the entry minute); the day/date number is `accentText`. |
 | Badge / count | Brand red fill, white label — the only routine use of red |

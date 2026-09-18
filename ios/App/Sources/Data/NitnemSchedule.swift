@@ -1,34 +1,10 @@
 import Foundation
 import GurbaniSearchKit
 
-/// Which part of the daily practice the clock points at. A pure function of the wall clock
-/// (minutes since local midnight) — no location, no permission, testable to the minute.
-/// The band only ORDERS the Nitnem home; nothing is ever hidden by it.
-enum NitnemBand: String, Sendable, CaseIterable {
-    case amritVela   // 03:00–09:00  the morning banis, read before dawn
-    case day         // 09:00–17:00  still the morning banis, for those who read later
-    case evening     // 17:00–21:00  Rehras Sahib
-    case night       // 21:00–03:00  Kirtan Sohila
+// `NitnemBand` (the enum, titles, band-from-clock, glow, set key) lives in `Shared/NitnemBand.swift`
+// so the widget can use it. The category-based ordering below is app-only (it needs BaniCategory).
 
-    var title: String {
-        switch self {
-        case .amritVela: return "Amrit Vela"
-        case .day: return "Morning banis"
-        case .evening: return "Evening"
-        case .night: return "Night"
-        }
-    }
-
-    /// One quiet line under the title (brand voice: reverent, plain, exact).
-    var caption: String {
-        switch self {
-        case .amritVela: return "The five morning banis."
-        case .day: return "The five morning banis, whenever the day allows."
-        case .evening: return "Rehras Sahib, as the day closes."
-        case .night: return "Kirtan Sohila before rest."
-        }
-    }
-
+extension NitnemBand {
     /// The categories in the order the home screen lists them for this band.
     var order: [BaniCategory] {
         switch self {
@@ -43,21 +19,9 @@ enum NitnemBand: String, Sendable, CaseIterable {
 }
 
 enum NitnemSchedule {
-    /// Band for a wall-clock time. Half-open intervals; wraps across midnight.
-    static func band(minutesSinceMidnight m: Int) -> NitnemBand {
-        let x = ((m % 1440) + 1440) % 1440
-        switch x {
-        case 180..<540: return .amritVela
-        case 540..<1020: return .day
-        case 1020..<1260: return .evening
-        default: return .night
-        }
-    }
-
-    static func band(at date: Date, calendar: Calendar = .current) -> NitnemBand {
-        let c = calendar.dateComponents([.hour, .minute], from: date)
-        return band(minutesSinceMidnight: (c.hour ?? 0) * 60 + (c.minute ?? 0))
-    }
+    /// Band for a wall-clock time (delegates to the widget-safe `NitnemBand`).
+    static func band(minutesSinceMidnight m: Int) -> NitnemBand { NitnemBand.band(minutesSinceMidnight: m) }
+    static func band(at date: Date, calendar: Calendar = .current) -> NitnemBand { NitnemBand.band(at: date, calendar: calendar) }
 
     /// The next bani to read in a band: the first of the focus category that is not yet
     /// complete today, else nil (everything done). `isComplete` is the caller's progress lookup.

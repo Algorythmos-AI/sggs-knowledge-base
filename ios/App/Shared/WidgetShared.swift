@@ -22,6 +22,22 @@ struct WidgetSnapshot: Codable, Sendable {
     var clockMode: String? = nil
     var solarLat: Double? = nil
     var solarLon: Double? = nil
+    /// The resolved daily Nitnem sets (registry facts the DB-less widget cannot get itself):
+    /// per set key ("morning"/"evening"/"night"), the ordered banis with their titles and
+    /// lengths. Progress (completion, position) is read live from `nitnem-progress.json`.
+    /// Optional so an older snapshot still decodes.
+    var nitnem: NitnemWidgetData? = nil
+}
+
+/// The Nitnem facts a widget needs from the registry (titles, minutes, line counts). Progress
+/// is read separately and live, so the snapshot is rewritten only when the sets/variant/DB change.
+struct NitnemWidgetData: Codable, Sendable {
+    struct Bani: Codable, Sendable, Identifiable {
+        var id: String; var key: String; var titleEn: String; var titleGm: String
+        var minutes: Int?; var nLines: Int
+    }
+    /// Set key ("morning"/"evening"/"night") → ordered banis.
+    var sets: [String: [Bani]]
 }
 
 /// The App-Group `UserDefaults` suite shared by the app and its widgets — where the clock

@@ -1,26 +1,18 @@
 import SwiftUI
 import GurbaniSearchKit
 
-/// The daily home: what to read now, how far along today is, and every bani in the Gutka.
-/// The wall clock only ORDERS the list (Amrit Vela → the morning banis, evening → Rehras,
-/// night → Sohila); nothing is ever hidden. One prominent gold action per screen (Continue).
-/// Every Sri Guru Granth Sahib Ji line a bani opens is rendered from the verbatim corpus.
+/// The daily home: what to read now, how far along the day is, and every bani in the Gutka.
+/// A time-of-day paper hero (a faint gold glow, the day drawn as an arc), rings for the focus
+/// banis, one gold action; the wall clock only ORDERS the list — nothing is hidden.
 struct NitnemScreen: View {
     @Environment(AppContainer.self) private var container
     @Environment(\.palette) private var palette
+    @Environment(\.horizontalSizeClass) private var sizeClass
     @AppStorage(NitnemPrefs.rehrasVariantKey) private var rehrasVariant = NitnemPrefs.rehrasDefault
     @State private var list: BaniList?
     @State private var failed = false
-    /// Injectable for tests (XCUITest launches with SGGS_CLOCK_NOW=<minutes> to pin the time).
-    var now: () -> Date = NitnemScreen.injectedNow
-
-    nonisolated static func injectedNow() -> Date {
-        if let s = ProcessInfo.processInfo.environment["SGGS_CLOCK_NOW"], let m = Int(s) {
-            let start = Calendar.current.startOfDay(for: Date())
-            return start.addingTimeInterval(TimeInterval(m * 60))
-        }
-        return Date()
-    }
+    /// Injectable for tests; the single clock honours `SGGS_CLOCK_NOW`.
+    var now: () -> Date = { NitnemClock.now() }
 
     var body: some View {
         @Bindable var router = container.router
@@ -37,7 +29,7 @@ struct NitnemScreen: View {
                     EmptyStateView(title: "Nitnem could not load", message: "Reinstalling the app restores the bundled corpus.", isError: true,
                                    actionTitle: "Try again") { Task { await load() } }
                 } else {
-                    ProgressView().frame(maxWidth: .infinity, maxHeight: .infinity)
+                    NitnemSkeleton()
                 }
             }
             .background(Ink.canvas.ignoresSafeArea())
@@ -53,70 +45,90 @@ struct NitnemScreen: View {
         if l.available { list = l } else { failed = true }
     }
 
-    // MARK: content
+    // MARK: layout
 
-    /// The rows the list shows: one per key, the user's chosen Rehras variant, defaults elsewhere.
     private func visible(_ banis: [BaniSummary]) -> [BaniSummary] {
         banis.filter { b in
             b.key == "rehras" ? b.variant == NitnemPrefs.variant(for: "rehras", rehras: rehrasVariant) : b.isDefault
         }
     }
 
+    /// The banis to show for a category: the reader's customised set for the three daily bands,
+    /// the default filter for Popular / Ceremony (which are not customisable).
+    private func resolved(_ cat: BaniCategory, from banis: [BaniSummary]) -> [BaniSummary] {
+        switch cat {
+        case .nitnemMorning, .nitnemEvening, .nitnemNight:
+            return NitnemSets.resolved(category: cat, plan: container.nitnemPlan.entries(for: cat),
+                                       registry: banis, rehrasVariant: rehrasVariant)
+        default:
+            return visible(banis).filter { $0.category == cat }
+        }
+    }
+
     @ViewBuilder
     private func content(_ banis: [BaniSummary], at date: Date) -> some View {
         let band = NitnemSchedule.band(at: date)
-        let rows = visible(banis)
-        let focus = rows.filter { $0.category == band.focus }
+        let focus = resolved(band.focus, from: banis)
         let next = focus.first { !container.nitnem.isCompleted($0.id, on: date) }
         ScrollView {
-            VStack(spacing: Theme.Space.l) {
-                hero(band: band, date: date, focus: focus, next: next)
-                hukamCard
-                ForEach(band.order, id: \.self) { cat in
-                    section(title: sectionTitle(cat), rows: rows.filter { $0.category == cat }, date: date)
+            if sizeClass == .regular {
+                HStack(alignment: .top, spacing: Theme.Space.l) {
+                    VStack(spacing: Theme.Space.l) {
+                        hero(band: band, date: date, focus: focus, next: next)
+                        hukamCard
+                        journeyCard
+                    }
+                    .frame(width: 400)
+                    VStack(spacing: Theme.Space.l) { sections(band: band, banis: banis, date: date) }
+                        .frame(maxWidth: .infinity)
                 }
-                section(title: "Popular", rows: rows.filter { $0.category == .popular }, date: date)
-                section(title: "Ceremony", rows: rows.filter { $0.category == .ceremony }, date: date)
-                Text("Sri Guru Granth Sahib Ji lines are shown verbatim from the verified corpus and cited by Ang. \(NitnemReview.extraLayerLabel)")
-                    .font(.caption2).foregroundStyle(.tertiary)
-                    .multilineTextAlignment(.leading)
-                    .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(Theme.Space.l)
+                .frame(maxWidth: 1100).frame(maxWidth: .infinity)
+            } else {
+                VStack(spacing: Theme.Space.l) {
+                    hero(band: band, date: date, focus: focus, next: next)
+                    hukamCard
+                    journeyCard
+                    sections(band: band, banis: banis, date: date)
+                }
+                .padding(Theme.Space.l)
+                .frame(maxWidth: 720).frame(maxWidth: .infinity)
             }
-            .padding(Theme.Space.l)
-            .frame(maxWidth: 720)
-            .frame(maxWidth: .infinity)
         }
         .contentMargins(.bottom, Theme.Space.xl, for: .scrollContent)
     }
 
-    private func sectionTitle(_ cat: BaniCategory) -> String {
-        switch cat {
-        case .nitnemMorning: return "Morning"
-        case .nitnemEvening: return "Evening"
-        case .nitnemNight: return "Night"
-        case .popular: return "Popular"
-        case .ceremony: return "Ceremony"
+    @ViewBuilder
+    private func sections(band: NitnemBand, banis: [BaniSummary], date: Date) -> some View {
+        ForEach(band.order, id: \.self) { cat in
+            section(cat: cat, rows: resolved(cat, from: banis), date: date)
         }
+        section(cat: .popular, rows: resolved(.popular, from: banis), date: date)
+        section(cat: .ceremony, rows: resolved(.ceremony, from: banis), date: date)
+        Text("Sri Guru Granth Sahib Ji lines are shown verbatim from the verified corpus and cited by Ang. \(NitnemReview.extraLayerLabel)")
+            .font(.caption2).foregroundStyle(.tertiary)
+            .frame(maxWidth: .infinity, alignment: .leading)
     }
 
-    /// Paper hero: the band, today's date, the focus banis as rings, one gold Continue.
+    // MARK: hero
+
     @ViewBuilder
     private func hero(band: NitnemBand, date: Date, focus: [BaniSummary], next: BaniSummary?) -> some View {
+        let arc = DayArcModel(date: date)
         VStack(alignment: .leading, spacing: Theme.Space.m) {
             VStack(alignment: .leading, spacing: Theme.Space.xs) {
+                SectionEyebrow(text: date.formatted(.dateTime.weekday(.wide).day().month(.wide)))
                 Text(band.title).font(Brand.heading(.title2))
-                Text(date.formatted(.dateTime.weekday(.wide).day().month(.wide)))
-                    .font(.subheadline).foregroundStyle(.secondary)
-                Text(band.caption).font(.caption).foregroundStyle(.secondary)
+                Text(band.caption).font(.subheadline).foregroundStyle(.secondary)
             }
+            DayArc(model: arc).padding(.vertical, Theme.Space.xs)
             if !focus.isEmpty {
-                HStack(spacing: Theme.Space.m) {
+                HStack(alignment: .top, spacing: Theme.Space.m) {
                     ForEach(focus) { b in
                         let done = container.nitnem.isCompleted(b.id, on: date)
                         let frac = container.nitnem.fraction(for: b.id, total: b.nLines, on: date)
                         VStack(spacing: Theme.Space.xs) {
-                            ProgressRing(fraction: frac, done: done)
-                                .frame(width: 36, height: 36)
+                            ProgressRing(fraction: frac, done: done).frame(width: 44, height: 44)
                             Text(shortTitle(b)).font(.caption2).foregroundStyle(.secondary).lineLimit(1)
                         }
                         .accessibilityElement(children: .ignore)
@@ -136,7 +148,7 @@ struct NitnemScreen: View {
                     .buttonStyle(.prominentPill)
                     .accessibilityIdentifier("nitnemContinue")
                 } else if !focus.isEmpty {
-                    Label("Done for today", systemImage: "checkmark.circle")
+                    Label("\(band.title) complete", systemImage: "checkmark.seal")
                         .font(.subheadline.weight(.semibold)).foregroundStyle(palette.accentText)
                         .accessibilityIdentifier("nitnemDone")
                 }
@@ -150,7 +162,10 @@ struct NitnemScreen: View {
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(Theme.Space.l)
-        .background(Ink.paper, in: RoundedRectangle(cornerRadius: Theme.Radius.card))
+        .background {
+            PaperGround(palette: palette, intensity: 0.10, center: band.glowCenter)
+                .clipShape(RoundedRectangle(cornerRadius: Theme.Radius.card))
+        }
         .overlay(RoundedRectangle(cornerRadius: Theme.Radius.card).strokeBorder(Ink.hairline))
     }
 
@@ -190,18 +205,38 @@ struct NitnemScreen: View {
         .accessibilityIdentifier("Hukam")
     }
 
+    private var journeyCard: some View {
+        NavigationLink(value: Route.nitnemJourney) {
+            Card {
+                HStack(spacing: Theme.Space.m) {
+                    Image(systemName: "calendar").font(.title2).foregroundStyle(palette.accent)
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("Reading journey").font(.headline).foregroundStyle(.primary)
+                        Text("The days you have read, month by month").font(.caption).foregroundStyle(.secondary)
+                    }
+                    Spacer()
+                    Image(systemName: "chevron.right").font(.caption).foregroundStyle(.tertiary)
+                }
+            }
+        }
+        .buttonStyle(.pressableCard)
+        .accessibilityIdentifier("nitnemJourney")
+    }
+
+    // MARK: sections
+
     @ViewBuilder
-    private func section(title: String, rows: [BaniSummary], date: Date) -> some View {
+    private func section(cat: BaniCategory, rows: [BaniSummary], date: Date) -> some View {
         if !rows.isEmpty {
             VStack(alignment: .leading, spacing: Theme.Space.s) {
-                Text(title).font(.subheadline.weight(.semibold)).foregroundStyle(.secondary)
+                SectionEyebrow(text: cat.sectionTitle, symbol: cat.symbol)
                     .padding(.horizontal, Theme.Space.xs)
                 VStack(spacing: 0) {
                     ForEach(Array(rows.enumerated()), id: \.element.id) { i, b in
                         NavigationLink(value: Route.bani(b.key)) { BaniRow(bani: b, date: date) }
                             .buttonStyle(.pressableCard)
                             .accessibilityIdentifier("bani_\(b.key)")
-                        if i < rows.count - 1 { Divider().padding(.leading, Theme.Space.l) }
+                        if i < rows.count - 1 { Divider().padding(.leading, 52) }
                     }
                 }
                 .background(Ink.card, in: RoundedRectangle(cornerRadius: Theme.Radius.card))
@@ -211,7 +246,28 @@ struct NitnemScreen: View {
     }
 }
 
-/// One registry row: title, Gurmukhi title (ink), minutes · Ang range, and today's ring.
+extension BaniCategory {
+    var sectionTitle: String {
+        switch self {
+        case .nitnemMorning: return "Morning"
+        case .nitnemEvening: return "Evening"
+        case .nitnemNight: return "Night"
+        case .popular: return "Popular"
+        case .ceremony: return "Ceremony"
+        }
+    }
+    var symbol: String {
+        switch self {
+        case .nitnemMorning: return "sunrise"
+        case .nitnemEvening: return "sunset"
+        case .nitnemNight: return "moon.stars"
+        case .popular: return "text.book.closed"
+        case .ceremony: return "seal"
+        }
+    }
+}
+
+/// One registry row: ring, title, Gurmukhi title (ink), and a quiet meta line.
 private struct BaniRow: View {
     let bani: BaniSummary
     let date: Date
@@ -225,7 +281,7 @@ private struct BaniRow: View {
             VStack(alignment: .leading, spacing: 2) {
                 Text(bani.titleEn).font(.body.weight(.medium)).foregroundStyle(.primary)
                 GurmukhiText(verbatim: bani.titleGm, size: 16)
-                Text(meta).font(.caption).foregroundStyle(.secondary)
+                Text(meta(done: done, frac: frac)).font(.caption).foregroundStyle(.secondary)
             }
             Spacer()
             Image(systemName: "chevron.right").font(.caption).foregroundStyle(.tertiary)
@@ -233,15 +289,26 @@ private struct BaniRow: View {
         .padding(.horizontal, Theme.Space.l).padding(.vertical, Theme.Space.m)
         .contentShape(Rectangle())
         .accessibilityElement(children: .ignore)
-        .accessibilityLabel("\(bani.titleEn). \(meta). \(done ? "Complete today" : frac > 0 ? "\(Int(frac * 100)) percent read" : "")")
+        .accessibilityLabel("\(bani.titleEn). \(meta(done: done, frac: frac))")
     }
 
-    private var meta: String {
+    private func meta(done: Bool, frac: Double) -> String {
         var parts: [String] = []
         if let m = bani.estimatedMinutes { parts.append("about \(m) min") }
         if bani.hasExtra { parts.append("includes Sri Dasam Granth text") }
+        if done {
+            parts.append("read today")
+        } else if frac > 0 {
+            parts.append("\(Int(frac * 100))% read")
+        } else if let last = container.nitnem.progress(for: bani.id)?.lastReadAt {
+            parts.append("last read \(Self.relative.localizedString(for: last, relativeTo: date))")
+        }
         return parts.joined(separator: " · ")
     }
+
+    private static let relative: RelativeDateTimeFormatter = {
+        let f = RelativeDateTimeFormatter(); f.unitsStyle = .full; return f
+    }()
 }
 
 /// A thin accent ring: today's completion fills it; the position arc is the read fraction.

@@ -13,10 +13,11 @@ struct SGGSApp: App {
         // leak between tests (resume-last-Ang, the transliteration toggle). Never the accent —
         // its persistence across a relaunch is itself under test. Debug builds only.
         if ProcessInfo.processInfo.environment["SGGS_UITEST"] == "1" {
-            for key in ["sggs_last_ang", "sggs_translit", "sggs_rehras_variant"] {
+            for key in ["sggs_last_ang", "sggs_translit", "sggs_rehras_variant", "sggs_reader_tone", "sggs_reader_leading", "sggs_gurmukhi_size", "sggs_focus_mode"] {
                 UserDefaults.standard.removeObject(forKey: key)
             }
             NitnemProgressStore.wipe()
+            NitnemPlanStore.wipe()
         }
         #endif
         Brand.applyNavigationTitleFonts()
@@ -39,13 +40,18 @@ struct SGGSApp: App {
             .environment(container)
             .task {
                 CrashMonitor.shared.start()   // local-only diagnostics; QA requires zero collected
+                ReadingActivityController.sweepOrphaned()   // clear any activity left by a prior launch
                 await container.runIntegrity()
                 await container.loadMeta()
                 await container.refreshWidgetSnapshot()
+                await container.refreshReminders()
             }
             .onOpenURL { url in container.router.handle(url, container: container) }
             .onChange(of: scenePhase) { _, phase in
-                if phase == .active { container.flushIfIdle() }   // never presents mid-dismiss
+                if phase == .active {
+                    container.flushIfIdle()   // never presents mid-dismiss
+                    Task { await container.refreshReminders() }   // re-plan dated reminders on return
+                }
             }
             .onContinueUserActivity(CSSearchableItemActionType) { activity in
                 // a saved verse tapped in system search → open its composition

@@ -128,6 +128,50 @@ final class SGGSUITests: XCTestCase {
             .waitForExistence(timeout: 8), "Dasam source label missing")
     }
 
+    /// The Live Activity opt-in is present in More and defaults off (never on without consent).
+    func testLiveActivityToggleDefaultsOff() {
+        let app = launchApp(selectSearch: false)
+        openTab(app, "More", expectingNavBar: "More")
+        let toggle = app.switches["liveActivityToggle"].firstMatch
+        XCTAssertTrue(toggle.waitForExistence(timeout: 12), "Live Activity toggle missing in More")
+        XCTAssertEqual(toggle.value as? String, "0", "Live Activity must default OFF")
+    }
+
+    /// My Nitnem: the editor opens from More and shows the set picker, the morning banis and the
+    /// "Add a bani" affordance. (Reorder/hide/add persistence is covered by NitnemSetsTests and
+    /// validated on-device.)
+    func testMyNitnemEditorOpens() {
+        let app = launchApp(selectSearch: false)
+        openTab(app, "More", expectingNavBar: "More")
+        let link = app.buttons["nitnemSetsLink"].firstMatch
+        XCTAssertTrue(link.waitForExistence(timeout: 12), "My Nitnem link missing in More")
+        link.tap()
+        XCTAssertTrue(app.navigationBars["My Nitnem"].waitForExistence(timeout: 8), "My Nitnem did not open")
+        XCTAssertTrue(app.buttons["nitnemSetsAdd"].firstMatch.waitForExistence(timeout: 6), "Add a bani missing")
+        XCTAssertTrue(app.staticTexts["Japji Sahib"].firstMatch.exists, "morning set not shown")
+        // switch to the Sohila set and confirm the header changes
+        app.buttons["Sohila"].firstMatch.tap()
+        XCTAssertTrue(app.staticTexts["Kirtan Sohila"].firstMatch.waitForExistence(timeout: 6), "Sohila set not shown")
+    }
+
+    /// Reminders: the screen opens from More and shows a toggle for each of the three daily sets
+    /// plus the calm, offline footer. (Toggling → scheduling is covered by NitnemRemindersTests
+    /// and validated on-device; a SwiftUI Toggle is not reliably tappable from XCUITest here.)
+    func testNitnemRemindersScreenOpens() {
+        let app = launchApp(selectSearch: false)
+        openTab(app, "More", expectingNavBar: "More")
+        let link = app.buttons["nitnemRemindersLink"].firstMatch
+        XCTAssertTrue(link.waitForExistence(timeout: 12), "Reminders link missing in More")
+        link.tap()
+        XCTAssertTrue(app.navigationBars["Reminders"].waitForExistence(timeout: 8), "Reminders screen did not open")
+        XCTAssertTrue(app.switches["reminder_amritVela"].firstMatch.waitForExistence(timeout: 6), "Amrit Vela toggle missing")
+        XCTAssertTrue(app.switches["reminder_evening"].firstMatch.exists, "Rehras toggle missing")
+        XCTAssertTrue(app.switches["reminder_night"].firstMatch.exists, "Sohila toggle missing")
+        XCTAssertTrue(app.descendants(matching: .any)
+            .matching(NSPredicate(format: "label CONTAINS[c] %@", "no account, no network")).firstMatch.exists,
+            "offline reassurance footer missing")
+    }
+
     /// Rehras variant is a setting: switching to Taksal persists and retitles the row.
     func testRehrasVariantPersists() {
         let app = launchApp(selectSearch: false)
@@ -147,6 +191,69 @@ final class SGGSUITests: XCTestCase {
         XCTAssertTrue(again.navigationBars["Nitnem"].waitForExistence(timeout: 20))
         XCTAssertTrue(again.buttons["bani_rehras"].firstMatch.waitForExistence(timeout: 12))
         XCTAssertTrue(again.buttons["bani_rehras"].firstMatch.label.contains("Taksal"), "variant must persist across relaunch")
+    }
+
+    /// Hands-free auto-scroll advances the reading position and pauses on touch.
+    func testAutoScrollAdvancesAndPausesOnTouch() {
+        let app = XCUIApplication()
+        app.launchEnvironment["SGGS_UITEST"] = "1"
+        app.launchEnvironment["SGGS_AUTOSCROLL_PPS"] = "320"
+        app.launch()
+        openTab(app, "Nitnem", expectingNavBar: "Nitnem")
+        let row = app.buttons["bani_sohila"].firstMatch
+        for _ in 0..<6 where !(row.exists && row.isHittable) { app.swipeUp() }
+        XCTAssertTrue(row.waitForExistence(timeout: 12), "Sohila row missing")
+        row.tap()
+        XCTAssertTrue(app.navigationBars["Kirtan Sohila"].waitForExistence(timeout: 12))
+        let play = app.buttons["baniAutoScroll"].firstMatch
+        XCTAssertTrue(play.waitForExistence(timeout: 8), "auto-scroll control missing")
+        XCTAssertEqual(play.label, "Auto-scroll", "starts in the play state")
+        play.tap()
+        // it is running now — the control shows the pause label
+        XCTAssertTrue(waitLabel(app.buttons["baniAutoScroll"].firstMatch, hasPrefix: "Pause", timeout: 6),
+                      "tapping play should start auto-scroll")
+        // touching the page pauses it — the control returns to the play label
+        app.swipeUp()
+        XCTAssertTrue(waitLabel(app.buttons["baniAutoScroll"].firstMatch, hasPrefix: "Auto-scroll", timeout: 6),
+                      "a touch should pause auto-scroll")
+    }
+
+    /// The reading journey opens from the home and shows the month.
+    func testJourneyOpens() {
+        let app = launchApp(selectSearch: false)
+        let card = app.buttons["nitnemJourney"].firstMatch
+        for _ in 0..<4 where !(card.exists && card.isHittable) { app.swipeUp() }
+        XCTAssertTrue(card.waitForExistence(timeout: 12), "journey card missing")
+        card.tap()
+        XCTAssertTrue(app.navigationBars["Reading journey"].waitForExistence(timeout: 10), "journey did not open")
+        XCTAssertTrue(app.staticTexts["Begin today"].waitForExistence(timeout: 6)
+                      || app.staticTexts.matching(NSPredicate(format: "label ENDSWITH %@", "together")).firstMatch.exists,
+                      "journey header missing")
+    }
+
+    /// Contents jumps to a pauri, and the position bar's stanza caption follows.
+    func testBaniContentsJumpsToPauri() {
+        let app = launchApp(selectSearch: false)
+        let row = app.buttons["bani_japji"].firstMatch
+        XCTAssertTrue(row.waitForExistence(timeout: 12))
+        row.tap()
+        XCTAssertTrue(app.navigationBars["Japji Sahib"].waitForExistence(timeout: 12))
+        app.buttons["baniOptions"].tap()
+        let contents = app.buttons["Contents"].firstMatch
+        XCTAssertTrue(contents.waitForExistence(timeout: 8), "Contents item missing")
+        contents.tap()
+        XCTAssertTrue(app.navigationBars["Contents"].waitForExistence(timeout: 8), "Contents sheet did not open")
+        // Pauri 5 may sit below the fold — scroll the sheet's own list (swiping the window can
+        // just resize the sheet), then tap it.
+        let list = app.collectionViews.firstMatch
+        let pauri = app.buttons.matching(NSPredicate(format: "label BEGINSWITH %@", "Pauri 5")).firstMatch
+        for _ in 0..<8 where !(pauri.exists && pauri.isHittable) {
+            if list.exists { list.swipeUp() } else { app.swipeUp() }
+        }
+        XCTAssertTrue(pauri.waitForExistence(timeout: 8), "Pauri 5 row missing")
+        pauri.tap()
+        let stanza = app.staticTexts["baniStanza"].firstMatch
+        XCTAssertTrue(waitLabel(stanza, hasPrefix: "Pauri 5", timeout: 10), "stanza caption did not follow the jump")
     }
 
     /// A bani reopens where the reader left it (progress file), and Start again returns to the top.

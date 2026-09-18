@@ -14,6 +14,10 @@ struct SGGSWidgetsBundle: WidgetBundle {
     var body: some Widget {
         RaagNowWidget()
         HukamWidget()
+        NitnemWidget()
+        #if canImport(ActivityKit)
+        NitnemLiveActivity()   // Lock Screen + Dynamic Island while reading
+        #endif
     }
 }
 
@@ -138,5 +142,40 @@ struct HukamView: View {
 
     private func punjabi(_ s: String) -> AttributedString {
         var a = AttributedString(s); a.languageIdentifier = "pa"; return a
+    }
+}
+
+// MARK: - Nitnem (the daily reading: next bani + today's progress; reads the App-Group snapshot
+// + the live progress file, never the corpus DB)
+
+struct NitnemProvider: TimelineProvider {
+    private func entry(at date: Date) -> NitnemEntry {
+        NitnemTimeline.entry(at: date, snapshot: WidgetStore.load(), progress: NitnemProgressReading.load())
+    }
+    func placeholder(in context: Context) -> NitnemEntry {
+        let sample = NitnemWidgetData.Bani(id: "japji", key: "japji", titleEn: "Japji Sahib",
+                                           titleGm: "ਜਪੁਜੀ ਸਾਹਿਬ", minutes: 20, nLines: 385)
+        return NitnemEntry(date: .now, band: .amritVela, banis: [sample],
+                           completed: [:], fractions: [:], hasNitnem: true)
+    }
+    func getSnapshot(in context: Context, completion: @escaping (NitnemEntry) -> Void) {
+        completion(entry(at: .now))
+    }
+    func getTimeline(in context: Context, completion: @escaping (Timeline<NitnemEntry>) -> Void) {
+        let entries = NitnemTimeline.dates(from: .now).map { entry(at: $0) }
+        completion(Timeline(entries: entries, policy: .atEnd))
+    }
+}
+
+struct NitnemWidget: Widget {
+    var body: some WidgetConfiguration {
+        StaticConfiguration(kind: "NitnemNow", provider: NitnemProvider()) { entry in
+            NitnemWidgetView(entry: entry)
+                .containerBackground(for: .widget) { NitnemGround() }
+        }
+        .configurationDisplayName("Nitnem")
+        .description("The bani to read now and how far along today is. Tap to open it.")
+        .supportedFamilies([.systemSmall, .systemMedium,
+                            .accessoryCircular, .accessoryRectangular, .accessoryInline])
     }
 }
