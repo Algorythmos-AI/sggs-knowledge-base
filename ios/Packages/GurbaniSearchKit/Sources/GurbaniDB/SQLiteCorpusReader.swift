@@ -74,7 +74,8 @@ extension SQLiteCandidateSource: CorpusReader, AnalyticsSource {
         }
         return CorpusCapabilities(
             hasEnglish: has("translations") && has("fts_en"),
-            hasTiming: has("raag_timing_claims") && has("timing_sources"))
+            hasTiming: has("raag_timing_claims") && has("timing_sources"),
+            hasBanis: has("banis") && has("bani_lines") && has("extra_lines"))
     }
 
     private func readerRows(_ sql: String, bind: (OpaquePointer?) -> Void) throws -> [ReaderLine] {
