@@ -195,6 +195,9 @@ enum Ink {
     static let raised = Color(lightSystem: .tertiarySystemGroupedBackground, dark: 0x282320)
     /// The Reader's page — warm paper in light, deep ink in dark (the hero surface).
     static let paper = Color(light: 0xFBF7F0, dark: 0x171412, lightHC: 0xFFFFFF, darkHC: 0x0E0C0A)
+    /// The Reader's warm paper tone (a hue-shifted light leg that still clears every accent
+    /// contrast pair; dark legs equal `paper`). Selected by the reader's "Warm" setting.
+    static let paperWarm = Color(light: 0xFDF6E3, dark: 0x171412, lightHC: 0xFFFFFF, darkHC: 0x0E0C0A)
     /// Hairline borders (replaces shadows in dark, where shadows die on ink).
     static let hairline = Color(UIColor { traits in
         let hc = traits.accessibilityContrast == .high

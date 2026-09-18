@@ -27,6 +27,8 @@ final class Router {
     var readerAng: Int = 1
     var explorePath = NavigationPath()
     var nitnemPath = NavigationPath()
+    /// The bani-reader seq a contents sheet asked to jump to (BaniReaderScreen consumes + clears).
+    var pendingBaniSeq: Int?
     /// A deep-linked search query (sggs://search?q=…); SearchScreen consumes and clears it.
     var pendingSearchQuery: String?
     /// True once ANY explicit Ang navigation happened (deep link, intent, widget, in-app).

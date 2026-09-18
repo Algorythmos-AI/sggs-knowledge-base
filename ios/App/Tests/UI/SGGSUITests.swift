@@ -149,6 +149,27 @@ final class SGGSUITests: XCTestCase {
         XCTAssertTrue(again.buttons["bani_rehras"].firstMatch.label.contains("Taksal"), "variant must persist across relaunch")
     }
 
+    /// Contents jumps to a pauri, and the position bar's stanza caption follows.
+    func testBaniContentsJumpsToPauri() {
+        let app = launchApp(selectSearch: false)
+        let row = app.buttons["bani_japji"].firstMatch
+        XCTAssertTrue(row.waitForExistence(timeout: 12))
+        row.tap()
+        XCTAssertTrue(app.navigationBars["Japji Sahib"].waitForExistence(timeout: 12))
+        app.buttons["baniOptions"].tap()
+        let contents = app.buttons["Contents"].firstMatch
+        XCTAssertTrue(contents.waitForExistence(timeout: 8), "Contents item missing")
+        contents.tap()
+        XCTAssertTrue(app.navigationBars["Contents"].waitForExistence(timeout: 8), "Contents sheet did not open")
+        // Pauri 8 sits below the fold in the medium detent — scroll the sheet to it
+        let pauri = app.buttons.matching(NSPredicate(format: "label BEGINSWITH %@", "Pauri 8")).firstMatch
+        for _ in 0..<8 where !pauri.exists { app.swipeUp() }
+        XCTAssertTrue(pauri.waitForExistence(timeout: 8), "Pauri 8 row missing")
+        pauri.tap()
+        let stanza = app.staticTexts["baniStanza"].firstMatch
+        XCTAssertTrue(waitLabel(stanza, hasPrefix: "Pauri 8", timeout: 10), "stanza caption did not follow the jump")
+    }
+
     /// A bani reopens where the reader left it (progress file), and Start again returns to the top.
     func testBaniProgressResumes() {
         let app = launchApp(selectSearch: false)

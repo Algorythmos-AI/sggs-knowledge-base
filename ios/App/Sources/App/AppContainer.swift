@@ -232,12 +232,19 @@ enum Presentation: Identifiable {
     case hukam
     case trail(TrailStart)
     case cluster(center: String, cluster: ConstellationCluster)
+    /// The bani reader's Contents sheet (jump to a pauri/ashtapadi) — routed through the one
+    /// sheet host so it can never collide with a deep-linked shabad/hukam.
+    case baniContents(BaniContentsRequest)
+    /// The bani reader's reading-settings sheet (size, spacing, paper tone, toggles).
+    case readingSettings
     var id: String {
         switch self {
         case .shabad(let c, _): return "shabad-\(c)"
         case .hukam: return "hukam"
         case .trail(let t): return "trail-\(t.id)"
         case .cluster(let center, let cl): return "cluster-\(center)-\(cl.co)"
+        case .baniContents(let r): return "contents-\(r.baniId)"
+        case .readingSettings: return "reading-settings"
         }
     }
     /// The shabad/hukam subset, for ShabadSheet.
