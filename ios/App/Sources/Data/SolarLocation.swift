@@ -8,7 +8,7 @@ import SwiftUI
 /// default — solar is an explicit mode. Manual lat/lon entry works with location denied.
 @MainActor @Observable
 final class SolarLocation: NSObject, CLLocationManagerDelegate {
-    static let storageKey = "sggs_solar_coords"   // "lat,lon" rounded to 2 dp
+    static let storageKey = SharedDefaults.solarCoordsKey   // "lat,lon" rounded to 2 dp (App Group)
 
     var coords: (lat: Double, lon: Double)?
     var denied = false
@@ -22,18 +22,10 @@ final class SolarLocation: NSObject, CLLocationManagerDelegate {
         coords = Self.stored()
     }
 
-    static func stored() -> (lat: Double, lon: Double)? {
-        guard let s = UserDefaults.standard.string(forKey: storageKey) else { return nil }
-        let parts = s.split(separator: ",")
-        guard parts.count == 2, let lat = Double(parts[0]), let lon = Double(parts[1]),
-              abs(lat) <= 90, abs(lon) <= 180 else { return nil }
-        return (lat, lon)
-    }
+    /// Stored in the App-Group suite so the widgets mirror the same solar location.
+    static func stored() -> (lat: Double, lon: Double)? { SharedDefaults.solarCoords() }
 
-    static func store(lat: Double, lon: Double) {
-        let r = { (x: Double) in (x * 100).rounded() / 100 }   // 2 dp ≈ 1 km — enough for sunrise
-        UserDefaults.standard.set("\(r(lat)),\(r(lon))", forKey: storageKey)
-    }
+    static func store(lat: Double, lon: Double) { SharedDefaults.storeSolarCoords(lat: lat, lon: lon) }
 
     func setManually(lat: Double, lon: Double) {
         guard abs(lat) <= 90, abs(lon) <= 180 else { return }

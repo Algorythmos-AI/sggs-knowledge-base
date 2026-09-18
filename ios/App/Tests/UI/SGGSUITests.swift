@@ -238,12 +238,23 @@ final class SGGSUITests: XCTestCase {
     func testRaagClock() {
         let app = XCUIApplication()
         app.launchEnvironment["SGGS_CLOCK_NOW"] = "1000"     // 16:40 → pahar 4 (3–6 PM)
+        app.launchEnvironment["SGGS_CLOCK_MODE"] = "fixed"   // a stored Solar choice must not change the strings
         app.launchEnvironment["SGGS_UITEST"] = "1"
+        // the clock renders in the READER'S locale (12/24-h, am/pm casing); pin en_US so the
+        // strings below are the same on every developer's simulator, not only CI's
+        app.launchArguments += ["-AppleLanguages", "(en)", "-AppleLocale", "en_US"]
         app.launch()
         openTab(app, "Clock", expectingNavBar: "Raag Clock")
         XCTAssertTrue(app.staticTexts["What raag is it now?"].waitForExistence(timeout: 20), "now card missing")
         XCTAssertTrue(app.staticTexts["4th pahar of day  ·  3–6 PM"].waitForExistence(timeout: 8),
                       "pinned pahar/window line missing")
+        // the live local clock in the dial's hollow: the pinned minute (16:40) on the reader's
+        // own clock, the watch and the countdown, as one accessibility element
+        let readout = app.otherElements["clockNowReadout"].firstMatch
+        XCTAssertTrue(readout.waitForExistence(timeout: 8), "dial readout missing")
+        XCTAssertTrue(readout.label.contains("4:40 PM"), "readout should show the pinned local time, got: \(readout.label)")
+        XCTAssertTrue(readout.label.contains("4th pahar of day"), "readout should name the current watch")
+        XCTAssertTrue(readout.label.contains("Next watch, 1st pahar of night"), "readout should name the next watch")
         // the accessible pahar list is the content path — open P7 (deliberately silent)
         let p7 = app.buttons.matching(NSPredicate(format: "label BEGINSWITH %@", "3rd pahar of night")).firstMatch
         XCTAssertTrue(p7.waitForExistence(timeout: 8), "pahar list missing")
