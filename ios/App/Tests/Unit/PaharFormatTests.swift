@@ -112,6 +112,17 @@ final class PaharFormatTests: XCTestCase {
         XCTAssertTrue(p.polar)
     }
 
+    func testWeekdayDayComplication() {
+        let d = date(2026, 9, 19, 12, 0, tz: utc)             // a Saturday
+        let usv = PaharFormat.weekdayDay(d, locale: us, tz: utc)
+        XCTAssertEqual(usv.weekday, "SAT"); XCTAssertEqual(usv.day, "19")
+        XCTAssertEqual(PaharFormat.weekdayDay(d, locale: gb, tz: utc).weekday, "SAT")
+        let de = PaharFormat.weekdayDay(d, locale: Locale(identifier: "de_DE"), tz: utc)
+        XCTAssertEqual(de.weekday, "SA", "trailing abbreviation dot is trimmed")
+        // the calendar day follows the reader's zone: 20:00 UTC Saturday is already Sunday in Sydney
+        XCTAssertEqual(PaharFormat.weekdayDay(date(2026, 9, 19, 20, 0, tz: utc), locale: us, tz: sydney).weekday, "SUN")
+    }
+
     func testDialNumerals() {
         XCTAssertEqual(PaharFormat.dialNumerals(locale: us).map(\.label), ["12 AM", "6 AM", "12 PM", "6 PM"])
         XCTAssertEqual(PaharFormat.dialNumerals(locale: gb).map(\.label), ["00", "06", "12", "18"])

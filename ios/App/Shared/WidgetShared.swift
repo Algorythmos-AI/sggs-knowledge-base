@@ -29,6 +29,10 @@ struct WidgetSnapshot: Codable, Sendable {
 /// `.standard` when the group is unavailable (unsigned simulator builds), so nothing crashes.
 enum SharedDefaults {
     static let clockModeKey = "sggs_clock_mode"      // "fixed" | "solar"
+    /// What a reader who never chose gets — app picker, snapshot and widgets all read THIS.
+    /// Solar is the traditional reckoning; with no location yet it falls back to the fixed
+    /// clock (and the app offers a one-tap location card). An explicit choice always wins.
+    static let defaultClockMode = "solar"
     static let solarCoordsKey = "sggs_solar_coords"  // "lat,lon" rounded to 2 dp
 
     /// UserDefaults is documented thread-safe; the type simply predates Sendable.
@@ -44,7 +48,7 @@ enum SharedDefaults {
     }
 
     static var clockMode: String {
-        get { suite.string(forKey: clockModeKey) ?? "fixed" }
+        get { suite.string(forKey: clockModeKey) ?? defaultClockMode }
         set { suite.set(newValue, forKey: clockModeKey) }
     }
 

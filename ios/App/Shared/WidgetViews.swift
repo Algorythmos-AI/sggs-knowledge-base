@@ -168,9 +168,15 @@ struct RaagNowView: View {
         .lineLimit(1).minimumScaleFactor(0.8)
     }
 
+    /// Ring + static face, then the hands at the entry's minute (WidgetKit cannot animate, so
+    /// no seconds hand; the minute-dense timeline keeps them current).
     private func dial(_ style: DialStyle) -> some View {
-        PaharDialRenderer(model: entry.model, style: style, palette: palette,
-                          numerals: style == .full ? PaharFormat.dialNumerals() : [], monochrome: mono)
+        ZStack {
+            PaharDialRenderer(model: entry.model, style: style, palette: palette,
+                              numerals: style == .full ? PaharFormat.dialNumerals() : [], monochrome: mono,
+                              faceDate: entry.date)
+            ClockHandsLayer(date: entry.date, style: style, palette: palette, showSeconds: false, monochrome: mono)
+        }
     }
 
     private var solarBadge: some View {

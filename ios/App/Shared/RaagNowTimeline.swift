@@ -38,7 +38,7 @@ struct RaagClockConfig: Equatable {
     var lon: Double?
 
     static func current(snapshot: WidgetSnapshot?) -> RaagClockConfig {
-        let mode = SharedDefaults.suite.string(forKey: SharedDefaults.clockModeKey) ?? snapshot?.clockMode ?? "fixed"
+        let mode = SharedDefaults.suite.string(forKey: SharedDefaults.clockModeKey) ?? snapshot?.clockMode ?? SharedDefaults.defaultClockMode
         let coords = SharedDefaults.solarCoords()
         return RaagClockConfig(solar: mode == "solar",
                                lat: coords?.lat ?? snapshot?.solarLat,
