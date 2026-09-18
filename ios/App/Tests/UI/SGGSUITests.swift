@@ -149,6 +149,31 @@ final class SGGSUITests: XCTestCase {
         XCTAssertTrue(again.buttons["bani_rehras"].firstMatch.label.contains("Taksal"), "variant must persist across relaunch")
     }
 
+    /// Hands-free auto-scroll advances the reading position and pauses on touch.
+    func testAutoScrollAdvancesAndPausesOnTouch() {
+        let app = XCUIApplication()
+        app.launchEnvironment["SGGS_UITEST"] = "1"
+        app.launchEnvironment["SGGS_AUTOSCROLL_PPS"] = "320"
+        app.launch()
+        openTab(app, "Nitnem", expectingNavBar: "Nitnem")
+        let row = app.buttons["bani_sohila"].firstMatch
+        for _ in 0..<6 where !(row.exists && row.isHittable) { app.swipeUp() }
+        XCTAssertTrue(row.waitForExistence(timeout: 12), "Sohila row missing")
+        row.tap()
+        XCTAssertTrue(app.navigationBars["Kirtan Sohila"].waitForExistence(timeout: 12))
+        let play = app.buttons["baniAutoScroll"].firstMatch
+        XCTAssertTrue(play.waitForExistence(timeout: 8), "auto-scroll control missing")
+        XCTAssertEqual(play.label, "Auto-scroll", "starts in the play state")
+        play.tap()
+        // it is running now — the control shows the pause label
+        XCTAssertTrue(waitLabel(app.buttons["baniAutoScroll"].firstMatch, hasPrefix: "Pause", timeout: 6),
+                      "tapping play should start auto-scroll")
+        // touching the page pauses it — the control returns to the play label
+        app.swipeUp()
+        XCTAssertTrue(waitLabel(app.buttons["baniAutoScroll"].firstMatch, hasPrefix: "Auto-scroll", timeout: 6),
+                      "a touch should pause auto-scroll")
+    }
+
     /// The reading journey opens from the home and shows the month.
     func testJourneyOpens() {
         let app = launchApp(selectSearch: false)

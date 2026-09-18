@@ -64,6 +64,8 @@ struct ReadingSettingsSheet: View {
     @AppStorage(ReaderPrefs.toneKey) private var toneRaw = ReaderTone.paper.rawValue
     @AppStorage("sggs_translit") private var showTranslit = true
     @AppStorage("sggs_show_english") private var showEnglish = true
+    @AppStorage(AutoScrollPace.storageKey) private var paceRaw = AutoScrollPace.steady.rawValue
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     private var tone: Binding<ReaderTone> {
         Binding(get: { ReaderTone(rawValue: toneRaw) ?? .paper }, set: { toneRaw = $0.rawValue })
@@ -95,6 +97,18 @@ struct ReadingSettingsSheet: View {
                     }
                     .pickerStyle(.segmented)
                     .accessibilityIdentifier("readerTonePicker")
+                }
+                if !reduceMotion {
+                    Section {
+                        Picker("Auto-scroll pace", selection: $paceRaw) {
+                            ForEach(AutoScrollPace.allCases) { Text($0.label).tag($0.rawValue) }
+                        }
+                        .accessibilityIdentifier("autoScrollPacePicker")
+                    } header: {
+                        Text("Hands-free")
+                    } footer: {
+                        Text("Tap the play button in the reader to scroll at this pace. It pauses the moment you touch the page.")
+                    }
                 }
                 Section("Reading aids") {
                     Toggle("Transliteration", isOn: $showTranslit)

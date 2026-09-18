@@ -31,12 +31,43 @@ struct BaniReaderScreen: View {
     @State private var chromeHidden = false
     @State private var saveTask: Task<Void, Never>?
     @State private var completedNow = false
+    @StateObject private var autoScroll = AutoScrollController()
+    @AppStorage(AutoScrollPace.storageKey) private var paceRaw = AutoScrollPace.steady.rawValue
+    @AppStorage("sggs_gurmukhi_size") private var gurmukhiSize = 24.0
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     private var tone: ReaderTone { ReaderTone(rawValue: toneRaw) ?? .paper }
     private var variant: String { NitnemPrefs.variant(for: key, rehras: rehrasVariant) }
     private var progressId: String { bani.map { $0.summary.id } ?? NitnemPrefs.progressId(key: key, variant: variant) }
+    private var pace: AutoScrollPace { AutoScrollPace(rawValue: paceRaw) ?? .steady }
+    /// Auto-scroll is offered only with a real scroll view and away from assistive/Reduce-Motion
+    /// contexts (moving content under a VoiceOver cursor or against Reduce Motion is hostile).
+    private var showsAutoScroll: Bool {
+        autoScroll.available && !reduceMotion
+        && !UIAccessibility.isVoiceOverRunning && !UIAccessibility.isSwitchControlRunning
+    }
 
     var body: some View {
+        content
+            .task(id: key + "/" + variant) { await load() }
+            .onAppear { UIApplication.shared.isIdleTimerDisabled = true }
+            .onDisappear { UIApplication.shared.isIdleTimerDisabled = false; flushSave(); autoScroll.stop() }
+            .onChange(of: scenePhase) { _, phase in if phase != .active { flushSave(); autoScroll.pause() } }
+            .onChange(of: positionId) { _, _ in scheduleSave() }
+            .onChange(of: focusMode) { _, _ in autoScroll.pause(); showChrome() }
+            .onChange(of: paceRaw) { _, _ in autoScroll.pace = pace }
+            .onChange(of: gurmukhiSize) { _, _ in autoScroll.fontSize = gurmukhiSize }
+            .onChange(of: container.presentation?.id) { _, id in if id != nil { autoScroll.pause() } }
+            .onChange(of: autoScroll.isRunning) { _, running in
+                chrome.autoScrolling = running
+                if running { MotionGate.run(Motion.gentle) { chromeHidden = true } } else { showChrome() }
+            }
+            .onChange(of: container.router.pendingBaniSeq) { _, seq in
+                if let seq { container.router.pendingBaniSeq = nil; jump(toSeq: seq) }
+            }
+    }
+
+    private var content: some View {
         Group {
             if let bani {
                 reader(bani)
@@ -53,6 +84,15 @@ struct BaniReaderScreen: View {
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
             ToolbarItem(placement: .topBarTrailing) {
+                if showsAutoScroll {
+                    Button { toggleAutoScroll() } label: {
+                        Image(systemName: autoScroll.isRunning ? "pause.circle" : "play.circle")
+                    }
+                    .accessibilityLabel(autoScroll.isRunning ? "Pause auto-scroll" : "Auto-scroll")
+                    .accessibilityIdentifier("baniAutoScroll")
+                }
+            }
+            ToolbarItem(placement: .topBarTrailing) {
                 Menu {
                     if !outline.isEmpty {
                         Button { showContents() } label: { Label("Contents", systemImage: "list.bullet") }
@@ -65,15 +105,6 @@ struct BaniReaderScreen: View {
                 .accessibilityLabel("Reading options")
                 .accessibilityIdentifier("baniOptions")
             }
-        }
-        .task(id: key + "/" + variant) { await load() }
-        .onAppear { UIApplication.shared.isIdleTimerDisabled = true }
-        .onDisappear { UIApplication.shared.isIdleTimerDisabled = false; flushSave() }
-        .onChange(of: scenePhase) { _, phase in if phase != .active { flushSave() } }
-        .onChange(of: positionId) { _, _ in scheduleSave() }
-        .onChange(of: focusMode) { _, _ in showChrome() }
-        .onChange(of: container.router.pendingBaniSeq) { _, seq in
-            if let seq { container.router.pendingBaniSeq = nil; jump(toSeq: seq) }
         }
     }
 
@@ -209,6 +240,7 @@ struct BaniReaderScreen: View {
             .background(GeometryReader { g in
                 Color.clear.preference(key: ReaderContentHeightKey.self, value: g.size.height)
             })
+            .overlay(alignment: .top) { ScrollViewProbe { sv in autoScroll.attach(sv) }.frame(width: 0, height: 0) }
         }
         .scrollPosition(id: $positionId, anchor: .top)
         .coordinateSpace(name: "baniScroll")
@@ -421,6 +453,13 @@ struct BaniReaderScreen: View {
         return "\(sec.kind.label) \(sec.number) of \(total)"
     }
 
+    private func toggleAutoScroll() {
+        autoScroll.pace = pace
+        autoScroll.fontSize = gurmukhiSize
+        Haptics.tap()
+        autoScroll.toggle()
+    }
+
     private func jump(toGroup g: Int, lines: [BaniLine]) {
         guard let target = lines.first(where: { $0.lineGroup == g }) else { return }
         jump(toSeq: target.seq)
@@ -428,6 +467,7 @@ struct BaniReaderScreen: View {
 
     private func jump(toSeq seq: Int?) {
         guard let seq else { return }
+        autoScroll.pause()
         Haptics.tap()
         chrome.landingInProgress = true
         DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) { chrome.landingInProgress = false }

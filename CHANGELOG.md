@@ -5,6 +5,15 @@ entries prior to v1.1.0 are the project's original prose style and are preserved
 
 ## [Unreleased] — Nitnem, next level (premium pass)
 
+### Added — hands-free reading
+- **Auto-scroll** in the bani reader: a play/pause control paces the page at Slow / Steady / Brisk
+  (chosen in Reading settings), scaled by the Gurmukhi size so a larger font never reads faster.
+  It drives the real scroll view from a display link, so lazy loading and progress saving keep
+  working, and it **pauses the instant you touch the page**. It never auto-starts, reaching the end
+  never marks a bani read, and it is hidden entirely under VoiceOver, Switch Control and Reduce
+  Motion, and paused when a sheet opens, the app backgrounds, or you jump to a section.
+
+
 ### Added — widgets
 - **Nitnem widgets** (Home Screen small/medium, Lock Screen circular/rectangular/inline): the
   bani to read now for the time of day, today's set progress as a gold ring, and the next

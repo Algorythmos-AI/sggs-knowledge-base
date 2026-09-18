@@ -44,12 +44,14 @@ struct AmbientChrome {
     var viewportHeight: CGFloat = 0
     /// True during a programmatic landing scroll (must never count as "reading down").
     var landingInProgress = false
+    /// True while hands-free auto-scroll runs (the programmatic pace must not toggle chrome).
+    var autoScrolling = false
 
     /// Returns the new `hidden` value when it should change, nil otherwise.
     @MainActor mutating func scrolled(to offset: CGFloat) -> Bool? {
         let delta = offset - lastOffset
         lastOffset = offset
-        if landingInProgress { downRun = 0; upRun = 0; return nil }
+        if landingInProgress || autoScrolling { downRun = 0; upRun = 0; return nil }
         if UIAccessibility.isVoiceOverRunning || UIAccessibility.isSwitchControlRunning { return hidden ? false : nil }
         if delta > 0 { downRun += delta; upRun = 0 } else if delta < 0 { upRun += -delta; downRun = 0 }
         if !hidden, downRun > 24, offset > 80, contentHeight > viewportHeight + 120 { return true }
