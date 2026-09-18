@@ -15,6 +15,11 @@ iOS display + widget layer only — scripture, corpus, DB and API untouched (`gi
   "what time is it here, which pahar is that, which raags belong to it", anywhere in the world.
   Ticks on the minute boundary; redraws on a system time-zone or clock change. The readout is a
   real accessibility element (`clockNowReadout`); the painted face stays decorative.
+- **A real wall clock in the hollow**: numerals 1–12, minute ticks, ink hour and minute hands and a
+  gold hub, painted by the same renderer — the modern 12-hour clock and the eight Sikhi watches on
+  one face, so the reader compares "4:08 pm" and "4th pahar of day" at a glance (the ring pointer and
+  the hands are both driven by the same minute). Small widget faces show 12 · 3 · 6 · 9. Widgets get
+  a timeline entry every minute for the first 3 h so the hands never lag.
 - **Sunrise / sunset badges** on the day–night seam when Solar mode is live.
 - **`PaharFormat`** (`ios/App/Shared/`): locale-aware time/window/countdown formatting on top of the
   byte-parity `Pahar` math (`fmt12`/`range` and the golden vectors are untouched). Windows are

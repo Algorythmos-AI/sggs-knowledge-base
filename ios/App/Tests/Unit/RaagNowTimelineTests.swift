@@ -45,7 +45,11 @@ final class RaagNowTimelineTests: XCTestCase {
         XCTAssertEqual(dates, dates.sorted())
         XCTAssertEqual(Set(dates).count, dates.count, "no duplicate entries")
         XCTAssertLessThanOrEqual(dates.count, RaagNowTimeline.maxEntries)
-        XCTAssertGreaterThan(dates.count, 96, "15-min cadence + 8 boundaries expected")
+        XCTAssertGreaterThan(dates.count, 180 + 84, "1-min for 3 h, then 15-min cadence + 8 boundaries expected")
+        // minute-dense at the start: the analog hands never lag
+        for (a, b) in zip(dates.prefix(150), dates.dropFirst().prefix(150)) {
+            XCTAssertLessThanOrEqual(b.timeIntervalSince(a), 60 + 1)
+        }
         // every fixed boundary in the next 24 h is present, on the wall clock
         for h in [18, 21, 0, 3, 6, 9, 12, 15] {
             let dayOffset = h < 16 ? 1 : 0

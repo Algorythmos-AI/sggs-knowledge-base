@@ -192,27 +192,14 @@ struct RaagNowView: View {
                 solarBadge
                 Mark(size: 14)
             }
-            GeometryReader { geo in
-                let size = min(geo.size.width, geo.size.height)
-                let m = DialMetrics(size: size, center: CGPoint(x: geo.size.width / 2, y: geo.size.height / 2), style: .compact)
-                ZStack {
-                    dial(.compact)
-                    VStack(spacing: 0) {
-                        liveTime(15)
-                        Text(Pahar.label(entry.pahar)).font(.system(size: 8, weight: .semibold))
-                            .lineLimit(1).minimumScaleFactor(0.7)
-                        if !entry.raags.isEmpty {
-                            Text(entry.raags.prefix(2).map(\.capitalized).joined(separator: " · ")
-                                 + (entry.raags.count > 2 ? " +\(entry.raags.count - 2)" : ""))
-                                .font(.system(size: 7)).foregroundStyle(.secondary)
-                                .lineLimit(1).minimumScaleFactor(0.7)
-                        } else if entry.pahar == 7 {
-                            Text("silent").font(.system(size: 7)).foregroundStyle(.secondary)
-                        }
-                    }
-                    .frame(width: m.hollowWidth)
-                    .position(m.center)
-                }
+            // the face stays clean at this size (quarter numerals + hands); the readout sits below
+            dial(.compact)
+            HStack(alignment: .firstTextBaseline) {
+                liveTime(13)
+                Spacer(minLength: 4)
+                Text(Pahar.label(entry.pahar))
+                    .font(.system(size: 9, weight: .semibold))
+                    .lineLimit(1).minimumScaleFactor(0.7)
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)

@@ -146,7 +146,7 @@ struct ClockScreen: View {
 
         ScrollView {
             VStack(alignment: .leading, spacing: Theme.Space.l) {
-                nowCard(clock: clock, pahar: p, solarLive: solar != nil)
+                nowCard(clock: clock, pahar: p, boundary: boundary, solarLive: solar != nil)
                 RaagDial(clock: clock, currentPahar: p, minutesNow: minutesNow, now: nowDate,
                          sun: solar, boundary: boundary) { tapped in
                     Haptics.tap()
@@ -173,8 +173,8 @@ struct ClockScreen: View {
 
     /// The hero card: an accent ember wash over the card surface (content stays on the
     /// AA-checked surface — the gradient is a glow, never a text background).
-    private func nowCard(clock: TimingClock, pahar p: Int, solarLive: Bool) -> some View {
-        nowCardContent(clock: clock, pahar: p, solarLive: solarLive)
+    private func nowCard(clock: TimingClock, pahar p: Int, boundary: Pahar.Boundary, solarLive: Bool) -> some View {
+        nowCardContent(clock: clock, pahar: p, boundary: boundary, solarLive: solarLive)
             .frame(maxWidth: .infinity, alignment: .leading)
             .padding(Theme.Space.l)
             .background(
@@ -188,7 +188,7 @@ struct ClockScreen: View {
             .overlay(RoundedRectangle(cornerRadius: Theme.Radius.card).strokeBorder(Ink.hairline))
     }
 
-    private func nowCardContent(clock: TimingClock, pahar p: Int, solarLive: Bool) -> some View {
+    private func nowCardContent(clock: TimingClock, pahar p: Int, boundary: Pahar.Boundary, solarLive: Bool) -> some View {
             VStack(alignment: .leading, spacing: Theme.Space.s) {
                 HStack {
                     Text("What raag is it now?").font(.headline)
@@ -215,6 +215,8 @@ struct ClockScreen: View {
                         if let ang = claim.firstAng { container.router.openAng(ang) }
                     }
                 }
+                Text("next: \(Pahar.label(boundary.nextPahar)) \(PaharFormat.countdown(minutes: boundary.minutes))")
+                    .font(.caption).foregroundStyle(.secondary)
                 if mode == "solar" {
                     solarControls(live: solarLive)
                 }
@@ -366,25 +368,25 @@ struct RaagDial: View {
         }
     }
 
-    /// The live readout in the hollow: time · watch · next.
+    /// The live readout on the analog face: the watch above the hub, the digital local time
+    /// below it (the face's numerals + hands are painted by the renderer).
     private func readout(_ m: DialMetrics) -> some View {
-        VStack(spacing: 2) {
-            Text(PaharFormat.time(now, locale: locale))
-                .font(Brand.heading(.title1, weight: 650))
-                .monospacedDigit()
-                .lineLimit(1).minimumScaleFactor(0.5)
-                .foregroundStyle(.primary)
+        let r = m.faceRadius
+        return ZStack {
             Text(Pahar.label(currentPahar))
-                .font(.caption.weight(.semibold))
+                .font(.system(size: max(9, r * 0.11), weight: .semibold, design: .rounded))
                 .lineLimit(1).minimumScaleFactor(0.7)
-            if !typeSize.isAccessibilitySize {
-                Text("next \(Pahar.label(boundary.nextPahar))\n\(PaharFormat.countdown(minutes: boundary.minutes))")
-                    .font(.caption2).foregroundStyle(.secondary)
-                    .multilineTextAlignment(.center)
-                    .lineLimit(2).minimumScaleFactor(0.8)
-            }
+                .frame(width: r * 0.9)
+                .offset(y: -r * 0.42)
+            Text(PaharFormat.time(now, locale: locale))
+                .font(Brand.heading(.callout, weight: 650))
+                .monospacedDigit()
+                .lineLimit(1).minimumScaleFactor(0.6)
+                .frame(width: r * 0.9)
+                .offset(y: r * 0.42)
         }
-        .frame(width: m.hollowWidth)
+        .foregroundStyle(.primary)
+        .frame(width: r * 2, height: r * 2)
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(spoken)
         .accessibilityIdentifier("clockNowReadout")

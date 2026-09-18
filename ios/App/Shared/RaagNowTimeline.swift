@@ -58,7 +58,10 @@ enum RaagNowTimeline {
     /// Hand freshness: the face is redrawn at least this often (WidgetKit repaints the
     /// digital time itself via `Text(date, style: .time)`; only the hand needs entries).
     static let cadenceMinutes = 15
-    static let maxEntries = 120
+    /// The analog hands are painted per entry, so the first hours get an entry every minute
+    /// (entries are free; only reloads are budgeted — `.atEnd` then reloads ≈8×/day).
+    static let denseMinutes = 180
+    static let maxEntries = 320
 
     static func entry(at date: Date, config: RaagClockConfig, snapshot: WidgetSnapshot?,
                       tz: TimeZone = .current) -> RaagNowEntry {
@@ -87,7 +90,11 @@ enum RaagNowTimeline {
         let horizon = now.addingTimeInterval(24 * 3600)
         var set: Set<Date> = [now]
 
-        // 15-minute cadence on wall-clock quarter hours
+        // every minute for the first `denseMinutes` (a clock face must not lag)
+        var mm = Date(timeIntervalSinceReferenceDate: (now.timeIntervalSinceReferenceDate / 60).rounded(.down) * 60 + 60)
+        let denseEnd = now.addingTimeInterval(TimeInterval(denseMinutes * 60))
+        while mm < denseEnd { set.insert(mm); mm = mm.addingTimeInterval(60) }
+        // then a 15-minute cadence on wall-clock quarter hours
         let quarter = TimeInterval(cadenceMinutes * 60)
         var t = Date(timeIntervalSinceReferenceDate: (now.timeIntervalSinceReferenceDate / quarter).rounded(.down) * quarter + quarter)
         while t < horizon { set.insert(t); t = t.addingTimeInterval(quarter) }
