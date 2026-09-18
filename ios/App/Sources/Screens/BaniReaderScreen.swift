@@ -1,14 +1,14 @@
 import SwiftUI
 import GurbaniSearchKit
 
-/// Reads one bani from the Nitnem registry the way a well-made Gutka reads: paper, ink
-/// Gurmukhi, a quiet rhythm of parts, nothing moving unless the reader moves it.
+/// Reads one bani from the Nitnem registry the way a well-made Gutka reads: warm paper, ink
+/// Gurmukhi, a quiet rhythm of pauris, nothing moving unless the reader moves it.
 ///
 /// Fidelity: every Sri Guru Granth Sahib Ji line is the verbatim corpus line (cited by Ang,
-/// tappable to its composition, saveable). Lines from the extra layer (Sri Dasam Granth /
-/// Ardaas) carry their own source label and offer none of the scripture-only actions — the
-/// `switch` over `BaniCitation` below is exhaustive, so a Dasam line can never be built as
-/// an Ang citation. `seq` is the only identity used for scrolling, landing and progress.
+/// tappable, saveable). Lines from the extra layer (Sri Dasam Granth / Ardaas) carry their own
+/// source label and offer none of the scripture-only actions — the `switch` over `BaniCitation`
+/// is exhaustive, so a Dasam line can never be built as an Ang citation. Pauri numbers come only
+/// from the verbatim `markers` (see `BaniOutline`); `seq` is the only identity used for scrolling.
 struct BaniReaderScreen: View {
     let key: String
 
@@ -16,15 +16,14 @@ struct BaniReaderScreen: View {
     @Environment(\.palette) private var palette
     @Environment(\.scenePhase) private var scenePhase
     @AppStorage(NitnemPrefs.rehrasVariantKey) private var rehrasVariant = NitnemPrefs.rehrasDefault
-    @AppStorage("sggs_show_english") private var showEnglish = true
-    @AppStorage("sggs_translit") private var showTranslit = true
     @AppStorage("sggs_focus_mode") private var focusMode = false
+    @AppStorage(ReaderPrefs.leadingKey) private var leading = ReaderPrefs.leadingDefault
+    @AppStorage(ReaderPrefs.toneKey) private var toneRaw = ReaderTone.paper.rawValue
 
     @State private var bani: Bani?
+    @State private var outline: [BaniSection] = []
     @State private var registry: [BaniSummary] = []
     @State private var failed = false
-    /// `scrollPosition` binding (a line `seq`): set once on load to resume, then written by the
-    /// scroll view as the reader moves — it IS the reading position.
     @State private var positionId: Int?
     @State private var highlightedId: Int?
     @AccessibilityFocusState private var voFocus: Int?
@@ -33,6 +32,7 @@ struct BaniReaderScreen: View {
     @State private var saveTask: Task<Void, Never>?
     @State private var completedNow = false
 
+    private var tone: ReaderTone { ReaderTone(rawValue: toneRaw) ?? .paper }
     private var variant: String { NitnemPrefs.variant(for: key, rehras: rehrasVariant) }
     private var progressId: String { bani.map { $0.summary.id } ?? NitnemPrefs.progressId(key: key, variant: variant) }
 
@@ -46,16 +46,18 @@ struct BaniReaderScreen: View {
                 ProgressView().frame(maxWidth: .infinity, maxHeight: .infinity)
             }
         }
-        .background(Ink.paper.ignoresSafeArea())
+        .background(tone.surface.ignoresSafeArea())
+        .environment(\.gurmukhiLeading, CGFloat(leading))
+        .nightTone(tone.forcesDark)
         .navigationTitle(bani?.summary.titleEn ?? "")
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
             ToolbarItem(placement: .topBarTrailing) {
                 Menu {
-                    Toggle("Transliteration", isOn: $showTranslit)
-                    if container.corpus?.capabilities.hasEnglish == true {
-                        Toggle("English translation", isOn: $showEnglish)
+                    if !outline.isEmpty {
+                        Button { showContents() } label: { Label("Contents", systemImage: "list.bullet") }
                     }
+                    Button { container.present(.readingSettings) } label: { Label("Reading settings", systemImage: "textformat.size") }
                     Toggle("Sehaj focus", isOn: $focusMode)
                     Divider()
                     Button { startAgain() } label: { Label("Start again", systemImage: "arrow.counterclockwise") }
@@ -65,11 +67,14 @@ struct BaniReaderScreen: View {
             }
         }
         .task(id: key + "/" + variant) { await load() }
-        .onAppear { UIApplication.shared.isIdleTimerDisabled = true }     // a Gutka doesn't switch off mid-pauri
+        .onAppear { UIApplication.shared.isIdleTimerDisabled = true }
         .onDisappear { UIApplication.shared.isIdleTimerDisabled = false; flushSave() }
         .onChange(of: scenePhase) { _, phase in if phase != .active { flushSave() } }
         .onChange(of: positionId) { _, _ in scheduleSave() }
         .onChange(of: focusMode) { _, _ in showChrome() }
+        .onChange(of: container.router.pendingBaniSeq) { _, seq in
+            if let seq { container.router.pendingBaniSeq = nil; jump(toSeq: seq) }
+        }
     }
 
     // MARK: load / progress
@@ -80,19 +85,19 @@ struct BaniReaderScreen: View {
         registry = await corpus.banis().banis
         guard let loaded else { failed = true; return }
         completedNow = false
-        // resume: the saved position becomes the ScrollView's initial offset
-        let saved = container.nitnem.progress(for: loaded.summary.id)?.lastSeq ?? 0
-        if saved > 1, saved <= loaded.lines.count {
+        outline = BaniOutline.sections(for: loaded)
+        // resume by seq when the registry is unchanged, else by verbatim anchor, else the top
+        if let resume = container.nitnem.resumeSeq(for: loaded.summary.id, lines: loaded.lines) {
             chrome.landingInProgress = true
-            positionId = saved
-            highlightedId = saved
+            positionId = resume
+            highlightedId = resume
             DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) { chrome.landingInProgress = false }
             Task { @MainActor in
                 try? await Task.sleep(for: .seconds(FocusLanding.highlightSeconds))
-                if highlightedId == saved { highlightedId = nil }
+                if highlightedId == resume { highlightedId = nil }
             }
             if UIAccessibility.isVoiceOverRunning {
-                DispatchQueue.main.asyncAfter(deadline: .now() + FocusLanding.voiceOverDelaySeconds) { voFocus = saved }
+                DispatchQueue.main.asyncAfter(deadline: .now() + FocusLanding.voiceOverDelaySeconds) { voFocus = resume }
             }
         } else {
             positionId = nil
@@ -100,20 +105,26 @@ struct BaniReaderScreen: View {
         bani = loaded
     }
 
+    private func anchor(atSeq seq: Int) -> Int? {
+        bani?.lines.first { $0.seq == seq }.map { NitnemProgressStore.anchor(of: $0) }
+    }
+
     private func scheduleSave() {
         saveTask?.cancel()
-        guard let seq = positionId, seq > 0, bani != nil else { return }
-        let id = progressId
+        guard let seq = positionId, seq > 0, let bani else { return }
+        let id = progressId, n = bani.lines.count, a = anchor(atSeq: seq)
         saveTask = Task { @MainActor in
             try? await Task.sleep(for: .milliseconds(500))
             guard !Task.isCancelled else { return }
-            container.nitnem.setPosition(id, seq: seq)
+            container.nitnem.setPosition(id, seq: seq, anchor: a, nLines: n)
         }
     }
 
     private func flushSave() {
         saveTask?.cancel()
-        if let seq = positionId, seq > 0, bani != nil { container.nitnem.setPosition(progressId, seq: seq) }
+        if let seq = positionId, seq > 0, let bani {
+            container.nitnem.setPosition(progressId, seq: seq, anchor: anchor(atSeq: seq), nLines: bani.lines.count)
+        }
     }
 
     private func startAgain() {
@@ -130,15 +141,32 @@ struct BaniReaderScreen: View {
         MotionGate.run(Motion.gentle) { completedNow = true }
     }
 
-    /// The bani to offer after this one: the next unfinished bani of the current band.
+    private func showContents() {
+        guard let bani else { return }
+        container.present(.baniContents(BaniContentsRequest(
+            baniId: bani.summary.id, title: bani.summary.titleEn,
+            sections: outline, currentSeq: positionId ?? (bani.lines.first?.seq ?? 1))))
+    }
+
+    /// The registry rows for the current band's focus category, honouring the Rehras variant.
+    private func focusRows() -> [BaniSummary] {
+        let band = NitnemSchedule.band(at: NitnemClock.now())
+        return registry
+            .filter { $0.key == "rehras" ? $0.variant == NitnemPrefs.variant(for: "rehras", rehras: rehrasVariant) : $0.isDefault }
+            .filter { $0.category == band.focus }
+    }
+
+    private func isDone(_ b: BaniSummary) -> Bool {
+        b.id == progressId ? (completedNow || container.nitnem.isCompleted(b.id)) : container.nitnem.isCompleted(b.id)
+    }
+
     private var nextBani: BaniSummary? {
-        let band = NitnemSchedule.band(at: NitnemScreen.injectedNow())
-        let rows = registry.filter { b in
-            b.key == "rehras" ? b.variant == NitnemPrefs.variant(for: "rehras", rehras: rehrasVariant) : b.isDefault
-        }
-        return NitnemSchedule.next(in: band, from: rows) { b in
-            b.id == progressId ? completedNow || container.nitnem.isCompleted(b.id) : container.nitnem.isCompleted(b.id)
-        }
+        focusRows().sorted { $0.orderNo < $1.orderNo }.first { !isDone($0) }
+    }
+
+    private var bandComplete: Bool {
+        let rows = focusRows()
+        return !rows.isEmpty && rows.allSatisfy { isDone($0) }
     }
 
     // MARK: reader
@@ -153,13 +181,13 @@ struct BaniReaderScreen: View {
                                        value: -g.frame(in: .named("baniScroll")).minY)
             }
             .frame(height: 0)
-            // LazyVStack + scrollTargetLayout: Sukhmani Sahib is 2,047 lines — the a11y tree and
-            // the layout stay to what is on screen; `scrollPosition(id:)` still lands any seq.
             LazyVStack(alignment: .leading, spacing: 18) {
                 header(bani)
                 ForEach(Array(lines.enumerated()), id: \.element.seq) { index, line in
                     let opensGroup = index > 0 && lines[index - 1].lineGroup != line.lineGroup
-                    if opensGroup {
+                    if let sec = sectionStarting(at: line.seq) {
+                        stanzaDivider(sec, firstInBani: index == 0)
+                    } else if opensGroup {
                         Rectangle().fill(Ink.hairline).frame(width: 56, height: 1)
                             .frame(maxWidth: .infinity)
                             .padding(.top, Theme.Space.m)
@@ -192,7 +220,6 @@ struct BaniReaderScreen: View {
             },
             onContentHeight: { h in chrome.contentHeight = h }))
         .contentMargins(.bottom, Theme.Space.xl, for: .scrollContent)
-        // a thin accent rule at the top of the paper — position, not a percentage
         .overlay(alignment: .top) {
             GeometryReader { g in
                 Rectangle().fill(palette.accent)
@@ -211,6 +238,25 @@ struct BaniReaderScreen: View {
         guard total > 0 else { return 0 }
         if completedNow { return 1 }
         return min(1, Double(positionId ?? 0) / Double(total))
+    }
+
+    /// The outline section that begins exactly at `seq` (a quiet margin label opens it).
+    private func sectionStarting(at seq: Int) -> BaniSection? {
+        outline.first { $0.startSeq == seq && ($0.kind == .pauri || $0.kind == .ashtapadi || $0.kind == .salok) }
+    }
+
+    @ViewBuilder
+    private func stanzaDivider(_ section: BaniSection, firstInBani: Bool) -> some View {
+        HStack(spacing: Theme.Space.s) {
+            Rectangle().fill(Ink.hairline).frame(width: 28, height: 1)
+            Text(section.numberGm.isEmpty ? section.kind.label : "\(section.kind.label) \(section.numberGm)")
+                .font(.caption2.weight(.medium)).foregroundStyle(palette.accentText)
+            Spacer()
+        }
+        .padding(.top, firstInBani ? 0 : Theme.Space.m)
+        .accessibilityElement()
+        .accessibilityLabel(section.accessibilityLabel)
+        .accessibilityAddTraits(.isHeader)
     }
 
     @ViewBuilder
@@ -235,8 +281,6 @@ struct BaniReaderScreen: View {
         .accessibilityAddTraits(.isHeader)
     }
 
-    /// One line, by its source. Exhaustive on purpose: an extra-layer line can only be built
-    /// with a source label, never with an Ang.
     @ViewBuilder
     private func lineView(_ line: BaniLine) -> some View {
         if VerseTypography.rendersAsHeading(line.gurmukhi, flaggedHeader: line.isHeader) {
@@ -260,16 +304,25 @@ struct BaniReaderScreen: View {
         }
     }
 
-    /// The end of the bani: mark it read; then the one gold action leads on.
+    /// The end of the bani: mark it read (a quiet seal), then the one gold action leads on. When
+    /// the whole set for this time of day is complete, a calm band card closes the reading.
     @ViewBuilder
     private func completion(_ bani: Bani) -> some View {
         VStack(alignment: .leading, spacing: Theme.Space.m) {
             Rectangle().fill(Ink.hairline).frame(height: 1).accessibilityHidden(true)
             if completedNow || container.nitnem.isCompleted(progressId) {
-                Label("\(bani.summary.titleEn) complete", systemImage: "checkmark.circle")
-                    .font(Brand.heading(.headline)).foregroundStyle(palette.accentText)
-                if !bani.citationRange.isEmpty {
-                    Text(bani.citationRange).font(.caption).foregroundStyle(.secondary)
+                HStack(spacing: Theme.Space.m) {
+                    CompletionSeal(sealed: true)
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("\(bani.summary.titleEn) complete").font(Brand.heading(.headline))
+                        if !bani.citationRange.isEmpty {
+                            Text(bani.citationRange).font(.caption).foregroundStyle(.secondary)
+                        }
+                    }
+                }
+                .accessibilityElement(children: .combine)
+                if bandComplete {
+                    bandCompleteCard
                 }
                 HStack(spacing: Theme.Space.m) {
                     if let next = nextBani {
@@ -294,11 +347,35 @@ struct BaniReaderScreen: View {
         .frame(maxWidth: .infinity, alignment: .leading)
     }
 
-    /// Bottom bar: part navigation for multi-part banis, top/end for single-part ones, with
-    /// the reading position in words. Fades with the ambient chrome (never a layout change).
+    private var bandCompleteCard: some View {
+        let band = NitnemSchedule.band(at: NitnemClock.now())
+        return VStack(alignment: .leading, spacing: Theme.Space.xs) {
+            SectionEyebrow(text: band.title, symbol: "checkmark.seal")
+            Text(bandCompleteLine(band)).font(Brand.heading(.headline))
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(Theme.Space.l)
+        .background(Ink.paper, in: RoundedRectangle(cornerRadius: Theme.Radius.card))
+        .overlay(RoundedRectangle(cornerRadius: Theme.Radius.card).strokeBorder(Ink.hairline))
+        .accessibilityElement(children: .combine)
+        .accessibilityIdentifier("bandComplete")
+    }
+
+    private func bandCompleteLine(_ band: NitnemBand) -> String {
+        switch band.focus {
+        case .nitnemMorning: return "The morning banis are complete."
+        case .nitnemEvening: return "Rehras Sahib is complete."
+        case .nitnemNight: return "Kirtan Sohila is complete."
+        default: return "Complete."
+        }
+    }
+
+    /// Bottom bar: part navigation for multi-part banis, top/end for single-part, with the
+    /// reading position in words and — when there is one — the pauri/ashtapadi caption.
     private func bar(lines: [BaniLine], groups: Int) -> some View {
         let seq = positionId ?? (lines.first?.seq ?? 1)
         let group = lines.first(where: { $0.seq == seq })?.lineGroup ?? 1
+        let stanza = stanzaCaption(at: seq)
         return HStack {
             Button {
                 if groups > 1 { jump(toGroup: group - 1, lines: lines) } else { jump(toSeq: lines.first?.seq) }
@@ -306,9 +383,15 @@ struct BaniReaderScreen: View {
                 .disabled(groups > 1 ? group <= 1 : seq <= 1)
                 .accessibilityLabel(groups > 1 ? "Previous part" : "Top")
             Spacer()
-            Text(groups > 1 ? "Part \(group) of \(groups)" : "Line \(min(seq, lines.count)) of \(lines.count)")
-                .font(.subheadline.weight(.medium)).monospacedDigit()
-                .accessibilityIdentifier("baniPosition")
+            VStack(spacing: 1) {
+                Text(groups > 1 ? "Part \(group) of \(groups)" : "Line \(min(seq, lines.count)) of \(lines.count)")
+                    .font(.subheadline.weight(.medium)).monospacedDigit()
+                    .accessibilityIdentifier("baniPosition")
+                if let stanza {
+                    Text(stanza).font(.caption2).foregroundStyle(.secondary)
+                        .accessibilityIdentifier("baniStanza")
+                }
+            }
             Spacer()
             Button {
                 if groups > 1 { jump(toGroup: group + 1, lines: lines) } else { jump(toSeq: Int.max) }
@@ -332,6 +415,12 @@ struct BaniReaderScreen: View {
         .accessibilityIdentifier("baniPageBar")
     }
 
+    private func stanzaCaption(at seq: Int) -> String? {
+        guard let sec = BaniOutline.section(at: seq, in: outline), sec.number > 0 else { return nil }
+        let total = outline.filter { $0.kind == sec.kind }.count
+        return "\(sec.kind.label) \(sec.number) of \(total)"
+    }
+
     private func jump(toGroup g: Int, lines: [BaniLine]) {
         guard let target = lines.first(where: { $0.lineGroup == g }) else { return }
         jump(toSeq: target.seq)
@@ -350,5 +439,16 @@ struct BaniReaderScreen: View {
     private func showChrome() {
         chrome.reset()
         if chromeHidden { MotionGate.run(Motion.gentle) { chromeHidden = false } }
+    }
+}
+
+private extension View {
+    /// Force the warm-ink dark scheme on the reader subtree (Night tone) — no new colours.
+    @ViewBuilder func nightTone(_ on: Bool) -> some View {
+        if on {
+            self.environment(\.colorScheme, .dark).toolbarColorScheme(.dark, for: .navigationBar)
+        } else {
+            self
+        }
     }
 }

@@ -3,6 +3,33 @@
 The format below (newest first) follows [Keep a Changelog](https://keepachangelog.com);
 entries prior to v1.1.0 are the project's original prose style and are preserved verbatim.
 
+## [Unreleased] — Nitnem, next level (premium pass)
+
+iOS display layer only — scripture, corpus, DB and API untouched (`git diff -- corpus db` empty).
+
+### Added
+- **Time-of-day Nitnem home**: a paper hero with a faint gold glow and the day drawn as an arc
+  (sun/moon at the present moment), a small-caps date eyebrow, a serif band title, larger
+  completion rings, symboled section eyebrows, a per-row "last read" line, a calm skeleton on
+  load, and a two-column iPad layout. `PaperGround` is now palette/intensity-parameterised and
+  reused from the widget vocabulary.
+- **Reader numbering & Contents**: pauri / ashtapadi / salok margin labels and a Contents sheet
+  (jump to any pauri) derived only from the verbatim `markers` via the new `BaniOutline` (Kit).
+  A `baniStanza` caption ("Pauri N of M") under the position bar.
+- **Reading settings**: Gurmukhi size, line spacing (floor 0.40), and paper tone Paper / Warm /
+  Night. New `Ink.paperWarm` token (contrast-proven) and a `gurmukhiLeading` environment.
+- **Quiet completion**: a gold seal closes the ring on "mark as read", and a calm band-complete
+  card ("The morning banis are complete.") when the whole set for the time of day is done.
+
+### Changed / hardened
+- **One clock, a 03:00 Nitnem day** (`NitnemClock`): Sohila read at 22:00 stays complete past
+  midnight; the night band never splits. Used by the home, reader, and (later) widgets/reminders.
+- **Positions survive a DB rebuild**: progress stores a verbatim anchor + line count and resumes
+  by anchor when the registry changed, else the top; the progress file never overwrites a newer
+  schema. `nitnem-progress.json` stays schema v1.
+- Brand book §6 gains a **Glow** row (≤14% wash, distinct from the Explore-hero gradient) and a
+  Reader-paper row. `docs/nitnem/spec.md` records the frozen identifiers.
+
 ## [1.2.1] — 2026-09-18 — Apple-clean clock face, readable raag list, Solar by default
 
 iOS display + widget layer only — scripture, corpus, DB and API untouched (`git diff -- corpus db` empty).

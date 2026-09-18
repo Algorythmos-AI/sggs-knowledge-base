@@ -10,6 +10,9 @@ struct GurmukhiText: View {
     var weight: Font.Weight = .regular
     @AppStorage("sggs_saroop") private var saroop = true
     @AppStorage("sggs_gurmukhi_size") private var userBase = 24.0
+    /// Reader line-spacing multiple (floored at 0.4 in the environment setter); other screens
+    /// leave it at the default 0.4.
+    @Environment(\.gurmukhiLeading) private var leading
 
     private var effective: CGFloat { size * CGFloat(userBase) / 24 }
 
@@ -19,7 +22,7 @@ struct GurmukhiText: View {
             // Wrapped lines of ONE verse sit closer than two verses do (rows are spaced by the
             // caller), so a long line reads as a unit. 0.4 still clears stacked matras/pairin
             // in Sant Lipi (checked at the 32-pt maximum and AX sizes).
-            .lineSpacing(effective * 0.4)
+            .lineSpacing(effective * leading)
             // Never let a self-sizing List cell truncate scripture: at accessibility text sizes
             // the cell under-measures a custom-font Text with large lineSpacing and shows "…".
             // Vertical fixedSize makes the Text claim its full wrapped height (verified AX3).
