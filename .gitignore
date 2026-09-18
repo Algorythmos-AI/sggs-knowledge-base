@@ -58,3 +58,6 @@ ios/**/.swiftpm/
 
 # Third-party brand reference material (not ours to publish)
 Brand-files/
+
+# App Store screenshot masters (multi-MB PNGs; keep locally, commit only contact-sheet/)
+ios/AppStore/screenshots/
