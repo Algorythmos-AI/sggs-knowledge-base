@@ -84,6 +84,7 @@ final class ReaderModel {
 
 struct ReaderScreen: View {
     @Environment(AppContainer.self) private var container
+    @Environment(\.palette) private var palette
     @State private var model: ReaderModel?
     @AppStorage("sggs_show_timing") private var showTiming = true   // web default-ON parity
     @AppStorage("sggs_show_english") private var showEnglish = true
@@ -137,32 +138,22 @@ struct ReaderScreen: View {
                             // tree to what is on screen.
                             LazyVStack(alignment: .leading, spacing: 18) {
                                 if let raag = page.raag {
-                                    HStack(spacing: Theme.Space.s) {
-                                        Text(raag).font(.subheadline.weight(.semibold))
-                                            .foregroundStyle(AccentPalette.gold.accentText)
-                                        if showTiming, let chip = model.timingChipText, let t = model.timing {
-                                            // metadata-only, dashed (web parity) — never part of the scripture
-                                            Button {
-                                                container.router.openClock(raag: t.roman ?? t.raag)
-                                            } label: {
-                                                Label(chip, systemImage: "clock")
-                                                    .font(.caption2)
-                                                    .padding(.horizontal, Theme.Space.s).padding(.vertical, 3)
-                                                    .overlay(RoundedRectangle(cornerRadius: Theme.Radius.chip)
-                                                        .strokeBorder(style: StrokeStyle(lineWidth: 1, dash: [3])))
-                                                    .foregroundStyle(.secondary)
-                                            }
-                                            .buttonStyle(.plain)
-                                            .accessibilityLabel("Traditional singing time: \(chip). Opens the Raag Clock.")
-                                        }
+                                    // Brand rule: Gurmukhi is always ink Sant Lipi — never a coloured
+                                    // "link". The raag banner is a real affordance (opens Jump to Ang),
+                                    // with the roman name alongside when meta is loaded.
+                                    ViewThatFits(in: .horizontal) {
+                                        HStack(spacing: Theme.Space.s) { raagBanner(raag); timingChip }
+                                        VStack(alignment: .leading, spacing: Theme.Space.xs) { raagBanner(raag); timingChip }
                                     }
                                 }
                                 if let from = page.continuedFrom {
-                                    Label("Continues from Ang \(String(from))", systemImage: "arrow.up.backward")
-                                        .font(.caption)
-                                        .padding(.horizontal, Theme.Space.m).padding(.vertical, 5)
-                                        .overlay(Capsule().strokeBorder(AccentPalette.gold.accentText.opacity(0.45)))
-                                        .foregroundStyle(AccentPalette.gold.accentText)
+                                    ContinuationPill(text: "Shabad starts on Ang \(String(from))",
+                                                     systemImage: "arrow.up.backward",
+                                                     identifier: "continuesFromPill",
+                                                     hint: "Goes to the beginning of this shabad") {
+                                        Haptics.tap()
+                                        router.openAng(from, lineId: page.continuedFromLineId)
+                                    }
                                 }
                                 ForEach(Array(page.lines.enumerated()), id: \.element.id) { index, line in
                                     if VerseTypography.rendersAsHeading(line.gurmukhi, flaggedHeader: line.isHeader) {
@@ -197,20 +188,15 @@ struct ReaderScreen: View {
                                 HStack {
                                     Spacer()
                                     if page.ang < 1430, model.continuesOn(after: page.ang) {
-                                        Button {
+                                        ContinuationPill(text: "Continues on Ang \(String(page.ang + 1))",
+                                                         systemImage: "arrow.down.forward",
+                                                         identifier: "continuesOnPill",
+                                                         hint: "Goes to the next Ang") {
                                             turnEdge = .trailing; Haptics.tap(); router.openAng(page.ang + 1)
-                                        } label: {
-                                            Label("Continues on Ang \(String(page.ang + 1))", systemImage: "arrow.down.forward")
-                                                .font(.caption)
-                                                .padding(.horizontal, Theme.Space.m).padding(.vertical, 5)
-                                                .overlay(Capsule().strokeBorder(AccentPalette.gold.accentText.opacity(0.45)))
-                                                .foregroundStyle(AccentPalette.gold.accentText)
                                         }
-                                        .buttonStyle(.plain)
-                                        .accessibilityIdentifier("continuesOnPill")
                                     }
                                 }
-                                .frame(minHeight: 30)        // reserved slot; grows with Dynamic Type
+                                .frame(minHeight: 44)        // reserved slot; grows with Dynamic Type
                             }
                             .scrollTargetLayout()
                             .padding()
@@ -306,9 +292,14 @@ struct ReaderScreen: View {
             }
             .toolbar {
                 ToolbarItem(placement: .topBarLeading) {
-                    Button { showJump = true } label: { Image(systemName: "number") }
-                        .accessibilityLabel("Jump to Ang")
-                        .accessibilityIdentifier("jumpToAng")
+                    // A labelled control, not a cryptic "#": word + open-book glyph so a first-time
+                    // or elderly reader knows it jumps to an Ang. Keeps the id/label the tests use.
+                    Button { Haptics.tap(); showJump = true } label: {
+                        Label("Go to", systemImage: "book.pages")
+                    }
+                    .labelStyle(.titleAndIcon)
+                    .accessibilityLabel("Jump to Ang")
+                    .accessibilityIdentifier("jumpToAng")
                 }
                 ToolbarItem(placement: .topBarTrailing) {
                     Menu {
@@ -328,9 +319,9 @@ struct ReaderScreen: View {
             }
             .sheet(isPresented: $showJump) {
                 JumpToAngSheet(current: router.readerAng) { n in router.openAng(n) }
-                    .presentationDetents([.medium])
             }
         }
+        .task { await container.loadMeta() }   // raag roman names + Jump-sheet ticks (idempotent)
         .task(id: container.router.readerAng) {
             if model == nil { model = ReaderModel(corpus: container.corpus) }
             // resume-last-Ang: once per launch, only from the untouched default. The router
@@ -360,6 +351,45 @@ struct ReaderScreen: View {
 }
 
 extension ReaderScreen {
+    /// The raag banner: ink Gurmukhi (Sant Lipi) + roman name, tappable → Jump to Ang. A real
+    /// affordance sized for touch (≥44 pt), not a decorative coloured word.
+    @ViewBuilder func raagBanner(_ raag: String) -> some View {
+        let roman = container.meta?.raags.first(where: { $0.name == raag })?.roman
+        Button { Haptics.tap(); showJump = true } label: {
+            HStack(spacing: Theme.Space.s) {
+                Text(raag).font(Brand.gurmukhi(20, relativeTo: .title3)).foregroundStyle(.primary)
+                if let roman { Text(roman).font(.subheadline).foregroundStyle(.secondary) }
+                Image(systemName: "chevron.right").font(.caption2).foregroundStyle(.secondary)
+            }
+            .frame(minHeight: 44)
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel("Raag \(roman ?? raag). Jump to another Ang.")
+    }
+
+    /// The traditional-singing-time chip (metadata, not scripture): dashed, web-parity, opens the
+    /// Raag Clock. A real 44 pt hit target with a trailing chevron.
+    @ViewBuilder var timingChip: some View {
+        if showTiming, let model, let chip = model.timingChipText, let t = model.timing {
+            Button { Haptics.tap(); container.router.openClock(raag: t.roman ?? t.raag) } label: {
+                HStack(spacing: Theme.Space.xs) {
+                    Label(chip, systemImage: "clock").font(.footnote)
+                    Image(systemName: "chevron.right").font(.caption2)
+                }
+                .padding(.horizontal, Theme.Space.s).padding(.vertical, Theme.Space.xs)
+                .frame(minHeight: 44)
+                .overlay(RoundedRectangle(cornerRadius: Theme.Radius.chip)
+                    .strokeBorder(style: StrokeStyle(lineWidth: 1, dash: [3])))
+                .foregroundStyle(.secondary)
+                .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+            .accessibilityIdentifier("timingChip")
+            .accessibilityLabel("Traditional singing time: \(chip). Opens the Raag Clock.")
+        }
+    }
+
     /// Ambient chrome. Hide only when the reader is clearly reading downwards (> 24 pt run,
     /// past 80 pt, on a page taller than the viewport + 120 so short Angs never flicker);
     /// restore on ≥ 8 pt upwards or at the top. Never for VoiceOver / Switch Control users —
@@ -422,52 +452,30 @@ extension ReaderScreen {
     }
 }
 
-/// Jump-to-Ang: number field + slider across the full 1430 (with an "Ang N of 1430" readout).
-struct JumpToAngSheet: View {
-    let current: Int
-    var onGo: (Int) -> Void
-    @Environment(\.dismiss) private var dismiss
-    @State private var text = ""
-    @State private var slider: Double = 1
-
-    private var typedAng: Int? {
-        guard let n = Int(text.trimmingCharacters(in: .whitespaces)), (1...1430).contains(n) else { return nil }
-        return n
-    }
+/// A capsule that navigates between compositions across an Ang boundary (backward: "Shabad starts
+/// on Ang N"; forward: "Continues on Ang N+1"). One styled, ≥44 pt, accent-washed control for both
+/// directions so the two never drift apart again (the backward one shipped as a dead label).
+struct ContinuationPill: View {
+    let text: String
+    let systemImage: String
+    let identifier: String
+    let hint: String
+    var action: () -> Void
+    @Environment(\.palette) private var palette
 
     var body: some View {
-        NavigationStack {
-            Form {
-                Section("Ang \(String(current)) of 1430") {
-                    TextField("Ang number (1–1430)", text: $text)
-                        .keyboardType(.numberPad)
-                        .accessibilityIdentifier("angField")
-                    if !text.trimmingCharacters(in: .whitespaces).isEmpty, typedAng == nil {
-                        // typed input must never be silently discarded in favour of the slider
-                        Text("Enter an Ang between 1 and 1430.")
-                            .font(.caption).foregroundStyle(Ink.negative)
-                    }
-                    VStack(alignment: .leading, spacing: Theme.Space.xs) {
-                        Slider(value: $slider, in: 1...1430, step: 1) { Text("Ang") }
-                            .accessibilityIdentifier("angSlider")
-                        Text("Ang \(String(Int(slider)))").font(.caption).foregroundStyle(.secondary).monospacedDigit()
-                    }
-                }
-                Button("Go") {
-                    let target = typedAng ?? Int(slider)
-                    onGo(target)
-                    dismiss()
-                }
-                // invalid typed text disables Go outright — the slider only stands in when
-                // the field is empty (never silently overriding what the user typed)
-                .disabled(!text.trimmingCharacters(in: .whitespaces).isEmpty && typedAng == nil
-                          || text.trimmingCharacters(in: .whitespaces).isEmpty && Int(slider) == current)
-                .accessibilityIdentifier("goToAng")
-            }
-            .navigationTitle("Jump to Ang")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar { ToolbarItem(placement: .cancellationAction) { Button("Cancel") { dismiss() } } }
-            .onAppear { slider = Double(current) }
+        Button(action: action) {
+            Label(text, systemImage: systemImage)
+                .font(.subheadline.weight(.medium))
+                .padding(.horizontal, Theme.Space.m).padding(.vertical, Theme.Space.s)
+                .frame(minHeight: 44)
+                .background(Capsule().fill(palette.wash))
+                .overlay(Capsule().strokeBorder(palette.accent.opacity(0.55)))
+                .foregroundStyle(palette.accentText)
+                .contentShape(Capsule())
         }
+        .buttonStyle(.plain)
+        .accessibilityIdentifier(identifier)
+        .accessibilityHint(hint)
     }
 }
