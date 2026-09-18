@@ -43,6 +43,8 @@ final class NitnemProgressStore {
     private(set) var file: NitnemProgressFile
     /// A file written by a newer schema is read but never written back.
     private(set) var isReadOnly: Bool
+    /// Fired after a completion so the app can reload the Nitnem widget timelines.
+    var onChange: (() -> Void)?
     let url: URL?
 
     init(url: URL? = NitnemProgressStore.defaultURL()) {
@@ -146,6 +148,7 @@ final class NitnemProgressStore {
         p.lastSeq = 0
         file.banis[id] = p
         save()
+        onChange?()
     }
 
     /// "Start again": forget the position, keep the completed-day history.

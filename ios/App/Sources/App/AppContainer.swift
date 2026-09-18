@@ -58,6 +58,12 @@ final class AppContainer {
         self.savedStoreDestroyed = opened.destroyed
         // count consecutive persistent-open failures; a clean open resets the ladder
         defaults.set(opened.degraded && !opened.destroyed ? prior + 1 : 0, forKey: Self.savedStoreFailKey)
+        // Reload the Nitnem widget the moment a bani is marked read.
+        nitnem.onChange = {
+            #if canImport(WidgetKit)
+            WidgetCenter.shared.reloadTimelines(ofKind: "NitnemNow")
+            #endif
+        }
     }
 
     struct SavedStoreOpen {
@@ -200,6 +206,18 @@ final class AppContainer {
                 paharRaagsGurmukhi[p] = claims.compactMap { $0.raagName ?? $0.roman }
             }
         }
+        // Nitnem: resolve the daily sets (registry facts the DB-less widget can't get itself).
+        var nitnemData: NitnemWidgetData? = nil
+        if corpus.capabilities.hasBanis {
+            let rehras = UserDefaults.standard.string(forKey: NitnemPrefs.rehrasVariantKey) ?? NitnemPrefs.rehrasDefault
+            let rows = await corpus.banis().banis
+            func brief(_ cat: BaniCategory) -> [NitnemWidgetData.Bani] {
+                rows.filter { $0.category == cat && ($0.key == "rehras" ? $0.variant == NitnemPrefs.variant(for: "rehras", rehras: rehras) : $0.isDefault) }
+                    .sorted { $0.orderNo < $1.orderNo }
+                    .map { NitnemWidgetData.Bani(id: $0.id, key: $0.key, titleEn: $0.titleEn, titleGm: $0.titleGm, minutes: $0.estimatedMinutes, nLines: $0.nLines) }
+            }
+            nitnemData = NitnemWidgetData(sets: ["morning": brief(.nitnemMorning), "evening": brief(.nitnemEvening), "night": brief(.nitnemNight)])
+        }
         WidgetStore.save(WidgetSnapshot(
             generatedAt: Date(),
             hukamGurmukhi: firstVerse.gurmukhi,     // verbatim — copied, never edited
@@ -210,7 +228,8 @@ final class AppContainer {
             paharRaagsGurmukhi: paharRaagsGurmukhi,
             clockMode: SharedDefaults.clockMode,
             solarLat: SharedDefaults.solarCoords()?.lat,
-            solarLon: SharedDefaults.solarCoords()?.lon))
+            solarLon: SharedDefaults.solarCoords()?.lon,
+            nitnem: nitnemData))
         #if canImport(WidgetKit)
         WidgetCenter.shared.reloadAllTimelines()
         #endif
