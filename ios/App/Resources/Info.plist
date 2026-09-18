@@ -26,6 +26,8 @@
   <string>public.app-category.reference</string>
   <key>CFBundleLocalizations</key>
   <array><string>en</string></array>
+  <key>NSSupportsLiveActivities</key>
+  <true/>
   <key>ITSAppUsesNonExemptEncryption</key>
   <false/>
   <!-- Multiple scenes stay OFF until navigation state is per-scene: Router/AppContainer are

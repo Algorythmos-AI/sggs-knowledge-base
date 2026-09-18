@@ -174,6 +174,9 @@ Store the source PNGs under `ios/AppStore/screenshots/<device>/` (add the direct
 > they do not change the fully-offline promise. Notification permission is requested only when the
 > user turns a reminder on.
 >
+> The optional reading Live Activity (default off) is driven entirely on-device with ActivityKit —
+> no push and no server. It shows a bani title and a progress percentage only, never scripture text.
+>
 > Location: optional, used only by the Raag Clock's solar mode to compute local sunrise and
 > sunset on the device; the value is rounded to about 1 km, never stored beyond that and never
 > transmitted. The app works fully with location denied (manual entry is offered).
