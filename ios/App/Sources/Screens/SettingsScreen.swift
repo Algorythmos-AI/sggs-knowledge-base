@@ -8,10 +8,26 @@ struct MoreScreen: View {
     @AppStorage("sggs_gurmukhi_size") private var gurmukhiSize = 24.0
     @AppStorage("sggs_appearance") private var appearance = "system"
     @AppStorage(AccentPalette.storageKey) private var accentChoice = AccentPalette.brandDefault.rawValue
+    @AppStorage(NitnemPrefs.rehrasVariantKey) private var rehrasVariant = NitnemPrefs.rehrasDefault
 
     var body: some View {
         NavigationStack {
             List {
+                if container.corpus?.capabilities.hasBanis == true {
+                    Section {
+                        Picker("Rehras Sahib", selection: $rehrasVariant) {
+                            Text("SGPC (standard)").tag("sgpc")
+                            Text("Damdami Taksal").tag("taksal")
+                        }
+                        .id(accentChoice)
+                        .accessibilityIdentifier("rehrasVariantPicker")
+                    } header: {
+                        Text("Nitnem")
+                    } footer: {
+                        Text("The evening prayer as printed in the SGPC Nitnem Gutka, or the longer Damdami Taksal reading. Changing it starts Rehras from the top.")
+                    }
+                    .inkRow()
+                }
                 Section("Display") {
                     Toggle(isOn: $saroop) {
                         VStack(alignment: .leading) {

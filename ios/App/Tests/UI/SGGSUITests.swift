@@ -10,11 +10,33 @@ final class SGGSUITests: XCTestCase {
 
     /// Launch with the UI-test environment: the app (Debug only) clears per-launch residue
     /// (resume-last-Ang, transliteration toggle) — never the accent, whose persistence is under test.
-    private func launchApp() -> XCUIApplication {
+    /// The app opens on the Nitnem tab; `selectSearch` (the default) then moves to Search so
+    /// the search-driven tests start where they always did.
+    private func launchApp(selectSearch: Bool = true) -> XCUIApplication {
         let app = XCUIApplication()
         app.launchEnvironment["SGGS_UITEST"] = "1"
         app.launch()
+        if selectSearch { openTab(app, "Search", expectingNavBar: "Search") }
         return app
+    }
+
+    /// Poll a static text's label (a value the UI sets a beat after an action, e.g. a scroll landing).
+    private func waitLabel(_ element: XCUIElement, hasPrefix prefix: String, timeout: TimeInterval = 8) -> Bool {
+        let deadline = Date().addingTimeInterval(timeout)
+        while Date() < deadline {
+            if element.exists, element.label.hasPrefix(prefix) { return true }
+            RunLoop.current.run(until: Date().addingTimeInterval(0.25))
+        }
+        return element.exists && element.label.hasPrefix(prefix)
+    }
+
+    /// The Raag Clock lives under Explore: open the hub, then its card.
+    private func openClock(_ app: XCUIApplication) {
+        openTab(app, "Explore", expectingNavBar: "Explore")
+        let card = app.buttons["Raag Clock"].firstMatch
+        XCTAssertTrue(card.waitForExistence(timeout: 12), "Raag Clock card missing")
+        card.tap()
+        XCTAssertTrue(app.navigationBars["Raag Clock"].waitForExistence(timeout: 12), "Raag Clock did not open")
     }
 
     /// Tab button that also resolves on iPadOS 26 (top tab bar may not expose `tabBars`).
@@ -62,9 +84,91 @@ final class SGGSUITests: XCTestCase {
         return app.buttons[action].firstMatch
     }
 
-    func testLaunchShowsSearch() {
+    func testLaunchShowsNitnem() {
+        let app = launchApp(selectSearch: false)
+        XCTAssertTrue(app.navigationBars["Nitnem"].waitForExistence(timeout: 20), "the app opens on the daily reading")
+        XCTAssertTrue(app.buttons["bani_japji"].waitForExistence(timeout: 12), "Japji Sahib row missing")
+        XCTAssertTrue(app.buttons["Hukam"].exists, "Hukam card missing")
+    }
+
+    func testSearchTabReachable() {
         let app = launchApp()
         XCTAssertTrue(app.navigationBars["Search"].waitForExistence(timeout: 20))
+    }
+
+    /// Nitnem → Japji Sahib: the bani reader opens on the verbatim Mool Mantar, the position
+    /// bar reads, marking it read completes the ring, and Next leads on to Jaap Sahib.
+    func testNitnemOpensJapjiAndCompletes() {
+        let app = XCUIApplication()
+        app.launchEnvironment["SGGS_CLOCK_NOW"] = "300"      // 05:00 → Amrit Vela
+        app.launchEnvironment["SGGS_UITEST"] = "1"
+        app.launch()
+        XCTAssertTrue(app.navigationBars["Nitnem"].waitForExistence(timeout: 20))
+        XCTAssertTrue(app.staticTexts["Amrit Vela"].waitForExistence(timeout: 8), "band title missing")
+        let row = app.buttons["bani_japji"].firstMatch
+        XCTAssertTrue(row.waitForExistence(timeout: 12))
+        row.tap()
+        XCTAssertTrue(app.navigationBars["Japji Sahib"].waitForExistence(timeout: 12), "bani reader did not open")
+        let mool = app.staticTexts.matching(NSPredicate(format: "label BEGINSWITH %@", "ੴ ਸਤਿ ਨਾਮੁ ਕਰਤਾ ਪੁਰਖੁ")).firstMatch
+        XCTAssertTrue(mool.waitForExistence(timeout: 12), "Mool Mantar (verbatim) missing at the top of Japji")
+        XCTAssertTrue(app.staticTexts["baniPosition"].firstMatch.waitForExistence(timeout: 8), "position bar missing")
+        // jump to the end and mark it read
+        app.buttons["End"].firstMatch.tap()
+        let mark = app.buttons["baniMarkComplete"].firstMatch
+        XCTAssertTrue(mark.waitForExistence(timeout: 12), "Mark as read missing at the end")
+        mark.tap()
+        let next = app.buttons["nitnemNext"].firstMatch
+        XCTAssertTrue(next.waitForExistence(timeout: 8), "Next bani action missing after completion")
+        XCTAssertTrue(next.label.contains("Jaap Sahib"), "next bani should be Jaap Sahib, got \(next.label)")
+        next.tap()
+        XCTAssertTrue(app.navigationBars["Jaap Sahib"].waitForExistence(timeout: 12), "Next did not open Jaap Sahib")
+        // the extra layer is labelled, never cited as an Ang
+        // the header is one combined element and each LineRow is one element: query any kind
+        XCTAssertTrue(app.descendants(matching: .any).matching(NSPredicate(format: "label CONTAINS[c] %@", "Sri Dasam Granth")).firstMatch
+            .waitForExistence(timeout: 8), "Dasam source label missing")
+    }
+
+    /// Rehras variant is a setting: switching to Taksal persists and retitles the row.
+    func testRehrasVariantPersists() {
+        let app = launchApp(selectSearch: false)
+        openTab(app, "More", expectingNavBar: "More")
+        let picker = app.buttons["rehrasVariantPicker"].firstMatch
+        XCTAssertTrue(picker.waitForExistence(timeout: 12), "Rehras variant picker missing")
+        picker.tap()
+        let taksal = app.buttons["Damdami Taksal"].firstMatch
+        XCTAssertTrue(taksal.waitForExistence(timeout: 8))
+        taksal.tap()
+        openTab(app, "Nitnem", expectingNavBar: "Nitnem")
+        XCTAssertTrue(app.buttons["bani_rehras"].firstMatch.waitForExistence(timeout: 12))
+        XCTAssertTrue(app.buttons["bani_rehras"].firstMatch.label.contains("Taksal"), "row should show the Taksal variant")
+        app.terminate()
+        let again = XCUIApplication()
+        again.launch()
+        XCTAssertTrue(again.navigationBars["Nitnem"].waitForExistence(timeout: 20))
+        XCTAssertTrue(again.buttons["bani_rehras"].firstMatch.waitForExistence(timeout: 12))
+        XCTAssertTrue(again.buttons["bani_rehras"].firstMatch.label.contains("Taksal"), "variant must persist across relaunch")
+    }
+
+    /// A bani reopens where the reader left it (progress file), and Start again returns to the top.
+    func testBaniProgressResumes() {
+        let app = launchApp(selectSearch: false)
+        let row = app.buttons["bani_sukhmani"].firstMatch
+        XCTAssertTrue(row.waitForExistence(timeout: 12))
+        row.tap()
+        XCTAssertTrue(app.navigationBars["Sukhmani Sahib"].waitForExistence(timeout: 12))
+        app.buttons["Next part"].firstMatch.tap()
+        let pos = app.staticTexts["baniPosition"].firstMatch
+        XCTAssertTrue(pos.waitForExistence(timeout: 8))
+        XCTAssertTrue(waitLabel(pos, hasPrefix: "Part 2"), "expected Part 2, got \(pos.label)")
+        app.navigationBars.buttons.element(boundBy: 0).tap()          // back (flushes the save)
+        XCTAssertTrue(app.buttons["bani_sukhmani"].firstMatch.waitForExistence(timeout: 12))
+        app.buttons["bani_sukhmani"].firstMatch.tap()
+        XCTAssertTrue(app.navigationBars["Sukhmani Sahib"].waitForExistence(timeout: 12))
+        XCTAssertTrue(app.staticTexts["baniPosition"].firstMatch.waitForExistence(timeout: 8))
+        XCTAssertTrue(waitLabel(app.staticTexts["baniPosition"].firstMatch, hasPrefix: "Part 2"), "position did not resume")
+        app.buttons["baniOptions"].tap()
+        app.buttons["Start again"].firstMatch.tap()
+        XCTAssertTrue(waitLabel(app.staticTexts["baniPosition"].firstMatch, hasPrefix: "Part 1"), "Start again should return to the top")
     }
 
     func testSearchOpensShabad() {
@@ -238,12 +342,23 @@ final class SGGSUITests: XCTestCase {
     func testRaagClock() {
         let app = XCUIApplication()
         app.launchEnvironment["SGGS_CLOCK_NOW"] = "1000"     // 16:40 → pahar 4 (3–6 PM)
+        app.launchEnvironment["SGGS_CLOCK_MODE"] = "fixed"   // a stored Solar choice must not change the strings
         app.launchEnvironment["SGGS_UITEST"] = "1"
+        // the clock renders in the READER'S locale (12/24-h, am/pm casing); pin en_US so the
+        // strings below are the same on every developer's simulator, not only CI's
+        app.launchArguments += ["-AppleLanguages", "(en)", "-AppleLocale", "en_US"]
         app.launch()
-        openTab(app, "Clock", expectingNavBar: "Raag Clock")
+        openClock(app)
         XCTAssertTrue(app.staticTexts["What raag is it now?"].waitForExistence(timeout: 20), "now card missing")
         XCTAssertTrue(app.staticTexts["4th pahar of day  ·  3–6 PM"].waitForExistence(timeout: 8),
                       "pinned pahar/window line missing")
+        // the live local clock in the dial's hollow: the pinned minute (16:40) on the reader's
+        // own clock, the watch and the countdown, as one accessibility element
+        let readout = app.otherElements["clockNowReadout"].firstMatch
+        XCTAssertTrue(readout.waitForExistence(timeout: 8), "dial readout missing")
+        XCTAssertTrue(readout.label.contains("4:40 PM"), "readout should show the pinned local time, got: \(readout.label)")
+        XCTAssertTrue(readout.label.contains("4th pahar of day"), "readout should name the current watch")
+        XCTAssertTrue(readout.label.contains("Next watch, 1st pahar of night"), "readout should name the next watch")
         // the accessible pahar list is the content path — open P7 (deliberately silent)
         let p7 = app.buttons.matching(NSPredicate(format: "label BEGINSWITH %@", "3rd pahar of night")).firstMatch
         XCTAssertTrue(p7.waitForExistence(timeout: 8), "pahar list missing")
@@ -264,7 +379,7 @@ final class SGGSUITests: XCTestCase {
     func testExploreHubReachesEverySurface() {
         let app = launchApp()
         openTab(app, "Explore", expectingNavBar: "Explore")
-        for (card, marker) in [("Index", "Index"), ("Themes", "Themes")] {
+        for (card, marker) in [("Index", "Index"), ("Themes", "Themes"), ("Raag Clock", "Raag Clock")] {
             let btn = app.buttons[card].firstMatch
             XCTAssertTrue(btn.waitForExistence(timeout: 12), "\(card) card missing")
             btn.tap()
@@ -351,6 +466,7 @@ final class SGGSUITests: XCTestCase {
         field.typeText("\n")                                     // keyboard covers the tab bar
         openTab(app, "More", expectingNavBar: "More")
         let saved = app.buttons["Saved verses"].firstMatch
+        for _ in 0..<3 where !saved.exists { app.swipeUp() }     // below the Nitnem + Display sections
         XCTAssertTrue(saved.waitForExistence(timeout: 10))
         // the row can sit under the floating tab bar — bring it clear, then verify the push
         for _ in 0..<3 where !app.navigationBars["Saved"].exists {
@@ -408,6 +524,7 @@ final class SGGSUITests: XCTestCase {
         let app = launchApp()
         openTab(app, "More", expectingNavBar: "More")
         let about = app.buttons["About & credits"].firstMatch
+        for _ in 0..<3 where !about.exists { app.swipeUp() }     // last row: below Nitnem + Display
         XCTAssertTrue(about.waitForExistence(timeout: 12))
         app.swipeUp()                                   // last row can sit under the floating tab bar
         XCTAssertTrue(about.waitForExistence(timeout: 4)); about.tap()
@@ -561,9 +678,18 @@ final class SGGSUITests: XCTestCase {
         }
         _ = app.staticTexts.element(boundBy: 0).waitForExistence(timeout: 8)
         shot("reader")
-        openTab(app, "Clock", expectingNavBar: "Raag Clock")
+        openClock(app)
         _ = app.staticTexts["What raag is it now?"].waitForExistence(timeout: 12)
         shot("clock")
+        app.navigationBars.buttons.firstMatch.tap()   // back to the hub
+        openTab(app, "Nitnem", expectingNavBar: "Nitnem")
+        _ = app.buttons["bani_japji"].waitForExistence(timeout: 12)
+        shot("nitnem_home")
+        app.buttons["bani_japji"].firstMatch.tap()
+        _ = app.navigationBars["Japji Sahib"].waitForExistence(timeout: 12)
+        _ = app.staticTexts.element(boundBy: 2).waitForExistence(timeout: 8)
+        shot("bani_reader")
+        app.navigationBars.buttons.firstMatch.tap()   // back to Nitnem
         openTab(app, "Explore", expectingNavBar: "Explore")
         _ = app.staticTexts["Explore the Granth"].waitForExistence(timeout: 8)
         shot("explore_hub")

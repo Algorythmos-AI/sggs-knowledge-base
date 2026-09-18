@@ -13,9 +13,10 @@ struct SGGSApp: App {
         // leak between tests (resume-last-Ang, the transliteration toggle). Never the accent —
         // its persistence across a relaunch is itself under test. Debug builds only.
         if ProcessInfo.processInfo.environment["SGGS_UITEST"] == "1" {
-            for key in ["sggs_last_ang", "sggs_translit"] {
+            for key in ["sggs_last_ang", "sggs_translit", "sggs_rehras_variant"] {
                 UserDefaults.standard.removeObject(forKey: key)
             }
+            NitnemProgressStore.wipe()
         }
         #endif
         Brand.applyNavigationTitleFonts()

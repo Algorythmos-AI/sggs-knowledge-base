@@ -60,6 +60,18 @@ final class DegradationParityTests: XCTestCase {
         XCTAssertTrue(nb.neighbors.allSatisfy { $0.en == nil })
     }
 
+    func testBaniRegistryCarriesNoEnglishOnPublicProfile() throws {
+        // The Nitnem registry is bundled on BOTH profiles; on the public one every SGGS line
+        // must carry en == nil exactly like /api/bani on an EN-less DB, and extra lines never do.
+        let db = try publicDB()
+        XCTAssertTrue(db.detectCapabilities().hasBanis)
+        XCTAssertTrue(db.fetchBanis().available)
+        for key in ["japji", "rehras", "sukhmani"] {
+            let bani = try XCTUnwrap(db.fetchBani(key: key), key)
+            XCTAssertTrue(bani.lines.allSatisfy { $0.en == nil }, "\(key): en must be nil on the public profile")
+        }
+    }
+
     func testScriptureIdenticalAcrossProfiles() throws {
         // The verbatim Gurmukhi must be byte-identical between profiles (the profile switch
         // only adds/removes the translation layer — prime directive).

@@ -147,8 +147,10 @@ public struct CorpusCapabilities: Sendable, Equatable {
     public let hasEnglish: Bool
     /// The v2.12.0 raag-timing layer (timing_sources/raag_timing_claims/shabd_* form tables).
     public let hasTiming: Bool
-    public init(hasEnglish: Bool, hasTiming: Bool) {
-        self.hasEnglish = hasEnglish; self.hasTiming = hasTiming
+    /// The v1.2.0 Nitnem bani registry (banis/bani_lines/extra_lines) — gates the Nitnem tab.
+    public let hasBanis: Bool
+    public init(hasEnglish: Bool, hasTiming: Bool, hasBanis: Bool = false) {
+        self.hasEnglish = hasEnglish; self.hasTiming = hasTiming; self.hasBanis = hasBanis
     }
 }
 

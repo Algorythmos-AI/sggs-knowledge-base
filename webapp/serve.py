@@ -27,7 +27,7 @@ PORT = int(os.environ.get('PORT') or os.environ.get('SGGS_PORT') or '7777')
 # doesn't force an 86 MB DB re-commit. /api/meta and /api/health prefer these; the
 # DB meta row is the fallback. Bump on every search-logic release so the UI footer
 # (which reads /api/meta) reflects the running build.
-APP_VERSION = '1.1.5'
+APP_VERSION = '1.2.0'
 APP_BUILT = '2026-09-18'
 
 
@@ -117,6 +117,8 @@ def _fts_clean(s):
     return str(s).replace('"', '').replace('*', '')
 
 _ID_MAX = 2**31 - 1
+_BANI_KEY_RE = re.compile(r'^[a-z0-9_]{1,32}$')     # /api/bani/{key}
+_BANI_VARIANTS = ('', 'sgpc', 'taksal', 'kirtan')   # allowlist; never interpolated
 
 def _int_str(raw, lo, hi):
     """Parse one integer query value defensively: reject absurd digit strings (Python has no
@@ -802,6 +804,11 @@ def api(path, qs):
             m['timing_available'] = True
         except sqlite3.OperationalError:
             m['timing_available'] = False
+        try:                                        # Nitnem bani registry (additive; migration 002)
+            db().execute('SELECT 1 FROM banis LIMIT 1').fetchone()
+            m['banis_available'] = True
+        except sqlite3.OperationalError:
+            m['banis_available'] = False
         _META_CACHE = m
         return m
     if p[0] == 'search':
@@ -856,6 +863,16 @@ def api(path, qs):
             "SELECT count(*) FROM (SELECT rowid FROM fts WHERE text MATCH 'ੴ')").fetchone()[0] >= 560)
         v = verify_claim('ਸੋਚੈ ਸੋਚਿ ਨ ਹੋਵਈ ਜੇ ਸੋਚੀ ਲਖ ਵਾਰ', ang=1, db_path=DB)
         check('verify_engine', v['verdict'].startswith('VERIFIED_EXACT'))
+        try:                                        # Nitnem registry: Japji is exactly our lines 1..385, in order
+            jp = [r[0] for r in db().execute(
+                'SELECT bl.line_id FROM bani_lines bl JOIN banis b USING(bani_id) '
+                "WHERE b.key='japji' ORDER BY bl.seq")]
+            n_extra_en = db().execute(
+                "SELECT count(*) FROM pragma_table_info('extra_lines') WHERE name IN ('en','english','translation')"
+            ).fetchone()[0]
+            check('banis_ok', jp == list(range(1, 386)) and n_extra_en == 0)
+        except sqlite3.OperationalError:
+            pass                                    # registry absent on older DBs: not a failure
         try:
             h['translations_en'] = db().execute("SELECT count(*) FROM translations WHERE lang='en'").fetchone()[0]
         except sqlite3.OperationalError:
@@ -1230,6 +1247,70 @@ def api(path, qs):
                             'cited — disagreement is preserved scholarship, not error'}
         except sqlite3.OperationalError:
             return {'available': False, 'raags': []}
+    if p[0] == 'banis':                                        # /api/banis — the Nitnem / Gutka registry
+        try:
+            rows = rows_to_list(db().execute(
+                'SELECT key, variant, is_default, title_gm, title_en, category, order_no, '
+                'n_lines, n_groups, has_extra, estimated_minutes, description_en, source_label '
+                'FROM banis ORDER BY order_no, variant'))
+        except sqlite3.OperationalError:
+            return {'available': False, 'banis': []}
+        return {'available': True, 'banis': rows,
+                'note': 'Sri Guru Granth Sahib Ji lines are served from the verbatim corpus and cited by Ang; '
+                        'has_extra=1 banis also contain a separate, labelled non-SGGS layer.'}
+    if p[0] == 'bani':                                         # /api/bani/{key}?variant=
+        if len(p) < 2:
+            raise ValueError('/api/bani requires a key')
+        key = p[1]
+        if not _BANI_KEY_RE.match(key):
+            raise ValueError('bad bani key')
+        variant = qs.get('variant', [''])[0]
+        if variant not in _BANI_VARIANTS:
+            raise ValueError('bad variant')
+        try:
+            if variant:
+                b = db().execute('SELECT * FROM banis WHERE key=? AND variant=?', (key, variant)).fetchone()
+            else:
+                b = db().execute('SELECT * FROM banis WHERE key=? AND is_default=1', (key,)).fetchone()
+        except sqlite3.OperationalError:
+            return {'available': False}
+        if not b:
+            raise ApiError(404, f'no bani with key {key}')
+        b = dict(b)
+        variants = [r[0] for r in db().execute(
+            'SELECT variant FROM banis WHERE key=? ORDER BY is_default DESC, variant', (key,))]
+        rows = db().execute(
+            f'SELECT bl.seq, bl.line_group, bl.line_id, bl.extra_id, '
+            f'{", ".join("l." + c for c in LINE_COLS.replace(" ", "").split(","))}, l.markers, '
+            f'e.source AS extra_source, e.panna, e.gurmukhi AS extra_gurmukhi, e.translit AS extra_translit, '
+            f'e.is_header AS extra_is_header '
+            f'FROM bani_lines bl LEFT JOIN lines l ON l.id = bl.line_id '
+            f'LEFT JOIN extra_lines e ON e.extra_id = bl.extra_id '
+            f'WHERE bl.bani_id = ? ORDER BY bl.seq', (b['bani_id'],)).fetchall()
+        lines, sggs_rows = [], []
+        for r in rows:
+            r = dict(r)
+            if r['line_id'] is not None:
+                d = {k: r[k] for k in LINE_COLS.replace(' ', '').split(',')}
+                d['markers'] = r['markers']
+                d.update({'seq': r['seq'], 'line_group': r['line_group'], 'source': 'sggs'})
+                sggs_rows.append(d)
+                lines.append(d)
+            else:
+                lines.append({'seq': r['seq'], 'line_group': r['line_group'],
+                              'source': r['extra_source'], 'extra_id': r['extra_id'],
+                              'panna': r['panna'], 'gurmukhi': r['extra_gurmukhi'],
+                              'translit': r['extra_translit'], 'is_header': r['extra_is_header'],
+                              'is_rahao': 0, 'markers': ''})
+        attach_translations(sggs_rows)               # English only ever on SGGS lines
+        b.pop('bani_id', None)
+        angs = sorted({d['ang'] for d in sggs_rows})
+        return {'available': True, 'bani': b, 'variants': variants,
+                'ang_first': angs[0] if angs else None, 'ang_last': angs[-1] if angs else None,
+                'lines': lines,
+                'note': 'source=sggs lines are verbatim Sri Guru Granth Sahib Ji, cited by Ang. '
+                        'source=dasam/ardaas lines are a separate layer (Sri Dasam Granth / Ardaas via ShabadOS), '
+                        'not part of Sri Guru Granth Sahib Ji.'}
     if p[0] == 'forms':                                        # /api/forms?comp_id=N
         cid = _int(qs, 'comp_id', 0, 0, _ID_MAX)
         if cid <= 0:

@@ -3,6 +3,58 @@
 The format below (newest first) follows [Keep a Changelog](https://keepachangelog.com);
 entries prior to v1.1.0 are the project's original prose style and are preserved verbatim.
 
+## [1.2.0] — 2026-09-18 — Raag Clock v2: a real local clock inside the pahar dial
+
+iOS display + widget layer only — scripture, corpus, DB and API untouched (`git diff -- corpus db` empty).
+
+### Added
+- **The dial is now a 24-hour clock face on the reader's own wall clock.** An hour ring (24 ticks,
+  a major every 3 h) with cardinal numerals in the reader's hour cycle (`6 AM · 12 PM · 6 PM · 12 AM`,
+  or `06 · 12 · 18 · 00` on a 24-hour device), and the **live local time in the dial's hollow** in
+  Source Serif 4 — with the current watch and a countdown to the next one — so one glance answers
+  "what time is it here, which pahar is that, which raags belong to it", anywhere in the world.
+  Ticks on the minute boundary; redraws on a system time-zone or clock change. The readout is a
+  real accessibility element (`clockNowReadout`); the painted face stays decorative.
+- **A real wall clock in the hollow**: numerals 1–12, minute ticks, ink hour and minute hands and a
+  gold hub, painted by the same renderer — the modern 12-hour clock and the eight Sikhi watches on
+  one face, so the reader compares "4:08 pm" and "4th pahar of day" at a glance (the ring pointer and
+  the hands are both driven by the same minute). Small widget faces show 12 · 3 · 6 · 9. Widgets get
+  a timeline entry every minute for the first 3 h so the hands never lag.
+- **Sunrise / sunset badges** on the day–night seam when Solar mode is live.
+- **`PaharFormat`** (`ios/App/Shared/`): locale-aware time/window/countdown formatting on top of the
+  byte-parity `Pahar` math (`fmt12`/`range` and the golden vectors are untouched). Windows are
+  resolved through `Calendar` on the calendar day, so DST days render the real wall clock; wrap-safe.
+- **`PaharDialRenderer`** (`ios/App/Shared/`): one Canvas face for the app and every widget family,
+  brand tokens only (`accentFill` current watch with an `accent` stroke, `accent` hand, `accentDeep`
+  day / `Ink.info` night, pahar 7 faint on purpose).
+- **Raag Now widget, all families**: `systemSmall` (dial + live time), `systemMedium` (dial + time,
+  window, chips, next-in), new **`systemLarge`** (full dial with numerals, chips, the eight watches),
+  and new **lock-screen accessories** `accessoryCircular` (mono dial, `P4`), `accessoryRectangular`
+  (watch · raags · next-in) and `accessoryInline`. The digital time and countdown use WidgetKit's
+  live `Text(date, style:)` so they stay current between entries; the hand is refreshed on a 15-min
+  cadence plus every pahar boundary (≤120 entries/24 h, wall-clock, DST-safe).
+- **Widgets follow the app's Fixed/Solar choice.** `sggs_clock_mode` and the rounded solar
+  coordinates moved to the App-Group `UserDefaults` suite (`SharedDefaults`, one-time migration from
+  `.standard`); the snapshot also carries `clockMode`/`solarLat`/`solarLon` (optional; older
+  snapshots decode). Polar day/night or no coordinates → fixed clock, exactly as in the app.
+- Unit tests `PaharFormatTests` (12/24-h, midnight wrap, DST spring-forward/fall-back, JS tz sign,
+  polar/degenerate sun, dial geometry round-trip) and `RaagNowTimelineTests` (entry-at-own-date,
+  cadence/boundary/budget, DST boundaries, solar fallback, legacy snapshot decode).
+
+### Changed
+- Every pahar window on the Clock (hero line, the eight watches, detail sheets) is rendered in the
+  reader's locale and 12/24-hour setting (Foundation's narrow no-break space normalised to a plain
+  space). `testRaagClock` pins `en_US` via launch arguments so the load-bearing
+  `"4th pahar of day  ·  3–6 PM"` string is identical on every simulator, and asserts the new readout.
+- The "now" pointer lives in the pahar band only (root pip at the inner edge) — it never crosses
+  the hollow, which belongs to the readout. NOON/MIDNIGHT labels are replaced by the numerals.
+- Widget description: "Your local time on the 24-hour Raag Clock — the current watch and its raags.
+  Follows the app's Fixed/Solar setting."
+
+### Fixed
+- The dial no longer uses ad-hoc HSB colours; it is on the brand tokens in both schemes (dark stays
+  warm ink). Numerals are inset so they never clip the canvas on narrow phones.
+
 ## [1.1.5] — 2026-09-18 — Premium widgets
 
 iOS display layer only — scripture, corpus, DB and API untouched (`git diff -- corpus db` empty).

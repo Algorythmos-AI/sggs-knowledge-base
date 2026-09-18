@@ -28,6 +28,8 @@ final class AppContainer {
     /// (a cold launch from a widget/Spotlight/`sggs://` link during verification hit this).
     var sheetHosted = false
     var meta: CorpusMeta?
+    /// Nitnem reading positions + completed days (App Group JSON; never SwiftData).
+    let nitnem = NitnemProgressStore()
 
     /// The SwiftData store for saved verses. Built explicitly (never via the implicit
     /// `.modelContainer(for:)` result-builder, which fatalErrors on a corrupt store): a broken
@@ -184,6 +186,7 @@ final class AppContainer {
     /// the fixed-clock pahar→raags table. Widgets NEVER open the corpus DB.
     /// Runs post-launch (after integrity passes) and is cheap enough to run every launch.
     func refreshWidgetSnapshot() async {
+        SharedDefaults.migrateFromStandard()   // clock mode + solar coords moved to the App Group
         guard let corpus, integrity?.ok == true else { return }
         guard let hukam = try? await corpus.randomHukam(),
               let firstVerse = hukam.lines.first(where: { !$0.isHeader }) else { return }
@@ -204,7 +207,10 @@ final class AppContainer {
             hukamAng: firstVerse.ang,
             hukamCompId: hukam.compId,
             paharRaags: paharRaags,
-            paharRaagsGurmukhi: paharRaagsGurmukhi))
+            paharRaagsGurmukhi: paharRaagsGurmukhi,
+            clockMode: SharedDefaults.clockMode,
+            solarLat: SharedDefaults.solarCoords()?.lat,
+            solarLon: SharedDefaults.solarCoords()?.lon))
         #if canImport(WidgetKit)
         WidgetCenter.shared.reloadAllTimelines()
         #endif

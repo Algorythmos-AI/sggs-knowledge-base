@@ -1,4 +1,5 @@
 import SwiftUI
+import WidgetKit
 import GurbaniSearchKit
 
 /// The Raag Clock: when each raag is traditionally sung — shown as ATTRIBUTED SCHOLARLY
@@ -11,7 +12,9 @@ import GurbaniSearchKit
 struct ClockScreen: View {
     @Environment(AppContainer.self) private var container
     @Environment(\.palette) private var palette
-    @AppStorage("sggs_clock_mode") private var mode = "fixed"     // fixed | solar
+    @Environment(\.locale) private var locale
+    /// "fixed" | "solar" — lives in the App-Group suite so the widgets mirror the choice.
+    @AppStorage(SharedDefaults.clockModeKey, store: SharedDefaults.suite) private var mode = "fixed"
     @State private var clock: TimingClock?
     /// Lazily created in .task — a `@State = SolarLocation()` default would construct a fresh
     /// CLLocationManager (delegate wired, defaults read) on EVERY ClockScreen struct init,
@@ -21,20 +24,26 @@ struct ClockScreen: View {
     @State private var showDivergence = false
     @State private var unknownRaagNote: String?
     @State private var showManualLocation = false
+    /// Bumped when the system time zone or clock changes so the face redraws immediately.
+    @State private var clockEpoch = 0
     /// Injectable for tests (XCUITest launches with SGGS_CLOCK_NOW=<minutes> to pin the time).
     var now: () -> Date = { Date() }
 
     var body: some View {
-        NavigationStack {
+        // Pushed from the Explore stack (or opened via sggs://clock) — no NavigationStack of
+        // its own: a nested stack inside a pushed destination misbehaves.
+        Group {
             Group {
                 if container.corpus?.capabilities.hasTiming != true {
                     ContentUnavailableView("Raag timing not in this build",
                                            systemImage: "clock.badge.questionmark",
                                            description: Text("This database profile doesn't carry the timing layer."))
                 } else if let clock {
-                    TimelineView(.periodic(from: .now, by: 60)) { _ in
+                    // Ticks on the minute boundary so the digits flip with the status-bar clock.
+                    TimelineView(.periodic(from: PaharFormat.nextMinuteBoundary(), by: 60)) { _ in
                         content(clock: clock)
                     }
+                    .id(clockEpoch)
                 } else {
                     ProgressView().frame(maxWidth: .infinity, maxHeight: .infinity)
                 }
@@ -48,54 +57,71 @@ struct ClockScreen: View {
             .sheet(isPresented: $showDivergence) { DivergenceScreen() }
         }
         .task {
+            #if DEBUG
+            // XCUITest pins the mode (SGGS_CLOCK_MODE=fixed|solar) so a device's stored choice
+            // can never change the strings a test asserts; never ships in Release.
+            if let m = ProcessInfo.processInfo.environment["SGGS_CLOCK_MODE"], m == "fixed" || m == "solar" {
+                mode = m
+            }
+            #endif
             if location == nil { location = SolarLocation() }
             guard clock == nil, let corpus = container.corpus else { return }
             clock = await corpus.timingClock()
             consumePendingRaag()
         }
         .onChange(of: container.router.pendingClockRaag) { _, _ in consumePendingRaag() }
+        .onChange(of: mode) { _, _ in reloadWidgets() }
+        .onChange(of: location?.coords?.lat) { _, _ in reloadWidgets() }
+        .onChange(of: location?.coords?.lon) { _, _ in reloadWidgets() }
+        .onReceive(NotificationCenter.default.publisher(for: .NSSystemTimeZoneDidChange)) { _ in clockEpoch += 1 }
+        .onReceive(NotificationCenter.default.publisher(for: .NSSystemClockDidChange)) { _ in clockEpoch += 1 }
     }
 
     // MARK: time plumbing
 
-    private var minutesNow: Int {
+    /// The instant the face shows. In DEBUG, `SGGS_CLOCK_NOW=<minute-of-day>` pins it on
+    /// today's date so the hand, the readout and the pinned UI-test strings all agree.
+    private var nowDate: Date {
         #if DEBUG
-        // test override: pin the wall clock to a minute-of-day (XCUITests run the Debug
-        // configuration; this hook never ships in Release)
-        if let env = ProcessInfo.processInfo.environment["SGGS_CLOCK_NOW"], let m = Int(env) {
-            return ((m % 1440) + 1440) % 1440
+        // test override (XCUITests run the Debug configuration; this hook never ships in Release)
+        if let env = ProcessInfo.processInfo.environment["SGGS_CLOCK_NOW"], let m = Int(env),
+           let pinned = PaharFormat.date(minuteOfDay: m, on: now()) {
+            return pinned
         }
         #endif
-        let c = Calendar(identifier: .gregorian).dateComponents([.hour, .minute], from: now())
-        return (c.hour ?? 0) * 60 + (c.minute ?? 0)
+        return now()
     }
 
-    private var sun: Pahar.SunTimes? {
+    private var minutesNow: Int { PaharFormat.minutesOfDay(nowDate) }
+
+    /// Usable sunrise/sunset (solar mode, stored coords, non-polar) — else nil → fixed clock.
+    private var sun: (sunrise: Int, sunset: Int)? {
         guard mode == "solar", let coords = location?.coords else { return nil }
-        var cal = Calendar(identifier: .gregorian)
-        cal.timeZone = TimeZone.current
-        let c = cal.dateComponents([.year, .month, .day], from: now())
-        // JS getTimezoneOffset convention: UTC+5:30 → -330
-        let tzOffsetMin = -TimeZone.current.secondsFromGMT(for: now()) / 60
-        return Pahar.sunTimes(year: c.year ?? 2026, month: c.month ?? 1, day: c.day ?? 1,
-                              lat: coords.lat, lon: coords.lon, tzOffsetMin: tzOffsetMin)
+        return PaharFormat.usableSun(PaharFormat.sunTimes(on: nowDate, lat: coords.lat, lon: coords.lon))
+    }
+
+    /// True when solar mode is on but unusable (polar day/night at this latitude).
+    private var solarIsPolar: Bool {
+        guard mode == "solar", let coords = location?.coords else { return false }
+        return PaharFormat.sunTimes(on: nowDate, lat: coords.lat, lon: coords.lon).polar
     }
 
     /// (currentPahar, usableSolar) — solar falls back to fixed at polar latitudes / no fix.
-    private func currentPahar() -> (pahar: Int, solar: Pahar.SunTimes?) {
-        if let s = sun, !s.polar, let sr = s.sunrise, let ss = s.sunset {
-            return (Pahar.paharSolar(minutesNow, sunrise: sr, sunset: ss), s)
-        }
+    private func currentPahar() -> (pahar: Int, solar: (sunrise: Int, sunset: Int)?) {
+        if let s = sun { return (Pahar.paharSolar(minutesNow, sunrise: s.sunrise, sunset: s.sunset), s) }
         return (Pahar.paharFromMinutes(minutesNow), nil)
     }
 
+    /// The window of a pahar on the reader's own clock (12/24-h, locale), fixed or solar.
     private func windowText(_ p: Int) -> String {
-        if let s = sun, !s.polar, let sr = s.sunrise, let ss = s.sunset {
-            let w = Pahar.solarWindow(p, sunrise: sr, sunset: ss)
-            func f(_ m: Int) -> String { Pahar.fmt12("\(m / 60):\(String(format: "%02d", m % 60))") }
-            return "\(f(w.start))–\(f(w.end))"
-        }
-        return Pahar.range(p)
+        let w = sun.map { Pahar.solarWindow(p, sunrise: $0.sunrise, sunset: $0.sunset) } ?? Pahar.window(p)
+        return PaharFormat.window(w, on: nowDate, locale: locale)
+    }
+
+    private func reloadWidgets() {
+        #if canImport(WidgetKit)
+        WidgetCenter.shared.reloadTimelines(ofKind: "RaagNow")
+        #endif
     }
 
     private func consumePendingRaag() {
@@ -117,15 +143,14 @@ struct ClockScreen: View {
 
     @ViewBuilder private func content(clock: TimingClock) -> some View {
         let (p, solar) = currentPahar()
-        let boundary = solar.flatMap { s -> Pahar.Boundary? in
-            guard let sr = s.sunrise, let ss = s.sunset else { return nil }
-            return Pahar.nextBoundary(minutesNow, mode: "solar", sunrise: sr, sunset: ss)
-        } ?? Pahar.nextBoundary(minutesNow, mode: "fixed")
+        let boundary = solar.map { Pahar.nextBoundary(minutesNow, mode: "solar", sunrise: $0.sunrise, sunset: $0.sunset) }
+            ?? Pahar.nextBoundary(minutesNow, mode: "fixed")
 
         ScrollView {
             VStack(alignment: .leading, spacing: Theme.Space.l) {
                 nowCard(clock: clock, pahar: p, boundary: boundary, solarLive: solar != nil)
-                RaagDial(clock: clock, currentPahar: p, minutesNow: minutesNow, sun: solar) { tapped in
+                RaagDial(clock: clock, currentPahar: p, minutesNow: minutesNow, now: nowDate,
+                         sun: solar, boundary: boundary) { tapped in
                     Haptics.tap()
                     detailPahar = PaharSelection(p: tapped)
                 }
@@ -135,8 +160,7 @@ struct ClockScreen: View {
                 .aspectRatio(1, contentMode: .fit)
                 .frame(maxWidth: 420)                 // iPad/landscape: never taller than a screen
                 .frame(maxWidth: .infinity)
-                .padding(.horizontal, Theme.Space.xl)
-                .accessibilityHidden(true)   // decorative — the list below is the a11y path
+                .padding(.horizontal, Theme.Space.m)
                 paharList(clock: clock, current: p)
                 seasonalSection(clock: clock)
                 footer
@@ -193,7 +217,7 @@ struct ClockScreen: View {
                         if let ang = claim.firstAng { container.router.openAng(ang) }
                     }
                 }
-                Text("next: \(Pahar.label(boundary.nextPahar)) in \(boundary.minutes / 60 > 0 ? "\(boundary.minutes / 60) h " : "")\(boundary.minutes % 60) min")
+                Text("next: \(Pahar.label(boundary.nextPahar)) \(PaharFormat.countdown(minutes: boundary.minutes))")
                     .font(.caption).foregroundStyle(.secondary)
                 if mode == "solar" {
                     solarControls(live: solarLive)
@@ -217,8 +241,11 @@ struct ClockScreen: View {
                     Text("Location denied — enter coordinates manually, or stay on the fixed clock.")
                         .font(.caption2).foregroundStyle(.secondary)
                 }
-            } else {
+            } else if solarIsPolar {
                 Text("Polar day/night at this latitude — showing the fixed clock.")
+                    .font(.caption2).foregroundStyle(.secondary)
+            } else {
+                Text("Sunrise and sunset coincide at this location today — showing the fixed clock.")
                     .font(.caption2).foregroundStyle(.secondary)
             }
         }
@@ -274,7 +301,8 @@ struct ClockScreen: View {
             }
             .accessibilityIdentifier("divergenceLink")
             Text("Pahars were traditionally solar — four equal watches of daylight and four of night. "
-                 + "The fixed-clock view anchors pahar 1 at 6 AM as a modern rendering. Every placement "
+                 + "The fixed-clock view anchors pahar 1 at 6 AM as a modern rendering. The dial is a "
+                 + "24-hour face on your local clock: noon at the top, midnight at the bottom. Every placement "
                  + "here is an attributed scholarly claim with its citation — where traditions disagree, "
                  + "both are kept.")
                 .font(.caption2).foregroundStyle(.tertiary)
@@ -285,101 +313,88 @@ struct ClockScreen: View {
 /// sheet(item:) target for a tapped pahar (never conform Int to Identifiable globally).
 struct PaharSelection: Identifiable { let p: Int; var id: Int { p } }
 
-/// The dial: 8 pahar arcs on a 24-hour circle (noon at top), day/night palette, current-pahar
-/// glow, raag-count beads, deliberately-empty pahar 7, live now-hand. Decorative (a11y-hidden);
-/// taps forward to the detail sheet.
+/// The dial: the shared 24-hour face (`PaharDialRenderer`) with the live LOCAL clock in its
+/// hollow — the reader's own time, the current watch and the countdown to the next one — so
+/// one glance answers "what time is it here, and which raags belong to it". The painted face
+/// is decorative for accessibility; the hollow readout is a real element and the pahar LIST
+/// below remains the full-content path. Taps on a wedge open that pahar's detail sheet.
 struct RaagDial: View {
     let clock: TimingClock
     let currentPahar: Int
     let minutesNow: Int
-    let sun: Pahar.SunTimes?
+    let now: Date
+    let sun: (sunrise: Int, sunset: Int)?
+    let boundary: Pahar.Boundary
     var onTap: (Int) -> Void
+    @Environment(\.palette) private var palette
+    @Environment(\.locale) private var locale
+    @Environment(\.dynamicTypeSize) private var typeSize
 
-    private func window(_ p: Int) -> Pahar.Window {
-        if let s = sun, let sr = s.sunrise, let ss = s.sunset { return Pahar.solarWindow(p, sunrise: sr, sunset: ss) }
-        return Pahar.window(p)
+    private var model: PaharDialModel {
+        var beads: [Int: Int] = [:]
+        for p in 1...8 { beads[p] = clock.raags(forPahar: p).count }
+        if let s = sun {
+            return .solar(sunrise: s.sunrise, sunset: s.sunset, current: currentPahar, minutesNow: minutesNow, beads: beads)
+        }
+        return .fixed(current: currentPahar, minutesNow: minutesNow, beads: beads)
     }
-    /// minutes → angle, noon at top, clockwise.
-    private func angle(_ m: Int) -> Angle { .degrees(Double(m) / 1440 * 360 + 90) }
+
+    private var spoken: String {
+        "It is \(PaharFormat.time(now, locale: locale)). \(Pahar.label(currentPahar)). "
+        + "Next watch, \(Pahar.label(boundary.nextPahar)), \(PaharFormat.countdownSpoken(minutes: boundary.minutes))."
+    }
 
     var body: some View {
         GeometryReader { geo in
             let size = min(geo.size.width, geo.size.height)
             let center = CGPoint(x: geo.size.width / 2, y: geo.size.height / 2)
-            let outer = size / 2 - 8
-            let inner = outer * 0.62
+            let m = DialMetrics(size: size, center: center, style: .full)
             ZStack {
-                Canvas { ctx, _ in
-                    for p in 1...8 {
-                        let w = window(p)
-                        let endMin = w.end <= w.start ? w.end + 1440 : w.end
-                        let path = Path { path in
-                            path.addArc(center: center, radius: outer,
-                                        startAngle: angle(w.start), endAngle: angle(endMin),
-                                        clockwise: false)
-                            path.addArc(center: center, radius: inner,
-                                        startAngle: angle(endMin), endAngle: angle(w.start),
-                                        clockwise: true)
-                            path.closeSubpath()
-                        }
-                        let day = p <= 4
-                        var color = day ? Color(hue: 0.09, saturation: 0.55, brightness: 0.95)
-                                        : Color(hue: 0.65, saturation: 0.45, brightness: 0.55)
-                        if p == 7 { color = color.opacity(0.25) }        // deliberately silent
-                        ctx.fill(path, with: .color(color.opacity(p == currentPahar ? 0.9 : 0.45)))
-                        if p == currentPahar {
-                            ctx.stroke(path, with: .color(Brand.primary), lineWidth: 3)
-                        }
-                        // raag-count beads along the arc's middle radius
-                        let n = clock.raags(forPahar: p).count
-                        if n > 0 {
-                            let midR = (outer + inner) / 2
-                            let span = Double(endMin - w.start)
-                            for i in 0..<min(n, 8) {
-                                let t = (Double(i) + 1) / (Double(min(n, 8)) + 1)
-                                let m = Double(w.start) + span * t
-                                let a = angle(Int(m)).radians
-                                let pt = CGPoint(x: center.x + cos(a) * midR, y: center.y + sin(a) * midR)
-                                ctx.fill(Path(ellipseIn: CGRect(x: pt.x - 2.5, y: pt.y - 2.5, width: 5, height: 5)),
-                                         with: .color(.white.opacity(0.9)))
-                            }
-                        }
-                    }
-                    // now-hand
-                    let a = angle(minutesNow).radians
-                    var hand = Path()
-                    hand.move(to: center)
-                    hand.addLine(to: CGPoint(x: center.x + cos(a) * (outer + 4), y: center.y + sin(a) * (outer + 4)))
-                    ctx.stroke(hand, with: .color(Brand.primary), lineWidth: 2)
-                    ctx.fill(Path(ellipseIn: CGRect(x: center.x - 4, y: center.y - 4, width: 8, height: 8)),
-                             with: .color(Brand.primary))
-                }
-                // labels
-                Text("NOON").font(.system(size: 9, weight: .medium)).foregroundStyle(.secondary)
-                    .position(x: center.x, y: center.y - outer - 0)
-                    .offset(y: -6)
-                Text("MIDNIGHT").font(.system(size: 9, weight: .medium)).foregroundStyle(.secondary)
-                    .position(x: center.x, y: center.y + outer)
-                    .offset(y: 8)
+                PaharDialRenderer(model: model, style: .full, palette: palette,
+                                  numerals: PaharFormat.dialNumerals(locale: locale))
+                    .accessibilityHidden(true)
+                readout(m)
+                    .position(center)
             }
             .contentShape(Circle())
             .onTapGesture { pt in
-                // hit-test: angle → minutes → pahar (respect the active mode's windows)
-                let dx = pt.x - center.x, dy = pt.y - center.y
-                let r = sqrt(dx * dx + dy * dy)
-                guard r >= inner * 0.8, r <= outer + 8 else { return }
-                var deg = atan2(dy, dx) * 180 / .pi - 90       // undo the +90 noon-at-top offset
-                deg = (deg.truncatingRemainder(dividingBy: 360) + 360).truncatingRemainder(dividingBy: 360)
-                let m = Int(deg / 360 * 1440)
-                if let s = sun, let sr = s.sunrise, let ss = s.sunset {
-                    onTap(Pahar.paharSolar(m, sunrise: sr, sunset: ss))
+                // hit-test: angle → minutes → pahar (respect the active mode's windows);
+                // the hollow (readout) is not a target
+                guard let minute = m.minute(at: pt) else { return }
+                if let s = sun {
+                    onTap(Pahar.paharSolar(minute, sunrise: s.sunrise, sunset: s.sunset))
                 } else {
-                    onTap(Pahar.paharFromMinutes(m))
+                    onTap(Pahar.paharFromMinutes(minute))
                 }
             }
         }
     }
+
+    /// The live readout on the analog face: the watch above the hub, the digital local time
+    /// below it (the face's numerals + hands are painted by the renderer).
+    private func readout(_ m: DialMetrics) -> some View {
+        let r = m.faceRadius
+        return ZStack {
+            Text(Pahar.label(currentPahar))
+                .font(.system(size: max(9, r * 0.11), weight: .semibold, design: .rounded))
+                .lineLimit(1).minimumScaleFactor(0.7)
+                .frame(width: r * 0.9)
+                .offset(y: -r * 0.42)
+            Text(PaharFormat.time(now, locale: locale))
+                .font(Brand.heading(.callout, weight: 650))
+                .monospacedDigit()
+                .lineLimit(1).minimumScaleFactor(0.6)
+                .frame(width: r * 0.9)
+                .offset(y: r * 0.42)
+        }
+        .foregroundStyle(.primary)
+        .frame(width: r * 2, height: r * 2)
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(spoken)
+        .accessibilityIdentifier("clockNowReadout")
+    }
 }
+
 
 /// One pahar's raags in detail: every claim with type/confidence/tradition badges + citation.
 struct PaharDetailSheet: View {

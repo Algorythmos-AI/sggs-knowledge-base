@@ -41,12 +41,18 @@ SCRIPTURE_DERIVED = {
 }
 COMPANION_TEXT = {"translations"}
 
-# Tables owned by the timing layer itself — excluded from baseline/guard scans.
+# Tables owned by the timing layer itself.
 TIMING_LAYER_TABLES = {
     "timing_sources", "raag_timing_claims", "shabd_raag_map",
     "shabd_musical_markers", "shabd_structural_form", "shabd_poetic_genre",
     "timing_migrations",
 }
+# Tables owned by the Nitnem bani registry (pipeline/banis/, migration 002).
+# `extra_lines` holds NON-SGGS text (Sri Dasam Granth / Ardaas) — a companion layer,
+# drift-guarded byte-for-byte once baselined, never part of scripture.
+BANI_LAYER_TABLES = {"banis", "bani_lines", "extra_lines"}
+# Every additive layer that may legitimately appear on top of a baseline.
+ADDITIVE_LAYER_TABLES = TIMING_LAYER_TABLES | BANI_LAYER_TABLES
 
 
 def connect_ro(db_path):
@@ -74,8 +80,10 @@ def classify(table):
         return "scripture"
     if table in SCRIPTURE_DERIVED or table.startswith(SCRIPTURE_DERIVED_PREFIXES):
         return "scripture_derived"
-    if table in COMPANION_TEXT:
+    if table in COMPANION_TEXT or table == "extra_lines":
         return "companion_text"
+    if table in BANI_LAYER_TABLES:
+        return "scripture_derived"   # pointers into `lines`
     return "metadata"
 
 
@@ -152,8 +160,9 @@ def load_baseline(baseline_path):
 def verify_against_baseline(db_path, baseline_path, verbose=True):
     """
     Recompute every baselined table and compare. New tables NOT in the baseline
-    are allowed only if they belong to TIMING_LAYER_TABLES; anything else is a
-    failure (an unknown table appeared). Returns (ok, failures:list[str]).
+    are allowed only if they belong to ADDITIVE_LAYER_TABLES (timing layer or
+    bani registry); anything else is a failure (an unknown table appeared).
+    Returns (ok, failures:list[str]).
     """
     baseline = load_baseline(baseline_path)
     con = connect_ro(db_path)
@@ -174,8 +183,8 @@ def verify_against_baseline(db_path, baseline_path, verbose=True):
                     f"{name}: {key} mismatch (baseline={base[key]} current={cur[key]})"
                 )
     for name in sorted(set(current) - set(baseline["tables"])):
-        if name not in TIMING_LAYER_TABLES:
-            failures.append(f"{name}: UNEXPECTED new table (not part of timing layer)")
+        if name not in ADDITIVE_LAYER_TABLES:
+            failures.append(f"{name}: UNEXPECTED new table (not an additive layer)")
 
     if verbose:
         for name in sorted(baseline["tables"]):
