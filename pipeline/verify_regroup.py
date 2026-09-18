@@ -25,6 +25,12 @@ EXPECT_ANGS = 1430
 EXPECT_DISTINCT_OLD = 5380
 EXPECT_FOLDED = 674
 EXPECT_DISTINCT_NEW = EXPECT_DISTINCT_OLD - EXPECT_FOLDED   # 4706
+# v1.1.4: 233 verses the detector had mistaken for headers no longer open a composition
+# (their comp_ids are burned as permanent gaps, ids 5377-5380 among them), so the
+# current DB carries 4527 distinct comps. The two-DB mode above still proves the
+# v1.1.0 regroup from a pre-regroup DB; --invariants gates the current DB.
+EXPECT_DEMOTED = 179          # 233 demoted lines, 54 of which had already been folded into a run
+EXPECT_DISTINCT_CURRENT = EXPECT_DISTINCT_NEW - EXPECT_DEMOTED   # 4527
 RUBRICS = {'ਜੁਮਲਾ', 'ਦੁਤੁਕੇ', 'ਏਹੁ ਸਲੋਕੁ ਆਦਿ ਅੰਤਿ ਪੜਣਾ'}
 IGNORE_COLS = {'comp_id', 'line_no'}
 # derived/analytics tables that legitimately differ after a regroup rebuild
@@ -74,7 +80,7 @@ def invariants_only(db_p):
     cl = defaultdict(list)
     for r in rows:
         cl[r[idx['comp_id']]].append(r)
-    check(len(cl) == EXPECT_DISTINCT_NEW, f"distinct comps == {EXPECT_DISTINCT_NEW} (got {len(cl)})")
+    check(len(cl) == EXPECT_DISTINCT_CURRENT, f"distinct comps == {EXPECT_DISTINCT_CURRENT} (got {len(cl)})")
     bad_first = hab = 0; header_only = []
     for c, ls in cl.items():
         ls.sort(key=lambda r: r[idx['id']])

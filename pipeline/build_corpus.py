@@ -42,10 +42,13 @@ RAAG_CANON = {'ਵਡਹੰਸ': 'ਵਡਹੰਸੁ', 'ਬਿਲਾਵਲ': '�
 # swaiyye, Mundavani, Raagmala. Sections are detected by header; raag is cleared.
 POST_RAAG_ANG = 1353
 
+TRAILING_RUBRICS = {'ਜੁਮਲਾ', 'ਦੁਤੁਕੇ',
+                    'ਏਹੁ ਸਲੋਕੁ ਆਦਿ ਅੰਤਿ ਪੜਣਾ'}
 records, all_anoms = [], []
 ctx = {'raag': None, 'section': None, 'author': None, 'comp_type': None, 'ghar': None,
        'vaar_author': None}
-comp_id, line_no, lid = 0, 0, 0
+comp_id, comp_seq, line_no, lid = 0, 0, 0, 0
+open_hdr = None      # index of the heading whose composition has no body line yet
 carry, carry_ang, carry_page = '', None, None
 expected_ang = 1
 
@@ -75,9 +78,22 @@ for p in range(53, 1483):
     for k, u in enumerate(units):
         u_ang, u_page = (carry_ang, carry_page) if u.get('_carry') else (ang, p + 1)
         text = u['text']
-        h = detect_header(text)
+        h = detect_header(text, no_danda=u.get('no_danda', False))
         is_header = 0
-        if h.get('is_header') and not u['markers'] and not u['rahao'] and len(text.split()) <= 16:
+        header_shaped = not u['markers'] and not u['rahao'] and len(text.split()) <= 16
+        if h.get('weak_verse') and header_shaped:
+            # a verse the old detector took for a header (comp-type word / leading raag name
+            # inside the line). It stays in the composition it belongs to; the comp_id it used
+            # to open is burned -- a permanent gap -- so every later comp_id is unchanged.
+            comp_seq += 1
+            if open_hdr is not None:
+                # opening verse(s) of a composition: the heading and the body keep the id the
+                # body always had (post-pass 1b folds the heading run into it); the heading's
+                # own id is the one that stays vacated -- exactly as before.
+                comp_id = comp_seq
+                for r in records[open_hdr:]: r['comp_id'] = comp_id
+            all_anoms.append(('false_header_demoted', f'ang {u_ang}: no longer opens comp {comp_seq}: {text[:40]}'))
+        if h.get('is_header') and header_shaped:
             is_header = 1
             if 'raag' in h and u_ang < POST_RAAG_ANG and \
                (re.search(r'(^|\s)ਰਾਗੁ?\s', text) or 'author' in h or 'comp_type' in h):
@@ -100,7 +116,10 @@ for p in range(53, 1483):
             if h.get('comp_type') == 'ਪਉੜੀ' and 'author' not in h and ctx['vaar_author']:
                 ctx['author'] = ctx['vaar_author']
             ctx['ghar'] = h.get('ghar', ctx['ghar'] if 'author' not in h else None)
-            comp_id += 1; line_no = 0
+            comp_seq += 1; comp_id = comp_seq; line_no = 0
+            open_hdr = len(records) if text not in TRAILING_RUBRICS else None
+        elif not h.get('weak_verse'):
+            open_hdr = None
         line_no += 1; lid += 1
         records.append({
             'id': lid, 'ang': u_ang, 'pdf_page': u_page,
@@ -149,8 +168,6 @@ for i, r in enumerate(records, 1): r['id'] = i
 #      ever changes comp_id and vacated comp_ids become permanent gaps (never
 #      reused). Closing rubrics that belong to the PRECEDING unit break the run and
 #      keep their own one-line comp (flagged for scholarly review, never merged).
-TRAILING_RUBRICS = {'ਜੁਮਲਾ', 'ਦੁਤੁਕੇ',
-                    'ਏਹੁ ਸਲੋਕੁ ਆਦਿ ਅੰਤਿ ਪੜਣਾ'}
 def _is_run_header(r):
     return r['is_header'] and r['text'] not in TRAILING_RUBRICS
 _regrouped, i, _n = 0, 0, len(records)

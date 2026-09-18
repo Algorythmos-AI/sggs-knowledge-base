@@ -67,10 +67,13 @@ def is_vaar_title(t):
 
 
 def is_section_intro(t):
-    """The sub-section header that ends Basant Ki Vaar: 'ਬਸੰਤੁ ਬਾਣੀ ਭਗਤਾਂ ਕੀ' (bani OF the
-    Bhagats). Kept deliberately narrow — 'ਘਰੁ'/'ਬਾਣੀ' alone are common verse words and must
-    NOT trip the boundary inside a salok."""
-    return 'ਭਗਤਾਂ ਕੀ' in (t or '')
+    """The Bhagat-bani sub-section header that ends a Vaar: 'ਬਸੰਤੁ ਬਾਣੀ ਭਗਤਾਂ ਕੀ' (Basant),
+    'ਰਾਮਕਲੀ ਬਾਣੀ ਭਗਤਾ ਕੀ' (Ramkali, Satta & Balwand), 'ਰਾਗੁ ਮਲਾਰ ਬਾਣੀ ਭਗਤ ਨਾਮਦੇਵ ਜੀਉ ਕੀ'
+    (Malar). Only header lines are tested. Kept deliberately narrow — 'ਘਰੁ'/'ਬਾਣੀ' alone
+    are common verse words and must NOT trip the boundary inside a salok. (v1.1.4: the
+    Ramkali and Malar Vaars used to end by accident on verses mis-flagged as ਪਟੀ headers;
+    those flags are gone, Malar regains its 28th pauri.)"""
+    return 'ਬਾਣੀ ਭਗਤ' in (t or '')
 
 
 def is_pauri_label(t):

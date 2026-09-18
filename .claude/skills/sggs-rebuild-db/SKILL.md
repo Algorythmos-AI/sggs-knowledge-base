@@ -23,7 +23,7 @@ rm -rf corpus/by-raag/*      # the generator doesn't clear stale files
 PATH=/usr/bin:$PATH bash pipeline/rebuild_all.sh > "$S/rebuild.log" 2>&1
 ```
 The log must contain: `RECONCILED: corpus == source, character for character`, `ALL GOLDEN TESTS PASS`,
-`missing angs: NONE`, `vaars=22, vaar_units=1423` (or an explained, reviewed change). If a stage fails,
+`missing angs: NONE`, `vaars=22, vaar_units=1426` (1,423 before v1.1.4; or an explained, reviewed change). If a stage fails,
 restore from `$S` and stop.
 
 ## 3. Prove scripture is untouched
