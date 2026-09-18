@@ -1,7 +1,7 @@
 {
   "banis_bundled": true,
   "bytes": 108355584,
-  "db_sha256": "43da2798ed53f85e732a707955716fe3f9aaacf92bcc0824d0136084223c0d0e",
+  "db_sha256": "8ab80b0ffa3c3e3c4b7722e1be2cc20a42632d823d59ff8e07ef9a40ecea4389",
   "derived_from": "db/sggs.sqlite",
   "dropped": [],
   "en_bundled": true,

@@ -36,7 +36,7 @@ The pipeline and web app code (everything in `pipeline/` and `webapp/` except da
 - **Licence.** The ShabadOS repository publishes its code under the MIT licence and states
   that the contents of its `data` folder are free of known copyright restrictions (public
   domain). Record the exact licence text of the release used before any public wording
-  claims "public domain"; the `sources` row `shabados-nitnem` in the DB points here.
+  claims "public domain"; provenance is recorded in `banis.source_label` and here.
   The Ardaas wording follows the SGPC Sikh Rehat Maryada.
 - Required in-app attribution: "Bani ordering and Sri Dasam Granth / Ardaas text via the
   ShabadOS open database. Sri Guru Granth Sahib Ji text is this project's own verified corpus."

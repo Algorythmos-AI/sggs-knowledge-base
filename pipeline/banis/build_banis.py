@@ -309,12 +309,9 @@ def build(args):
                 'INSERT INTO bani_lines(bani_id, seq, line_group, line_id, extra_id) VALUES (?,?,?,?,?)',
                 [(bid, i + 1, lg, lid, extra_ids[slid] if slid else None)
                  for i, (lg, lid, slid) in enumerate(entries)])
-        con.execute("INSERT OR REPLACE INTO meta VALUES('banis', ?)", (str(len(plan)),))
-        con.execute("INSERT OR REPLACE INTO sources VALUES(?,?,?,?,date('now'))", (
-            'shabados-nitnem', 'bani-registry+extra-text',
-            'Bani membership and Sri Dasam Granth / Ardaas text via the ShabadOS open database '
-            '(github.com/shabados/database, release 4.8.7); SGGS lines rendered from this project\'s own corpus',
-            'See NOTICE.md (Nitnem bani layer)'))
+        # NOTE: no writes to `meta` / `sources` — every pre-existing table stays byte-identical
+        # to the scripture baseline (guard_scripture.py); provenance lives in banis.source_label
+        # and NOTICE.md.
         con.execute('COMMIT')
     except Exception as e:
         con.execute('ROLLBACK')
@@ -349,7 +346,7 @@ def rollback(args):
     con.execute('BEGIN IMMEDIATE')
     for st in statements:
         con.execute(st)
-    con.execute("DELETE FROM meta WHERE key='banis'")
+    con.execute("DELETE FROM meta WHERE key='banis'")                    # legacy rows from the first build
     con.execute("DELETE FROM sources WHERE source_id='shabados-nitnem'")
     con.execute('COMMIT')
     con.close()
@@ -368,7 +365,7 @@ def main():
     ap.add_argument('--skip-baseline', action='store_true',
                     help='ONLY for rebuild_all.sh temp DBs (fresh build already gated)')
     args = ap.parse_args()
-    if not Path(args.shabados).exists():
+    if not args.rollback and not Path(args.shabados).exists():
         print('ShabadOS database not found: %s (see NOTICE.md to re-download)' % args.shabados, file=sys.stderr)
         return 1
     if not args.skip_baseline and not args.dry_run:
