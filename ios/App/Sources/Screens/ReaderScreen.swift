@@ -359,36 +359,6 @@ struct ReaderScreen: View {
     }
 }
 
-/// Scroll tracking with the modern API where available (iOS 18+: exact offset + content and
-/// container sizes from the scroll view itself) and the zero-height GeometryReader probe +
-/// preference keys as the iOS 17.0 fallback.
-private struct ReaderScrollTracking: ViewModifier {
-    let onScroll: (CGFloat, CGFloat, CGFloat) -> Void
-    let onContentHeight: (CGFloat) -> Void
-    func body(content: Content) -> some View {
-        if #available(iOS 18.0, *) {
-            content.onScrollGeometryChange(for: ScrollSnapshot.self) { g in
-                ScrollSnapshot(y: g.contentOffset.y + g.contentInsets.top,
-                               content: g.contentSize.height, viewport: g.containerSize.height)
-            } action: { _, s in onScroll(s.y, s.content, s.viewport) }
-        } else {
-            content
-                .onPreferenceChange(ReaderScrollOffsetKey.self) { y in onScroll(y, 0, 0) }
-                .onPreferenceChange(ReaderContentHeightKey.self) { h in onContentHeight(h) }
-        }
-    }
-}
-private struct ScrollSnapshot: Equatable { let y: CGFloat; let content: CGFloat; let viewport: CGFloat }
-
-private struct ReaderScrollOffsetKey: PreferenceKey {
-    static let defaultValue: CGFloat = 0
-    static func reduce(value: inout CGFloat, nextValue: () -> CGFloat) { value = nextValue() }
-}
-private struct ReaderContentHeightKey: PreferenceKey {
-    static let defaultValue: CGFloat = 0
-    static func reduce(value: inout CGFloat, nextValue: () -> CGFloat) { value = nextValue() }
-}
-
 extension ReaderScreen {
     /// Ambient chrome. Hide only when the reader is clearly reading downwards (> 24 pt run,
     /// past 80 pt, on a page taller than the viewport + 120 so short Angs never flicker);

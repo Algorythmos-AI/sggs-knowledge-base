@@ -35,6 +35,8 @@ struct ExploreScreen: View {
                   caption: "A theme's verses clustered by co-theme", icon: "circle.hexagongrid"),
             .init(route: .vaars, title: "Vaars",
                   caption: "\(vaars) — pauri & salok anatomy", icon: "list.number"),
+            .init(route: .clock, title: "Raag Clock",
+                  caption: "Which raags are sung in this watch", icon: "clock"),
         ]
     }
 
@@ -49,7 +51,7 @@ struct ExploreScreen: View {
                             .font(Brand.gurmukhi(30, relativeTo: .title))
                             .accessibilityHidden(true)
                         Text("Explore the Granth").font(Brand.heading(.title3))
-                        Text("Index, themes, voices, patterns — six ways into 1,430 Angs.")
+                        Text("Index, themes, voices, patterns, time — seven ways into 1,430 Angs.")
                             .font(.caption).opacity(0.9)
                     }
                     .foregroundStyle(palette.onAccent)
@@ -91,17 +93,26 @@ struct ExploreScreen: View {
             .contentMargins(.bottom, Theme.Space.xl, for: .scrollContent)
             .navigationTitle("Explore")
             .task { await container.loadMeta() }   // captions + Index/Themes need meta
-            .navigationDestination(for: Route.self) { route in
-                switch route {
-                case .index: IndexScreen()
-                case .themes: ThemesScreen()
-                case .lineage: LineageScreen()
-                case .insights: InsightsScreen()
-                case .constellation: ConstellationScreen()
-                case .vaars: VaarsScreen()
-                case .theme(let name): ThemeResultsScreen(concept: name)
-                }
-            }
+            .navigationDestination(for: Route.self) { route in RouteDestination(route: route) }
+        }
+    }
+}
+
+/// Every pushed surface, in one place, so the Explore and Nitnem stacks resolve a `Route`
+/// identically (a deep link may land a bani on either).
+struct RouteDestination: View {
+    let route: Route
+    var body: some View {
+        switch route {
+        case .index: IndexScreen()
+        case .themes: ThemesScreen()
+        case .lineage: LineageScreen()
+        case .insights: InsightsScreen()
+        case .constellation: ConstellationScreen()
+        case .vaars: VaarsScreen()
+        case .clock: ClockScreen()
+        case .theme(let name): ThemeResultsScreen(concept: name)
+        case .bani(let key): BaniReaderScreen(key: key)
         }
     }
 }

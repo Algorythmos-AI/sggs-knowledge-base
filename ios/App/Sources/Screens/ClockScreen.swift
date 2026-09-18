@@ -25,7 +25,9 @@ struct ClockScreen: View {
     var now: () -> Date = { Date() }
 
     var body: some View {
-        NavigationStack {
+        // Pushed from the Explore stack (or opened via sggs://clock) — no NavigationStack of
+        // its own: a nested stack inside a pushed destination misbehaves.
+        Group {
             Group {
                 if container.corpus?.capabilities.hasTiming != true {
                     ContentUnavailableView("Raag timing not in this build",

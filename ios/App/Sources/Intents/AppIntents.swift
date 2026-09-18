@@ -31,6 +31,32 @@ struct WhatRaagNowIntent: AppIntent {
     }
 }
 
+struct OpenBaniIntent: AppIntent {
+    static let title: LocalizedStringResource = "Read a bani"
+    static let description = IntentDescription("Open a Nitnem bani (Japji Sahib, Rehras Sahib, Sukhmani Sahib, …) in the reader.")
+    static let openAppWhenRun = true
+
+    @Parameter(title: "Bani", default: .japji) var bani: BaniChoice
+
+    @MainActor
+    func perform() async throws -> some IntentResult {
+        await UIApplication.shared.open(URL(string: "sggs://bani/\(bani.rawValue)")!)
+        return .result()
+    }
+}
+
+/// The banis a voice request can name (keys match the registry; the app resolves variants).
+enum BaniChoice: String, AppEnum {
+    case japji, jaap, savaiye, chaupai, anand, rehras, sohila, sukhmani, asa_di_vaar, ardaas
+    static let typeDisplayRepresentation = TypeDisplayRepresentation(name: "Bani")
+    static let caseDisplayRepresentations: [BaniChoice: DisplayRepresentation] = [
+        .japji: "Japji Sahib", .jaap: "Jaap Sahib", .savaiye: "Tav-Prasad Savaiye",
+        .chaupai: "Chaupai Sahib", .anand: "Anand Sahib", .rehras: "Rehras Sahib",
+        .sohila: "Kirtan Sohila", .sukhmani: "Sukhmani Sahib", .asa_di_vaar: "Asa Di Vaar",
+        .ardaas: "Ardaas",
+    ]
+}
+
 struct SearchGurbaniIntent: AppIntent {
     static let title: LocalizedStringResource = "Search Gurbani"
     static let description = IntentDescription("Search the Granth by word, sound, first letters or theme.")
@@ -71,6 +97,10 @@ struct SGGSShortcuts: AppShortcutsProvider {
                     phrases: ["What raag is it now in \(.applicationName)",
                               "Show the raag clock in \(.applicationName)"],
                     shortTitle: "Raag now", systemImageName: "clock")
+        AppShortcut(intent: OpenBaniIntent(),
+                    phrases: ["Read a bani in \(.applicationName)",
+                              "Open Nitnem in \(.applicationName)"],
+                    shortTitle: "Read a bani", systemImageName: "sun.horizon")
         AppShortcut(intent: SearchGurbaniIntent(),
                     phrases: ["Search Gurbani in \(.applicationName)"],
                     shortTitle: "Search Gurbani", systemImageName: "magnifyingglass")

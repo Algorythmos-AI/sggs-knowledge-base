@@ -28,6 +28,8 @@ final class AppContainer {
     /// (a cold launch from a widget/Spotlight/`sggs://` link during verification hit this).
     var sheetHosted = false
     var meta: CorpusMeta?
+    /// Nitnem reading positions + completed days (App Group JSON; never SwiftData).
+    let nitnem = NitnemProgressStore()
 
     /// The SwiftData store for saved verses. Built explicitly (never via the implicit
     /// `.modelContainer(for:)` result-builder, which fatalErrors on a corrupt store): a broken
