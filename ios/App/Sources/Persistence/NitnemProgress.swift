@@ -68,6 +68,22 @@ final class NitnemProgressStore {
         file.banis[id]?.completedDays.contains(NitnemClock.dayKey(date)) ?? false
     }
 
+    /// For each Nitnem day, which focus categories were fully completed. `focus` maps a
+    /// category to the bani ids that must ALL be complete that day. Used by the reading journey.
+    func practiceDays(focus: [BaniCategory: [String]]) -> [String: Set<BaniCategory>] {
+        var out: [String: Set<BaniCategory>] = [:]
+        for (cat, ids) in focus where !ids.isEmpty {
+            var common: Set<String>? = nil
+            for id in ids {
+                let days = Set(file.banis[id]?.completedDays ?? [])
+                common = common.map { $0.intersection(days) } ?? days
+                if common?.isEmpty == true { break }
+            }
+            for day in common ?? [] { out[day, default: []].insert(cat) }
+        }
+        return out
+    }
+
     /// Consecutive Nitnem days (ending today or yesterday) on which ALL of `ids` were completed.
     func streak(for ids: [String], on date: Date = NitnemClock.now(), calendar: Calendar = .current) -> Int {
         guard !ids.isEmpty else { return 0 }

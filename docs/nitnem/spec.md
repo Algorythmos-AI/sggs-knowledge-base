@@ -29,14 +29,15 @@ ORDER the home; nothing is hidden.
   `lastSeq`, `lastReadAt`, `completedDays`, and (v1.3.0, backward-compatible) `anchor` + `nLines`
   so a saved position survives a registry rebuild. A file written by a newer schema loads
   read-only and is never overwritten.
-- My-Nitnem sets and the reading journey go in a **separate** file (v1.4.0), not this one.
+- The reading journey is computed on the fly from `completedDays` (no new file). My-Nitnem
+  custom sets will go in a separate file in a later release.
 
 ## Frozen XCUITest identifiers & strings (do not change without updating the suite)
 Tab / nav: `Nitnem`, each bani's `titleEn` (e.g. "Japji Sahib", "Jaap Sahib"), band title
 "Amrit Vela". Rows/actions: `bani_<key>`, `Hukam`, `nitnemContinue`, `nitnemDone`, `nitnemNext`,
 `baniBackToNitnem`, `baniOptions` (a Menu holding "Start again", "Contents", "Reading settings"),
 `baniMarkComplete`, `baniPageBar`, `baniPosition` ("Part g of n" / "Line s of n"), `baniStanza`
-("Pauri N of M"), `bandComplete`, `rehrasVariantPicker`. Reading settings: `gurmukhiSizeSlider`,
+("Pauri N of M"), `bandComplete`, `nitnemJourney`, `rehrasVariantPicker`. Reading settings: `gurmukhiSizeSlider`,
 `readerLeadingPicker`, `readerTonePicker`, `translitToggle`, `englishToggle`. The Jaap reader must
 contain the text "Sri Dasam Granth"; the Rehras row label must contain "Taksal" when that variant
 is chosen. Env hooks: `SGGS_CLOCK_NOW`, `SGGS_UITEST`. Wiped prefs: `sggs_rehras_variant`,
@@ -47,5 +48,5 @@ is chosen. Env hooks: `SGGS_CLOCK_NOW`, `SGGS_UITEST`. Wiped prefs: `sggs_rehras
 
 ## Out of scope until v1.4.0
 Hands-free auto-scroll, gentle reminders, Home-Screen quick actions, Spotlight bani entries,
-"Continue my Nitnem" intent, Nitnem widgets, the reading journey, My-Nitnem sets, Live Activity,
-online daily Hukamnama.
+"Continue my Nitnem" intent, Nitnem widgets, My-Nitnem custom sets, Live Activity,
+online daily Hukamnama. (The reading journey shipped in v1.3.0.)

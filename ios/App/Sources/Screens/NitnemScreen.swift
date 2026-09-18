@@ -65,6 +65,7 @@ struct NitnemScreen: View {
                     VStack(spacing: Theme.Space.l) {
                         hero(band: band, date: date, focus: focus, next: next)
                         hukamCard
+                        journeyCard
                     }
                     .frame(width: 400)
                     VStack(spacing: Theme.Space.l) { sections(band: band, rows: rows, date: date) }
@@ -76,6 +77,7 @@ struct NitnemScreen: View {
                 VStack(spacing: Theme.Space.l) {
                     hero(band: band, date: date, focus: focus, next: next)
                     hukamCard
+                    journeyCard
                     sections(band: band, rows: rows, date: date)
                 }
                 .padding(Theme.Space.l)
@@ -190,6 +192,24 @@ struct NitnemScreen: View {
         }
         .buttonStyle(.pressableCard)
         .accessibilityIdentifier("Hukam")
+    }
+
+    private var journeyCard: some View {
+        NavigationLink(value: Route.nitnemJourney) {
+            Card {
+                HStack(spacing: Theme.Space.m) {
+                    Image(systemName: "calendar").font(.title2).foregroundStyle(palette.accent)
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("Reading journey").font(.headline).foregroundStyle(.primary)
+                        Text("The days you have read, month by month").font(.caption).foregroundStyle(.secondary)
+                    }
+                    Spacer()
+                    Image(systemName: "chevron.right").font(.caption).foregroundStyle(.tertiary)
+                }
+            }
+        }
+        .buttonStyle(.pressableCard)
+        .accessibilityIdentifier("nitnemJourney")
     }
 
     // MARK: sections

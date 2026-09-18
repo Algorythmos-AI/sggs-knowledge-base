@@ -16,6 +16,7 @@ enum Route: Hashable {
     case constellation
     case vaars
     case clock
+    case nitnemJourney
     case theme(String)
     /// A bani from the Nitnem registry, by its stable key (variant is a user setting).
     case bani(String)
