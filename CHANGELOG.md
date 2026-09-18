@@ -20,6 +20,9 @@ iOS display layer only — scripture, corpus, DB and API untouched (`git diff --
   Night. New `Ink.paperWarm` token (contrast-proven) and a `gurmukhiLeading` environment.
 - **Quiet completion**: a gold seal closes the ring on "mark as read", and a calm band-complete
   card ("The morning banis are complete.") when the whole set for the time of day is done.
+- **Reading journey**: a quiet month record (from the data already stored) of the days the
+  morning banis / Rehras / Sohila were completed, with a consecutive-days count. No badges,
+  targets, or sharing. Reached from a home card and honours the locale's first weekday and DST.
 
 ### Changed / hardened
 - **One clock, a 03:00 Nitnem day** (`NitnemClock`): Sohila read at 22:00 stays complete past

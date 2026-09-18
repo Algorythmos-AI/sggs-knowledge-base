@@ -111,6 +111,7 @@ struct RouteDestination: View {
         case .constellation: ConstellationScreen()
         case .vaars: VaarsScreen()
         case .clock: ClockScreen()
+        case .nitnemJourney: NitnemJourneyScreen()
         case .theme(let name): ThemeResultsScreen(concept: name)
         case .bani(let key): BaniReaderScreen(key: key)
         }

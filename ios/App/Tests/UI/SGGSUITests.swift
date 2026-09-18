@@ -149,6 +149,19 @@ final class SGGSUITests: XCTestCase {
         XCTAssertTrue(again.buttons["bani_rehras"].firstMatch.label.contains("Taksal"), "variant must persist across relaunch")
     }
 
+    /// The reading journey opens from the home and shows the month.
+    func testJourneyOpens() {
+        let app = launchApp(selectSearch: false)
+        let card = app.buttons["nitnemJourney"].firstMatch
+        for _ in 0..<4 where !(card.exists && card.isHittable) { app.swipeUp() }
+        XCTAssertTrue(card.waitForExistence(timeout: 12), "journey card missing")
+        card.tap()
+        XCTAssertTrue(app.navigationBars["Reading journey"].waitForExistence(timeout: 10), "journey did not open")
+        XCTAssertTrue(app.staticTexts["Begin today"].waitForExistence(timeout: 6)
+                      || app.staticTexts.matching(NSPredicate(format: "label ENDSWITH %@", "together")).firstMatch.exists,
+                      "journey header missing")
+    }
+
     /// Contents jumps to a pauri, and the position bar's stanza caption follows.
     func testBaniContentsJumpsToPauri() {
         let app = launchApp(selectSearch: false)
