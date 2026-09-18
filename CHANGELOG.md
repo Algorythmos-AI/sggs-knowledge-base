@@ -5,6 +5,16 @@ entries prior to v1.1.0 are the project's original prose style and are preserved
 
 ## [Unreleased] — Nitnem, next level (premium pass)
 
+### Added — widgets
+- **Nitnem widgets** (Home Screen small/medium, Lock Screen circular/rectangular/inline): the
+  bani to read now for the time of day, today's set progress as a gold ring, and the next
+  unread bani in ink Sant Lipi — the same paper-and-gold vocabulary as the Hukam widget. Tapping
+  opens the bani (`sggs://bani/<key>`). The widget never opens the corpus DB: it reads the
+  App-Group snapshot (resolved sets, filled by the app) plus the live progress file, and reloads
+  the moment a bani is marked read. Timeline entries at the band boundaries incl. the 03:00
+  Nitnem-day rollover. `NitnemBand` moved to `Shared` (widget-safe).
+
+
 iOS display layer only — scripture, corpus, DB and API untouched (`git diff -- corpus db` empty).
 
 ### Added

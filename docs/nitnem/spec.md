@@ -44,9 +44,9 @@ is chosen. Env hooks: `SGGS_CLOCK_NOW`, `SGGS_UITEST`. Wiped prefs: `sggs_rehras
 `sggs_reader_tone`, `sggs_reader_leading`, `sggs_gurmukhi_size`, `sggs_focus_mode`, `sggs_translit`.
 
 ## Deep links & intents
-`sggs://nitnem`, `sggs://bani/<key>`, "Read a bani" App Intent. Raag Clock is an Explore card.
+`sggs://nitnem`, `sggs://bani/<key>`, "Read a bani" App Intent. Raag Clock is an Explore card. The Nitnem widget (kind `NitnemNow`) reads the App-Group snapshot + progress file, never the DB.
 
 ## Out of scope until v1.4.0
 Hands-free auto-scroll, gentle reminders, Home-Screen quick actions, Spotlight bani entries,
-"Continue my Nitnem" intent, Nitnem widgets, My-Nitnem custom sets, Live Activity,
-online daily Hukamnama. (The reading journey shipped in v1.3.0.)
+"Continue my Nitnem" intent, My-Nitnem custom sets, Live Activity, online daily Hukamnama.
+(The reading journey and the Nitnem widgets shipped in v1.3.0.)

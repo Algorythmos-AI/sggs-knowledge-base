@@ -235,18 +235,6 @@ struct NitnemScreen: View {
     }
 }
 
-extension NitnemBand {
-    /// Where the hero's gold glow sits for this band (colour never changes, only the corner).
-    var glowCenter: UnitPoint {
-        switch self {
-        case .amritVela: return .bottomLeading
-        case .day: return .top
-        case .evening: return .topTrailing
-        case .night: return .topLeading
-        }
-    }
-}
-
 extension BaniCategory {
     var sectionTitle: String {
         switch self {
