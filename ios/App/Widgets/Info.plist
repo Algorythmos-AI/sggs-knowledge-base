@@ -28,6 +28,7 @@
 	<key>UIAppFonts</key>
 	<array>
 		<string>SantLipi.ttf</string>
+		<string>SourceSerif4.ttf</string>
 	</array>
 </dict>
 </plist>

@@ -13,6 +13,9 @@ struct WidgetSnapshot: Codable, Sendable {
     /// Fixed-clock primary raag claims: pahar (1–8) → roman raag names, from /api/timing/clock.
     /// Precomputed so the widget needs zero SQLite/location/solar logic.
     var paharRaags: [Int: [String]]
+    /// The same claims' Gurmukhi raag names (verbatim from the timing table), parallel to
+    /// `paharRaags`. Optional so a snapshot written by an older app still decodes.
+    var paharRaagsGurmukhi: [Int: [String]]? = nil
 }
 
 enum WidgetStore {

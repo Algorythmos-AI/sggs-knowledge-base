@@ -3,6 +3,18 @@
 The format below (newest first) follows [Keep a Changelog](https://keepachangelog.com);
 entries prior to v1.1.0 are the project's original prose style and are preserved verbatim.
 
+## [1.1.5] — 2026-09-18 — Premium widgets
+
+iOS display layer only — scripture, corpus, DB and API untouched (`git diff -- corpus db` empty).
+
+### Changed
+- **Widgets redesigned to the brand system** (Hukam verse, Raag now): warm paper ground with a
+  faint gold light, a small-caps gold eyebrow, the ੴ signature, scripture in ink Sant Lipi with
+  room to breathe, the citation set in Source Serif 4 as the full *Sri Guru Granth Sahib Ji ·
+  Ang N*, and raag chips that show the verbatim Gurmukhi raag name over its roman form. The
+  snapshot gains `paharRaagsGurmukhi` (optional; older snapshots still decode). Source Serif 4
+  is now bundled in the widget extension. Scripture in the widgets stays verbatim and ink.
+
 ## [1.1.4] — 2026-09-18 — Header-detector fix (DB rebuilt) + Gurbani Soul brand system
 
 Gurbani Soul brand system for the iOS app (display layer only — scripture, corpus, DB and API

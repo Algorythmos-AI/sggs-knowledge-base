@@ -19,6 +19,15 @@
       "db_sha256": null,
       "uploaded_at": null,
       "note": "backfilled from App Store Connect (uploaded before the ledger existed)"
+    },
+    {
+      "version": "1.1.4",
+      "build": 1,
+      "source_commit": "c5935187c6bc46053b158ee37e56134331215671",
+      "profile": "public",
+      "db_sha256": "538b6978110095640e7e2576be157d027c5ac3d4e5da19c11f19095b7b446dca",
+      "uploaded_at": "2026-09-18T03:55:41Z",
+      "note": null
     }
   ]
 }
