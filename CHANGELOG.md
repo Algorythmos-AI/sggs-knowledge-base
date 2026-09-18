@@ -3,7 +3,9 @@
 The format below (newest first) follows [Keep a Changelog](https://keepachangelog.com);
 entries prior to v1.1.0 are the project's original prose style and are preserved verbatim.
 
-## [Unreleased]
+## [1.1.5] — 2026-09-18 — Premium widgets
+
+iOS display layer only — scripture, corpus, DB and API untouched (`git diff -- corpus db` empty).
 
 ### Changed
 - **Widgets redesigned to the brand system** (Hukam verse, Raag now): warm paper ground with a
