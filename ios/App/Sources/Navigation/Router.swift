@@ -47,6 +47,18 @@ final class Router {
         selectedTab = .reader
     }
 
+    /// The Reader's pager settled on a new Ang after a finger swipe. Updates `readerAng` WITHOUT
+    /// touching the tab or a pending verse (an in-Reader page turn is not an explicit deep-link
+    /// navigation, and must not consume a landing meant for another Ang). Together with `openAng`,
+    /// these are the ONLY writers of `readerAng` — the single-writer rule that keeps the pager and
+    /// the router from feeding each other in a loop.
+    func pagerSettled(on n: Int) {
+        let c = max(1, min(1430, n))
+        guard c != readerAng else { return }
+        navigatedToAngExplicitly = true
+        readerAng = c
+    }
+
     /// A raag the Clock should focus when opened via deep link / Reader timing chip.
     var pendingClockRaag: String?
 
