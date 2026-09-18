@@ -328,6 +328,7 @@ struct BaniReaderScreen: View {
         .offset(y: chromeHidden ? 40 : 0)
         .allowsHitTesting(!chromeHidden)
         .appAnimation(Motion.gentle, value: chromeHidden)
+        .accessibilityElement(children: .contain)
         .accessibilityIdentifier("baniPageBar")
     }
 

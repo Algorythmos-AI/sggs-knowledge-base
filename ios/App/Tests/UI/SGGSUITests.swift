@@ -20,6 +20,16 @@ final class SGGSUITests: XCTestCase {
         return app
     }
 
+    /// Poll a static text's label (a value the UI sets a beat after an action, e.g. a scroll landing).
+    private func waitLabel(_ element: XCUIElement, hasPrefix prefix: String, timeout: TimeInterval = 8) -> Bool {
+        let deadline = Date().addingTimeInterval(timeout)
+        while Date() < deadline {
+            if element.exists, element.label.hasPrefix(prefix) { return true }
+            RunLoop.current.run(until: Date().addingTimeInterval(0.25))
+        }
+        return element.exists && element.label.hasPrefix(prefix)
+    }
+
     /// The Raag Clock lives under Explore: open the hub, then its card.
     private func openClock(_ app: XCUIApplication) {
         openTab(app, "Explore", expectingNavBar: "Explore")
@@ -101,7 +111,7 @@ final class SGGSUITests: XCTestCase {
         XCTAssertTrue(app.navigationBars["Japji Sahib"].waitForExistence(timeout: 12), "bani reader did not open")
         let mool = app.staticTexts.matching(NSPredicate(format: "label BEGINSWITH %@", "ੴ ਸਤਿ ਨਾਮੁ ਕਰਤਾ ਪੁਰਖੁ")).firstMatch
         XCTAssertTrue(mool.waitForExistence(timeout: 12), "Mool Mantar (verbatim) missing at the top of Japji")
-        XCTAssertTrue(app.otherElements["baniPageBar"].exists || app.staticTexts["baniPosition"].exists, "position bar missing")
+        XCTAssertTrue(app.staticTexts["baniPosition"].firstMatch.waitForExistence(timeout: 8), "position bar missing")
         // jump to the end and mark it read
         app.buttons["End"].firstMatch.tap()
         let mark = app.buttons["baniMarkComplete"].firstMatch
@@ -113,7 +123,8 @@ final class SGGSUITests: XCTestCase {
         next.tap()
         XCTAssertTrue(app.navigationBars["Jaap Sahib"].waitForExistence(timeout: 12), "Next did not open Jaap Sahib")
         // the extra layer is labelled, never cited as an Ang
-        XCTAssertTrue(app.staticTexts.matching(NSPredicate(format: "label CONTAINS[c] %@", "Sri Dasam Granth")).firstMatch
+        // the header is one combined element and each LineRow is one element: query any kind
+        XCTAssertTrue(app.descendants(matching: .any).matching(NSPredicate(format: "label CONTAINS[c] %@", "Sri Dasam Granth")).firstMatch
             .waitForExistence(timeout: 8), "Dasam source label missing")
     }
 
@@ -148,17 +159,16 @@ final class SGGSUITests: XCTestCase {
         app.buttons["Next part"].firstMatch.tap()
         let pos = app.staticTexts["baniPosition"].firstMatch
         XCTAssertTrue(pos.waitForExistence(timeout: 8))
-        XCTAssertTrue(pos.label.hasPrefix("Part 2"), "expected Part 2, got \(pos.label)")
+        XCTAssertTrue(waitLabel(pos, hasPrefix: "Part 2"), "expected Part 2, got \(pos.label)")
         app.navigationBars.buttons.element(boundBy: 0).tap()          // back (flushes the save)
         XCTAssertTrue(app.buttons["bani_sukhmani"].firstMatch.waitForExistence(timeout: 12))
         app.buttons["bani_sukhmani"].firstMatch.tap()
         XCTAssertTrue(app.navigationBars["Sukhmani Sahib"].waitForExistence(timeout: 12))
         XCTAssertTrue(app.staticTexts["baniPosition"].firstMatch.waitForExistence(timeout: 8))
-        XCTAssertTrue(app.staticTexts["baniPosition"].firstMatch.label.hasPrefix("Part 2"), "position did not resume")
+        XCTAssertTrue(waitLabel(app.staticTexts["baniPosition"].firstMatch, hasPrefix: "Part 2"), "position did not resume")
         app.buttons["baniOptions"].tap()
         app.buttons["Start again"].firstMatch.tap()
-        XCTAssertTrue(app.staticTexts["baniPosition"].firstMatch.waitForExistence(timeout: 8))
-        XCTAssertTrue(app.staticTexts["baniPosition"].firstMatch.label.hasPrefix("Part 1"), "Start again should return to the top")
+        XCTAssertTrue(waitLabel(app.staticTexts["baniPosition"].firstMatch, hasPrefix: "Part 1"), "Start again should return to the top")
     }
 
     func testSearchOpensShabad() {
