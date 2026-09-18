@@ -5,6 +5,16 @@ entries prior to v1.1.0 are the project's original prose style and are preserved
 
 ## [Unreleased] — Nitnem, next level (premium pass)
 
+### Added — gentle reminders
+- **Opt-in Nitnem reminders**: a quiet, local nudge for the morning banis, Rehras or Sohila at a
+  time you choose (More → Nitnem → Reminders). Entirely on-device — no account, no network, no
+  extra entitlement. Each enabled band schedules 14 dated, non-repeating notifications so a band
+  you have already read stays silent; today's is dropped the moment you complete it. Copy carries
+  no Gurmukhi, no counts and no emoji, delivery is passive (never interrupts your reading), and a
+  tap opens Nitnem. Permission is asked only when you turn a reminder on; a denial snaps the toggle
+  back with a link to Settings.
+
+
 ### Added — hands-free reading
 - **Auto-scroll** in the bani reader: a play/pause control paces the page at Slow / Steady / Brisk
   (chosen in Reading settings), scaled by the Gurmukhi size so a larger font never reads faster.

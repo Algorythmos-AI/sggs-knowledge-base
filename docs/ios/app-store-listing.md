@@ -170,6 +170,10 @@ Store the source PNGs under `ios/AppStore/screenshots/<device>/` (add the direct
 > launch (More → About → Integrity shows the checks). The Gurmukhi typeface is Sant Lipi and the
 > heading typeface is Source Serif 4 (both SIL Open Font License 1.1). No third-party translation is bundled in this build.
 >
+> Optional Nitnem reminders are local notifications only (scheduled on-device, no push, no server);
+> they do not change the fully-offline promise. Notification permission is requested only when the
+> user turns a reminder on.
+>
 > Location: optional, used only by the Raag Clock's solar mode to compute local sunrise and
 > sunset on the device; the value is rounded to about 1 km, never stored beyond that and never
 > transmitted. The app works fully with location denied (manual entry is offered).
