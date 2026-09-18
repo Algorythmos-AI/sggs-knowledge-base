@@ -30,6 +30,13 @@ final class AppContainer {
     var meta: CorpusMeta?
     /// Nitnem reading positions + completed days (App Group JSON; never SwiftData).
     let nitnem = NitnemProgressStore()
+    /// Gentle local reminders (opt-in, no entitlement, no network). Under `SGGS_UITEST` a fake
+    /// scheduler stands in so tests never touch the real notification center.
+    let reminders: NitnemReminderController
+    #if canImport(UserNotifications)
+    /// Retained delegate that routes a tapped reminder to `sggs://nitnem`.
+    private var notificationRouter: NotificationRouter?
+    #endif
 
     /// The SwiftData store for saved verses. Built explicitly (never via the implicit
     /// `.modelContainer(for:)` result-builder, which fatalErrors on a corrupt store): a broken
@@ -58,12 +65,54 @@ final class AppContainer {
         self.savedStoreDestroyed = opened.destroyed
         // count consecutive persistent-open failures; a clean open resets the ladder
         defaults.set(opened.degraded && !opened.destroyed ? prior + 1 : 0, forKey: Self.savedStoreFailKey)
-        // Reload the Nitnem widget the moment a bani is marked read.
+        // Gentle reminders: a fake scheduler under UI test, the real notification center otherwise.
+        #if canImport(UserNotifications)
+        let uiTest = ProcessInfo.processInfo.environment["SGGS_UITEST"] == "1"
+        let scheduler: NotificationScheduling = uiTest ? FakeNotificationScheduler() : SystemNotificationScheduler()
+        #else
+        let scheduler: NotificationScheduling = FakeNotificationScheduler()
+        #endif
+        self.reminders = NitnemReminderController(scheduler: scheduler)
+
+        // Reload the Nitnem widget AND refresh reminders the moment a bani is marked read
+        // (today's reminder for a now-complete band is removed).
+        let remindersRef = self.reminders
+        let completed = { [weak self] in await self?.completedReminderBands() ?? [] }
         nitnem.onChange = {
             #if canImport(WidgetKit)
             WidgetCenter.shared.reloadTimelines(ofKind: "NitnemNow")
             #endif
+            Task { await remindersRef.reschedule(completedToday: await completed()) }
         }
+        #if canImport(UserNotifications)
+        let router = self.router
+        let container = self
+        let nr = NotificationRouter(onOpen: { url in router.handle(url, container: container) })
+        self.notificationRouter = nr
+        UNUserNotificationCenter.current().delegate = nr
+        #endif
+    }
+
+    /// Which reminder bands have their whole set completed for today's Nitnem day. Used to drop
+    /// today's nudge for a band the reader has already finished. Empty if the registry is absent.
+    func completedReminderBands() async -> Set<NitnemBand> {
+        guard let corpus, corpus.capabilities.hasBanis else { return [] }
+        let rows = await corpus.banis().banis
+        let rehras = UserDefaults.standard.string(forKey: NitnemPrefs.rehrasVariantKey) ?? NitnemPrefs.rehrasDefault
+        func done(_ cat: BaniCategory) -> Bool {
+            let set = rows.filter { $0.category == cat && ($0.key == "rehras" ? $0.variant == NitnemPrefs.variant(for: "rehras", rehras: rehras) : $0.isDefault) }
+            return !set.isEmpty && set.allSatisfy { nitnem.isCompleted($0.id) }
+        }
+        var out: Set<NitnemBand> = []
+        if done(.nitnemMorning) { out.insert(.amritVela) }
+        if done(.nitnemEvening) { out.insert(.evening) }
+        if done(.nitnemNight) { out.insert(.night) }
+        return out
+    }
+
+    /// Reschedule reminders from current preferences (called on foreground).
+    func refreshReminders() async {
+        await reminders.reschedule(completedToday: await completedReminderBands())
     }
 
     struct SavedStoreOpen {

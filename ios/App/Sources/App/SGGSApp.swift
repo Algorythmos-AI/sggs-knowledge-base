@@ -42,10 +42,14 @@ struct SGGSApp: App {
                 await container.runIntegrity()
                 await container.loadMeta()
                 await container.refreshWidgetSnapshot()
+                await container.refreshReminders()
             }
             .onOpenURL { url in container.router.handle(url, container: container) }
             .onChange(of: scenePhase) { _, phase in
-                if phase == .active { container.flushIfIdle() }   // never presents mid-dismiss
+                if phase == .active {
+                    container.flushIfIdle()   // never presents mid-dismiss
+                    Task { await container.refreshReminders() }   // re-plan dated reminders on return
+                }
             }
             .onContinueUserActivity(CSSearchableItemActionType) { activity in
                 // a saved verse tapped in system search → open its composition

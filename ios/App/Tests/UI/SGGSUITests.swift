@@ -128,6 +128,24 @@ final class SGGSUITests: XCTestCase {
             .waitForExistence(timeout: 8), "Dasam source label missing")
     }
 
+    /// Reminders: the screen opens from More and shows a toggle for each of the three daily sets
+    /// plus the calm, offline footer. (Toggling → scheduling is covered by NitnemRemindersTests
+    /// and validated on-device; a SwiftUI Toggle is not reliably tappable from XCUITest here.)
+    func testNitnemRemindersScreenOpens() {
+        let app = launchApp(selectSearch: false)
+        openTab(app, "More", expectingNavBar: "More")
+        let link = app.buttons["nitnemRemindersLink"].firstMatch
+        XCTAssertTrue(link.waitForExistence(timeout: 12), "Reminders link missing in More")
+        link.tap()
+        XCTAssertTrue(app.navigationBars["Reminders"].waitForExistence(timeout: 8), "Reminders screen did not open")
+        XCTAssertTrue(app.switches["reminder_amritVela"].firstMatch.waitForExistence(timeout: 6), "Amrit Vela toggle missing")
+        XCTAssertTrue(app.switches["reminder_evening"].firstMatch.exists, "Rehras toggle missing")
+        XCTAssertTrue(app.switches["reminder_night"].firstMatch.exists, "Sohila toggle missing")
+        XCTAssertTrue(app.descendants(matching: .any)
+            .matching(NSPredicate(format: "label CONTAINS[c] %@", "no account, no network")).firstMatch.exists,
+            "offline reassurance footer missing")
+    }
+
     /// Rehras variant is a setting: switching to Taksal persists and retitles the row.
     func testRehrasVariantPersists() {
         let app = launchApp(selectSearch: false)

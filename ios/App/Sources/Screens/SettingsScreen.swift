@@ -21,6 +21,10 @@ struct MoreScreen: View {
                         }
                         .id(accentChoice)
                         .accessibilityIdentifier("rehrasVariantPicker")
+                        NavigationLink { NitnemRemindersScreen() } label: {
+                            Label("Reminders", systemImage: "bell")
+                        }
+                        .accessibilityIdentifier("nitnemRemindersLink")
                     } header: {
                         Text("Nitnem")
                     } footer: {
