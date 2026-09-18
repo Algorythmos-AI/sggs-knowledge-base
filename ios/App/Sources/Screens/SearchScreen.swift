@@ -62,6 +62,7 @@ struct SearchScreen: View {
     var body: some View {
         NavigationStack {
             content
+                .background(Ink.base.ignoresSafeArea())
                 .navigationTitle("Search")
                 // `.always`: the field never collapses behind a scroll (the horizontal pill
                 // row is the first scroll view under the bar and could hide it)
@@ -103,6 +104,8 @@ struct SearchScreen: View {
                         }
                     }
                     .padding(.horizontal)
+                    .frame(maxWidth: VerseTypography.readingColumn + 2 * Theme.Space.l)
+                    .frame(maxWidth: .infinity)
                 }
                 .padding(.bottom, Theme.Space.xs)
                 .accessibilityIdentifier("searchModePicker")
@@ -122,7 +125,7 @@ struct SearchScreen: View {
 
     @ViewBuilder private func resultArea(_ model: SearchModel) -> some View {
         if let v = model.verify {
-            ScrollView { VerdictView(result: v, en: model.verifyEn) { ang in container.router.openAng(ang) }.padding() }
+            ScrollView { VerdictView(result: v, en: model.verifyEn) { ang in container.router.openAng(ang) }.padding().readingColumn() }
         } else {
             LoadStateView(state: model.state, emptyTitle: "No matches",
                           emptyMessage: "Try fewer words, first-letters mode, or a theme (naam, hukam, haumai).",
@@ -132,16 +135,21 @@ struct SearchScreen: View {
                     if let themes = out.relatedThemes, !themes.isEmpty {
                         Section { Text("Related themes: " + themes.joined(separator: " · "))
                             .font(.caption).foregroundStyle(Brand.gold) }
+                            .readingColumn()
+                            .listRowBackground(Ink.base)
                     }
                     ForEach(out.results, id: \.id) { line in
                         LineRow(gurmukhi: line.gurmukhi, translit: line.translit, meta: line.metaLine,
                                 en: line.en, lineId: line.id, ang: line.ang, compId: line.compId) {
                             container.present(.shabad(compId: line.compId, focusLineId: line.id))
                         }
+                        .readingColumn()                   // iPad: row content in the Reader's column
                         .listRowSeparator(.hidden)
+                        .listRowBackground(Ink.base)
                     }
                 }
                 .listStyle(.plain)
+                .inkPlainList()
             }
         }
     }

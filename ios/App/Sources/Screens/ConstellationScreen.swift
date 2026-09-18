@@ -42,6 +42,8 @@ struct ConstellationScreen: View {
             }
             Spacer(minLength: 0)
         }
+        .frame(maxWidth: .infinity)
+        .background(Ink.base.ignoresSafeArea())
         .navigationTitle("Constellation")
         .navigationBarTitleDisplayMode(.inline)
         .task { await container.loadMeta() }
@@ -84,7 +86,7 @@ private struct ConstellationMap: View {
                 .stroke(Brand.gold.opacity(0.25), lineWidth: 1)
 
                 // centre node
-                bubble(label: center.capitalized, sub: nil, diameter: 84, fill: Brand.saffron)
+                bubble(label: center.capitalized, sub: nil, diameter: 84, fill: Brand.primaryFill)
                     .position(c)
                     .accessibilityHidden(true)
 
@@ -113,7 +115,7 @@ private struct ConstellationMap: View {
             Text(label).font(.caption2.weight(.semibold)).lineLimit(1).minimumScaleFactor(0.6)
             if let sub { Text(sub).font(.caption2).opacity(0.85) }
         }
-        .foregroundStyle(AccentPalette.saffron.onAccent)
+        .foregroundStyle(AccentPalette.brandDefault.onAccent)
         .frame(width: diameter, height: diameter)
         .background(Circle().fill(fill.gradient))
     }
@@ -133,8 +135,10 @@ struct ClusterSheet: View {
                     container.present(.shabad(compId: v.compId, focusLineId: v.id))
                 }
                 .listRowSeparator(.hidden)
+                .listRowBackground(Ink.base)
             }
             .listStyle(.plain)
+            .inkPlainList()
             .navigationTitle("\(center.capitalized) + \(cluster.co.capitalized)")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar { ToolbarItem(placement: .topBarTrailing) { Button("Done") { dismiss() } } }

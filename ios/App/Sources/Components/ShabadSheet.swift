@@ -29,14 +29,13 @@ struct ShabadSheet: View {
                 ScrollViewReader { proxy in
                     List {
                         ForEach(lines, id: \.id) { line in
-                            if line.isHeader {
+                            if VerseTypography.rendersAsHeading(line.gurmukhi, flaggedHeader: line.isHeader) {
                                 // Verbatim heading row(s) — a raag/title line
                                 // ('ਟੋਡੀ ਮਹਲਾ ੫ ਘਰੁ ੨ ਚਉਪਦੇ') and/or the ੴ invocation
                                 // now open the composition (matches the printed saroop and
                                 // the Reader). Rendered as a centred heading, never a savable
                                 // verse row. Mirrors ReaderScreen.
-                                GurmukhiText(verbatim: line.gurmukhi, size: 20, weight: .semibold)
-                                    .frame(maxWidth: .infinity, alignment: .center)
+                                VerseHeading(verbatim: line.gurmukhi)
                                     .padding(.vertical, 4)
                                     .id(line.id)
                                     .listRowSeparator(.hidden)

@@ -1,4 +1,6 @@
 import SwiftUI
+import UIKit
+import CoreText
 
 /// Brand tokens (the web's saffron/gold identity, tuned per scheme) + the Sant Lipi
 /// scripture font. These are the FIXED brand colors (launch, About, integrity screens);
@@ -6,6 +8,9 @@ import SwiftUI
 /// The light saffron is #E06E09 (2% deeper than the web's #E8730C) so it clears 3:1 on
 /// the paper surfaces; the AccentColor asset is pinned to these values by ThemeContrastTests.
 enum Brand {
+    /// The fixed brand colour (tint/icon/stroke weight, ≥3:1) and its prominent-fill partner.
+    static let primary = AccentPalette.brandDefault.accent
+    static let primaryFill = AccentPalette.brandDefault.accentFill
     static let saffron = AccentPalette.saffron.accent
     static let gold = AccentPalette.gold.accent
 
@@ -13,13 +18,69 @@ enum Brand {
     static func gurmukhi(_ size: CGFloat, relativeTo style: Font.TextStyle = .body) -> Font {
         .custom("SantLipi-ExtraLight", size: size, relativeTo: style)
     }
+
+    // MARK: heading serif (Source Serif 4, SIL OFL — Resources/OFL-SourceSerif4.txt)
+    //
+    // HEADINGS ONLY (brand book §4): navigation titles and a few hero lines. Body, buttons,
+    // lists and tabs stay San Francisco; Gurmukhi stays Sant Lipi. The file is a variable
+    // font, so weight is set on the `wght` axis; sizes come from the text style's own
+    // preferred size and scale with Dynamic Type through UIFontMetrics.
+
+    static let headingFontName = "SourceSerif4Variable-Roman"
+
+    /// UIKit heading font for a text style. Falls back to the system serif design if the
+    /// bundled face is ever missing, so a heading can never disappear.
+    static func headingUIFont(_ style: UIFont.TextStyle, weight: CGFloat = 600) -> UIFont {
+        let base = UIFont.preferredFont(forTextStyle: style,
+                                        compatibleWith: UITraitCollection(preferredContentSizeCategory: .large))
+        let size = base.pointSize
+        guard let face = UIFont(name: headingFontName, size: size) else {
+            let d = base.fontDescriptor.withDesign(.serif) ?? base.fontDescriptor
+            return UIFontMetrics(forTextStyle: style).scaledFont(for: UIFont(descriptor: d, size: size))
+        }
+        let wghtAxis = 0x77676874   // 'wght'
+        let descriptor = face.fontDescriptor.addingAttributes([
+            UIFontDescriptor.AttributeName(rawValue: kCTFontVariationAttribute as String): [wghtAxis: weight],
+        ])
+        return UIFontMetrics(forTextStyle: style).scaledFont(for: UIFont(descriptor: descriptor, size: size))
+    }
+
+    /// SwiftUI heading font. Call from `body` so a Dynamic Type change re-resolves it.
+    static func heading(_ style: UIFont.TextStyle = .headline, weight: CGFloat = 600) -> Font {
+        Font(headingUIFont(style, weight: weight))
+    }
+
+    /// Navigation-bar titles in the heading serif. Sets only the title text attributes, so
+    /// the system bar background/material is left exactly as the OS draws it.
+    @MainActor static func applyNavigationTitleFonts() {
+        let bar = UINavigationBar.appearance()
+        bar.largeTitleTextAttributes = [.font: headingUIFont(.largeTitle, weight: 700)]
+        bar.titleTextAttributes = [.font: headingUIFont(.headline)]
+    }
+}
+
+extension View {
+    /// A grouped/inset List on the warm-ink canvas. Light mode is pixel-identical to the
+    /// native grouped look (the tokens alias the same system colours); dark swaps the
+    /// system's black/cool-grey for the designed ramp. Pair with `.inkRow()` on Sections.
+    func inkGroupedList() -> some View {
+        scrollContentBackground(.hidden).background(Ink.canvas.ignoresSafeArea())
+    }
+
+    /// A plain List / full-bleed screen on `Ink.base`.
+    func inkPlainList() -> some View {
+        scrollContentBackground(.hidden).background(Ink.base.ignoresSafeArea())
+    }
+
+    /// Row ground for a Section inside `inkGroupedList()`.
+    func inkRow() -> some View { listRowBackground(Ink.card) }
 }
 
 /// Semantic design tokens — the single vocabulary every screen draws from (mirrors the web's
 /// token discipline). Add here, use everywhere; never hard-code a spacing/radius/band constant
 /// in a screen.
 enum Theme {
-    static let accent = Brand.saffron
+    static let accent = Brand.primary
     static let gold = Brand.gold
 
     /// Spacing scale (pt). Matches the 4-pt web rhythm.

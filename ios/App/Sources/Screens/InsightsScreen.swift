@@ -53,6 +53,7 @@ struct InsightsScreen: View {
                 ProgressView().frame(maxWidth: .infinity, maxHeight: .infinity)
             }
         }
+        .background(Ink.base.ignoresSafeArea())
         .navigationTitle("Insights")
         .navigationBarTitleDisplayMode(.inline)
         .task {
@@ -75,7 +76,7 @@ private struct ContributorsView: View {
                 Chart(authors.prefix(12)) { a in
                     BarMark(x: .value("Lines", a.nLines),
                             y: .value("Author", InsightsScreen.shortAuthor(a.author)))
-                        .foregroundStyle(Brand.saffron.gradient)
+                        .foregroundStyle(Brand.primary.gradient)
                 }
                 .chartXAxisLabel("Lines")
                 .frame(height: 300)
@@ -83,6 +84,7 @@ private struct ContributorsView: View {
             } footer: {
                 Text("Lines contributed to the Granth, per author. Descriptive — never a ranking of merit.")
             }
+            .inkRow()
             Section("Stylometry") {
                 ForEach(authors) { a in
                     VStack(alignment: .leading, spacing: 2) {
@@ -92,7 +94,9 @@ private struct ContributorsView: View {
                     }
                 }
             }
+            .inkRow()
         }
+        .inkGroupedList()
     }
 }
 
@@ -111,6 +115,7 @@ private struct RaagsView: View {
             } footer: {
                 Text("How much of the Granth sits in each raag (musical measure).")
             }
+            .inkRow()
             Section("Detail") {
                 ForEach(raags) { r in
                     VStack(alignment: .leading, spacing: 2) {
@@ -120,6 +125,8 @@ private struct RaagsView: View {
                     }
                 }
             }
+            .inkRow()
         }
+        .inkGroupedList()
     }
 }

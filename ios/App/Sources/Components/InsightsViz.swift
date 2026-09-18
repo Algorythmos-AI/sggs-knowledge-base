@@ -164,7 +164,7 @@ private struct NetworkCanvas: View {
                 let degree = graph.links.reduce(0) { $0 + (($1.0 == i || $1.1 == i) ? 1 : 0) }
                 let r = CGFloat(3 + min(degree, 20) / 3)
                 ctx.fill(Path(ellipseIn: CGRect(x: pt.x - r, y: pt.y - r, width: 2 * r, height: 2 * r)),
-                         with: .color(Brand.saffron.opacity(0.85)))
+                         with: .color(Brand.primary.opacity(0.85)))
                 if degree >= 6 {
                     ctx.draw(Text(name).font(.system(size: 8)).foregroundStyle(.secondary),
                              at: CGPoint(x: pt.x, y: pt.y - r - 7))
@@ -236,7 +236,7 @@ private struct ChordCanvas: View {
                 var arc = Path()
                 arc.addArc(center: center, radius: radius, startAngle: .radians(cursor),
                            endAngle: .radians(cursor + span), clockwise: false)
-                ctx.stroke(arc, with: .color(Brand.saffron), lineWidth: 8)
+                ctx.stroke(arc, with: .color(Brand.primary), lineWidth: 8)
                 let labelPt = CGPoint(x: center.x + cos(cursor + span / 2) * (radius + 18),
                                       y: center.y + sin(cursor + span / 2) * (radius + 18))
                 ctx.draw(Text(InsightsScreen.shortAuthor(n.author)).font(.system(size: 8))

@@ -118,8 +118,9 @@ Expected: zero deviations. Sign: name, build, device, date in the build log.
 Run `ios/App/Tests/UI/A11Y_CHECKLIST.md` end to end with VoiceOver, then:
 1. AX5 text in Search, Reader, sheet, Clock list; nothing unreachable.
 2. Reduce Motion: page turn and landing are instant; force layouts settle without animation.
-3. Bold Text and Increase Contrast: accent contrast OK on all four accents (light and dark).
-4. Keyboard focus and Full Keyboard Access on iPad.
+3. Bold Text and Increase Contrast: accent contrast OK on all five accents — Soul Gold (the default), Saffron, Gold, Indigo, Teal — in light and dark. In light mode every Soul Gold fill (primary button, selected pill, Explore hero, accent swatch) shows its darker border, and no text, icon or link is set in the pale brand gold.
+4. Brand: a fresh install opens in Soul Gold; navigation titles and the Explore/About headings render in Source Serif 4 (a serif), everything else in the system face; Gurmukhi is always ink-coloured Sant Lipi. Dark mode shows warm ink on every screen — no pure black. The Home Screen icon is a gold ੴ on warm ink with no red anywhere.
+5. Keyboard focus and Full Keyboard Access on iPad.
 
 ### P — Performance and resilience
 1. Cold launch time on slot 3 (record it); second launch faster.
