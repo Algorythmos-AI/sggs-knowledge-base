@@ -71,6 +71,8 @@ targets:
       # falls back to SF). PrivacyInfo ships in every distributable target.
       - path: Resources/SantLipi.ttf
         buildPhase: resources
+      - path: Resources/SourceSerif4.ttf
+        buildPhase: resources
       - path: Resources/PrivacyInfo.xcprivacy
         buildPhase: resources
     dependencies:
@@ -88,7 +90,7 @@ targets:
         # whose CFBundleShortVersionString differs from the containing app.
         CFBundleShortVersionString: $(MARKETING_VERSION)
         CFBundleVersion: $(CURRENT_PROJECT_VERSION)
-        UIAppFonts: [SantLipi.ttf]
+        UIAppFonts: [SantLipi.ttf, SourceSerif4.ttf]
         NSExtension:
           NSExtensionPointIdentifier: com.apple.widgetkit-extension
     settings:

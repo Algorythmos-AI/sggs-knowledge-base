@@ -188,10 +188,13 @@ final class AppContainer {
         guard let hukam = try? await corpus.randomHukam(),
               let firstVerse = hukam.lines.first(where: { !$0.isHeader }) else { return }
         var paharRaags: [Int: [String]] = [:]
+        var paharRaagsGurmukhi: [Int: [String]] = [:]
         let clock = await corpus.timingClock()
         if clock.available {
             for p in 1...8 {
-                paharRaags[p] = clock.raags(forPahar: p).compactMap { $0.roman ?? $0.raagName }
+                let claims = clock.raags(forPahar: p)
+                paharRaags[p] = claims.compactMap { $0.roman ?? $0.raagName }
+                paharRaagsGurmukhi[p] = claims.compactMap { $0.raagName ?? $0.roman }
             }
         }
         WidgetStore.save(WidgetSnapshot(
@@ -200,7 +203,8 @@ final class AppContainer {
             hukamTranslit: firstVerse.translit,
             hukamAng: firstVerse.ang,
             hukamCompId: hukam.compId,
-            paharRaags: paharRaags))
+            paharRaags: paharRaags,
+            paharRaagsGurmukhi: paharRaagsGurmukhi))
         #if canImport(WidgetKit)
         WidgetCenter.shared.reloadAllTimelines()
         #endif
