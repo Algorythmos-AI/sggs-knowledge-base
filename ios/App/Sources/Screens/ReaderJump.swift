@@ -1,13 +1,14 @@
 import SwiftUI
+import UIKit
 import GurbaniSearchKit
 
 /// Jump to Ang — a premium, elder-friendly navigator for the whole Granth.
 ///
-/// One source of truth (`target`); the big number, the location line, the scrubber, the steppers,
-/// the raag menu and the Go label always agree. An exact Ang is reachable three ways: type it,
-/// scrub + nudge with the ±1 / ±10 steppers, or pick a raag. The primary action is pinned to the
-/// bottom, full-width, opaque, and restates the destination ("Go to Ang 89"). Display/navigation
-/// only — no scripture is shown or changed here.
+/// The big number is a real, editable field seeded with the current Ang: tap it and the whole
+/// number selects, so a new Ang replaces it in one keystroke — or place the cursor and edit a
+/// single digit / backspace. The location line, scrubber, steppers, raag menu and the Go label
+/// always agree. The primary action is pinned to the bottom, full-width, opaque, and restates the
+/// destination ("Go to Ang 89"). Display/navigation only — no scripture is shown or changed here.
 struct JumpToAngSheet: View {
     let current: Int
     /// Opened from the Reader's "Ang N" title: the reader wants to TYPE a number, so the keypad is
@@ -19,11 +20,13 @@ struct JumpToAngSheet: View {
     @Environment(AppContainer.self) private var container
     @Environment(\.dynamicTypeSize) private var typeSize
 
-    /// The single destination the whole sheet edits.
+    /// The committed destination (scrubber / steppers / raag). While the field is focused the reader
+    /// may be part-way through typing a different number — `effectiveTarget` prefers what's typed, so
+    /// Go and the location line follow the keypad without the scrubber lurching on every digit.
     @State private var target: Int
-    /// The number field's raw buffer. Empty ⇒ the hero shows `target`; typing overrides and,
-    /// when valid, writes back into `target` (so scrubber and steppers follow what was typed).
-    @State private var text = ""
+    /// The number field's text — seeded with the Ang so it is genuinely editable (retype after a
+    /// select-all, or edit a digit / backspace). Mirrors `target` whenever the field is not focused.
+    @State private var text: String
     @FocusState private var fieldFocused: Bool
     @State private var detent: PresentationDetent = .fraction(0.65)
 
@@ -34,8 +37,10 @@ struct JumpToAngSheet: View {
         self.focusField = focusField
         self.onGo = onGo
         _target = State(initialValue: current)
+        _text = State(initialValue: String(current))
     }
 
+    /// The typed number when it is a valid Ang, else nil (empty, non-numeric, or out of range).
     private var typedAng: Int? {
         let t = text.trimmingCharacters(in: .whitespaces)
         guard !t.isEmpty, let n = Int(t), bounds.contains(n) else { return nil }
@@ -44,7 +49,10 @@ struct JumpToAngSheet: View {
     private var invalidTyped: Bool {
         !text.trimmingCharacters(in: .whitespaces).isEmpty && typedAng == nil
     }
-    private var location: AngLocator.Location? { AngLocator.location(for: target, meta: container.meta) }
+    /// A valid typed value wins; otherwise the committed target.
+    private var effectiveTarget: Int { typedAng ?? target }
+    private var canGo: Bool { !invalidTyped && effectiveTarget != current }
+    private var location: AngLocator.Location? { AngLocator.location(for: effectiveTarget, meta: container.meta) }
 
     var body: some View {
         NavigationStack {
@@ -77,12 +85,22 @@ struct JumpToAngSheet: View {
             }
             .safeAreaInset(edge: .bottom) { goBar }
             .task { await container.loadMeta() }          // idempotent; fills raag ticks + location
-            .onChange(of: text) { _, _ in if let n = typedAng { target = n } }
-            // scrubber moved the destination out from under a stale typed buffer → clear it so the
-            // hero and Go label follow the scrubber (typing keeps text, because it syncs target).
-            .onChange(of: target) { _, v in if typedAng != v { text = "" } }
+            // Steppers / scrubber / raag move `target` → keep the field showing it, but never while
+            // the reader is mid-type (that would overwrite their digits).
+            .onChange(of: target) { _, v in if !fieldFocused { text = String(v) } }
+            .onChange(of: fieldFocused) { _, focused in
+                if focused {
+                    // select the whole number so the first digit replaces it; backspace still edits
+                    DispatchQueue.main.async {
+                        UIApplication.shared.sendAction(#selector(UIResponder.selectAll(_:)), to: nil, from: nil, for: nil)
+                    }
+                } else {
+                    if let n = typedAng { target = n }     // commit a valid entry (aligns the scrubber)
+                    text = String(target)                  // normalise (revert an empty / invalid entry)
+                }
+            }
             .onChange(of: typeSize) { _, size in if size.isAccessibilitySize { detent = .large } }
-            .onAppear { if typeSize.isAccessibilitySize || focusField { detent = .large } }
+            .onAppear { if typeSize.isAccessibilitySize { detent = .large } }
             .task {
                 guard focusField else { return }
                 // focus after the sheet has presented — a focus request during the transition is dropped
@@ -94,54 +112,44 @@ struct JumpToAngSheet: View {
         .presentationDragIndicator(.visible)
     }
 
-    // MARK: hero — the big number IS the text field (tap to edit)
+    // MARK: hero — the big number is a real, editable field
 
     private var hero: some View {
         VStack(spacing: Theme.Space.s) {
             Text("Ang").font(.subheadline.weight(.semibold))
                 .foregroundStyle(.secondary).textCase(.uppercase).tracking(1)
 
-            // The big number IS the field. A pencil (trailing) and an underline make it read as
-            // editable, not a static label — so a first-time or elderly reader knows to tap and type.
-            ZStack {
-                // the live destination, shown when nothing is being typed
-                Text(String(target))
-                    .foregroundStyle(text.isEmpty ? Color.primary : Color.clear)
-                    .contentTransition(.numericText())
-                    .allowsHitTesting(false)
-                    .accessibilityHidden(true)
-                // the actual input; transparent text while empty so the label above shows through
-                TextField("", text: $text)
-                    .keyboardType(.numberPad)
-                    .multilineTextAlignment(.center)
-                    .foregroundStyle(text.isEmpty ? Color.clear : Color.primary)
-                    .focused($fieldFocused)
-                    .accessibilityIdentifier("angField")
-                    .accessibilityLabel("Ang number")
-                    .accessibilityValue(String(target))
-                    .accessibilityHint("Tap to type an Ang from 1 to 1430")
-            }
-            .font(Brand.heading(.largeTitle, weight: 700))
-            .monospacedDigit()
-            .frame(maxWidth: .infinity)
-            .contentShape(Rectangle())
-            .onTapGesture { fieldFocused = true }
-            .overlay(alignment: .trailing) {
-                Image(systemName: "pencil.circle.fill")
-                    .font(.title3)
-                    .foregroundStyle(fieldFocused ? Color.clear : Color.secondary)
-                    .padding(.trailing, Theme.Space.l)
-                    .allowsHitTesting(false)
-                    .accessibilityHidden(true)
-            }
-            // a quiet underline that says "this is a field", brightening when focused
-            .overlay(alignment: .bottom) {
-                RoundedRectangle(cornerRadius: 1)
-                    .fill(fieldFocused ? Color.accentColor : Ink.hairline)
-                    .frame(width: 140, height: 2)
-                    .offset(y: 8)
-                    .accessibilityHidden(true)
-            }
+            TextField("", text: $text)
+                .keyboardType(.numberPad)
+                .multilineTextAlignment(.center)
+                .font(Brand.heading(.largeTitle, weight: 700))
+                .monospacedDigit()
+                .foregroundStyle(invalidTyped ? Ink.negative : Color.primary)
+                .focused($fieldFocused)
+                .frame(maxWidth: .infinity)
+                .contentShape(Rectangle())
+                .accessibilityIdentifier("angField")
+                .accessibilityLabel("Ang number")
+                .accessibilityValue(String(effectiveTarget))
+                .accessibilityHint("Edit the number to any Ang from 1 to 1430")
+                // pencil affordance so the number reads as editable, not a static label
+                .overlay(alignment: .trailing) {
+                    if !fieldFocused {
+                        Image(systemName: "pencil.circle.fill")
+                            .font(.title3).foregroundStyle(.secondary)
+                            .padding(.trailing, Theme.Space.l)
+                            .allowsHitTesting(false)
+                            .accessibilityHidden(true)
+                    }
+                }
+                // a quiet underline that says "this is a field", brightening when focused
+                .overlay(alignment: .bottom) {
+                    RoundedRectangle(cornerRadius: 1)
+                        .fill(fieldFocused ? Color.accentColor : Ink.hairline)
+                        .frame(width: 140, height: 2)
+                        .offset(y: 8)
+                        .accessibilityHidden(true)
+                }
 
             if invalidTyped {
                 Text("Enter an Ang between 1 and 1430.")
@@ -199,7 +207,7 @@ struct JumpToAngSheet: View {
         }
         .buttonStyle(.pressableCard)
         .buttonRepeatBehavior(.enabled)
-        .disabled(delta < 0 ? target <= bounds.lowerBound : target >= bounds.upperBound)
+        .disabled(delta < 0 ? effectiveTarget <= bounds.lowerBound : effectiveTarget >= bounds.upperBound)
         .accessibilityLabel(delta > 0 ? "Forward \(delta)" : "Back \(-delta)")
     }
 
@@ -259,10 +267,6 @@ struct JumpToAngSheet: View {
 
     // MARK: actions
 
-    private var canGo: Bool { !invalidTyped && effectiveTarget != current }
-    /// A valid typed value wins; otherwise the shared `target`.
-    private var effectiveTarget: Int { typedAng ?? target }
-
     private func go() {
         guard canGo else { return }
         Haptics.success()
@@ -271,15 +275,17 @@ struct JumpToAngSheet: View {
         dismiss()
     }
 
+    /// Nudge from whatever is showing now (typed value included), so ±1 after typing is exact.
     private func nudge(_ delta: Int) {
         Haptics.tap()
-        setTarget(target + delta)
+        setTarget(effectiveTarget + delta)
     }
 
-    /// Set the destination from a control and clear the typed buffer so the hero shows it.
+    /// Set the destination from a control; dismiss the keypad and show the value in the field.
     private func setTarget(_ v: Int) {
-        target = min(max(bounds.lowerBound, v), bounds.upperBound)
-        text = ""
+        let clamped = min(max(bounds.lowerBound, v), bounds.upperBound)
         fieldFocused = false
+        target = clamped
+        text = String(clamped)
     }
 }
