@@ -55,6 +55,22 @@ observed it — sat on the skeleton forever.
   the loaded content view (`angContent-N`) so no Ang can pass on a skeleton; new UI tests for an
   8-page swipe run after a jump and for the tappable title. Scripture, corpus, DB, API untouched.
 
+### Jump-to-Ang sheet: editable number, working Go, no overlap (iOS)
+
+Follow-up polish on the Jump sheet reported from TestFlight 1.3.0 (5):
+
+- **The Ang number now reads as editable** — a pencil affordance and an underline (brightening on
+  focus) make it obvious you can tap and type; the hint says "Tap to type an Ang from 1 to 1430".
+- **One honest Go.** The pinned primary action restates the destination — **"Go to Ang N"** when the
+  number differs from where you are, a dimmed **"You're on Ang N"** when there's nowhere to go, and
+  **"Enter an Ang from 1 to 1430"** on an out-of-range entry. Removed the duplicate keyboard "Go"
+  (which looked broken next to it); the keypad now shows a plain **Done** that only drops the keypad.
+- **No more overlap.** The Go bar is now opaque (`Ink.canvas`) with a top divider, so the "Jump to a
+  raag" card can no longer bleed through it, and it sits cleanly above the number pad.
+
+Verified: app compiles; the Jump UI tests (steppers → Go label + landing, typed-Ang from the title,
+progress-bar open, AX5 layout) pass. Display/navigation only — scripture, corpus, DB, API untouched.
+
 ## [1.3.0] — 2026-09-19 — Nitnem, next level (premium pass)
 
 The daily-prayer (Nitnem) experience rebuilt end to end: a time-of-day paper home, derived

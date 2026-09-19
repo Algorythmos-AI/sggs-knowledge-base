@@ -6,8 +6,8 @@ import GurbaniSearchKit
 /// One source of truth (`target`); the big number, the location line, the scrubber, the steppers,
 /// the raag menu and the Go label always agree. An exact Ang is reachable three ways: type it,
 /// scrub + nudge with the ±1 / ±10 steppers, or pick a raag. The primary action is pinned to the
-/// bottom, full-width, and restates the destination ("Go to Ang 89"). Display/navigation only —
-/// no scripture is shown or changed here.
+/// bottom, full-width, opaque, and restates the destination ("Go to Ang 89"). Display/navigation
+/// only — no scripture is shown or changed here.
 struct JumpToAngSheet: View {
     let current: Int
     /// Opened from the Reader's "Ang N" title: the reader wants to TYPE a number, so the keypad is
@@ -67,9 +67,12 @@ struct JumpToAngSheet: View {
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) { Button("Cancel") { dismiss() } }
+                // "Done" only dismisses the keypad (not the sheet), so the reader can still fine-tune
+                // with the scrubber/steppers before Go. The single Go is the pinned bar below — there
+                // is no duplicate keyboard Go to crowd it or overlap the raag card.
                 ToolbarItemGroup(placement: .keyboard) {
                     Spacer()
-                    Button("Go") { go() }.disabled(!canGo)
+                    Button("Done") { fieldFocused = false }
                 }
             }
             .safeAreaInset(edge: .bottom) { goBar }
@@ -91,12 +94,15 @@ struct JumpToAngSheet: View {
         .presentationDragIndicator(.visible)
     }
 
-    // MARK: hero — the big number IS the text field
+    // MARK: hero — the big number IS the text field (tap to edit)
 
     private var hero: some View {
         VStack(spacing: Theme.Space.s) {
             Text("Ang").font(.subheadline.weight(.semibold))
                 .foregroundStyle(.secondary).textCase(.uppercase).tracking(1)
+
+            // The big number IS the field. A pencil (trailing) and an underline make it read as
+            // editable, not a static label — so a first-time or elderly reader knows to tap and type.
             ZStack {
                 // the live destination, shown when nothing is being typed
                 Text(String(target))
@@ -113,12 +119,29 @@ struct JumpToAngSheet: View {
                     .accessibilityIdentifier("angField")
                     .accessibilityLabel("Ang number")
                     .accessibilityValue(String(target))
+                    .accessibilityHint("Tap to type an Ang from 1 to 1430")
             }
             .font(Brand.heading(.largeTitle, weight: 700))
             .monospacedDigit()
             .frame(maxWidth: .infinity)
             .contentShape(Rectangle())
             .onTapGesture { fieldFocused = true }
+            .overlay(alignment: .trailing) {
+                Image(systemName: "pencil.circle.fill")
+                    .font(.title3)
+                    .foregroundStyle(fieldFocused ? Color.clear : Color.secondary)
+                    .padding(.trailing, Theme.Space.l)
+                    .allowsHitTesting(false)
+                    .accessibilityHidden(true)
+            }
+            // a quiet underline that says "this is a field", brightening when focused
+            .overlay(alignment: .bottom) {
+                RoundedRectangle(cornerRadius: 1)
+                    .fill(fieldFocused ? Color.accentColor : Ink.hairline)
+                    .frame(width: 140, height: 2)
+                    .offset(y: 8)
+                    .accessibilityHidden(true)
+            }
 
             if invalidTyped {
                 Text("Enter an Ang between 1 and 1430.")
@@ -212,20 +235,26 @@ struct JumpToAngSheet: View {
         .disabled((container.meta?.raags ?? []).isEmpty)
     }
 
-    // MARK: pinned primary action
+    // MARK: pinned primary action — one opaque bar, above the keypad, never see-through
 
     private var goBar: some View {
-        Button { go() } label: {
-            Text(target == current ? "You're on Ang \(current)" : "Go to Ang \(target)")
-                .contentTransition(.numericText())
-                .frame(maxWidth: .infinity, minHeight: 56)
+        VStack(spacing: 0) {
+            Divider().overlay(Ink.hairline)
+            Button { go() } label: {
+                Text(canGo ? "Go to Ang \(effectiveTarget)"
+                           : (invalidTyped ? "Enter an Ang from 1 to 1430" : "You're on Ang \(current)"))
+                    .contentTransition(.numericText())
+                    .frame(maxWidth: .infinity, minHeight: 56)
+            }
+            .buttonStyle(.prominentPill)
+            .disabled(!canGo)
+            .opacity(canGo ? 1 : 0.5)          // an honest, clearly-inactive look when there's nowhere to go
+            .accessibilityIdentifier("goToAng")
+            .padding(.horizontal, Theme.Space.l)
+            .padding(.top, Theme.Space.s)
+            .padding(.bottom, Theme.Space.s)
         }
-        .buttonStyle(.prominentPill)
-        .disabled(!canGo)
-        .accessibilityIdentifier("goToAng")
-        .padding(.horizontal, Theme.Space.l)
-        .padding(.bottom, Theme.Space.s)
-        .background(.ultraThinMaterial)
+        .background(Ink.canvas)   // opaque: the raag card can never bleed through the bar
     }
 
     // MARK: actions
@@ -237,6 +266,7 @@ struct JumpToAngSheet: View {
     private func go() {
         guard canGo else { return }
         Haptics.success()
+        fieldFocused = false
         onGo(effectiveTarget)
         dismiss()
     }
