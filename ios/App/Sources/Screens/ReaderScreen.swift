@@ -1,5 +1,6 @@
 import SwiftUI
 import UIKit
+import OSLog
 import GurbaniSearchKit
 
 @MainActor @Observable
@@ -9,29 +10,74 @@ final class ReaderModel {
     /// pre-warmed so a fast double-swipe never shows a skeleton. Bounded, evicted by distance
     /// from the anchor (the current Ang).
     private(set) var pages: [Int: AngPage] = [:]
-    private var inflight: Set<Int> = []
-    /// The Ang eviction measures distance from — kept near the reader so live pages survive.
-    private var anchor = 1
+    /// One shared load per Ang. A page that mounts while its Ang is being pre-warmed AWAITS that
+    /// load — the old `inflight` set made it skip the load, read an empty cache once, and sit on
+    /// the skeleton forever (TestFlight 1.3.0 (4)).
+    private var loads: [Int: Task<AngPage?, Never>] = [:]
+    /// The Ang eviction measures distance from. Follows `router.readerAng` via `setCurrent` — it
+    /// must not be owned by `ensure`: a swiped-to page mounts BEFORE it is current, so the anchor
+    /// stayed on the last jump and the 4th swipe evicted the very page it had just loaded.
+    private(set) var anchor = 1
     private let corpus: CorpusActor?
+    private let loader: @Sendable (Int) async throws -> AngPage
     let hasTiming: Bool
-    init(corpus: CorpusActor?) { self.corpus = corpus; self.hasTiming = corpus?.capabilities.hasTiming ?? false }
 
-    var isReady: Bool { corpus != nil }
+    static let bounds = 1...1430
+    static let capacity = 7                      // anchor ±2 protected + slack
+    private static let log = Logger(subsystem: "org.sggs", category: "Reader")
+
+    init(corpus: CorpusActor?) {
+        self.corpus = corpus
+        self.hasTiming = corpus?.capabilities.hasTiming ?? false
+        self.loader = { n in
+            guard let corpus else { throw CancellationError() }
+            return try await corpus.ang(n)
+        }
+    }
+
+    /// Test seam: any loader, no corpus.
+    init(loader: @escaping @Sendable (Int) async throws -> AngPage) {
+        self.corpus = nil; self.hasTiming = false; self.loader = loader
+    }
+
     func page(_ ang: Int) -> AngPage? { pages[ang] }
 
-    /// Load `ang` into the cache if absent (local SQLite, ~ms), then pre-warm ±2. Idempotent and
-    /// cancellation-safe; the pager calls this per page as it comes on screen.
-    func ensure(_ ang: Int, isCurrent: Bool) async {
-        // Only the current page moves the eviction anchor. Neighbour pages (the pager mounts ±1
-        // live) also call `ensure`, and if they set the anchor the >7 eviction would measure
-        // distance from a neighbour and could drop the very page the reader is about to swipe to.
-        if isCurrent { anchor = ang }
-        if pages[ang] == nil, !inflight.contains(ang), let corpus {
-            inflight.insert(ang)
-            if let p = try? await corpus.ang(ang) { remember(p) }
-            inflight.remove(ang)
-        }
+    /// The reader is now on `ang` (swipe-settle, chevron, jump, deep link, resume, pill — every
+    /// writer of `router.readerAng`). Moves the eviction anchor and pre-warms around it.
+    func setCurrent(_ ang: Int) {
+        anchor = min(max(Self.bounds.lowerBound, ang), Self.bounds.upperBound)
+        prefetchNeighbours(of: anchor)
+    }
+
+    /// The page for `ang` (local SQLite, ~ms), or nil if the read failed — failures are never
+    /// cached, so calling again really retries. Returns the page it loaded rather than making the
+    /// caller re-read the cache, so eviction can never blank a page that was just loaded.
+    @discardableResult
+    func ensure(_ ang: Int) async -> AngPage? {
+        guard Self.bounds.contains(ang) else { return nil }
+        let page = await load(ang)
         prefetchNeighbours(of: ang)
+        return page
+    }
+
+    /// Coalesced load. MainActor-isolated with no suspension between the lookup and the insert,
+    /// so two callers can never start two loads. The shared task is unstructured on purpose: a
+    /// cancelled page task must not cancel a load another page is awaiting.
+    private func load(_ ang: Int) async -> AngPage? {
+        if let cached = pages[ang] { return cached }
+        if let running = loads[ang] { return await running.value }
+        let loader = self.loader
+        let task = Task<AngPage?, Never> {
+            do { return try await loader(ang) } catch {
+                Self.log.error("Ang \(ang, privacy: .public) failed to load: \(String(describing: error), privacy: .public)")
+                return nil
+            }
+        }
+        loads[ang] = task
+        let page = await task.value
+        loads[ang] = nil
+        if let page { remember(page) }
+        return page
     }
 
     /// Timing claims for a raag (metadata-only; nil = no chip). Not cached — cheap, per page.
@@ -49,10 +95,13 @@ final class ReaderModel {
         return from <= ang
     }
 
+    /// Cache `page`, then trim to capacity. Never evicts the anchor ±2 (the pager's live pages and
+    /// the "continues on" lookahead) nor the page just remembered; drops the farthest of the rest.
     private func remember(_ page: AngPage) {
         pages[page.ang] = page
-        guard pages.count > 7 else { return }        // current ±2 live + slack
-        if let far = pages.keys.filter({ $0 != anchor }).max(by: { abs($0 - anchor) < abs($1 - anchor) }) {
+        while pages.count > Self.capacity {
+            let evictable = pages.keys.filter { abs($0 - anchor) > 2 && $0 != page.ang }
+            guard let far = evictable.max(by: { abs($0 - anchor) < abs($1 - anchor) }) else { return }
             pages.removeValue(forKey: far)
         }
     }
@@ -60,13 +109,8 @@ final class ReaderModel {
     /// Warm ang±1 and ±2 in their own tasks so a fast swipe never hits an unloaded page.
     private func prefetchNeighbours(of ang: Int) {
         for n in [ang + 1, ang - 1, ang + 2, ang - 2]
-        where (1...1430).contains(n) && pages[n] == nil && !inflight.contains(n) {
-            inflight.insert(n)
-            Task { [weak self] in
-                guard let self, let corpus = self.corpus else { return }
-                if let page = try? await corpus.ang(n) { self.remember(page) }
-                self.inflight.remove(n)
-            }
+        where Self.bounds.contains(n) && pages[n] == nil && loads[n] == nil {
+            Task { [weak self] in _ = await self?.load(n) }
         }
     }
 
@@ -94,6 +138,8 @@ struct ReaderScreen: View {
     @AppStorage("sggs_last_ang") private var lastAng = 1
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @State private var showJump = false
+    /// True when Jump was opened from the "Ang N" title — the sheet then opens with the keypad up.
+    @State private var jumpTyping = false
     @State private var showOptions = false
     @State private var resumed = false
     /// Ambient chrome (the bottom page bar): hidden while reading downwards, restored on any
@@ -246,6 +292,27 @@ struct ReaderScreen: View {
                     .accessibilityLabel("Jump to Ang")
                     .accessibilityIdentifier("jumpToAng")
                 }
+                // The title is a control: tap "Ang N" to type where to go. `.navigationTitle` stays
+                // set — it names the bar for VoiceOver's rotor and the XCUITests (`navigationBars["Ang N"]`).
+                ToolbarItem(placement: .principal) {
+                    Button { Haptics.tap(); jumpTyping = true; showJump = true } label: {
+                        HStack(spacing: Theme.Space.xs) {
+                            Text("Ang \(String(router.readerAng))")
+                                .font(Brand.heading(.headline)).monospacedDigit()
+                                .foregroundStyle(.primary)
+                            Image(systemName: "chevron.down")
+                                .font(.caption2.weight(.bold)).foregroundStyle(palette.accent)
+                                .accessibilityHidden(true)
+                        }
+                        .lineLimit(1)
+                        .frame(minWidth: 44, minHeight: 44).contentShape(Rectangle())
+                    }
+                    .buttonStyle(.plain)
+                    .dynamicTypeSize(...DynamicTypeSize.accessibility1)   // never crowds the side buttons
+                    .accessibilityLabel("Ang \(String(router.readerAng))")
+                    .accessibilityHint("Type an Ang number to go to")
+                    .accessibilityIdentifier("angTitle")
+                }
                 ToolbarItem(placement: .topBarTrailing) {
                     Button { showOptions = true } label: { Image(systemName: "textformat.size") }
                         .accessibilityLabel("Reading options")
@@ -253,13 +320,15 @@ struct ReaderScreen: View {
                         .popover(isPresented: $showOptions) { ReaderOptionsPopover().environment(container) }
                 }
             }
-            .sheet(isPresented: $showJump) {
-                JumpToAngSheet(current: router.readerAng) { n in router.openAng(n) }
+            .sheet(isPresented: $showJump, onDismiss: { jumpTyping = false }) {
+                JumpToAngSheet(current: router.readerAng, focusField: jumpTyping) { n in router.openAng(n) }
             }
         }
         .task { await container.loadMeta() }   // raag roman names + Jump-sheet ticks (idempotent)
         .task(id: container.router.readerAng) {
             if model == nil { model = ReaderModel(corpus: container.corpus) }
+            // The eviction anchor follows EVERY Ang change (swipe-settle included) — see ReaderModel.
+            model?.setCurrent(container.router.readerAng)
             // resume-last-Ang: once per launch, only from the untouched default. The router
             // flag (not the Ang value) marks explicit navigation, so sggs://ang/1 is honoured.
             if !resumed {

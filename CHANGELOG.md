@@ -29,6 +29,32 @@ advancing — title and page desynced.
   and navigation around sheets/backgrounding — each asserting the title AND the visible page agree.
   CI now uploads `.xcresult` bundles on failure. Scripture, corpus, DB, API untouched.
 
+### Reader: blank Ang after a few page turns + a tappable "Ang N" title (iOS)
+
+Fixes the Reader going permanently blank (grey skeleton, verses never appear) a few pages after a
+jump — reported on TestFlight 1.3.0 (4) at Angs 352, 918, 1106. Two independent defects in
+`ReaderModel`'s page cache: (1) the eviction anchor only moved when a page loaded *as current*, but a
+swiped-to page mounts *before* it is current, so the anchor stayed on the last jump and the 4th swipe
+evicted the very page it had just loaded; (2) a page that mounted while its Ang was being pre-warmed
+hit the `inflight` guard, got nothing back, and — because the view sampled the cache once and never
+observed it — sat on the skeleton forever.
+
+- The eviction anchor now follows every Ang change via `ReaderModel.setCurrent` (driven by
+  `router.readerAng`, swipe-settle included); eviction protects anchor ±2 and never drops the page it
+  just cached. Loads are coalesced through one shared `Task` per Ang, so a page mounting mid-pre-warm
+  awaits that load instead of skipping it; `ensure` returns the page it loaded rather than making the
+  caller re-read the cache.
+- `AngPageView` observes the cache (adopts a page that arrives by any route), retries once quietly on
+  a failed read, then shows a real "Couldn't load Ang N · Try again" state instead of an endless
+  skeleton, and logs the failure.
+- The "Ang N" reader title is now a control (`angTitle`, with a chevron affordance): tap it to open
+  Jump with the number pad already up and type where to go. The existing top-left button, progress bar
+  and raag banner keep their unfocused open; `.navigationTitle` is unchanged.
+- Tests: new `ReaderModelTests` (the swipe-run eviction regression, the pre-warm race, no-cache-on-
+  failure + retry, eviction invariants, bounds, cancellation safety); `assertOnAng` now also requires
+  the loaded content view (`angContent-N`) so no Ang can pass on a skeleton; new UI tests for an
+  8-page swipe run after a jump and for the tappable title. Scripture, corpus, DB, API untouched.
+
 ## [1.3.0] — 2026-09-19 — Nitnem, next level (premium pass)
 
 The daily-prayer (Nitnem) experience rebuilt end to end: a time-of-day paper home, derived

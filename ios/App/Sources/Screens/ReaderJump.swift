@@ -10,6 +10,9 @@ import GurbaniSearchKit
 /// no scripture is shown or changed here.
 struct JumpToAngSheet: View {
     let current: Int
+    /// Opened from the Reader's "Ang N" title: the reader wants to TYPE a number, so the keypad is
+    /// up at once (sheet at full height so Go stays visible above it). Other openers leave it down.
+    var focusField = false
     var onGo: (Int) -> Void
 
     @Environment(\.dismiss) private var dismiss
@@ -26,8 +29,9 @@ struct JumpToAngSheet: View {
 
     private let bounds = 1...1430
 
-    init(current: Int, onGo: @escaping (Int) -> Void) {
+    init(current: Int, focusField: Bool = false, onGo: @escaping (Int) -> Void) {
         self.current = current
+        self.focusField = focusField
         self.onGo = onGo
         _target = State(initialValue: current)
     }
@@ -75,7 +79,13 @@ struct JumpToAngSheet: View {
             // hero and Go label follow the scrubber (typing keeps text, because it syncs target).
             .onChange(of: target) { _, v in if typedAng != v { text = "" } }
             .onChange(of: typeSize) { _, size in if size.isAccessibilitySize { detent = .large } }
-            .onAppear { if typeSize.isAccessibilitySize { detent = .large } }
+            .onAppear { if typeSize.isAccessibilitySize || focusField { detent = .large } }
+            .task {
+                guard focusField else { return }
+                // focus after the sheet has presented — a focus request during the transition is dropped
+                try? await Task.sleep(for: .milliseconds(350))
+                if !Task.isCancelled { fieldFocused = true }
+            }
         }
         .presentationDetents([.fraction(0.65), .large], selection: $detent)
         .presentationDragIndicator(.visible)
