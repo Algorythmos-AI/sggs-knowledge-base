@@ -51,9 +51,10 @@ targets:
         INFOPLIST_FILE: Resources/Info.plist
         GENERATE_INFOPLIST_FILE: "NO"
       configs:
-        # Release = the archive/TestFlight configuration. Fill DEVELOPMENT_TEAM with the
-        # Apple Developer Team ID once membership is active; Automatic signing then
-        # creates the App ID + App Group (group.org.sggs) profiles. Debug/CI stay unsigned
+        # Release = the archive/TestFlight configuration. DEVELOPMENT_TEAM stays "" here BY DESIGN:
+        # ios/tools/testflight_archive.sh injects the Team ID on the xcodebuild command line, so it
+        # is never committed. Automatic signing then creates the App ID + App Group
+        # (group.org.sggs) profiles. Debug/CI stay unsigned
         # (CI passes CODE_SIGNING_ALLOWED=NO on the command line, which wins).
         Release:
           CODE_SIGNING_ALLOWED: "YES"

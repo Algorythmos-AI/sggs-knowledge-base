@@ -28,6 +28,10 @@ Gurmukhi text is never edited — see CLAUDE.md prime directive.
 | user-visible release content | `python3 scripts/release/bump.py X.Y.Z` + fill the CHANGELOG `## [X.Y.Z]` section, then `python3 scripts/release/check_versions.py` |
 
 ## 3. Commit + PR
+- **Stage named paths only** (`git add path/one path/two`) — never `git add -A` / `git add .` / `git commit -a`: the
+  checkout can hold machine-local files (`CLAUDE.local.md`, iOS DB artifacts) and other sessions' edits. Check
+  `git status --short` before committing. On an iOS change run `make ios-db-check` first; if it WARNs that
+  `ios/Resources/sggs-ios.manifest.json` differs from HEAD, do **not** stage the manifest (only `sggs-rebuild-db` does).
 - Conventional commit subject (`fix(ci): …`, `feat(web): …`), body = what + why + how verified.
   End with the Co-Authored-By line from the session's attribution reminder.
 - PR title must match pr-hygiene: `^(feat|fix|docs|chore|ci|refactor|perf|test|data|ios|web|build|revert|release)(scope)?!?: …`.

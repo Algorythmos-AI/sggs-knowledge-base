@@ -68,12 +68,12 @@ def invariants(con):
     return {'lines': lines, 'angs': angs, 'ik_onkar': ik, 'fts_ok': fts_ok, 'mool_mantar': mool}
 
 
-def main():
+def main(argv=None):
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument('--profile', choices=['personal', 'public'], default='personal')
     ap.add_argument('source', nargs='?', default=os.path.join(ROOT, 'db', 'sggs.sqlite'))
     ap.add_argument('dest', nargs='?', default=None)
-    args = ap.parse_args()
+    args = ap.parse_args(argv)
 
     profile = args.profile
     src_path = args.source
@@ -86,6 +86,24 @@ def main():
         sys.exit(f'source DB not found: {src_path}')
     os.makedirs(os.path.dirname(dest), exist_ok=True)
 
+    # Atomic: everything is built and proven at `dest + '.tmp'`; dest and its manifest are replaced
+    # only after every assertion holds, so a failed or interrupted build leaves the old pair intact.
+    stem = os.path.splitext(os.path.basename(dest))[0]
+    mpath = os.path.join(os.path.dirname(dest), f'{stem}.manifest.json')
+    tmp, mtmp = dest + '.tmp', mpath + '.tmp'
+    try:
+        _derive(profile, src_path, dest, drop, mpath, tmp, mtmp)
+    finally:
+        for leftover in (tmp, tmp + '-journal', tmp + '-wal', tmp + '-shm', mtmp):
+            if os.path.exists(leftover):
+                os.remove(leftover)
+
+
+def _derive(profile, src_path, dest, drop, mpath, tmp, mtmp):
+    for stale in (tmp, tmp + '-journal', tmp + '-wal', tmp + '-shm', mtmp):
+        if os.path.exists(stale):
+            os.remove(stale)
+
     # baseline scripture checksum from the source (read-only)
     src = sqlite3.connect(f'file:{src_path}?mode=ro&immutable=1', uri=True)
     src_ck = scripture_checksum(src)
@@ -95,9 +113,9 @@ def main():
     print(f'source: {src_inv}  scripture_sha={src_ck[:16]}…')
 
     print(f'copy {src_path} -> {dest}')
-    shutil.copyfile(src_path, dest)
+    shutil.copyfile(src_path, tmp)
 
-    con = sqlite3.connect(dest)
+    con = sqlite3.connect(tmp)
     present = {r[0] for r in con.execute("SELECT name FROM sqlite_master WHERE type IN ('table','view')")}
     for t in drop:
         if t in present:
@@ -135,7 +153,7 @@ def main():
     else:
         assert en_bundled, 'personal profile expected translations + fts_en in the source DB'
 
-    db_sha = sha256_file(dest)
+    db_sha = sha256_file(tmp)
     manifest = {
         'name': f'SGGS iOS DB ({ "personal — bundled English" if profile == "personal" else "Gurmukhi-only" })',
         'profile': profile,
@@ -144,16 +162,16 @@ def main():
         'banis_bundled': banis_bundled,
         'derived_from': os.path.relpath(src_path, ROOT),
         'dropped': drop,
-        'bytes': os.path.getsize(dest),
+        'bytes': os.path.getsize(tmp),
         'db_sha256': db_sha,
         'scripture_sha256': dst_ck,
         'invariants': dst_inv,
     }
-    stem = os.path.splitext(os.path.basename(dest))[0]
-    mpath = os.path.join(os.path.dirname(dest), f'{stem}.manifest.json')
-    with open(mpath, 'w', encoding='utf-8') as f:
+    with open(mtmp, 'w', encoding='utf-8') as f:
         json.dump(manifest, f, ensure_ascii=False, indent=2, sort_keys=True)
         f.write('\n')
+    os.replace(tmp, dest)      # DB first: a kill between the two leaves new DB + old manifest,
+    os.replace(mtmp, mpath)    # which check_ios_db_pair.py reports as a hard mismatch.
 
     src_mb = os.path.getsize(src_path) / 1e6
     dst_mb = manifest['bytes'] / 1e6
