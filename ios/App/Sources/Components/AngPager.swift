@@ -1,5 +1,9 @@
 import SwiftUI
 import UIKit
+import os
+
+/// File-scope (a `static let` isn't allowed on a property of a generic type's nested class).
+private let angPagerLog = Logger(subsystem: "org.sggs", category: "Pager")
 
 /// Horizontal, finger-tracked pager over an integer index (Ang 1…1430), backed by
 /// `UIPageViewController(.scroll)`. This is the primitive Apple Books/Photos use: 1:1 drag
@@ -8,15 +12,23 @@ import UIKit
 /// scrolling inside each page, and VoiceOver three-finger page scroll — none of which a SwiftUI
 /// `ScrollView` of 1,430 pages gives for free.
 ///
-/// `index` is the single source of truth (two-way). The pager writes it only when a swipe
-/// *settles*; an external change (Jump, deep link, chevrons) is pushed in via `setViewControllers`.
-/// Each page is a SwiftUI view hosted in an `IndexedHost`; the caller's `page` closure must inject
-/// whatever environment the content needs (it is invoked from UIKit, outside the SwiftUI tree).
+/// `index` is a one-way input: the caller (ReaderScreen) owns `router.readerAng`, this pager only
+/// reads it and, when a finger swipe *settles*, reports the new index back through `onSettle`
+/// (→ `router.pagerSettled`). Programmatic navigation (chevrons, pills, Jump, deep links) flows in
+/// via the `index` change → `updateUIViewController` → `reconcile()`.
+///
+/// All decisions live in the pure `PagerSync`; this shell only performs the effects and reads the
+/// live truth (the visible page index, whether the scroll view is under a finger). It **never**
+/// calls `setViewControllers(animated: true)` — programmatic turns are a synchronous non-animated
+/// set wrapped in a `CATransition`, so no correctness depends on a UIKit completion callback. See
+/// `PagerSync` for why the old animated path latched and killed the chevrons.
 struct AngPager<Page: View>: UIViewControllerRepresentable {
-    @Binding var index: Int
+    /// The desired Ang (read-only input — the router is the single source of truth).
+    var index: Int
     var bounds: ClosedRange<Int> = 1...1430
     var reduceMotion = false
     @ViewBuilder var page: (Int) -> Page
+    /// Called only when a finger swipe settles on a new page (never for a programmatic turn).
     var onSettle: (Int) -> Void = { _ in }
 
     func makeCoordinator() -> Coordinator { Coordinator(self) }
@@ -26,34 +38,133 @@ struct AngPager<Page: View>: UIViewControllerRepresentable {
         pvc.dataSource = context.coordinator
         pvc.delegate = context.coordinator
         pvc.view.backgroundColor = .clear
-        context.coordinator.setCurrent(index, in: pvc, animated: false)
+        context.coordinator.attach(pvc)
         return pvc
     }
 
     func updateUIViewController(_ pvc: UIPageViewController, context: Context) {
         context.coordinator.parent = self
-        context.coordinator.syncIfNeeded(to: index, in: pvc)
+        context.coordinator.reconcile()
     }
 
     final class Coordinator: NSObject, UIPageViewControllerDataSource, UIPageViewControllerDelegate {
         var parent: AngPager
-        /// True between `willTransitionTo` and `didFinishAnimating` — `setViewControllers` must not
-        /// be called during a live transition (the classic UIPageViewController crash / stale cache).
-        private var isTransitioning = false
-        /// An external index requested mid-transition; applied on completion, latest wins.
-        private var pendingTarget: Int?
+        private var sync: PagerSync
+        private weak var pvc: UIPageViewController?
+        private var watchdogGen = 0
+        /// Count of self-heals; surfaced in the pager's UITest identifier so a heal can never
+        /// silently mask a logic bug (a passing test must show `-h0`).
+        private var heals = 0
 
-        init(_ parent: AngPager) { self.parent = parent }
-
-        private func host(_ i: Int) -> IndexedHost<Page> {
-            IndexedHost(index: i, root: parent.page(i))
+        init(_ parent: AngPager) {
+            self.parent = parent
+            self.sync = PagerSync(bounds: parent.bounds)
         }
 
-        private func currentIndex(_ pvc: UIPageViewController) -> Int? {
-            (pvc.viewControllers?.first as? IndexedHost<Page>)?.index
+        func attach(_ pvc: UIPageViewController) {
+            self.pvc = pvc
+            setViewControllers(to: clamp(parent.index), transition: .none)
+        }
+
+        // MARK: truth
+
+        private func clamp(_ i: Int) -> Int { min(max(parent.bounds.lowerBound, i), parent.bounds.upperBound) }
+
+        /// Internal (not private) so the hosted UIKit test can assert the visible page converges.
+        func currentIndex() -> Int? { (pvc?.viewControllers?.first as? IndexedHost<Page>)?.index }
+
+        /// The pager's own scroll view is a stable first subview; if it ever isn't found we treat the
+        /// pager as idle (the watchdog + verifySoon still guarantee convergence).
+        private var scrollBusy: Bool {
+            guard let sv = pvc?.view.subviews.compactMap({ $0 as? UIScrollView }).first else { return false }
+            return sv.isTracking || sv.isDragging || sv.isDecelerating
+        }
+
+        private func host(_ i: Int) -> IndexedHost<Page> { IndexedHost(index: i, root: parent.page(i)) }
+
+        // MARK: effect runner
+
+        func reconcile() {
+            guard let pvc else { return }
+            run(sync.request(desired: parent.index, visible: currentIndex(), scrollBusy: scrollBusy,
+                             reduceMotion: parent.reduceMotion, inWindow: pvc.view.window != nil,
+                             now: CACurrentMediaTime()))
+        }
+
+        private func run(_ effects: [PagerSync.Effect]) {
+            for e in effects {
+                switch e {
+                case .show(let i, let t):
+                    setViewControllers(to: i, transition: t)
+                    verifySoon()
+                case .settle(let i):
+                    parent.onSettle(i)
+                    publishIdentifier()
+                case .armWatchdog:
+                    armWatchdog()
+                case .log(let m):
+                    heals += 1
+                    angPagerLog.error("\(m, privacy: .public)")
+                }
+            }
+        }
+
+        /// The one place `setViewControllers` is called. Always non-animated (synchronous, rebuilds the
+        /// neighbour cache, works off-window); the CATransition supplies the visual.
+        private func setViewControllers(to i: Int, transition t: PagerSync.Transition) {
+            guard let pvc else { return }
+            let target = clamp(i)
+            if t != .none {
+                let tr = CATransition()
+                tr.duration = 0.28
+                tr.timingFunction = CAMediaTimingFunction(name: .easeInEaseOut)
+                switch t {
+                case .slide(let fwd): tr.type = .push; tr.subtype = fwd ? .fromRight : .fromLeft
+                case .fade: tr.type = .fade
+                case .none: break
+                }
+                pvc.view.layer.add(tr, forKey: "angTurn")   // same key: a newer turn replaces the older
+            }
+            pvc.setViewControllers([host(target)], direction: .forward, animated: false)
+            publishIdentifier()
+            #if DEBUG
+            assert(currentIndex() == target, "AngPager visible \(String(describing: currentIndex())) != target \(target)")
+            #endif
+        }
+
+        /// Cheap runtime self-heal: one runloop after a show, if nothing is under a finger and the
+        /// visible page still disagrees with the router, reconcile again (I1).
+        private func verifySoon() {
+            DispatchQueue.main.async { [weak self] in
+                guard let self, self.pvc != nil, !self.sync.gestureActive, !self.scrollBusy else { return }
+                if self.currentIndex() != self.clamp(self.parent.index) { self.reconcile() }
+            }
+        }
+
+        private func armWatchdog() {
+            watchdogGen &+= 1
+            let gen = watchdogGen
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) { [weak self] in
+                guard let self, self.watchdogGen == gen, self.pvc != nil else { return }
+                self.run(self.sync.watchdog(desired: self.parent.index, visible: self.currentIndex(),
+                                            scrollBusy: self.scrollBusy))
+            }
+        }
+
+        /// Exposes the *visible* page (not the router's Ang) to XCUITests and diagnostics; the
+        /// `-h<heals>` suffix (under UI test) makes a masked desync detectable.
+        private func publishIdentifier() {
+            guard let pvc, let cur = currentIndex() else { return }
+            #if DEBUG
+            let uiTest = ProcessInfo.processInfo.environment["SGGS_UITEST"] == "1"
+            pvc.view.accessibilityIdentifier = uiTest ? "angPager-\(cur)-h\(heals)" : "angPager-\(cur)"
+            #else
+            pvc.view.accessibilityIdentifier = "angPager-\(cur)"
+            #endif
         }
 
         // MARK: data source (neighbours; nil at the bounds → native rubber-band)
+
         func pageViewController(_ pvc: UIPageViewController,
                                 viewControllerBefore vc: UIViewController) -> UIViewController? {
             guard let i = (vc as? IndexedHost<Page>)?.index, i > parent.bounds.lowerBound else { return nil }
@@ -65,42 +176,16 @@ struct AngPager<Page: View>: UIViewControllerRepresentable {
             return host(i + 1)
         }
 
-        // MARK: delegate
-        func pageViewController(_ pvc: UIPageViewController,
-                                willTransitionTo pending: [UIViewController]) {
-            isTransitioning = true
+        // MARK: delegate (gesture-driven transitions only)
+
+        func pageViewController(_ pvc: UIPageViewController, willTransitionTo pending: [UIViewController]) {
+            sync.gestureBegan()
         }
         func pageViewController(_ pvc: UIPageViewController, didFinishAnimating finished: Bool,
                                 previousViewControllers: [UIViewController], transitionCompleted completed: Bool) {
-            isTransitioning = false
-            if completed, let cur = currentIndex(pvc) {
-                if parent.index != cur { parent.index = cur }
-                parent.onSettle(cur)
-            }
-            if let t = pendingTarget { pendingTarget = nil; syncIfNeeded(to: t, in: pvc) }
-        }
-
-        // MARK: external navigation
-        func syncIfNeeded(to i: Int, in pvc: UIPageViewController) {
-            let clamped = min(max(parent.bounds.lowerBound, i), parent.bounds.upperBound)
-            guard let cur = currentIndex(pvc) else { setCurrent(clamped, in: pvc, animated: false); return }
-            guard cur != clamped else { return }
-            if isTransitioning { pendingTarget = clamped; return }
-            let adjacent = abs(cur - clamped) == 1
-            setCurrent(clamped, in: pvc,
-                       animated: adjacent && !parent.reduceMotion,
-                       direction: clamped > cur ? .forward : .reverse)
-        }
-
-        func setCurrent(_ i: Int, in pvc: UIPageViewController,
-                        animated: Bool, direction: UIPageViewController.NavigationDirection = .forward) {
-            let clamped = min(max(parent.bounds.lowerBound, i), parent.bounds.upperBound)
-            isTransitioning = animated
-            pvc.setViewControllers([host(clamped)], direction: direction, animated: animated) { [weak self] done in
-                // a far (non-animated) jump re-sets neighbours synchronously; clear the guard
-                if !animated { self?.isTransitioning = false }
-                _ = done
-            }
+            run(sync.gestureEnded(completed: completed, visible: currentIndex(), scrollBusy: scrollBusy,
+                                  reduceMotion: parent.reduceMotion, inWindow: pvc.view.window != nil,
+                                  now: CACurrentMediaTime()))
         }
     }
 }
@@ -125,6 +210,7 @@ final class IndexedHost<Page: View>: UIViewController {
     override func viewDidLoad() {
         super.viewDidLoad()
         view.backgroundColor = .clear
+        view.accessibilityIdentifier = "angPage-\(index)"   // the current page's id, for XCUITests
         hosting.view.backgroundColor = .clear
         addChild(hosting)
         hosting.view.translatesAutoresizingMaskIntoConstraints = false

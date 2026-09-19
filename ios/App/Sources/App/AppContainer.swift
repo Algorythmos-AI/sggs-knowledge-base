@@ -187,6 +187,14 @@ final class AppContainer {
         }
     }
 
+    /// Dismiss any covering sheet so a deep-link/intent navigation to the Reader is visible. Clears
+    /// the queued modal too (a stale queued shabad must not pop up over the freshly-opened Ang).
+    /// RootView's `onDismiss` → `flushPendingPresentation` then re-arms the present protocol.
+    func dismissSheetForNavigation() {
+        pendingPresentation = nil
+        if presentation != nil { presentation = nil }
+    }
+
     /// Called from RootView's sheet onDismiss: flush any queued modal. If another modal was already
     /// presented in the meantime (rapid taps), keep it and drop the stale queue entry.
     /// RootView calls this when the TabView unmounts (integrity re-verify): any in-flight

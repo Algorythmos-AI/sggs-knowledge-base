@@ -90,8 +90,24 @@ jobs:
       - name: Unit tests (SGGSTests)
         run: |
           xcodebuild test-without-building -project ios/App/SGGS.xcodeproj -scheme SGGS \
-            -destination "id=$SIM_UDID" -only-testing:SGGSTests CODE_SIGNING_ALLOWED=NO | tail -60
+            -destination "id=$SIM_UDID" -only-testing:SGGSTests \
+            -test-timeouts-enabled YES -resultBundlePath "$RUNNER_TEMP/unit.xcresult" \
+            CODE_SIGNING_ALLOWED=NO | tail -60
       - name: UI tests (SGGSUITests)
         run: |
           xcodebuild test-without-building -project ios/App/SGGS.xcodeproj -scheme SGGS \
-            -destination "id=$SIM_UDID" -only-testing:SGGSUITests CODE_SIGNING_ALLOWED=NO | tail -80
+            -destination "id=$SIM_UDID" -only-testing:SGGSUITests \
+            -test-timeouts-enabled YES -resultBundlePath "$RUNNER_TEMP/uitests.xcresult" \
+            CODE_SIGNING_ALLOWED=NO | tail -80
+      # A UI-test failure otherwise shows only the last 80 log lines and no artifact — upload the
+      # result bundles so a failure is actually diagnosable (screenshots, per-test logs).
+      - name: Upload test result bundles
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ios-test-results
+          path: |
+            ${{ runner.temp }}/unit.xcresult
+            ${{ runner.temp }}/uitests.xcresult
+          if-no-files-found: ignore
+          retention-days: 7

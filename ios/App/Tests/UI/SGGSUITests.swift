@@ -84,6 +84,54 @@ final class SGGSUITests: XCTestCase {
         return app.buttons[action].firstMatch
     }
 
+    // MARK: Reader pager helpers
+
+    /// The Reader mounts three pages at once (current ±1), so the same in-page control id exists on
+    /// off-screen neighbours too. The *visible* page is identified by the pager's own container id
+    /// `angPager-<n>` (from the pager, not the router), suffixed `-h0` under UI test so a self-heal —
+    /// which would mean the desync bug re-appeared — makes this assertion fail instead of passing quietly.
+    private func assertOnAng(_ app: XCUIApplication, _ n: Int, _ note: String = "",
+                             timeout: TimeInterval = 12, file: StaticString = #file, line: UInt = #line) {
+        XCTAssertTrue(app.navigationBars["Ang \(n)"].waitForExistence(timeout: timeout),
+                      "title should read Ang \(n) \(note)", file: file, line: line)
+        XCTAssertTrue(app.otherElements["angPager-\(n)-h0"].waitForExistence(timeout: timeout),
+                      "the visible page should be Ang \(n) with no self-heal \(note)", file: file, line: line)
+    }
+
+    /// Open the Reader on a specific Ang via the deep link (avoids typing into the Jump sheet and
+    /// starts every pager test from a known page).
+    private func goReader(_ app: XCUIApplication, at n: Int) {
+        XCUIDevice.shared.system.open(URL(string: "sggs://ang/\(n)")!)
+        openTab(app, "Reader", expectingNavBar: "Ang \(n)")
+    }
+
+    /// The first HITTABLE element with this id — the on-screen page's copy, never a neighbour's.
+    private func hittable(_ app: XCUIApplication, button id: String, timeout: TimeInterval = 8) -> XCUIElement? {
+        _ = app.buttons[id].firstMatch.waitForExistence(timeout: timeout)
+        return app.buttons.matching(identifier: id).allElementsBoundByIndex.first { $0.isHittable }
+    }
+
+    /// The on-screen page's scroll view (neighbours are mounted but off-screen / not hittable).
+    private func readerScroll(_ app: XCUIApplication) -> XCUIElement {
+        app.scrollViews.allElementsBoundByIndex.first { $0.isHittable } ?? app.scrollViews.firstMatch
+    }
+
+    /// Scroll the reading area down one screen. `scrollViews.firstMatch` is the current page's
+    /// vertical scroll view (the mechanism `testReaderChromeReturnsOnScrollUp` relies on); a
+    /// coordinate drag is the fallback if it is not hittable.
+    private func dragReaderUp(_ app: XCUIApplication) {
+        let sv = app.scrollViews.firstMatch
+        if sv.isHittable { sv.swipeUp() ; return }
+        let top = app.windows.firstMatch.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.8))
+        let bottom = app.windows.firstMatch.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.25))
+        top.press(forDuration: 0.05, thenDragTo: bottom)
+    }
+
+    /// The current page's forward footer, whichever form it takes (continues / plain "Next ·").
+    private func forwardFooter(_ app: XCUIApplication) -> XCUIElement? {
+        hittable(app, button: "continuesOnPill", timeout: 1) ?? hittable(app, button: "nextAngFooter", timeout: 1)
+    }
+
     func testLaunchShowsNitnem() {
         let app = launchApp(selectSearch: false)
         XCTAssertTrue(app.navigationBars["Nitnem"].waitForExistence(timeout: 20), "the app opens on the daily reading")
@@ -440,8 +488,88 @@ final class SGGSUITests: XCTestCase {
         XCTAssertTrue(app.navigationBars["Ang 1430"].waitForExistence(timeout: 12), "jump to 1430 failed")
         XCTAssertFalse(app.buttons["Next Ang"].isEnabled, "next must be disabled at Ang 1430")
         // swipe left-to-right = previous Ang
-        app.scrollViews.firstMatch.swipeRight()
+        readerScroll(app).swipeRight()
         XCTAssertTrue(app.navigationBars["Ang 1429"].waitForExistence(timeout: 12), "swipe page-turn failed")
+    }
+
+    /// THE regression for the shipped bug: the bottom bar chevrons must turn the page every time —
+    /// not just once — and the visible page must always agree with the title. On TestFlight 1.3.0 (2)
+    /// the second `nextAng` tap was swallowed (the pager latched) while the title kept counting up.
+    func testChevronsTurnPagesRepeatedly() {
+        let app = launchApp()
+        goReader(app, at: 1180)
+        assertOnAng(app, 1180)
+        app.buttons["Next Ang"].tap(); assertOnAng(app, 1181, "after Next ×1")
+        app.buttons["Next Ang"].tap(); assertOnAng(app, 1182, "after Next ×2")   // died here on 1.3.0
+        app.buttons["Next Ang"].tap(); assertOnAng(app, 1183, "after Next ×3")
+        app.buttons["Previous Ang"].tap(); assertOnAng(app, 1182, "after Prev ×1")
+        app.buttons["Previous Ang"].tap(); assertOnAng(app, 1181, "after Prev ×2")
+    }
+
+    /// The end-of-page forward pill (the other control that died) turns the page and names the right
+    /// Ang: on 1181 it reads "Continues on Ang 1182" and lands there; the next page's forward footer
+    /// then advances to 1183.
+    func testContinuationPillGoesToNextAng() {
+        let app = launchApp()
+        goReader(app, at: 1181)
+        assertOnAng(app, 1181)
+        // Ang 1181's shabad continues onto 1182 (verified in the DB), so the forward footer is the
+        // "Continues on Ang 1182" pill; reach it by scrolling to the bottom of the page.
+        var pill = hittable(app, button: "continuesOnPill", timeout: 1)
+        for _ in 0..<12 where pill == nil { dragReaderUp(app); pill = hittable(app, button: "continuesOnPill", timeout: 1) }
+        XCTAssertNotNil(pill, "Continues-on pill should be reachable on Ang 1181")
+        XCTAssertTrue(pill!.label.contains("1182"), "the pill must name the NEXT Ang, not the current one")
+        pill!.tap()
+        assertOnAng(app, 1182, "after tapping Continues-on")
+        // the forward footer on 1182 (continues or plain "Next ·") advances to 1183
+        var fwd = forwardFooter(app)
+        for _ in 0..<12 where fwd == nil { dragReaderUp(app); fwd = forwardFooter(app) }
+        XCTAssertNotNil(fwd, "every Ang before 1430 must offer a forward control")
+        fwd!.tap()
+        assertOnAng(app, 1183, "after tapping the forward footer")
+    }
+
+    /// Several fast chevron taps must not desync the pager (the title and the visible page still agree,
+    /// and no self-heal was needed — `assertOnAng` requires `-h0`).
+    func testRapidChevronTapsStayInSync() {
+        let app = launchApp()
+        goReader(app, at: 700)
+        for _ in 0..<5 { app.buttons["Next Ang"].tap() }
+        assertOnAng(app, 705, "after 5 rapid Next taps")
+    }
+
+    /// Bounds: at Ang 1 Previous is disabled and a swipe-right rubber-bands; at Ang 1430 Next is
+    /// disabled and Previous still works.
+    func testReaderBoundsAndRubberBand() {
+        let app = launchApp()
+        goReader(app, at: 1)
+        assertOnAng(app, 1)
+        XCTAssertFalse(app.buttons["Previous Ang"].isEnabled, "Previous must be disabled at Ang 1")
+        readerScroll(app).swipeRight()
+        assertOnAng(app, 1, "rubber-band: still on Ang 1 after swiping past the start")
+        goReader(app, at: 1430)
+        assertOnAng(app, 1430)
+        XCTAssertFalse(app.buttons["Next Ang"].isEnabled, "Next must be disabled at Ang 1430")
+        app.buttons["Previous Ang"].tap()
+        assertOnAng(app, 1429, "Previous still works at the end")
+    }
+
+    /// Navigation stays correct around a sheet and after backgrounding: a deep link dismisses a
+    /// covering Hukam sheet and lands on the Reader, and a chevron tap survives background→foreground.
+    func testReaderNavAroundSheetAndBackground() {
+        let app = launchApp()
+        goReader(app, at: 300)
+        // open Hukam, then deep-link elsewhere — the sheet must not hide the destination
+        app.buttons["Hukam"].tap()
+        XCTAssertTrue(app.buttons["Done"].firstMatch.waitForExistence(timeout: 12), "Hukam sheet did not open")
+        XCUIDevice.shared.system.open(URL(string: "sggs://ang/900")!)
+        assertOnAng(app, 900, "deep link must land on the Reader, not behind the Hukam sheet")
+        // background and return, then keep navigating
+        XCUIDevice.shared.press(.home)
+        app.activate()
+        assertOnAng(app, 900, "state preserved across background")
+        app.buttons["Next Ang"].tap()
+        assertOnAng(app, 901, "chevrons work after foregrounding")
     }
 
     /// Open Reader → jump to an Ang that continues a shabad (164) → the "Shabad starts on Ang N"
@@ -457,9 +585,11 @@ final class SGGSUITests: XCTestCase {
         field.tap(); field.typeText("164")
         app.buttons["goToAng"].tap()
         XCTAssertTrue(app.navigationBars["Ang 164"].waitForExistence(timeout: 12), "jump to 164 failed")
-        let pill = app.buttons["continuesFromPill"].firstMatch
-        XCTAssertTrue(pill.waitForExistence(timeout: 8), "Continues-from pill missing on Ang 164")
-        pill.tap()
+        // Query the HITTABLE pill: the neighbour page 165 also mounts a continuesFromPill, so
+        // `firstMatch` could hit the wrong one.
+        let pill = hittable(app, button: "continuesFromPill")
+        XCTAssertNotNil(pill, "Continues-from pill missing on Ang 164")
+        pill!.tap()
         XCTAssertTrue(app.navigationBars["Ang 163"].waitForExistence(timeout: 12),
                       "Continues-from pill did not navigate to the shabad's start Ang")
     }
