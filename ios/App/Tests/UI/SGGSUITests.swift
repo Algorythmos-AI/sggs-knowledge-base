@@ -84,6 +84,55 @@ final class SGGSUITests: XCTestCase {
         return app.buttons[action].firstMatch
     }
 
+    // MARK: Reader pager helpers
+
+    /// The Reader mounts three pages at once (current ±1), so the same in-page control id exists on
+    /// off-screen neighbours too. The *visible* page is identified by the pager's own container id
+    /// `angPager-<n>` (from the pager, not the router), suffixed `-h0` under UI test so a self-heal —
+    /// which would mean the desync bug re-appeared — makes this assertion fail instead of passing quietly.
+    private func assertOnAng(_ app: XCUIApplication, _ n: Int, _ note: String = "",
+                             timeout: TimeInterval = 12, file: StaticString = #file, line: UInt = #line) {
+        XCTAssertTrue(app.navigationBars["Ang \(n)"].waitForExistence(timeout: timeout),
+                      "title should read Ang \(n) \(note)", file: file, line: line)
+        XCTAssertTrue(app.otherElements["angPager-\(n)-h0"].waitForExistence(timeout: timeout),
+                      "the visible page should be Ang \(n) with no self-heal \(note)", file: file, line: line)
+    }
+
+    /// Open the Reader on a specific Ang via the deep link (avoids typing into the Jump sheet and
+    /// starts every pager test from a known page).
+    private func goReader(_ app: XCUIApplication, at n: Int) {
+        XCUIDevice.shared.system.open(URL(string: "sggs://ang/\(n)")!)
+        openTab(app, "Reader", expectingNavBar: "Ang \(n)")
+    }
+
+    /// The first HITTABLE element with this id — the on-screen page's copy, never a neighbour's.
+    private func hittable(_ app: XCUIApplication, button id: String, timeout: TimeInterval = 8) -> XCUIElement? {
+        _ = app.buttons[id].firstMatch.waitForExistence(timeout: timeout)
+        return app.buttons.matching(identifier: id).allElementsBoundByIndex.first { $0.isHittable }
+    }
+
+    /// The on-screen page's scroll view (neighbours are mounted but off-screen / not hittable).
+    private func readerScroll(_ app: XCUIApplication) -> XCUIElement {
+        app.scrollViews.allElementsBoundByIndex.first { $0.isHittable } ?? app.scrollViews.firstMatch
+    }
+
+    /// Scroll the reading area down one screen. `scrollViews.firstMatch` is the current page's
+    /// vertical scroll view (the mechanism `testReaderChromeReturnsOnScrollUp` relies on); a
+    /// coordinate drag is the fallback if it is not hittable.
+    private func dragReaderUp(_ app: XCUIApplication) {
+        let sv = app.scrollViews.firstMatch
+        if sv.isHittable { sv.swipeUp() ; return }
+        let top = app.windows.firstMatch.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.8))
+        let bottom = app.windows.firstMatch.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.25))
+        top.press(forDuration: 0.05, thenDragTo: bottom)
+    }
+
+    /// The current page's forward control at the bottom: the "Continues on Ang N+1" hint pill when
+    /// the shabad carries over, else the always-present end-of-page "Next · Ang N+1" card.
+    private func forwardFooter(_ app: XCUIApplication) -> XCUIElement? {
+        hittable(app, button: "continuesOnPill", timeout: 1) ?? hittable(app, button: "endNextAng", timeout: 1)
+    }
+
     func testLaunchShowsNitnem() {
         let app = launchApp(selectSearch: false)
         XCTAssertTrue(app.navigationBars["Nitnem"].waitForExistence(timeout: 20), "the app opens on the daily reading")
@@ -440,8 +489,178 @@ final class SGGSUITests: XCTestCase {
         XCTAssertTrue(app.navigationBars["Ang 1430"].waitForExistence(timeout: 12), "jump to 1430 failed")
         XCTAssertFalse(app.buttons["Next Ang"].isEnabled, "next must be disabled at Ang 1430")
         // swipe left-to-right = previous Ang
-        app.scrollViews.firstMatch.swipeRight()
+        readerScroll(app).swipeRight()
         XCTAssertTrue(app.navigationBars["Ang 1429"].waitForExistence(timeout: 12), "swipe page-turn failed")
+    }
+
+    /// THE regression for the shipped bug: the bottom bar chevrons must turn the page every time —
+    /// not just once — and the visible page must always agree with the title. On TestFlight 1.3.0 (2)
+    /// the second `nextAng` tap was swallowed (the pager latched) while the title kept counting up.
+    func testChevronsTurnPagesRepeatedly() {
+        let app = launchApp()
+        goReader(app, at: 1180)
+        assertOnAng(app, 1180)
+        app.buttons["Next Ang"].tap(); assertOnAng(app, 1181, "after Next ×1")
+        app.buttons["Next Ang"].tap(); assertOnAng(app, 1182, "after Next ×2")   // died here on 1.3.0
+        app.buttons["Next Ang"].tap(); assertOnAng(app, 1183, "after Next ×3")
+        app.buttons["Previous Ang"].tap(); assertOnAng(app, 1182, "after Prev ×1")
+        app.buttons["Previous Ang"].tap(); assertOnAng(app, 1181, "after Prev ×2")
+    }
+
+    /// The end-of-page forward pill (the other control that died) turns the page and names the right
+    /// Ang: on 1181 it reads "Continues on Ang 1182" and lands there; the next page's forward footer
+    /// then advances to 1183.
+    func testContinuationPillGoesToNextAng() {
+        let app = launchApp()
+        goReader(app, at: 1181)
+        assertOnAng(app, 1181)
+        // Ang 1181's shabad continues onto 1182 (verified in the DB), so the forward footer is the
+        // "Continues on Ang 1182" pill; reach it by scrolling to the bottom of the page.
+        var pill = hittable(app, button: "continuesOnPill", timeout: 1)
+        for _ in 0..<12 where pill == nil { dragReaderUp(app); pill = hittable(app, button: "continuesOnPill", timeout: 1) }
+        XCTAssertNotNil(pill, "Continues-on pill should be reachable on Ang 1181")
+        XCTAssertTrue(pill!.label.contains("1182"), "the pill must name the NEXT Ang, not the current one")
+        pill!.tap()
+        assertOnAng(app, 1182, "after tapping Continues-on")
+        // the forward footer on 1182 (continues or plain "Next ·") advances to 1183
+        var fwd = forwardFooter(app)
+        for _ in 0..<12 where fwd == nil { dragReaderUp(app); fwd = forwardFooter(app) }
+        XCTAssertNotNil(fwd, "every Ang before 1430 must offer a forward control")
+        fwd!.tap()
+        assertOnAng(app, 1183, "after tapping the forward footer")
+    }
+
+    /// Several fast chevron taps must not desync the pager (the title and the visible page still agree,
+    /// and no self-heal was needed — `assertOnAng` requires `-h0`).
+    func testRapidChevronTapsStayInSync() {
+        let app = launchApp()
+        goReader(app, at: 700)
+        for _ in 0..<5 { app.buttons["Next Ang"].tap() }
+        assertOnAng(app, 705, "after 5 rapid Next taps")
+    }
+
+    /// Bounds: at Ang 1 Previous is disabled and a swipe-right rubber-bands; at Ang 1430 Next is
+    /// disabled and Previous still works.
+    func testReaderBoundsAndRubberBand() {
+        let app = launchApp()
+        goReader(app, at: 1)
+        assertOnAng(app, 1)
+        XCTAssertFalse(app.buttons["Previous Ang"].isEnabled, "Previous must be disabled at Ang 1")
+        readerScroll(app).swipeRight()
+        assertOnAng(app, 1, "rubber-band: still on Ang 1 after swiping past the start")
+        goReader(app, at: 1430)
+        assertOnAng(app, 1430)
+        XCTAssertFalse(app.buttons["Next Ang"].isEnabled, "Next must be disabled at Ang 1430")
+        app.buttons["Previous Ang"].tap()
+        assertOnAng(app, 1429, "Previous still works at the end")
+    }
+
+    /// Navigation stays correct around a sheet and after backgrounding: a deep link dismisses a
+    /// covering Hukam sheet and lands on the Reader, and a chevron tap survives background→foreground.
+    func testReaderNavAroundSheetAndBackground() {
+        let app = launchApp()
+        goReader(app, at: 300)
+        // open Hukam, then deep-link elsewhere — the sheet must not hide the destination
+        app.buttons["Hukam"].tap()
+        XCTAssertTrue(app.buttons["Done"].firstMatch.waitForExistence(timeout: 12), "Hukam sheet did not open")
+        XCUIDevice.shared.system.open(URL(string: "sggs://ang/900")!)
+        assertOnAng(app, 900, "deep link must land on the Reader, not behind the Hukam sheet")
+        // background and return, then keep navigating
+        XCUIDevice.shared.press(.home)
+        app.activate()
+        assertOnAng(app, 900, "state preserved across background")
+        app.buttons["Next Ang"].tap()
+        assertOnAng(app, 901, "chevrons work after foregrounding")
+    }
+
+    /// Open Reader → jump to an Ang that continues a shabad (164) → the "Shabad starts on Ang N"
+    /// pill is a real control that navigates back to the shabad's start (163). Regression guard for
+    /// the dead-label bug where this chip did nothing on any Ang.
+    func testContinuesFromPillGoesToShabadStart() {
+        let app = launchApp()
+        tab(app, "Reader").tap(); XCTAssertTrue(app.buttons["Hukam"].waitForExistence(timeout: 12), "Reader did not open")
+        let jump = app.buttons["jumpToAng"].firstMatch
+        XCTAssertTrue(jump.waitForExistence(timeout: 15)); jump.tap()
+        let field = app.textFields["angField"].firstMatch
+        XCTAssertTrue(field.waitForExistence(timeout: 8))
+        field.tap(); field.typeText("164")
+        app.buttons["goToAng"].tap()
+        XCTAssertTrue(app.navigationBars["Ang 164"].waitForExistence(timeout: 12), "jump to 164 failed")
+        // Query the HITTABLE pill: the neighbour page 165 also mounts a continuesFromPill, so
+        // `firstMatch` could hit the wrong one.
+        let pill = hittable(app, button: "continuesFromPill")
+        XCTAssertNotNil(pill, "Continues-from pill missing on Ang 164")
+        pill!.tap()
+        XCTAssertTrue(app.navigationBars["Ang 163"].waitForExistence(timeout: 12),
+                      "Continues-from pill did not navigate to the shabad's start Ang")
+    }
+
+    /// The Jump sheet's fine-tune steppers reach an exact Ang without typing, and the primary
+    /// action restates the destination ("Go to Ang 12") and lands there.
+    func testJumpSteppersAndGoLabel() {
+        let app = launchApp()
+        tab(app, "Reader").tap(); XCTAssertTrue(app.buttons["Hukam"].waitForExistence(timeout: 12), "Reader did not open")
+        let jump = app.buttons["jumpToAng"].firstMatch
+        XCTAssertTrue(jump.waitForExistence(timeout: 15)); jump.tap()
+        let go = app.buttons["goToAng"].firstMatch
+        XCTAssertTrue(go.waitForExistence(timeout: 8))
+        // from Ang 1: +10, +1 → 12
+        app.buttons["Forward 10"].firstMatch.tap()
+        app.buttons["Forward 1"].firstMatch.tap()
+        XCTAssertTrue(waitLabel(go, hasPrefix: "Go to Ang 12", timeout: 6),
+                      "Go label should restate the destination, got \(go.label)")
+        go.tap()
+        XCTAssertTrue(app.navigationBars["Ang 12"].waitForExistence(timeout: 12), "steppers did not land on Ang 12")
+    }
+
+    /// At the largest accessibility text size the Jump sheet stays usable: the primary Go action
+    /// is present and hittable (nothing truncates it off-screen).
+    func testJumpSheetAtAX5() {
+        let app = XCUIApplication()
+        app.launchEnvironment["SGGS_UITEST"] = "1"
+        app.launchArguments += ["-UIPreferredContentSizeCategoryName", "UICTContentSizeCategoryAccessibilityXXXL"]
+        app.launch()
+        tab(app, "Reader").tap(); XCTAssertTrue(app.buttons["Hukam"].waitForExistence(timeout: 15), "Reader did not open")
+        let jump = app.buttons["jumpToAng"].firstMatch
+        XCTAssertTrue(jump.waitForExistence(timeout: 15)); jump.tap()
+        let go = app.buttons["goToAng"].firstMatch
+        XCTAssertTrue(go.waitForExistence(timeout: 10), "Go action missing at AX5")
+        XCTAssertTrue(go.isHittable, "Go action must stay hittable at the largest text size")
+    }
+
+    /// The bottom bar's "Ang N of 1430" progress control is a third, thumb-reachable way into Jump.
+    func testReaderProgressOpensJump() {
+        let app = launchApp()
+        tab(app, "Reader").tap(); XCTAssertTrue(app.buttons["Hukam"].waitForExistence(timeout: 12), "Reader did not open")
+        // the "Ang N of 1430" progress control (a button whose label is the count text)
+        let progress = app.buttons.matching(NSPredicate(format: "label CONTAINS %@", "of 1430")).firstMatch
+        XCTAssertTrue(progress.waitForExistence(timeout: 12), "progress control missing")
+        progress.tap()
+        XCTAssertTrue(app.textFields["angField"].waitForExistence(timeout: 8), "progress control did not open Jump")
+    }
+
+    /// The never-stranded end-of-page footer turns the page from the bottom of the content.
+    func testEndOfPageFooterTurnsPage() {
+        let app = launchApp()
+        tab(app, "Reader").tap(); XCTAssertTrue(app.buttons["Hukam"].waitForExistence(timeout: 12), "Reader did not open")
+        let scroll = app.scrollViews.firstMatch
+        let next = app.buttons["endNextAng"].firstMatch
+        for _ in 0..<8 where !(next.exists && next.isHittable) { scroll.swipeUp() }
+        XCTAssertTrue(next.waitForExistence(timeout: 8), "end-of-page next button missing")
+        next.tap()
+        XCTAssertTrue(app.navigationBars["Ang 2"].waitForExistence(timeout: 12), "end-of-page footer did not turn the page")
+    }
+
+    /// Reading options open a popover with the in-Reader text-size control (A− / A+).
+    func testReadingOptionsTextSize() {
+        let app = launchApp()
+        tab(app, "Reader").tap(); XCTAssertTrue(app.buttons["Hukam"].waitForExistence(timeout: 12), "Reader did not open")
+        app.buttons["readerOptions"].firstMatch.tap()
+        let larger = app.buttons["textLarger"].firstMatch
+        XCTAssertTrue(larger.waitForExistence(timeout: 8), "text-size control missing in reading options")
+        XCTAssertTrue(larger.isHittable)
+        larger.tap()                                   // bumps sggs_gurmukhi_size
+        XCTAssertTrue(app.buttons["textSmaller"].firstMatch.isHittable, "A− control missing")
     }
 
     /// Raag Clock: pinned wall clock (16:40 → 4th pahar of day), now card + pahar list +
@@ -705,17 +924,24 @@ final class SGGSUITests: XCTestCase {
     }
 
     /// Ambient chrome: reading downwards hides the navigation bar; scrolling back reveals it.
+    /// The bottom reading chrome (Prev · Hukam · Next) fades while reading downward and returns on
+    /// scroll-up. With the finger-tracked pager the top navigation bar deliberately PERSISTS (the
+    /// Ang number + Go/AA stay for orientation; the nav bar is never toggled from scroll — that
+    /// caused the 120 Hz watchdog freeze), so the immersive-reading affordance is the bottom bar.
     func testReaderChromeReturnsOnScrollUp() {
         let app = launchApp()
         tab(app, "Reader").tap()
-        let jump = app.buttons["jumpToAng"].firstMatch
-        XCTAssertTrue(jump.waitForExistence(timeout: 15))
+        let hukam = app.buttons["Hukam"].firstMatch      // lives in the bottom page bar
+        XCTAssertTrue(hukam.waitForExistence(timeout: 15))
+        XCTAssertTrue(hukam.isHittable, "chrome should start visible")
         let scroll = app.scrollViews.firstMatch
         scroll.swipeUp(); scroll.swipeUp()
-        let gone = XCTNSPredicateExpectation(predicate: NSPredicate(format: "exists == 0"), object: jump)
-        XCTAssertEqual(XCTWaiter().wait(for: [gone], timeout: 5), .completed, "chrome should hide while reading down")
+        // faded chrome keeps `exists` true (opacity 0) but is not hittable — assert on that.
+        let hidden = XCTNSPredicateExpectation(predicate: NSPredicate(format: "isHittable == false"), object: hukam)
+        XCTAssertEqual(XCTWaiter().wait(for: [hidden], timeout: 5), .completed, "bottom chrome should hide while reading down")
         scroll.swipeDown()
-        XCTAssertTrue(jump.waitForExistence(timeout: 5), "chrome must return on scroll up")
+        let shown = XCTNSPredicateExpectation(predicate: NSPredicate(format: "isHittable == true"), object: hukam)
+        XCTAssertEqual(XCTWaiter().wait(for: [shown], timeout: 5), .completed, "chrome must return on scroll up")
     }
 
     /// A deep link must beat resume-last-Ang even on a launch WITHOUT the test env (which

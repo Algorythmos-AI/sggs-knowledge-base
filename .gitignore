@@ -46,6 +46,9 @@ db/backups/
 # .sqlite itself is already covered by ios/Resources/*.sqlite — DB artifacts are never
 # committed, CI rebuilds them deterministically)
 ios/Resources/sggs-ios-public.manifest.json
+# atomic-build temps (pipeline/build_ios_db.py) and the TestFlight archive's temporary sibling spec
+ios/Resources/*.tmp
+ios/App/SGGS-TestFlight.yml
 baseline_shots/
 ios/App/*.log
 new_shots/
@@ -61,3 +64,6 @@ Brand-files/
 
 # App Store screenshot masters (multi-MB PNGs; keep locally, commit only contact-sheet/)
 ios/AppStore/screenshots/
+
+# Machine-local agent notes (account identifiers, local gotchas) — never committed
+CLAUDE.local.md

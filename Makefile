@@ -3,7 +3,7 @@
 PIPELINE_PY ?= /usr/bin/python3
 PDF ?= ../Siri-Guru-Granth-Sahib-in-Gurmukhi-with-Index.pdf
 
-.PHONY: help doctor ci check-versions test-web test-frontend contract verify guard reconcile rebuild ios-db release testflight
+.PHONY: help doctor ci check-versions test-web test-frontend contract verify guard reconcile rebuild ios-db ios-db-check ios-db-repair release testflight
 help: ## list targets
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | awk 'BEGIN{FS=":.*?## "}{printf "  \033[36m%-16s\033[0m %s\n",$$1,$$2}'
 
@@ -13,6 +13,7 @@ doctor: ## check the local toolchain (the python3 trap, node, git-lfs, pdf)
 	@command -v git-lfs >/dev/null && echo "git-lfs: ok" || echo "  git-lfs missing"
 	@test -f db/sggs.sqlite && head -c 16 db/sggs.sqlite | grep -q "SQLite format 3" && echo "db: real SQLite" || echo "  db/sggs.sqlite missing or an LFS pointer — run: git lfs pull"
 	@test -f "$(PDF)" && echo "pdf: present" || echo "  source PDF not at $(PDF) (needed only for reconcile/rebuild)"
+	@test "$$(uname -s)" != Darwin || python3 pipeline/check_ios_db_pair.py || true
 
 check-versions: ## assert the version is unified across all 8 locations
 	python3 scripts/release/check_versions.py
@@ -56,6 +57,14 @@ ios-db: ## rebuild both iOS SQLite profiles + license gate
 	python3 pipeline/build_ios_db.py --profile personal
 	python3 pipeline/build_ios_db.py --profile public
 	bash pipeline/check_release_license.sh
+
+ios-db-check: ## does ios/Resources/sggs-ios.sqlite hash to its manifest? (run after a branch switch / in a new worktree)
+	python3 pipeline/check_ios_db_pair.py
+
+ios-db-repair: ## rebuild the personal iOS DB the app/tests bundle, then check the pair (never touches git)
+	@head -c 16 db/sggs.sqlite | grep -q "SQLite format 3" || (echo "db/sggs.sqlite is an LFS pointer — run: git lfs pull"; exit 1)
+	python3 pipeline/build_ios_db.py --profile personal
+	python3 pipeline/check_ios_db_pair.py
 
 release: ## bump the unified version everywhere: make release VERSION=1.2.0
 	@test -n "$(VERSION)" || (echo "usage: make release VERSION=X.Y.Z"; exit 1)

@@ -40,11 +40,17 @@ public struct AngPage: Sendable, Equatable {
     public let ang: Int
     public let lines: [ReaderLine]
     public let continuedFrom: Int?
+    /// The id of the FIRST line of the composition that continues onto this Ang (its heading /
+    /// opening verse, on Ang `continuedFrom`). Lets "Continues from Ang N" land on the shabad's
+    /// start, not the top of Ang N. nil when the Ang does not continue a composition. Additive.
+    public let continuedFromLineId: Int?
     public let raag: String?
     public let section: String?
     public let authors: [String]
-    public init(ang: Int, lines: [ReaderLine], continuedFrom: Int?, raag: String?, section: String?, authors: [String]) {
+    public init(ang: Int, lines: [ReaderLine], continuedFrom: Int?, continuedFromLineId: Int? = nil,
+                raag: String?, section: String?, authors: [String]) {
         self.ang = ang; self.lines = lines; self.continuedFrom = continuedFrom
+        self.continuedFromLineId = continuedFromLineId
         self.raag = raag; self.section = section; self.authors = authors
     }
 }

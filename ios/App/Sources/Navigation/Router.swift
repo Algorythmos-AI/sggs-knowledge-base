@@ -47,6 +47,27 @@ final class Router {
         selectedTab = .reader
     }
 
+    /// The Reader's pager settled on a new Ang after a finger swipe. Updates `readerAng` WITHOUT
+    /// touching the tab or a pending verse (an in-Reader page turn is not an explicit deep-link
+    /// navigation, and must not consume a landing meant for another Ang). Together with `openAng`,
+    /// these are the ONLY writers of `readerAng` — the single-writer rule that keeps the pager and
+    /// the router from feeding each other in a loop.
+    func pagerSettled(on n: Int) {
+        let c = max(1, min(1430, n))
+        guard c != readerAng else { return }
+        navigatedToAngExplicitly = true
+        readerAng = c
+    }
+
+    /// Restore the last-read Ang on a cold launch. A distinct, documented writer of `readerAng`
+    /// (alongside `openAng`/`pagerSettled`) so ReaderScreen never assigns the property directly:
+    /// it must not mark navigation explicit (an untouched `sggs://ang/1` deep link still wins) and
+    /// is a no-op once any explicit navigation has happened.
+    func resumeAng(_ n: Int) {
+        guard !navigatedToAngExplicitly else { return }
+        readerAng = max(1, min(1430, n))
+    }
+
     /// A raag the Clock should focus when opened via deep link / Reader timing chip.
     var pendingClockRaag: String?
 
@@ -83,7 +104,12 @@ final class Router {
             .queryItems?.first(where: { $0.name == "line" })?.value.flatMap(Int.init).flatMap { $0 > 0 ? $0 : nil }
         switch host {
         case "ang":
-            if let n = Int(value), (1...1430).contains(n) { openAng(n, lineId: line) }
+            if let n = Int(value), (1...1430).contains(n) {
+                // A deep link / intent to an Ang must land ON the Reader, not behind a shabad/hukam
+                // sheet that happened to be open (the reader would otherwise be hidden until dismissed).
+                container.dismissSheetForNavigation()
+                openAng(n, lineId: line)
+            }
         case "clock":
             openClock(raag: value.isEmpty ? nil : value)
         case "nitnem":

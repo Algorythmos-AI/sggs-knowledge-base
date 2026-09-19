@@ -3,6 +3,32 @@
 The format below (newest first) follows [Keep a Changelog](https://keepachangelog.com);
 entries prior to v1.1.0 are the project's original prose style and are preserved verbatim.
 
+## [Unreleased] — Reader navigation fix (iOS)
+
+Fixes the Reader page-turn controls reported broken on TestFlight 1.3.0 (2): the bottom-bar
+chevrons and the "Continues on Ang N" pill did nothing after the first tap, and the pill named the
+current Ang instead of the next. Root cause: `AngPager` latched an "in transition" flag on an
+animated programmatic page turn that `UIPageViewController` never cleared (its completion/delegate
+callbacks are gesture-only), so every later programmatic navigation was parked while the title kept
+advancing — title and page desynced.
+
+- Reworked the pager around a pure, unit-tested `PagerSync` state machine and synchronous,
+  non-animated `setViewControllers` wrapped in a `CATransition` (slide for ±1, fade otherwise). No
+  correctness now depends on a UIKit completion callback; a 0.5 s watchdog + a runloop self-heal
+  guarantee the visible page converges to the router's Ang.
+- Chevrons now show their destination (`‹ 1181 · Hukam · 1183 ›`); every Ang before 1430 ends with
+  a forward control ("Continues on Ang N+1", else "Next · Ang N+1") so the reader is never stranded
+  and Sehaj focus has a tap-to-advance; VoiceOver announces each page turn; the Hukam button falls
+  back to its glyph at large Dynamic Type sizes.
+- Also fixed: an Ang deep link/intent no longer lands behind an open sheet; the bottom bar no longer
+  vanishes on arriving at a previously-scrolled Ang; the page cache anchors on the current Ang (not a
+  neighbour) so the "Continues on" pill can't disappear; resume-last-Ang goes through a documented
+  `Router.resumeAng`.
+- Tests: `PagerSyncTests` (incl. a 5,000-sequence convergence fuzz), `AngPagerHostedTests` (real
+  `UIPageViewController`), and UI tests for the chevrons, the continuation pills, rapid taps, bounds,
+  and navigation around sheets/backgrounding — each asserting the title AND the visible page agree.
+  CI now uploads `.xcresult` bundles on failure. Scripture, corpus, DB, API untouched.
+
 ## [1.3.0] — 2026-09-19 — Nitnem, next level (premium pass)
 
 The daily-prayer (Nitnem) experience rebuilt end to end: a time-of-day paper home, derived

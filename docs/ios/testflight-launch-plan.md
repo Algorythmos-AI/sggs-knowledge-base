@@ -195,6 +195,7 @@ Ordered; each item is a PR into `integration` unless marked human.
 | Risk | Handling |
 |---|---|
 | Uploading the English-bundled DB by mistake | The script gates the exact artifact it bundles, then re-hashes the DB inside the archived `.app`; CI does the same on the manual workflow. |
+| The archive replacing the developer's personal DB (app then fail-closes locally: "Scripture integrity check failed") | Fixed 2026-09-19: the script stages the shipping DB under `ios/App/build/stage-<ver>-<build>/` and archives from a temporary `SGGS-TestFlight.xcodeproj`; it never touches `ios/Resources/` and runs no tree-changing git command. `make ios-db-check` detects a mismatched pair (also after a branch switch / in a new worktree); `make ios-db-repair` fixes it. |
 | Build-number collision on upload | Explicit `BUILD=N` per upload, recorded in the build log; `manageAppVersionAndBuildNumber=false` so Apple never silently renumbers. |
 | Widgets empty on device (App Group mis-provisioned) | Visible in About → Integrity; Phase B item, blocking. |
 | Cold-start integrity hash too slow on old hardware | Launch cache skips the 108 MB re-hash after the first verified launch; measure on the oldest device in Phase B. |
