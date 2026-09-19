@@ -84,15 +84,14 @@ struct ReaderScreen: View {
     @Environment(AppContainer.self) private var container
     @Environment(\.palette) private var palette
     @State private var model: ReaderModel?
-    @AppStorage("sggs_show_timing") private var showTiming = true   // web default-ON parity
-    @AppStorage("sggs_show_english") private var showEnglish = true
-    @AppStorage("sggs_translit") private var showTranslit = true
-    /// Sehaj focus: chrome collapses, generous leading, pure Gurmukhi (an explicit mode).
+    /// Sehaj focus: chrome collapses, generous leading, pure Gurmukhi (an explicit mode). The
+    /// display toggles + text size live in the Reading-options popover, which reads these keys itself.
     @AppStorage("sggs_focus_mode") private var focusMode = false
     /// Resume where the reader left off (persisted on every Ang change; 1 = never read).
     @AppStorage("sggs_last_ang") private var lastAng = 1
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @State private var showJump = false
+    @State private var showOptions = false
     @State private var resumed = false
     /// Ambient chrome (the bottom page bar): hidden while reading downwards, restored on any
     /// upward scroll. Driven only by the CURRENT page's scroll (AngPageView gates its reports).
@@ -149,25 +148,46 @@ struct ReaderScreen: View {
             // baseline screenshots show the same). The inset is laid out above the tab bar.
             .safeAreaInset(edge: .bottom) {
                 if !focusMode {
-                    HStack {
-                        Button { Haptics.tap(); router.openAng(router.readerAng - 1) }
-                            label: { Image(systemName: "chevron.left").frame(minWidth: 44, minHeight: 44) }
-                            .disabled(router.readerAng <= 1)
-                            .accessibilityLabel("Previous Ang")
-                        Spacer()
-                        Button { Haptics.tap(); container.present(.hukam) } label: {
-                            Label("Hukam", systemImage: "sparkles").lineLimit(1).frame(minHeight: 44)
+                    VStack(spacing: Theme.Space.xs) {
+                        // "Ang N of 1430" + a Granth-progress hairline — a thumb-reachable third
+                        // way into Jump, and a sense of place in the whole Granth.
+                        Button { Haptics.tap(); showJump = true } label: {
+                            VStack(spacing: 3) {
+                                Text("Ang \(String(router.readerAng)) of 1430")
+                                    .font(.caption).monospacedDigit().foregroundStyle(.secondary)
+                                GeometryReader { g in
+                                    ZStack(alignment: .leading) {
+                                        Capsule().fill(Ink.hairline).frame(height: 2)
+                                        Capsule().fill(palette.accent)
+                                            .frame(width: g.size.width * CGFloat(router.readerAng) / 1430, height: 2)
+                                    }
+                                }.frame(height: 2)
+                            }
                         }
-                        Spacer()
-                        Button { Haptics.tap(); router.openAng(router.readerAng + 1) }
-                            label: { Image(systemName: "chevron.right").frame(minWidth: 44, minHeight: 44) }
-                            .disabled(router.readerAng >= 1430)
-                            .accessibilityLabel("Next Ang")
+                        .buttonStyle(.plain)
+                        .accessibilityIdentifier("readerProgress")
+                        .accessibilityHint("Jump to another Ang")
+
+                        HStack {
+                            Button { Haptics.tap(); router.openAng(router.readerAng - 1) }
+                                label: { Image(systemName: "chevron.left").frame(minWidth: 44, minHeight: 44) }
+                                .disabled(router.readerAng <= 1)
+                                .accessibilityLabel("Previous Ang")
+                            Spacer()
+                            Button { Haptics.tap(); container.present(.hukam) } label: {
+                                Label("Hukam", systemImage: "sparkles").lineLimit(1).frame(minHeight: 44)
+                            }
+                            Spacer()
+                            Button { Haptics.tap(); router.openAng(router.readerAng + 1) }
+                                label: { Image(systemName: "chevron.right").frame(minWidth: 44, minHeight: 44) }
+                                .disabled(router.readerAng >= 1430)
+                                .accessibilityLabel("Next Ang")
+                        }
+                        .font(.body.weight(.medium))
+                        .padding(.horizontal, Theme.Space.m)
+                        .background(Capsule().fill(Ink.card))
+                        .overlay(Capsule().strokeBorder(Ink.hairline))
                     }
-                    .font(.body.weight(.medium))
-                    .padding(.horizontal, Theme.Space.m)
-                    .background(Capsule().fill(Ink.card))
-                    .overlay(Capsule().strokeBorder(Ink.hairline))
                     .padding(.horizontal, Theme.Space.l)
                     .frame(maxWidth: 520)                 // iPad: a reading-width capsule, centred
                     .frame(maxWidth: .infinity)
@@ -192,19 +212,10 @@ struct ReaderScreen: View {
                     .accessibilityIdentifier("jumpToAng")
                 }
                 ToolbarItem(placement: .topBarTrailing) {
-                    Menu {
-                        Toggle("Transliteration", isOn: $showTranslit)
-                        if container.corpus?.capabilities.hasEnglish == true {
-                            Toggle("English translation", isOn: $showEnglish)
-                        }
-                        if container.corpus?.capabilities.hasTiming == true {
-                            Toggle("Timing chip", isOn: $showTiming)
-                        }
-                        Divider()
-                        Toggle("Sehaj focus", isOn: $focusMode)
-                    } label: { Image(systemName: "textformat.size") }
-                    .accessibilityLabel("Reading options")
-                    .accessibilityIdentifier("readerOptions")
+                    Button { showOptions = true } label: { Image(systemName: "textformat.size") }
+                        .accessibilityLabel("Reading options")
+                        .accessibilityIdentifier("readerOptions")
+                        .popover(isPresented: $showOptions) { ReaderOptionsPopover().environment(container) }
                 }
             }
             .sheet(isPresented: $showJump) {
