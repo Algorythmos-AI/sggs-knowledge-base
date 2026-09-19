@@ -497,6 +497,41 @@ final class SGGSUITests: XCTestCase {
         XCTAssertTrue(go.isHittable, "Go action must stay hittable at the largest text size")
     }
 
+    /// The bottom bar's "Ang N of 1430" progress control is a third, thumb-reachable way into Jump.
+    func testReaderProgressOpensJump() {
+        let app = launchApp()
+        tab(app, "Reader").tap(); XCTAssertTrue(app.buttons["Hukam"].waitForExistence(timeout: 12), "Reader did not open")
+        // the "Ang N of 1430" progress control (a button whose label is the count text)
+        let progress = app.buttons.matching(NSPredicate(format: "label CONTAINS %@", "of 1430")).firstMatch
+        XCTAssertTrue(progress.waitForExistence(timeout: 12), "progress control missing")
+        progress.tap()
+        XCTAssertTrue(app.textFields["angField"].waitForExistence(timeout: 8), "progress control did not open Jump")
+    }
+
+    /// The never-stranded end-of-page footer turns the page from the bottom of the content.
+    func testEndOfPageFooterTurnsPage() {
+        let app = launchApp()
+        tab(app, "Reader").tap(); XCTAssertTrue(app.buttons["Hukam"].waitForExistence(timeout: 12), "Reader did not open")
+        let scroll = app.scrollViews.firstMatch
+        let next = app.buttons["endNextAng"].firstMatch
+        for _ in 0..<8 where !(next.exists && next.isHittable) { scroll.swipeUp() }
+        XCTAssertTrue(next.waitForExistence(timeout: 8), "end-of-page next button missing")
+        next.tap()
+        XCTAssertTrue(app.navigationBars["Ang 2"].waitForExistence(timeout: 12), "end-of-page footer did not turn the page")
+    }
+
+    /// Reading options open a popover with the in-Reader text-size control (A− / A+).
+    func testReadingOptionsTextSize() {
+        let app = launchApp()
+        tab(app, "Reader").tap(); XCTAssertTrue(app.buttons["Hukam"].waitForExistence(timeout: 12), "Reader did not open")
+        app.buttons["readerOptions"].firstMatch.tap()
+        let larger = app.buttons["textLarger"].firstMatch
+        XCTAssertTrue(larger.waitForExistence(timeout: 8), "text-size control missing in reading options")
+        XCTAssertTrue(larger.isHittable)
+        larger.tap()                                   // bumps sggs_gurmukhi_size
+        XCTAssertTrue(app.buttons["textSmaller"].firstMatch.isHittable, "A− control missing")
+    }
+
     /// Raag Clock: pinned wall clock (16:40 → 4th pahar of day), now card + pahar list +
     /// detail sheet + divergence sheet all reachable.
     func testRaagClock() {
