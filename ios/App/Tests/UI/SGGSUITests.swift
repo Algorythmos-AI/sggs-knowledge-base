@@ -84,6 +84,18 @@ final class SGGSUITests: XCTestCase {
         return app.buttons[action].firstMatch
     }
 
+    // MARK: Jump-sheet helpers
+
+    /// Enter a new Ang into the (seeded, editable) number field: focus, clear the existing digits,
+    /// then type the value. Robust whether or not select-all-on-focus has fired.
+    private func enterAng(_ app: XCUIApplication, _ value: String, file: StaticString = #file, line: UInt = #line) {
+        let field = app.textFields["angField"].firstMatch
+        XCTAssertTrue(field.waitForExistence(timeout: 8), "angField missing", file: file, line: line)
+        field.tap()
+        field.typeText(String(repeating: "\u{8}", count: 5))   // delete up to 5 seeded digits
+        field.typeText(value)
+    }
+
     // MARK: Reader pager helpers
 
     /// The Reader mounts three pages at once (current ±1), so the same in-page control id exists on
@@ -165,9 +177,8 @@ final class SGGSUITests: XCTestCase {
         let title = app.buttons["angTitle"].firstMatch
         XCTAssertTrue(title.waitForExistence(timeout: 12), "the Ang title should be a button")
         title.tap()
-        let field = app.textFields["angField"].firstMatch
-        XCTAssertTrue(field.waitForExistence(timeout: 8), "title tap should open Jump")
-        field.tap(); field.typeText("1106")
+        XCTAssertTrue(app.textFields["angField"].firstMatch.waitForExistence(timeout: 8), "title tap should open Jump")
+        enterAng(app, "1106")
         app.buttons["goToAng"].tap()
         assertOnAng(app, 1106, "after typing an Ang from the title")
     }
@@ -521,9 +532,7 @@ final class SGGSUITests: XCTestCase {
         let jump = app.buttons["jumpToAng"].firstMatch
         XCTAssertTrue(jump.waitForExistence(timeout: 15))
         jump.tap()
-        let field = app.textFields["angField"].firstMatch
-        XCTAssertTrue(field.waitForExistence(timeout: 8))
-        field.tap(); field.typeText("1430")
+        enterAng(app, "1430")
         app.buttons["goToAng"].tap()
         XCTAssertTrue(app.navigationBars["Ang 1430"].waitForExistence(timeout: 12), "jump to 1430 failed")
         XCTAssertFalse(app.buttons["Next Ang"].isEnabled, "next must be disabled at Ang 1430")

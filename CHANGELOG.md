@@ -55,12 +55,15 @@ observed it — sat on the skeleton forever.
   the loaded content view (`angContent-N`) so no Ang can pass on a skeleton; new UI tests for an
   8-page swipe run after a jump and for the tappable title. Scripture, corpus, DB, API untouched.
 
-### Jump-to-Ang sheet: editable number, working Go, no overlap (iOS)
+### Jump-to-Ang sheet: genuinely editable number, working Go, no overlap (iOS)
 
-Follow-up polish on the Jump sheet reported from TestFlight 1.3.0 (5):
+Follow-up polish on the Jump sheet reported from TestFlight 1.3.0 (5)–(6):
 
-- **The Ang number now reads as editable** — a pencil affordance and an underline (brightening on
-  focus) make it obvious you can tap and type; the hint says "Tap to type an Ang from 1 to 1430".
+- **The Ang number is now a real, editable field** — seeded with the current Ang and shown with a
+  pencil affordance + an underline (brightening on focus). Tap it and the whole number selects, so a
+  new Ang replaces it in one keystroke, or place the cursor to edit a digit / backspace. (Earlier
+  builds put an *empty* field over the number, so it could only be retyped from blank, not edited —
+  which read as "can't edit".)
 - **One honest Go.** The pinned primary action restates the destination — **"Go to Ang N"** when the
   number differs from where you are, a dimmed **"You're on Ang N"** when there's nowhere to go, and
   **"Enter an Ang from 1 to 1430"** on an out-of-range entry. Removed the duplicate keyboard "Go"
