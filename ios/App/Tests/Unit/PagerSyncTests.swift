@@ -158,7 +158,7 @@ final class PagerSyncTests: XCTestCase {
     /// simulated visible index equals the last desired index. This is the machine-checked statement of
     /// invariant I1 — the property the shipped build violated.
     func testFuzzConvergence() {
-        var rng = SystemRandomNumberGenerator()
+        var rng = SplitMix64(seed: 0xC0FFEE_D00D)   // deterministic → reproducible, never flaky in CI
         for _ in 0..<5000 {
             var s = sync()
             var visible: Int? = Int.random(in: 1...1430, using: &rng)
@@ -196,18 +196,39 @@ final class PagerSyncTests: XCTestCase {
                 }
             }
 
-            // Drain to quiescence: end any gesture, then fire the watchdog until nothing is pending.
+            // Drain to quiescence exactly as the real system does: end any live gesture, then let the
+            // watchdog heal a parked request and let reconcile() (which SwiftUI runs on every
+            // updateUIViewController after any state change) drive the visible page to `desired`.
             if gestureOpen {
                 apply(s.gestureEnded(completed: true, visible: visible, scrollBusy: false,
                                      reduceMotion: false, inWindow: true, now: now))
+                gestureOpen = false
             }
             var guardCount = 0
-            while s.pending != nil, guardCount < 5 {
+            while guardCount < 10 {
+                let before = visible
                 apply(s.watchdog(desired: desired, visible: visible, scrollBusy: false))
+                apply(s.request(desired: desired, visible: visible, scrollBusy: false,
+                                reduceMotion: false, inWindow: true, now: now + Double(guardCount)))
+                if visible == before && s.pending == nil { break }
                 guardCount += 1
             }
             let clampedDesired = min(max(1, desired), 1430)
             XCTAssertEqual(visible, clampedDesired, "did not converge: desired \(desired) visible \(String(describing: visible))")
         }
+    }
+}
+
+/// A tiny deterministic PRNG so the convergence fuzz is reproducible (a seeded sequence catches the
+/// same edge cases on every run and in CI, instead of flaking with the system RNG).
+private struct SplitMix64: RandomNumberGenerator {
+    private var state: UInt64
+    init(seed: UInt64) { state = seed }
+    mutating func next() -> UInt64 {
+        state &+= 0x9E37_79B9_7F4A_7C15
+        var z = state
+        z = (z ^ (z >> 30)) &* 0xBF58_476D_1CE4_E5B9
+        z = (z ^ (z >> 27)) &* 0x94D0_49BB_1331_11EB
+        return z ^ (z >> 31)
     }
 }

@@ -51,7 +51,7 @@ If you edit the DB in place afterwards (e.g. re-run build_vaars.py), re-stamp `M
 (cd webapp && SGGS_OPEN_BROWSER=0 python3 serve.py &) ; curl -s localhost:7777/api/health   # all true
 python3 pipeline/roundtrip_harness.py; python3 pipeline/casual_quote_harness.py
 python3 pipeline/gen_golden_vectors.py      # Homebrew python3 (matches contract/_meta.json); review `git diff --stat contract/`
-make ios-db && (cd ios/Packages/GurbaniSearchKit && swift test)
+make ios-db && make ios-db-check && (cd ios/Packages/GurbaniSearchKit && swift test)   # check: DB hashes to its manifest (FAIL = app fail-closes)
 (cd frontend && npm run build:deploy)       # only if webapp/static should change
 make reconcile                              # writes validation/reconcile-attestation.json (needs the PDF)
 ```

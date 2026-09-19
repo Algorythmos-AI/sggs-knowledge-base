@@ -123,23 +123,23 @@ struct AngPageView: View {
                         .id(line.id)
                     }
                 }
-                // A forward control ends every Ang (except the last) so the reader is never stranded
-                // at the bottom of the page — and it is the way to advance in Sehaj focus, where the
-                // bottom bar is hidden. "Continues on Ang N+1" when the shabad carries over, a quieter
-                // "Next · Ang N+1" otherwise. Fixed-height slot so it never shifts the verses above.
+                // A "Continues on Ang N+1" hint when the shabad carries over the boundary.
+                // Fixed-height slot so it never shifts the verses above.
                 HStack {
                     Spacer()
-                    if page.ang < 1430 {
-                        let carries = model.continuesOn(after: page.ang)
-                        ContinuationPill(text: (carries ? "Continues on Ang " : "Next · Ang ") + String(page.ang + 1),
+                    if page.ang < 1430, model.continuesOn(after: page.ang) {
+                        ContinuationPill(text: "Continues on Ang \(String(page.ang + 1))",
                                          systemImage: "arrow.down.forward",
-                                         identifier: carries ? "continuesOnPill" : "nextAngFooter",
+                                         identifier: "continuesOnPill",
                                          hint: "Goes to the next Ang") {
                             Haptics.tap(); container.router.openAng(page.ang + 1)
                         }
                     }
                 }
                 .frame(minHeight: 44)
+                // Never-stranded end-of-page navigation: turn the page from the bottom without
+                // scrolling back up to the pager gesture or the bottom bar.
+                endOfPageNav(page.ang)
             }
             .scrollTargetLayout()
             .padding()
@@ -156,6 +156,38 @@ struct AngPageView: View {
             },
             onContentHeight: { h in if isCurrent { onScroll(.nan, h, .nan) } }))
         .contentMargins(.bottom, Theme.Space.xl, for: .scrollContent)
+    }
+
+    // MARK: end-of-page navigation
+
+    @ViewBuilder private func endOfPageNav(_ ang: Int) -> some View {
+        HStack(spacing: Theme.Space.m) {
+            if ang > 1 {
+                endNavButton(to: ang - 1, systemImage: "chevron.left",
+                             title: "Ang \(String(ang - 1))", id: "endPrevAng", leading: true)
+            }
+            if ang < 1430 {
+                endNavButton(to: ang + 1, systemImage: "chevron.right",
+                             title: "Next · Ang \(String(ang + 1))", id: "endNextAng", leading: false)
+            }
+        }
+        .padding(.top, Theme.Space.m)
+    }
+
+    private func endNavButton(to target: Int, systemImage: String, title: String, id: String, leading: Bool) -> some View {
+        Button { Haptics.tap(); container.router.openAng(target) } label: {
+            HStack(spacing: Theme.Space.xs) {
+                if leading { Image(systemName: systemImage) }
+                Text(title).font(.subheadline.weight(.medium)).lineLimit(1)
+                if !leading { Image(systemName: systemImage) }
+            }
+            .frame(maxWidth: .infinity, minHeight: 52)
+            .background(Ink.card, in: RoundedRectangle(cornerRadius: Theme.Radius.card))
+            .overlay(RoundedRectangle(cornerRadius: Theme.Radius.card).strokeBorder(Ink.hairline))
+            .foregroundStyle(palette.accentText)
+        }
+        .buttonStyle(.pressableCard)
+        .accessibilityIdentifier(id)
     }
 
     // MARK: raag banner + timing chip

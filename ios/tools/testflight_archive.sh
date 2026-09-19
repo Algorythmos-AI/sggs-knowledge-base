@@ -3,10 +3,13 @@
 #
 # What it does, in order (every step is a gate; the script stops on the first failure):
 #   1. Derives the iOS DB for the chosen PROFILE from db/sggs.sqlite (scripture checksum proven
-#      by pipeline/build_ios_db.py) into the path the app bundles (ios/Resources/sggs-ios.sqlite).
+#      by pipeline/build_ios_db.py) into a STAGING directory under ios/App/build/. The developer's
+#      ios/Resources/sggs-ios.sqlite + manifest pair is never read, written or restored.
 #   2. Runs pipeline/check_release_license.sh on THAT artifact — a public build must be
 #      Gurmukhi-only, or the English translation must be attested LICENSED: true.
-#   3. Regenerates SGGS.xcodeproj with XcodeGen (the project is never committed).
+#   3. Generates SGGS-TestFlight.xcodeproj with XcodeGen from a temporary sibling spec that is
+#      project.yml with exactly three lines changed (name + the two DB resource paths → staging).
+#      Your own SGGS.xcodeproj is not repointed; neither project is ever committed.
 #   4. Archives the Release configuration with the Team ID and build number passed on the
 #      command line (project.yml is not edited), automatic signing.
 #   5. Exports for App Store Connect; with SGGS_UPLOAD=1 the export *is* the upload.
@@ -27,12 +30,14 @@
 #   SGGS_ASC_KEY_PATH / SGGS_ASC_KEY_ID / SGGS_ASC_ISSUER_ID
 #                       App Store Connect API key (all three, or none). Needed for CI / an
 #                       unattended upload; a logged-in Xcode account suffices locally.
+#   SGGS_ARCHIVE_DRY_RUN 1 → stop after step 3 (stage + gate + generate); nothing is signed,
+#                       archived or uploaded. Used by webapp/tests/test_ios_archive.py.
 #
-# Tracked files this script may touch: ios/Resources/sggs-ios.manifest.json (build_ios_db.py
-# rewrites it next to the DB; restored from git on exit so the committed personal-profile
-# manifest is never accidentally replaced), and — only with SGGS_UPLOAD=1 — the append-only
-# ios/testflight-builds.json ledger, which you then commit with the release. NEVER commit the
-# build artifacts under ios/App/build/ or ios/Resources/*.sqlite.
+# Tracked files this script may touch: only — and only with SGGS_UPLOAD=1 — the append-only
+# ios/testflight-builds.json ledger, which you then commit with the release. It runs no git
+# command that changes the working tree. Everything else it writes is git-ignored and lives under
+# ios/App/build/ (staging, archive, export, lock) or is the temporary ios/App/SGGS-TestFlight.yml
+# + SGGS-TestFlight.xcodeproj. NEVER commit ios/App/build/ or ios/Resources/*.sqlite.
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
@@ -65,13 +70,19 @@ fi
 
 PROJECT_DIR="ios/App"
 BUILD_DIR="$PROJECT_DIR/build"
-RES_DIR="ios/Resources"
-DB="$RES_DIR/sggs-ios.sqlite"
-MANIFEST="$RES_DIR/sggs-ios.manifest.json"
+DRY_RUN="${SGGS_ARCHIVE_DRY_RUN:-0}"
 VERSION=$(python3 -c "import re;print(re.search(r'MARKETING_VERSION:\s*\"([^\"]+)\"',open('$PROJECT_DIR/project.yml').read()).group(1))")
 ARCHIVE="$BUILD_DIR/SGGS-$VERSION-$BUILD.xcarchive"
 EXPORT_DIR="$BUILD_DIR/export-$VERSION-$BUILD"
 OPTIONS="$BUILD_DIR/ExportOptions-$VERSION-$BUILD.plist"
+# The artifact that ships is staged here — never in ios/Resources (the developer's own pair).
+STAGE_REL="build/stage-$VERSION-$BUILD"          # relative to $PROJECT_DIR, as the spec needs it
+STAGE="$PROJECT_DIR/$STAGE_REL"
+DB="$STAGE/sggs-ios.sqlite"
+MANIFEST="$STAGE/sggs-ios.manifest.json"
+TF_NAME="SGGS-TestFlight"
+TF_SPEC="$PROJECT_DIR/$TF_NAME.yml"
+LOCK="$BUILD_DIR/.archive.lock"
 
 say "SGGS TestFlight candidate — version $VERSION build $BUILD · profile $PROFILE · team $TEAM_ID"
 
@@ -90,11 +101,30 @@ LEDGER_STRICT=(); [ "$UPLOAD" = 1 ] && LEDGER_STRICT=(--strict)
 python3 ios/tools/testflight_ledger.py check "$VERSION" "$BUILD" ${LEDGER_STRICT[@]+"${LEDGER_STRICT[@]}"} \
   || fail "build number $BUILD is not valid for $VERSION (see above; run: python3 ios/tools/testflight_ledger.py next $VERSION)"
 
-# Restore the committed manifest whatever happens after this point.
-restore_manifest() { git checkout --quiet -- "$MANIFEST" 2>/dev/null || true; }
-trap restore_manifest EXIT
+# One archive at a time per checkout (mkdir is atomic). A lock whose PID is dead is reclaimed.
+if ! mkdir "$LOCK" 2>/dev/null; then
+  HOLDER=$(cat "$LOCK/pid" 2>/dev/null || true)
+  if [ -n "$HOLDER" ] && kill -0 "$HOLDER" 2>/dev/null; then
+    fail "another archive is running in this checkout (pid $HOLDER, lock $LOCK)"
+  fi
+  echo "  reclaiming stale lock (pid ${HOLDER:-unknown} is gone)"
+  rm -f "$LOCK/pid"; rmdir "$LOCK" 2>/dev/null || true
+  mkdir "$LOCK" || fail "could not take the archive lock: $LOCK"
+fi
+echo $$ > "$LOCK/pid"
 
-say "1/6 derive the $PROFILE iOS DB (scripture checksum proven by build_ios_db.py)"
+# Remove only what this run created, by explicit path. No git command, no glob.
+cleanup() {
+  rm -f "$DB" "$DB.tmp" "$MANIFEST.tmp" "$TF_SPEC"
+  rm -rf "$PROJECT_DIR/$TF_NAME.xcodeproj"
+  rm -f "$LOCK/pid"; rmdir "$LOCK" 2>/dev/null || true
+}
+trap cleanup EXIT
+trap 'exit 130' INT
+trap 'exit 143' TERM
+
+say "1/6 derive the $PROFILE iOS DB into staging (scripture checksum proven by build_ios_db.py)"
+mkdir -p "$STAGE"
 python3 pipeline/build_ios_db.py --profile "$PROFILE" db/sggs.sqlite "$DB"
 
 say "2/6 release gate on the artifact that will ship"
@@ -103,12 +133,32 @@ BUNDLED_SHA=$(python3 -c "import json;print(json.load(open('$MANIFEST'))['db_sha
 EN=$(python3 -c "import json;print(json.load(open('$MANIFEST'))['en_bundled'])")
 echo "  bundling profile=$PROFILE en_bundled=$EN db_sha256=${BUNDLED_SHA:0:16}…"
 
-say "3/6 generate SGGS.xcodeproj"
-xcodegen generate --spec "$PROJECT_DIR/project.yml" --project "$PROJECT_DIR" --quiet
+say "3/6 generate $TF_NAME.xcodeproj (project.yml with the DB resources pointed at staging)"
+sed -e "s|^name: SGGS\$|name: $TF_NAME|" \
+    -e "s|path: \.\./Resources/sggs-ios\.sqlite\$|path: $STAGE_REL/sggs-ios.sqlite|" \
+    -e "s|path: \.\./Resources/sggs-ios\.manifest\.json\$|path: $STAGE_REL/sggs-ios.manifest.json|" \
+    "$PROJECT_DIR/project.yml" > "$TF_SPEC"
+CHANGED=$(diff "$PROJECT_DIR/project.yml" "$TF_SPEC" | grep -c '^>' || true)
+[ "$CHANGED" = 3 ] || fail "expected exactly 3 rewritten lines in $TF_SPEC, got $CHANGED — project.yml's name/DB resource lines changed shape; update the sed above"
+if grep -q 'Resources/sggs-ios' "$TF_SPEC"; then fail "$TF_SPEC still bundles the developer DB pair"; fi
+xcodegen generate --spec "$TF_SPEC" --project "$PROJECT_DIR" --quiet
+# pbxproj stores the staging dir as a group path and the file by basename — check both, and that
+# nothing in the generated project points back at ios/Resources.
+PBX="$PROJECT_DIR/$TF_NAME.xcodeproj/project.pbxproj"
+grep -q "stage-$VERSION-$BUILD" "$PBX" && grep -q "sggs-ios.sqlite in Resources" "$PBX" \
+  || fail "generated project does not bundle the staged DB"
+if grep -q '\.\./Resources' "$PBX"; then fail "generated project still references ../Resources"; fi
+
+if [ "$DRY_RUN" = 1 ]; then
+  echo
+  echo "OK  DRY RUN — staged + gated + generated; nothing archived, signed or uploaded."
+  echo "    staged: profile=$PROFILE db_sha256=${BUNDLED_SHA:0:16}…"
+  exit 0
+fi
 
 say "4/6 archive (Release, automatic signing)"
 rm -rf "$ARCHIVE"
-xcodebuild -project "$PROJECT_DIR/SGGS.xcodeproj" -scheme SGGS -configuration Release \
+xcodebuild -project "$PROJECT_DIR/$TF_NAME.xcodeproj" -scheme SGGS -configuration Release \
   -destination "generic/platform=iOS" -archivePath "$ARCHIVE" archive \
   DEVELOPMENT_TEAM="$TEAM_ID" CURRENT_PROJECT_VERSION="$BUILD" CODE_SIGNING_ALLOWED=YES \
   -allowProvisioningUpdates ${AUTH_ARGS[@]+"${AUTH_ARGS[@]}"} | tail -30
