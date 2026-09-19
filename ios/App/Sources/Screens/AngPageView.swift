@@ -53,7 +53,7 @@ struct AngPageView: View {
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
         .background(Ink.paper)
         .task(id: ang) {
-            await model.ensure(ang)
+            await model.ensure(ang, isCurrent: isCurrent)
             page = model.page(ang)
             // present a requested verse as the INITIAL scroll offset before first layout
             if isCurrent, let id = container.router.pendingReaderLineId,
@@ -123,7 +123,8 @@ struct AngPageView: View {
                         .id(line.id)
                     }
                 }
-                // fixed-height slot: the pill appears without shifting the verses above
+                // A "Continues on Ang N+1" hint when the shabad carries over the boundary.
+                // Fixed-height slot so it never shifts the verses above.
                 HStack {
                     Spacer()
                     if page.ang < 1430, model.continuesOn(after: page.ang) {

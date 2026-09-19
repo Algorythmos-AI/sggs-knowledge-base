@@ -21,8 +21,11 @@ final class ReaderModel {
 
     /// Load `ang` into the cache if absent (local SQLite, ~ms), then pre-warm ±2. Idempotent and
     /// cancellation-safe; the pager calls this per page as it comes on screen.
-    func ensure(_ ang: Int) async {
-        anchor = ang
+    func ensure(_ ang: Int, isCurrent: Bool) async {
+        // Only the current page moves the eviction anchor. Neighbour pages (the pager mounts ±1
+        // live) also call `ensure`, and if they set the anchor the >7 eviction would measure
+        // distance from a neighbour and could drop the very page the reader is about to swipe to.
+        if isCurrent { anchor = ang }
         if pages[ang] == nil, !inflight.contains(ang), let corpus {
             inflight.insert(ang)
             if let p = try? await corpus.ang(ang) { remember(p) }
@@ -101,6 +104,10 @@ struct ReaderScreen: View {
     @State private var upRun: CGFloat = 0
     @State private var contentHeight: CGFloat = 0
     @State private var viewportHeight: CGFloat = 0
+    /// Set on every Ang change: the next scroll report is the *new* page's offset, not a scroll on the
+    /// old one, so it must re-baseline `lastOffset` instead of being read as a big downward run (which
+    /// would wrongly hide the bottom bar on arriving at a page previously read partway down).
+    @State private var justTurned = false
 
     var body: some View {
         @Bindable var router = container.router
@@ -112,7 +119,7 @@ struct ReaderScreen: View {
                     // page's scroll position survives a swipe-back. `readerAng` is the single source
                     // of truth — the pager writes it via `pagerSettled` on a swipe, and external
                     // navigation (Jump, deep link, chevrons, pills) drives the pager through it.
-                    AngPager(index: $router.readerAng, bounds: 1...1430, reduceMotion: reduceMotion) { ang in
+                    AngPager(index: router.readerAng, bounds: 1...1430, reduceMotion: reduceMotion) { ang in
                         AngPageView(ang: ang, model: model,
                                     onOpenJump: { showJump = true },
                                     onScroll: { y, content, viewport in
@@ -139,7 +146,11 @@ struct ReaderScreen: View {
             // as a reverse scroll → show → hide … an endless update loop that froze the app on a
             // 120 Hz device (TestFlight 1.1.3 (1), watchdog 0x8BADF00D). Only the bottom page bar
             // fades — opacity/offset don't change layout, so it cannot feed back.
-            .onChange(of: router.readerAng) { _, _ in showChrome() }   // page turn: chrome back
+            .onChange(of: router.readerAng) { _, n in
+                justTurned = true          // re-baseline scroll tracking for the new page (C5)
+                showChrome()               // page turn: chrome back
+                UIAccessibility.post(notification: .pageScrolled, argument: "Ang \(n)")
+            }
             .onChange(of: focusMode) { _, _ in showChrome() }
             .onChange(of: container.presentation?.id) { _, id in if id == nil { showChrome() } }
             // Page controls live in a bottom safe-area inset, NOT a `.bottomBar` toolbar: inside a
@@ -148,6 +159,8 @@ struct ReaderScreen: View {
             // baseline screenshots show the same). The inset is laid out above the tab bar.
             .safeAreaInset(edge: .bottom) {
                 if !focusMode {
+                    let prev = router.readerAng - 1
+                    let next = router.readerAng + 1
                     VStack(spacing: Theme.Space.xs) {
                         // "Ang N of 1430" + a Granth-progress hairline — a thumb-reachable third
                         // way into Jump, and a sense of place in the whole Granth.
@@ -168,20 +181,42 @@ struct ReaderScreen: View {
                         .accessibilityIdentifier("readerProgress")
                         .accessibilityHint("Jump to another Ang")
 
+                        // Chevrons show their destination Ang; the whole side is a ≥44 pt target.
                         HStack {
-                            Button { Haptics.tap(); router.openAng(router.readerAng - 1) }
-                                label: { Image(systemName: "chevron.left").frame(minWidth: 44, minHeight: 44) }
-                                .disabled(router.readerAng <= 1)
-                                .accessibilityLabel("Previous Ang")
+                            Button { Haptics.tap(); router.openAng(prev) } label: {
+                                HStack(spacing: Theme.Space.xs) {
+                                    Image(systemName: "chevron.left")
+                                    if prev >= 1 { Text(String(prev)).monospacedDigit() }
+                                }
+                                .frame(minWidth: 44, minHeight: 44).contentShape(Rectangle())
+                            }
+                            .disabled(router.readerAng <= 1)
+                            .accessibilityLabel("Previous Ang")
+                            .accessibilityValue(prev >= 1 ? "Ang \(prev)" : "")
+                            .accessibilityIdentifier("prevAng")
                             Spacer()
                             Button { Haptics.tap(); container.present(.hukam) } label: {
-                                Label("Hukam", systemImage: "sparkles").lineLimit(1).frame(minHeight: 44)
+                                // Keep the word where it fits; at large Dynamic Type sizes fall back to
+                                // the glyph alone so the chevrons + their numbers never truncate.
+                                ViewThatFits(in: .horizontal) {
+                                    Label("Hukam", systemImage: "sparkles").lineLimit(1)
+                                    Image(systemName: "sparkles")
+                                }
+                                .frame(minHeight: 44)
                             }
+                            .accessibilityLabel("Hukam")
                             Spacer()
-                            Button { Haptics.tap(); router.openAng(router.readerAng + 1) }
-                                label: { Image(systemName: "chevron.right").frame(minWidth: 44, minHeight: 44) }
-                                .disabled(router.readerAng >= 1430)
-                                .accessibilityLabel("Next Ang")
+                            Button { Haptics.tap(); router.openAng(next) } label: {
+                                HStack(spacing: Theme.Space.xs) {
+                                    if next <= 1430 { Text(String(next)).monospacedDigit() }
+                                    Image(systemName: "chevron.right")
+                                }
+                                .frame(minWidth: 44, minHeight: 44).contentShape(Rectangle())
+                            }
+                            .disabled(router.readerAng >= 1430)
+                            .accessibilityLabel("Next Ang")
+                            .accessibilityValue(next <= 1430 ? "Ang \(next)" : "")
+                            .accessibilityIdentifier("nextAng")
                         }
                         .font(.body.weight(.medium))
                         .padding(.horizontal, Theme.Space.m)
@@ -231,7 +266,7 @@ struct ReaderScreen: View {
                 resumed = true
                 if !container.router.navigatedToAngExplicitly,
                    container.router.readerAng == 1, lastAng > 1 {
-                    container.router.readerAng = lastAng
+                    container.router.resumeAng(lastAng)   // documented resume writer (single-writer rule)
                     return   // the task re-fires with the resumed Ang; the pager builds from it
                 }
             }
@@ -247,6 +282,12 @@ extension ReaderScreen {
     /// for VoiceOver / Switch Control users — the chrome is their navigation. Fed only by the
     /// current page (AngPageView gates its scroll reports).
     fileprivate func handleScroll(offset: CGFloat) {
+        if justTurned {                    // first report after a page turn: re-baseline, don't act (C5)
+            justTurned = false
+            lastOffset = offset
+            downRun = 0; upRun = 0
+            return
+        }
         let delta = offset - lastOffset
         lastOffset = offset
         if UIAccessibility.isVoiceOverRunning || UIAccessibility.isSwitchControlRunning { showChrome(); return }
