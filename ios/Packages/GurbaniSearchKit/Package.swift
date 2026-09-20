@@ -42,7 +42,7 @@ let package = Package(
         ),
         .testTarget(
             name: "GurbaniDBTests",
-            dependencies: ["GurbaniDB", "GurbaniSearchKit"]
+            dependencies: ["GurbaniDB", "GurbaniSearchKit", "CSQLite"]   // CSQLite: StepErrorTests builds its own tiny DBs
         ),
     ]
 )
