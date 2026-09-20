@@ -114,7 +114,6 @@ class CrashAndDebugHygiene(unittest.TestCase):
         self.assertEqual(
             violations(r"\bURLSession\b|\bURLRequest\b|\bWKWebView\b|\bNWConnection\b|^\s*import Network\b"), [])
 
-    @unittest.expectedFailure  # audit B8: SGGS_CLOCK_NOW / SGGS_AUTOSCROLL_PPS / SGGS_UITEST ungated
     def test_environment_hooks_only_under_if_debug(self):
         # Test hooks read from the process environment must not exist in a Release binary
         # (App Review 2.3.1: no hidden or undocumented behaviour switches).
@@ -213,6 +212,21 @@ class PrivacyManifestGate(unittest.TestCase):
 
 class ReleaseAttestationGate(unittest.TestCase):
     """A build recorded for the App Store channel requires the signed Nitnem text review."""
+
+    def test_review_label_tracks_the_attestation(self):
+        # NitnemReview.extraTextReviewed drives the in-app "Under scholarly review" label; it must
+        # equal REVIEWED: in ios/Resources/NITNEM-REVIEW.md, so the label can never say "reviewed"
+        # while the file says it is not (or the reverse). Both are false today; they flip together.
+        review = (IOS / "Resources" / "NITNEM-REVIEW.md").read_text(encoding="utf-8")
+        m = re.search(r"(?mi)^REVIEWED:\s*(true|false)\s*$", review)
+        self.assertIsNotNone(m, "NITNEM-REVIEW.md has no REVIEWED: line")
+        attested = m.group(1).lower() == "true"
+        schedule = (APP / "Sources" / "Data" / "NitnemSchedule.swift").read_text(encoding="utf-8")
+        c = re.search(r"static let extraTextReviewed\s*=\s*(true|false)", schedule)
+        self.assertIsNotNone(c, "NitnemSchedule.swift has no extraTextReviewed literal")
+        in_app = c.group(1) == "true"
+        self.assertEqual(in_app, attested,
+                         f"extraTextReviewed={in_app} but NITNEM-REVIEW.md REVIEWED={attested} — flip both together")
 
     def test_appstore_channel_requires_reviewed_true(self):
         ledger = json.loads((IOS / "testflight-builds.json").read_text(encoding="utf-8"))
