@@ -29,7 +29,7 @@ its full name, *Sri Guru Granth Sahib Ji · Ang N* — "Gurbani Soul" names the 
 | Secondary category | Education | |
 | Primary language | English (U.K.) — pick once, keep | |
 | Price | Free, no in-app purchases | |
-| Age rating | 4+ (questionnaire: no objectionable content, no unrestricted web, no gambling, no contests) | |
+| Age rating | 4+ — see **Age rating questionnaire** below (the 2025 questionnaire is mandatory) | |
 | Copyright | `© 2026 ALGORYTHMOS PTY LTD` (the legal entity on the Apple Developer Program account) | |
 
 > **Availability (verify before commit):** no App Store / Play app named "Gurbani Soul" and no
@@ -39,18 +39,20 @@ its full name, *Sri Guru Granth Sahib Ji · Ang N* — "Gurbani Soul" names the 
 
 ## Keywords (100, comma-separated, no spaces after commas)
 
-`sikh,gurmukhi,punjabi,shabad,hukamnama,waheguru,sggs,granth,japji,kirtan,sikhism,bani,ang,guru`
+`sikh,gurmukhi,punjabi,shabad,hukamnama,waheguru,sggs,granth,japji,rehras,sohila,sikhism,bani,guru`
 
 (Do **not** repeat words already in the Name/Subtitle — Apple indexes those. So `gurbani`,
-`nitnem`, `hukam`, `search` are deliberately omitted here.)
+`nitnem`, `hukam`, `search` are deliberately omitted here. Every keyword must name something the
+app actually contains: `kirtan` was removed because the app has no audio — `rehras` and `sohila`
+are banis it does contain. `webapp/tests/test_repo_gates.py` lints this section.)
 
 ## Promotional text (170) — trust first (editable any time; NOT indexed for search)
 
-> Every verse verbatim from Sri Guru Granth Sahib Ji, cited by Ang — never AI-invented. Search by word, sound or first letters. Daily Hukamnama, Nitnem and audio. Fully offline.
+> Every verse verbatim from Sri Guru Granth Sahib Ji, cited by Ang — never AI-generated. Search by word, sound or first letters. Hukam, Nitnem, reminders. Fully offline.
 
 ## Description (4,000)
 
-> Gurbani Soul is the complete Sri Guru Granth Sahib Ji on your device — all 1,430 Angs, reproduced verbatim and cited by Ang. Nothing is paraphrased, normalised, or AI-generated: what you read is the scripture, exactly, verified every time the app launches. AI helps you search and navigate — it never writes Gurbani.
+> Gurbani Soul is the complete Sri Guru Granth Sahib Ji on your device — all 1,430 Angs, reproduced verbatim and cited by Ang. Nothing is paraphrased, normalised, or AI-generated: what you read is the scripture, exactly, verified every time the app launches.
 >
 > READ
 > • The full Granth, verbatim, in a beautiful Gurmukhi typeface (Sant Lipi).
@@ -62,8 +64,18 @@ its full name, *Sri Guru Granth Sahib Ji · Ang N* — "Gurbani Soul" names the 
 > • Search by first letters, the way Gurbani is traditionally recalled.
 > • Explore by theme across the whole Granth.
 >
+> NITNEM
+> • The daily banis by time of day, with your place kept in each one and a quiet record of the days you read.
+> • Build your own Nitnem set, and choose the Rehras Sahib reading you follow.
+> • Optional reminders at times you choose — scheduled on your device, never from a server.
+> • An optional Live Activity shows your reading progress on the Lock Screen. It never shows a verse.
+> • Nitnem also includes banis from Sri Dasam Granth and Ardaas, shown as a separate, clearly labelled layer — never presented as part of Sri Guru Granth Sahib Ji.
+>
 > HUKAM
-> • Draw a complete Hukam unit any time, and keep it on your Home Screen with the Hukam widget.
+> • Draw a complete Hukam unit any time.
+>
+> WIDGETS
+> • Hukam, the current raag watch, and today's Nitnem on your Home Screen.
 >
 > RAAG CLOCK
 > • See which raags belong to the current watch of the day, with an optional solar mode that uses sunrise and sunset for your location, computed on the device.
@@ -81,14 +93,14 @@ its full name, *Sri Guru Granth Sahib Ji · Ang N* — "Gurbani Soul" names the 
 >
 > Works with Siri and Shortcuts: "Today's Hukam", "What raag is it now", "Search Gurbani", "Open Ang".
 >
-> Gurbani Soul is built by Algorythmos, an Australian AI and data-science company building trustworthy knowledge systems.
+> Gurbani Soul is built by Algorythmos, an Australian company building trustworthy knowledge systems.
 
 ## Brand credit (About screen / footer / website)
 
 - **Footer / credit line:** `Built by Algorythmos` (preferred over "Powered by" — warmer and more
   accountable for a scripture product where trust is the point).
 - **About screen copy:** "Gurbani Soul is developed and maintained by Algorythmos, an Australian
-  AI and data-science company building trustworthy knowledge systems. Every verse is reproduced
+  company building trustworthy knowledge systems. Every verse is reproduced
   verbatim from Sri Guru Granth Sahib Ji and cited by its Ang — nothing is paraphrased,
   normalised, or AI-generated."
 
@@ -99,15 +111,19 @@ Target product domain is **`gurbanisoul.com`** (marketing), with `docs.gurbaniso
 `api.gurbanisoul.com` (backend). Until that domain is live, the existing Knowledge Base URLs
 serve as the support/privacy targets; swap them once `gurbanisoul.com` is up.
 
-| Field | Value | Status |
-|---|---|---|
-| Support URL | `https://gurbanisoul.com/support` (interim: `https://sggs-knowledge-base.vercel.app/support`) | interim built (`frontend/src/pages/support.astro`); repoint when the product domain is live |
-| Marketing URL | `https://gurbanisoul.com` (interim: `https://sggs-knowledge-base.vercel.app`) | pending domain purchase |
-| Privacy Policy URL | `https://gurbanisoul.com/privacy` (interim: `https://sggs-knowledge-base.vercel.app/privacy`) | interim built (`frontend/src/pages/privacy.astro`); repoint when live |
+**Enter only URLs that resolve today.** A Support or Privacy URL that 404s is a direct rejection
+(2.1 / 5.1.1). `gurbanisoul.com` is registered but serves nothing yet, so the submission values are
+the live Knowledge Base pages; the uptime workflow and the `@smoke` specs watch them.
 
-Privacy policy content (one paragraph is enough, and must be true): the app collects no data,
-makes no network requests, uses location only on-device for sunrise/sunset when enabled, stores
-saved verses and settings locally, and has no third-party SDKs.
+| Field | Submit this | Later, once it serves these pages |
+|---|---|---|
+| Support URL | `https://sggs-knowledge-base.vercel.app/support` | `https://gurbanisoul.com/support` |
+| Marketing URL | `https://sggs-knowledge-base.vercel.app` | `https://gurbanisoul.com` |
+| Privacy Policy URL | `https://sggs-knowledge-base.vercel.app/privacy` | `https://gurbanisoul.com/privacy` |
+
+The privacy page must stay true to the binary: no data collected, no network requests, location
+on-device only, saved verses / settings / Nitnem progress stored locally, reminders as local
+notifications (no push), an on-device Live Activity, no third-party SDKs.
 
 ## App Privacy (questionnaire)
 
@@ -132,6 +148,12 @@ upload. The app uses no encryption beyond the OS (SHA-256 hashing for integrity 
 - Source Serif 4 typeface © Adobe, SIL Open Font License 1.1 (headings only;
   `ios/App/Resources/OFL-SourceSerif4.txt`).
 - SQLite (public domain), vendored.
+- Nitnem: bani ordering and the Sri Dasam Granth / Ardaas text via the **ShabadOS open database**
+  (release 4.8.7), shown as a separate labelled layer. `NOTICE.md` requires this in-app attribution,
+  verbatim: "Bani ordering and Sri Dasam Granth / Ardaas text via the ShabadOS open database. Sri
+  Guru Granth Sahib Ji text is this project's own verified corpus." **Owner gate H3:** record the
+  exact licence text of that release in `NOTICE.md` before submission, and the publisher/edition of
+  the source PDF (the scripture text is public; the PDF's index and typesetting are not used).
 - The English translation by Dr. Sant Singh Khalsa is **not** bundled in the public build. If a
   licence is granted later, add it here and in the credits.
 
@@ -146,9 +168,10 @@ Suggested order (first three are what most people see):
 2. Search results for a Roman query, showing the Gurmukhi + transliteration rows.
 3. Hukam sheet.
 4. Raag Clock (dial + list).
-5. Home Screen with both widgets.
-6. Themes grid or Lineage timeline.
-7. iPad: Reader in landscape.
+5. Nitnem (today's banis and a bani open in the reader).
+6. Home Screen with the three widgets — a clean Home Screen, no other apps visible.
+7. Themes grid or Lineage timeline.
+8. iPad: Reader in landscape.
 
 Store the source PNGs under `ios/AppStore/screenshots/<device>/` (add the directory to
 `.gitignore` if the set exceeds a few MB; keep a small contact sheet in the repo).
@@ -156,42 +179,82 @@ Store the source PNGs under `ios/AppStore/screenshots/<device>/` (add the direct
 ## App Review Information
 
 - Sign-in required: **No** (there are no accounts).
-- Contact: first name, last name, phone, email of the maintainer (`skalaliya@gmail.com` is the
-  security contact in `SECURITY.md`; use the same).
+- Contact: first name, last name, **phone (required by App Store Connect)** and email of the
+  maintainer (`skalaliya@gmail.com` is the security contact in `SECURITY.md`; use the same, or the
+  monitored support alias once it exists).
 - Attachment: none needed.
 
 ### Review notes
 
 > This app is a fully offline reader and search tool for Sri Guru Granth Sahib Ji, the Sikh
-> scripture. It bundles a 108 MB SQLite database of the text and makes no network requests at all;
+> scripture. It bundles a roughly 100 MB SQLite database of the text and makes no network requests at all;
+> no account or sign-in exists, so no demo credentials are needed.
 > Airplane Mode is a valid way to test it.
 >
 > The Gurmukhi text is reproduced verbatim from the source edition and is verified by SHA-256 at
 > launch (More → About → Integrity shows the checks). The Gurmukhi typeface is Sant Lipi and the
 > heading typeface is Source Serif 4 (both SIL Open Font License 1.1). No third-party translation is bundled in this build.
 >
+> Nitnem (Nitnem tab) lists the daily banis. Banis from Sri Dasam Granth and Ardaas are included as
+> a separate layer, labelled as such in the app and sourced from the ShabadOS open database; they
+> are never presented as part of Sri Guru Granth Sahib Ji.
+>
 > Optional Nitnem reminders are local notifications only (scheduled on-device, no push, no server);
-> they do not change the fully-offline promise. Notification permission is requested only when the
-> user turns a reminder on.
+> they do not change the fully-offline promise. The standard notification permission prompt appears
+> only when the user switches a reminder on (More → Reminders); nothing is requested at launch.
 >
 > The optional reading Live Activity (default off) is driven entirely on-device with ActivityKit —
 > no push and no server. It shows a bani title and a progress percentage only, never scripture text.
+> To see it: More → turn on "Live Activity while reading", open any bani in Nitnem, stay about
+> 20 seconds, then lock the device.
 >
 > Location: optional, used only by the Raag Clock's solar mode to compute local sunrise and
 > sunset on the device; the value is rounded to about 1 km, never stored beyond that and never
-> transmitted. The app works fully with location denied (manual entry is offered).
+> transmitted. The app works fully with location denied (manual entry is offered). To see it:
+> Raag Clock → switch to Solar; the permission prompt appears only then.
 >
-> Widgets: two Home Screen widgets read a small snapshot the app writes to its App Group
-> (`group.org.sggs`); they contain no personal data.
+> Widgets: three Home Screen widgets (Hukam, Raag Now, Nitnem) read a small snapshot the app writes
+> to its App Group (`group.org.sggs`); they contain no personal data. Open the app once before
+> adding them.
 >
 > URL scheme `sggs://` and App Intents ("Today's Hukam", "What raag is it now", "Search Gurbani",
 > "Open Ang") open screens inside the app only.
 >
 > Suggested path: launch → Reader (turn a page) → Search tab, type `waheguru` → open a result →
-> tap Hukam → Save → More → About.
+> tap Hukam → Save → Nitnem tab → open Japji Sahib → More → About.
+
+## Age rating questionnaire
+
+Apple's updated questionnaire (tiers 4+ / 9+ / 13+ / 16+ / 18+) is mandatory. Expected result **4+**.
+Answer **None / No** to every content descriptor and capability: violence, sexual content, profanity,
+horror, medical/treatment information, alcohol/tobacco/drugs, gambling and contests, user-generated
+content, messaging/chat, advertising, unrestricted web access, in-app purchases, parental controls,
+age assurance. Re-read the live form on submission day — answer what it asks, not this summary.
+
+## EU Digital Services Act — trader status
+
+Worldwide availability includes the EU, so trader status must be declared and **verified** or the app
+is not distributed there. Algorythmos Pty Ltd is a trader. The verified **address, phone number and
+email are displayed publicly** on EU product pages — decide which business phone and address to
+publish before filling the form (App Store Connect → Business → Compliance).
+
+## Accessibility Nutrition Labels
+
+Optional. Declare a feature only after the hardware pass in `ios/App/Tests/UI/A11Y_CHECKLIST.md`
+proves it on the release candidate: VoiceOver · Larger Text · Dark Interface · Differentiate Without
+Color Alone · Sufficient Contrast (backed by `ThemeContrastTests` + `scripts/brand/contrast_report.py`)
+· Reduced Motion (`MotionGate`). Do **not** declare Voice Control, Captions or Audio Descriptions.
+
+## Availability, pricing and agreements
+
+- **Territories:** all (owner decision 2026-09-20). Because that includes India, store metadata
+  carries no "AI" wording except "never AI-generated" (see CLAUDE.md, brand section).
+- **Price:** Free, no in-app purchases → only the free-apps agreement is needed; no banking or tax
+  forms. Confirm nothing is pending under App Store Connect → Business.
 
 ## Version release
 
 - Release option: **Manually release this version** (so the web release and the announcement
-  align), with **phased release** on.
+  align), with **7-day phased release** on. A phased release can be paused if a problem appears;
+  there is no binary rollback on iOS — the fix is a new build (`docs/process/runbooks/`).
 - "What's New" for 1.x: reuse the CHANGELOG section for the tag, trimmed to user-facing lines.

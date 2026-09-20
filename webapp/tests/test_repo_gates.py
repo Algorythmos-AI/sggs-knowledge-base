@@ -284,11 +284,9 @@ class ListingLint(unittest.TestCase):
     def test_description_limit(self):
         self.assertLessEqual(len(self.description), 4000)
 
-    @unittest.expectedFailure  # audit A: promo text is 177 characters
     def test_promotional_text_limit(self):
         self.assertLessEqual(len(self.promo), 170, f"{len(self.promo)} chars")
 
-    @unittest.expectedFailure  # audit A: "audio", "kirtan", "AI helps you search"
     def test_no_claims_the_app_does_not_deliver(self):
         # Guideline 2.3: metadata must describe the shipped app. The app has no audio/kirtan, is
         # not a beta, runs no AI model, and store text must not mention other platforms.
@@ -297,13 +295,27 @@ class ListingLint(unittest.TestCase):
                           pasted)
         self.assertEqual(hits, [])
 
-    @unittest.expectedFailure  # audit A: review notes say "two" widgets; three ship
     def test_review_notes_widget_count_matches_code(self):
         widgets = violations(r"struct\s+\w+\s*:\s*Widget\b", dirs=[APP / "Widgets"])
         home_screen = [w for w in widgets if "LiveActivity" not in w]
         words = {2: "two", 3: "three", 4: "four", 5: "five"}
         notes = _section(self.text, "App Review Information")
         self.assertRegex(notes, rf"(?i)\b{words[len(home_screen)]} Home Screen widgets\b")
+
+    def test_submission_urls_are_live_hosts(self):
+        # The "Submit this" column is what gets typed into App Store Connect. Only hosts that
+        # serve the pages today belong there; add gurbanisoul.com here when it goes live.
+        live_hosts = {"sggs-knowledge-base.vercel.app"}
+        rows = re.findall(r"(?m)^\| (?:Support|Marketing|Privacy Policy) URL \| `https://([^/`]+)[^`]*` \|",
+                          _section(self.text, "URLs"))
+        self.assertEqual(len(rows), 3, "Support, Marketing and Privacy rows must each give a URL")
+        self.assertEqual([h for h in rows if h not in live_hosts], [])
+
+    def test_company_blurb_has_no_ai_positioning(self):
+        # Worldwide release incl. India: "AI" appears in store text only as "never AI-generated".
+        pasted = "\n".join([self.promo, self.description])
+        stripped = re.sub(r"(?i)never AI-generated|or AI-generated", "", pasted)
+        self.assertNotRegex(stripped, r"\bAI\b")
 
 
 if __name__ == "__main__":
