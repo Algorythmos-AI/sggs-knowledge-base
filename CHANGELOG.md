@@ -3,7 +3,55 @@
 The format below (newest first) follows [Keep a Changelog](https://keepachangelog.com);
 entries prior to v1.1.0 are the project's original prose style and are preserved verbatim.
 
-## [Unreleased] — Reader navigation fix (iOS)
+## [1.3.1] — 2026-09-20 — App Store readiness hardening + Reader navigation fixes
+
+A production-readiness pass ahead of the first public App Store submission (2026-09-20 audit).
+Scripture, corpus and DB are byte-identical to 1.3.0 (`git diff -- corpus db` empty); this release
+is display, web/API, tooling and docs only.
+
+### Added
+- **Executable repo gates** (`webapp/tests/test_repo_gates.py`, run by the required `python` check):
+  crash-hygiene (no `try!`/`as!`, `print`/env-hooks only under `#if DEBUG`, no network code), the
+  design-token gates (`withAnimation`, hex colours) that were prose before, Info.plist and
+  privacy-manifest invariants, an App Store release attestation gate, and store-listing lint.
+- **Field diagnostics** — About → Share / Delete the local MetricKit files (system share sheet, never
+  automatic, so the "Data Not Collected" label stays true); the folder is capped at 50 and excluded
+  from backup.
+- **App Store release gate** — `make testflight … CHANNEL=appstore` and `make appstore-preflight`
+  (`ios/tools/appstore_preflight.py`): an App Store build must be scholar-reviewed, built with the
+  required Xcode/SDK, and come from a clean, green, on-trunk commit; the ledger records channel/toolchain.
+- **Uptime workflow** — 15-min probe of production `/api/health` and the `/privacy` + `/support` App
+  Store URLs; **runbooks** for submission go/no-go, iOS hotfix and the support inbox.
+
+### Changed
+- **Store listing** made accurate and linted: promotional text within 170 chars, no "audio"/"AI" claims,
+  the Nitnem section and the correct widget count, ShabadOS attribution, and the App Store Connect
+  sections (age rating, EU DSA trader, accessibility labels, territories).
+- **Privacy & support pages** renamed to Gurbani Soul and updated for reminders, the Live Activity and
+  Nitnem progress, with `@smoke` coverage.
+- **Web API hardening** — a claim-length cap on `/api/verify`, a socket timeout, a bounded worker pool,
+  `Cache-Control`/`ETag` on immutable scripture responses, HSTS and a query-free access log. Search
+  behaviour is byte-identical.
+- **PR CI now builds and tests iOS on Xcode 26** (the SDK that ships), not the runner default.
+
+### Fixed
+- **Nitnem reminders now actually alert** — a real permission prompt on the explicit toggle and a
+  normal banner + sound (they were requested provisional and delivered passive, so they never showed).
+- **The reading Live Activity now starts on a first read**, not only a resumed one, and its Lock-Screen
+  banner deep-links back to the bani.
+- **A failed `sqlite3_step` is now an error, never "no more rows"** — the 46 read loops could have
+  returned a silently truncated Ang on a corrupt/IO error.
+- **The open Ang re-renders in place on a theme change** (accent no longer stale until the next page turn).
+
+### Data
+- None. Scripture, corpus and DB unchanged from 1.3.0.
+
+---
+
+The remaining notes in this entry are the iOS Reader navigation work that was previously staged as
+Unreleased and ships as part of 1.3.1.
+
+### Reader navigation fix (iOS)
 
 Fixes the Reader page-turn controls reported broken on TestFlight 1.3.0 (2): the bottom-bar
 chevrons and the "Continues on Ang N" pill did nothing after the first tap, and the pill named the
