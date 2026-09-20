@@ -20,7 +20,11 @@ public final class SQLiteCandidateSource: CandidateSource, @unchecked Sendable {
     private let lock = NSLock()
     private var _termIndex: [String: [String]]?
 
-    public enum DBError: Error { case open(String), prepare(String) }
+    public enum DBError: Error {
+        case open(String), prepare(String)
+        /// `sqlite3_step` ended with something other than ROW/DONE (corrupt page, I/O error, …).
+        case step(code: Int32, message: String)
+    }
 
     public init(path: String) throws {
         var h: OpaquePointer?
@@ -48,7 +52,7 @@ public final class SQLiteCandidateSource: CandidateSource, @unchecked Sendable {
         sqlite3_bind_text(stmt, 1, match, -1, Self.transientDtor)
         sqlite3_bind_int(stmt, 2, Int32(limit))
         var out: [Int] = []
-        while sqlite3_step(stmt) == SQLITE_ROW { out.append(Int(sqlite3_column_int64(stmt, 0))) }
+        while try stepRow(stmt) { out.append(Int(sqlite3_column_int64(stmt, 0))) }
         return out
     }
 
@@ -63,7 +67,7 @@ public final class SQLiteCandidateSource: CandidateSource, @unchecked Sendable {
         }
         defer { sqlite3_finalize(stmt) }
         sqlite3_bind_int64(stmt, 1, Int64(rowid))
-        guard sqlite3_step(stmt) == SQLITE_ROW else { return nil }
+        guard try stepRow(stmt) else { return nil }
 
         func text(_ col: Int32) -> String { sqlite3_column_text(stmt, col).map { String(cString: $0) } ?? "" }
         func optText(_ col: Int32) -> String? { sqlite3_column_type(stmt, col) == SQLITE_NULL ? nil : text(col) }
@@ -84,7 +88,7 @@ public final class SQLiteCandidateSource: CandidateSource, @unchecked Sendable {
             throw DBError.prepare(String(cString: sqlite3_errmsg(handle)))
         }
         defer { sqlite3_finalize(stmt) }
-        while sqlite3_step(stmt) == SQLITE_ROW {
+        while try stepRow(stmt) {
             let concept = sqlite3_column_text(stmt, 0).map { String(cString: $0) } ?? ""
             let json = sqlite3_column_text(stmt, 1).map { String(cString: $0) } ?? "[]"
             let terms = (try? JSONDecoder().decode([String].self, from: Data(json.utf8))) ?? []

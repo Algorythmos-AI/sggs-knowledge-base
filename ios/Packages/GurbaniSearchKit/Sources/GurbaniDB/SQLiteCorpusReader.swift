@@ -36,10 +36,11 @@ extension SQLiteCandidateSource: CorpusReader, AnalyticsSource {
         defer { sqlite3_finalize(stmt) }
         for (i, lid) in ids.enumerated() { sqlite3_bind_int64(stmt, Int32(i + 1), Int64(lid)) }
         var out: [Int: String] = [:]
-        while sqlite3_step(stmt) == SQLITE_ROW {
+        var failed = false   // a step error discards the partial map (see SQLiteStep)
+        while stepRow(stmt, failed: &failed) {
             out[Int(sqlite3_column_int64(stmt, 0))] = sqlite3_column_text(stmt, 1).map { String(cString: $0) } ?? ""
         }
-        return out
+        return failed ? [:] : out
     }
 
     private func attachEn(_ lines: [ReaderLine]) -> [ReaderLine] {
@@ -70,7 +71,8 @@ extension SQLiteCandidateSource: CorpusReader, AnalyticsSource {
                 -1, &stmt, nil) == SQLITE_OK else { return false }
             defer { sqlite3_finalize(stmt) }
             sqlite3_bind_text(stmt, 1, table, -1, Self.transientDtor)
-            return sqlite3_step(stmt) == SQLITE_ROW
+            var failed = false   // a probe that cannot complete reads as "capability absent"
+            return stepRow(stmt, failed: &failed)
         }
         return CorpusCapabilities(
             hasEnglish: has("translations") && has("fts_en"),
@@ -86,7 +88,7 @@ extension SQLiteCandidateSource: CorpusReader, AnalyticsSource {
         defer { sqlite3_finalize(stmt) }
         bind(stmt)
         var out: [ReaderLine] = []
-        while sqlite3_step(stmt) == SQLITE_ROW { out.append(mapReader(stmt)) }
+        while try stepRow(stmt) { out.append(mapReader(stmt)) }
         return out
     }
 
@@ -103,7 +105,7 @@ extension SQLiteCandidateSource: CorpusReader, AnalyticsSource {
             // are id-ordered), i.e. the shabad's opening line on that start Ang.
             if sqlite3_prepare_v2(handle, "SELECT min(ang), min(id) FROM lines WHERE comp_id = ?", -1, &stmt, nil) == SQLITE_OK {
                 sqlite3_bind_int(stmt, 1, Int32(first.compId))
-                if sqlite3_step(stmt) == SQLITE_ROW, sqlite3_column_type(stmt, 0) != SQLITE_NULL {
+                if try stepRow(stmt), sqlite3_column_type(stmt, 0) != SQLITE_NULL {
                     let m = Int(sqlite3_column_int64(stmt, 0))
                     if m < ang {
                         continuedFrom = m
@@ -139,7 +141,7 @@ extension SQLiteCandidateSource: CorpusReader, AnalyticsSource {
             throw DBError.prepare(String(cString: sqlite3_errmsg(handle)))
         }
         defer { sqlite3_finalize(stmt) }
-        guard sqlite3_step(stmt) == SQLITE_ROW else { throw DBError.prepare("corpus is empty") }
+        guard try stepRow(stmt) else { throw DBError.prepare("corpus is empty") }
         return Int(sqlite3_column_int64(stmt, 0))
     }
 
@@ -293,7 +295,7 @@ extension SQLiteCandidateSource: CorpusReader, AnalyticsSource {
         defer { sqlite3_finalize(stmt) }
         sqlite3_bind_double(stmt, 1, mp); sqlite3_bind_int(stmt, 2, Int32(lim))
         var out: [ThemeEdge] = []
-        while sqlite3_step(stmt) == SQLITE_ROW {
+        while try stepRow(stmt) {
             out.append(ThemeEdge(source: col(stmt, 0) ?? "", target: col(stmt, 1) ?? "",
                                  shabadCount: int(stmt, 2), ppmi: sqlite3_column_double(stmt, 3),
                                  jaccard: sqlite3_column_double(stmt, 4)))
@@ -316,7 +318,7 @@ extension SQLiteCandidateSource: CorpusReader, AnalyticsSource {
         if sqlite3_prepare_v2(handle, "SELECT COUNT(DISTINCT cl.line_id) FROM concept_lines cl "
             + "JOIN lines l ON l.id=cl.line_id WHERE \(whereClause)", -1, &st, nil) == SQLITE_OK {
             bindAll(st)
-            if sqlite3_step(st) == SQLITE_ROW { total = Int(sqlite3_column_int64(st, 0)) }
+            if try stepRow(st) { total = Int(sqlite3_column_int64(st, 0)) }
         }
         sqlite3_finalize(st)
         if total == 0 { return ConstellationResult(concept: concept, total: 0, clusters: []) }
@@ -332,7 +334,7 @@ extension SQLiteCandidateSource: CorpusReader, AnalyticsSource {
         bindAll(st2)
         var order: [String] = []                         // co insertion order (= alphabetical co)
         var buckets: [String: [ConstellationVerse]] = [:]
-        while sqlite3_step(st2) == SQLITE_ROW {
+        while try stepRow(st2) {
             let co = col(st2, 0) ?? ""
             if buckets[co] == nil { order.append(co) }
             buckets[co, default: []].append(ConstellationVerse(
@@ -359,6 +361,6 @@ extension SQLiteCandidateSource: CorpusReader, AnalyticsSource {
             throw DBError.prepare(String(cString: sqlite3_errmsg(handle)))
         }
         defer { sqlite3_finalize(stmt) }
-        while sqlite3_step(stmt) == SQLITE_ROW { body(stmt) }
+        while try stepRow(stmt) { body(stmt) }
     }
 }

@@ -138,7 +138,6 @@ class DesignSystemGates(unittest.TestCase):
 
 
 class SQLiteStepGate(unittest.TestCase):
-    @unittest.expectedFailure  # audit B5: 46 raw loops; fixed by the stepRows helper
     def test_no_raw_step_loops(self):
         # `while sqlite3_step(s) == SQLITE_ROW` reads SQLITE_CORRUPT / IOERR / NOMEM as "no more
         # rows" and returns a silently truncated Ang. All row iteration goes through one helper

@@ -19,6 +19,7 @@ extension SQLiteCandidateSource {
     /// serve.py:/api/timing/clock — every claim joined to its source + raag, ORDER BY
     /// r.seq, c.claim_type, c.pahar; grouped by claim_type.
     public func timingClock() -> TimingClock {
+        var failed = false   // a step error discards the partial result (see SQLiteStep)
         let sql = """
         SELECT c.raag_name, r.roman, r.first_ang, r.seq, c.claim_type, c.pahar,
                c.time_start, c.time_end, c.season, c.occasion, c.confidence, c.notes,
@@ -34,7 +35,7 @@ extension SQLiteCandidateSource {
         }
         defer { sqlite3_finalize(stmt) }
         var groups: [String: [TimingClaim]] = [:]
-        while sqlite3_step(stmt) == SQLITE_ROW {
+        while stepRow(stmt, failed: &failed) {
             let claim = TimingClaim(
                 raagName: optText(stmt, 0), roman: optText(stmt, 1), firstAng: optInt(stmt, 2),
                 seq: optInt(stmt, 3), claimType: optText(stmt, 4) ?? "", pahar: optInt(stmt, 5),
@@ -44,6 +45,7 @@ extension SQLiteCandidateSource {
                 tradition: optText(stmt, 13) ?? "", sourceURL: optText(stmt, 14))
             groups[claim.claimType, default: []].append(claim)
         }
+        if failed { return TimingClock(available: false) }
         return TimingClock(available: true,
                            primary: groups["primary"] ?? [], variant: groups["variant"] ?? [],
                            seasonal: groups["seasonal"] ?? [], ceremonial: groups["ceremonial"] ?? [])
@@ -51,6 +53,7 @@ extension SQLiteCandidateSource {
 
     /// One raag's claims by gurmukhi name or roman (serve.py lowercases the roman probe).
     public func timingRaag(name: String) -> RaagTiming {
+        var failed = false   // a step error discards the partial result (see SQLiteStep)
         var stmt: OpaquePointer?
         guard sqlite3_prepare_v2(handle,
             "SELECT name, roman, first_ang FROM raags WHERE name=? OR roman=?", -1, &stmt, nil) == SQLITE_OK else {
@@ -58,7 +61,7 @@ extension SQLiteCandidateSource {
         }
         sqlite3_bind_text(stmt, 1, name, -1, Self.transientDtor)
         sqlite3_bind_text(stmt, 2, name.lowercased(), -1, Self.transientDtor)
-        guard sqlite3_step(stmt) == SQLITE_ROW else {
+        guard stepRow(stmt, failed: &failed) else {
             sqlite3_finalize(stmt)
             // raags table exists but no such raag — mirror serve.py ('no such raag', available true)
             // vs the layer being absent entirely (prepare on claims below decides availability)
@@ -86,7 +89,7 @@ extension SQLiteCandidateSource {
         defer { sqlite3_finalize(cs) }
         sqlite3_bind_text(cs, 1, raagName, -1, Self.transientDtor)
         var claims: [TimingClaim] = []
-        while sqlite3_step(cs) == SQLITE_ROW {
+        while stepRow(cs, failed: &failed) {
             claims.append(TimingClaim(
                 raagName: nil, roman: nil, firstAng: nil, seq: nil,
                 claimType: optText(cs, 0) ?? "", pahar: optInt(cs, 1),
@@ -95,12 +98,14 @@ extension SQLiteCandidateSource {
                 notes: optText(cs, 7), sourceName: optText(cs, 8) ?? "",
                 tradition: optText(cs, 9) ?? "", sourceURL: optText(cs, 10)))
         }
+        if failed { return RaagTiming(available: false, raag: name, roman: nil, firstAng: nil, claims: []) }
         return RaagTiming(available: true, raag: raagName, roman: roman, firstAng: firstAng, claims: claims)
     }
 
     /// Raags where traditions disagree (variant claims, or multiple pahars from multiple
     /// sources — a same-source multi-pahar row is an extension, not a dispute).
     public func timingDivergence() -> TimingDivergence {
+        var failed = false   // a step error discards the partial result (see SQLiteStep)
         let namesSQL = """
         SELECT raag_name FROM raag_timing_claims
         WHERE claim_type IN ('primary','variant')
@@ -115,7 +120,7 @@ extension SQLiteCandidateSource {
             return TimingDivergence(available: false, raags: [])
         }
         var names: [String] = []
-        while sqlite3_step(ns) == SQLITE_ROW { if let n = optText(ns, 0) { names.append(n) } }
+        while stepRow(ns, failed: &failed) { if let n = optText(ns, 0) { names.append(n) } }
         sqlite3_finalize(ns)
 
         var entries: [TimingDivergence.Entry] = []
@@ -132,7 +137,7 @@ extension SQLiteCandidateSource {
             guard sqlite3_prepare_v2(handle, claimsSQL, -1, &cs, nil) == SQLITE_OK else { continue }
             sqlite3_bind_text(cs, 1, n, -1, Self.transientDtor)
             var claims: [TimingClaim] = []
-            while sqlite3_step(cs) == SQLITE_ROW {
+            while stepRow(cs, failed: &failed) {
                 claims.append(TimingClaim(
                     raagName: nil, roman: nil, firstAng: nil, seq: nil,
                     claimType: optText(cs, 0) ?? "", pahar: optInt(cs, 1),
@@ -147,16 +152,18 @@ extension SQLiteCandidateSource {
             if sqlite3_prepare_v2(handle, "SELECT roman, first_ang, seq FROM raags WHERE name=?",
                                   -1, &rs, nil) == SQLITE_OK {
                 sqlite3_bind_text(rs, 1, n, -1, Self.transientDtor)
-                if sqlite3_step(rs) == SQLITE_ROW { roman = optText(rs, 0); firstAng = optInt(rs, 1) }
+                if stepRow(rs, failed: &failed) { roman = optText(rs, 0); firstAng = optInt(rs, 1) }
             }
             sqlite3_finalize(rs)
             entries.append(.init(raag: n, roman: roman, firstAng: firstAng, claims: claims))
         }
+        if failed { return TimingDivergence(available: false, raags: []) }
         return TimingDivergence(available: true, raags: entries)
     }
 
     /// A composition's musical/structural metadata (serve.py:/api/forms?comp_id=N).
     public func forms(compId: Int) -> ShabadForms {
+        var failed = false   // a step error discards the partial result (see SQLiteStep)
         let sql = """
         SELECT m.comp_id, m.raag_name, m.first_ang,
                mm.ghar, mm.partaal, mm.has_rahao, mm.has_rahao_dooja,
@@ -174,10 +181,11 @@ extension SQLiteCandidateSource {
         }
         defer { sqlite3_finalize(stmt) }
         sqlite3_bind_int(stmt, 1, Int32(compId))
-        guard sqlite3_step(stmt) == SQLITE_ROW else {
+        guard stepRow(stmt, failed: &failed) else {
             return ShabadForms(available: true, compId: compId, mapped: false)
         }
         func optBool(_ c: Int32) -> Bool? { optInt(stmt, c).map { $0 != 0 } }
+        if failed { return ShabadForms(available: false, compId: compId) }
         return ShabadForms(
             available: true, compId: compId,
             raagName: optText(stmt, 1), firstAng: optInt(stmt, 2),
