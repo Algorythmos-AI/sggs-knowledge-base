@@ -191,6 +191,9 @@ enum Ink {
     static let canvas = Color(lightSystem: .systemGroupedBackground, dark: 0x151210)
     /// Cards that draw their own background.
     static let card = Color(lightSystem: .secondarySystemGroupedBackground, dark: 0x1E1A17)
+    /// The Raag Clock face: the card in light; in dark a warm near-black a touch deeper than
+    /// the canvas so the face reads as glass (never pure black — brand book §3.4).
+    static let clockFace = Color(lightSystem: .secondarySystemGroupedBackground, dark: 0x0E0C0A)
     /// Raised elements on a card (stat tiles, chips).
     static let raised = Color(lightSystem: .tertiarySystemGroupedBackground, dark: 0x282320)
     /// The Reader's page — warm paper in light, deep ink in dark (the hero surface).

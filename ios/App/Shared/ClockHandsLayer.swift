@@ -31,9 +31,8 @@ struct FaceMetrics {
         CGPoint(x: center.x + CGFloat(cos(a)) * radius, y: center.y + CGFloat(sin(a)) * radius)
     }
 
-    /// The face surface: the card in light; a warm near-black in dark (never pure black —
-    /// brand book §3.4), a touch deeper than the canvas so the face reads as glass.
-    static let faceColor = Color(lightSystem: .secondarySystemGroupedBackground, dark: 0x0E0C0A)
+    /// The face surface — the `Ink.clockFace` token (hex literals live only in DesignTokens).
+    static let faceColor = Ink.clockFace
 }
 
 /// Pure hand angles, in radians clockwise from 12 o'clock. Fractional seconds flow through
