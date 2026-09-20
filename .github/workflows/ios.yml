@@ -29,6 +29,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: ./.github/actions/lfs-db
+      - uses: ./.github/actions/select-xcode   # build + test with the SDK that ships (was the image default, Xcode 16.4)
       - name: Build the bundled (personal-profile) iOS DB from the source (deterministic)
         run: python3 pipeline/build_ios_db.py --profile personal
       - name: Build the public (Gurmukhi-only) profile for the degradation-parity gate
@@ -63,6 +64,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: ./.github/actions/lfs-db
+      - uses: ./.github/actions/select-xcode   # build + test with the SDK that ships (was the image default, Xcode 16.4)
       - name: Build the bundled (personal-profile) iOS DB
         run: python3 pipeline/build_ios_db.py --profile personal
       - name: Install XcodeGen
