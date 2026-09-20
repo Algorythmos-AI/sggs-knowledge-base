@@ -16,7 +16,16 @@ export default defineConfig({
   base: '/',
   // MPA: emit reader.html (not reader/index.html); serve.py maps /reader -> reader.html.
   trailingSlash: 'never',
+  // Astro 7 changed the default to 'jsx' (JSX whitespace rules). Pin the HTML-aware
+  // compressor so inter-element whitespace in the shipped pages stays as it was on v6.
+  compressHTML: true,
   // Keep things bundled + offline; inline tiny assets to avoid extra local requests.
   // Tailwind v4 runs as a Vite plugin (no tailwind.config.js — v4 is CSS-first via @theme).
-  vite: { plugins: [tailwindcss()], build: { assetsInlineLimit: 4096 } },
+  // cssTarget: Vite 8 minifies CSS with Lightning CSS, which otherwise rewrites
+  // `max-width:` queries to range syntax (`width<=…`, Safari 16.4+/Chrome 104+ only).
+  // Pin the pre-upgrade browser floor so the shipped media queries stay as they were.
+  vite: {
+    plugins: [tailwindcss()],
+    build: { assetsInlineLimit: 4096, cssTarget: ['chrome107', 'safari16'] },
+  },
 });
