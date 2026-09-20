@@ -21,7 +21,7 @@ final class ReadingActivityController: ObservableObject {
     /// Whether the reader has opted in AND the platform allows activities right now.
     var isAvailable: Bool {
         guard UserDefaults.standard.bool(forKey: Self.enabledKey) else { return false }
-        if ProcessInfo.processInfo.environment["SGGS_UITEST"] == "1" { return false }
+        if DebugHooks.isUITest { return false }
         #if canImport(ActivityKit)
         return ActivityAuthorizationInfo().areActivitiesEnabled
         #else

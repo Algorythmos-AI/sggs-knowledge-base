@@ -53,6 +53,14 @@ struct SGGSApp: App {
                     Task { await container.refreshReminders() }   // re-plan dated reminders on return
                 }
             }
+            // The dated plan drops "today" once its time has passed, so a time-zone or clock change
+            // while the app is open re-plans at once rather than waiting for the next foreground.
+            .onReceive(NotificationCenter.default.publisher(for: .NSSystemTimeZoneDidChange)) { _ in
+                Task { await container.refreshReminders() }
+            }
+            .onReceive(NotificationCenter.default.publisher(for: .NSSystemClockDidChange)) { _ in
+                Task { await container.refreshReminders() }
+            }
             .onContinueUserActivity(CSSearchableItemActionType) { activity in
                 // a saved verse tapped in system search → open its composition
                 if let id = activity.userInfo?[CSSearchableItemActivityIdentifier] as? String,

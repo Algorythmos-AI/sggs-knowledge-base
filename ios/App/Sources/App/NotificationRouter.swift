@@ -46,7 +46,9 @@ final class NitnemReminderController: ObservableObject {
                 await reschedule(defaults: defaults, completedToday: completedToday)
                 return false
             }
-            if status == .notDetermined {
+            // `.provisional` is what builds up to 1.3.0 (7) were granted silently; it delivers
+            // quietly, so it is upgraded with a real prompt the next time a reminder is turned on.
+            if status == .notDetermined || status == .provisional {
                 let granted = await scheduler.requestAuthorization()
                 if !granted {
                     defaults.set(false, forKey: Self.prefKey(band))
