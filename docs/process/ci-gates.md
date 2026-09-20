@@ -8,6 +8,7 @@
 | `version-consistency` | all 8 version strings unified; `main` PRs come from `integration`/`hotfix` | — |
 | `security` | gitleaks; bandit; semgrep OSS; actionlint; **blocking** `npm audit --audit-level=high` on `frontend/` (job `deps`) | — |
 | `pr-hygiene` | conventional-commit PR title | — |
+| `uptime` (every 15 min, not a PR check) | production `/api/health` all-true; `/privacy` and `/support` (the App Store URLs) resolve with their content; a failure opens or updates one issue | — |
 | `ios · parity` | iOS DB matches manifest; Swift golden-vector parity; license gate | macOS, LFS |
 | `ios · app` | app builds; unit + XCUITests pass | macOS |
 
@@ -28,5 +29,6 @@ on the exact commit, then deploys API → verifies → builds web unaliased → 
 smoke public → tags. Details: [runbook: deploy](runbooks/deploy.md).
 
 ## Not yet wired (roadmap)
-`e2e` (Playwright + axe), `perf` (latency budget + Lighthouse on staging),
-`deploy-verify`, `uptime`, and `release` — see the delivery plan.
+`perf` (latency budget + Lighthouse on staging) and a load/soak test. `npm audit` still runs
+non-blocking: it reports advisories in build-time dependencies (astro, sharp, postcss, …) that need
+an upgrade PR before the gate can be made blocking.
