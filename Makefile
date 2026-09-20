@@ -3,7 +3,7 @@
 PIPELINE_PY ?= /usr/bin/python3
 PDF ?= ../Siri-Guru-Granth-Sahib-in-Gurmukhi-with-Index.pdf
 
-.PHONY: help doctor ci check-versions test-web test-frontend contract verify guard reconcile rebuild ios-db ios-db-check ios-db-repair release testflight
+.PHONY: help doctor ci check-versions test-web test-frontend contract verify guard reconcile rebuild ios-db ios-db-check ios-db-repair release testflight appstore-preflight
 help: ## list targets
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | awk 'BEGIN{FS=":.*?## "}{printf "  \033[36m%-16s\033[0m %s\n",$$1,$$2}'
 
@@ -76,8 +76,11 @@ MARKETING_VERSION = $(shell python3 -c "import re;print(re.search(r'MARKETING_VE
 testflight-next: ## the next TestFlight build number for the current marketing version
 	@echo "version $(MARKETING_VERSION) — next build: $$(python3 ios/tools/testflight_ledger.py next $(MARKETING_VERSION))"
 
-testflight: ## archive + gate + export/upload the TestFlight candidate (macOS): make testflight TEAM_ID=… BUILD=N [PROFILE=public] [UPLOAD=1]
+testflight: ## archive + gate + export/upload a candidate (macOS): make testflight TEAM_ID=… BUILD=N [CHANNEL=testflight|appstore] [PROFILE=public] [UPLOAD=1]
 	@test -n "$(TEAM_ID)" || { echo "usage: make testflight TEAM_ID=ABCDE12345 BUILD=N [PROFILE=public|personal] [UPLOAD=1]"; exit 1; }
 	@test -n "$(BUILD)" || { echo "usage: make testflight TEAM_ID=ABCDE12345 BUILD=N [PROFILE=public|personal] [UPLOAD=1]"; \
 		echo "version $(MARKETING_VERSION) — next build: $$(python3 ios/tools/testflight_ledger.py next $(MARKETING_VERSION))"; exit 1; }
-	SGGS_TEAM_ID=$(TEAM_ID) SGGS_BUILD_NUMBER=$(BUILD) SGGS_DB_PROFILE=$(or $(PROFILE),public) SGGS_UPLOAD=$(or $(UPLOAD),0) bash ios/tools/testflight_archive.sh
+	SGGS_TEAM_ID=$(TEAM_ID) SGGS_BUILD_NUMBER=$(BUILD) SGGS_DB_PROFILE=$(or $(PROFILE),public) SGGS_RELEASE_CHANNEL=$(or $(CHANNEL),testflight) SGGS_UPLOAD=$(or $(UPLOAD),0) bash ios/tools/testflight_archive.sh
+
+appstore-preflight: ## may this version be SUBMITTED? newest ledger build must be channel=appstore, review signed, versions + listing clean
+	python3 ios/tools/appstore_preflight.py $(MARKETING_VERSION)

@@ -94,5 +94,63 @@ class LedgerTests(unittest.TestCase):
         self.assertEqual(self.run_cli("record", self._candidate(uploaded=False), "--force"), 0)
 
 
+SPEC2 = importlib.util.spec_from_file_location("appstore_preflight", ROOT / "ios" / "tools" / "appstore_preflight.py")
+preflight = importlib.util.module_from_spec(SPEC2)
+SPEC2.loader.exec_module(preflight)
+
+SIGNED, UNSIGNED = "notes\nREVIEWED: true\n", "notes\nREVIEWED: false\n"
+LABEL_OFF = "enum NitnemReview {\n    static let extraTextReviewed = true\n}\n"
+LABEL_ON = "enum NitnemReview {\n    static let extraTextReviewed = false\n}\n"
+
+
+class AppStorePreflight(unittest.TestCase):
+    def rows(self, **newest):
+        return [{"version": "1.3.1", "build": 1, "channel": "appstore", "sdk": "iphoneos26.5"},
+                dict({"version": "1.3.1", "build": 2, "channel": "appstore", "sdk": "iphoneos26.5"}, **newest)]
+
+    def test_ready(self):
+        build, problems = preflight.evaluate("1.3.1", self.rows(), SIGNED, LABEL_OFF)
+        self.assertEqual((build["build"], problems), (2, []))
+
+    def test_only_the_newest_build_counts(self):
+        _, problems = preflight.evaluate("1.3.1", self.rows(channel="testflight"), SIGNED, LABEL_OFF)
+        self.assertEqual(len(problems), 1)
+        self.assertIn("channel='testflight'", problems[0])
+
+    def test_rows_without_a_channel_are_testflight_builds(self):
+        _, problems = preflight.evaluate("1.3.0", [{"version": "1.3.0", "build": 7, "profile": "public"}], SIGNED, LABEL_OFF)
+        self.assertTrue(any("channel='testflight'" in p for p in problems))
+        self.assertTrue(any("sdk=unknown" in p for p in problems))
+
+    def test_old_sdk_is_refused(self):
+        _, problems = preflight.evaluate("1.3.1", self.rows(sdk="iphoneos18.5"), SIGNED, LABEL_OFF)
+        self.assertTrue(any("iOS 26 SDK" in p for p in problems))
+
+    def test_unsigned_review_and_visible_label_are_each_reported(self):
+        _, problems = preflight.evaluate("1.3.1", self.rows(), UNSIGNED, LABEL_ON)
+        self.assertEqual(len(problems), 2)
+
+    def test_no_build_for_the_version(self):
+        build, problems = preflight.evaluate("9.9.9", self.rows(), SIGNED, LABEL_OFF)
+        self.assertIsNone(build)
+        self.assertEqual(len(problems), 1)
+
+
+class LedgerRecordsTheChannel(LedgerTests):
+    def test_channel_and_toolchain_are_recorded(self):
+        cand = Path(self._tmp.name) / "cand.json"
+        cand.write_text(json.dumps({"version": "1.1.3", "build": 3, "uploaded": True, "profile": "public",
+                                    "channel": "appstore", "xcode": "26.5", "sdk": "iphoneos26.5"}))
+        self.assertEqual(self.run_cli("record", str(cand)), 0)
+        row = json.loads(self.path.read_text())["builds"][-1]
+        self.assertEqual((row["channel"], row["xcode"], row["sdk"]), ("appstore", "26.5", "iphoneos26.5"))
+
+    def test_channel_defaults_to_testflight(self):
+        cand = Path(self._tmp.name) / "cand.json"
+        cand.write_text(json.dumps({"version": "1.1.3", "build": 3, "uploaded": True}))
+        self.assertEqual(self.run_cli("record", str(cand)), 0)
+        self.assertEqual(json.loads(self.path.read_text())["builds"][-1]["channel"], "testflight")
+
+
 if __name__ == "__main__":
     unittest.main()

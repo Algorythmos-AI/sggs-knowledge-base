@@ -112,15 +112,23 @@ mkdir -p "$OUT/$NAME.xcodeproj"
 { grep 'sggs-ios' "$SPEC"; echo "sggs-ios.sqlite in Resources"; } > "$OUT/$NAME.xcodeproj/project.pbxproj"
 """
 
+XCODEBUILD_STUB = """#!/bin/bash
+# stands in for Xcode: reports a version, does nothing else
+if [ "$1" = "-version" ]; then echo "Xcode {version}"; echo "Build version STUB"; fi
+exit 0
+"""
+
 
 @unittest.skipUnless(shutil.which("bash") and (ROOT / "db" / "sggs.sqlite").is_file()
                      and (ROOT / "db" / "sggs.sqlite").read_bytes()[:15] == b"SQLite format 3",
                      "needs bash and the real db/sggs.sqlite (git lfs pull)")
 class ArchiveLeavesNoTrace(unittest.TestCase):
+    XCODE = "26.5"
+
     def setUp(self):
         self.stubs = Path(tempfile.mkdtemp())
         self.addCleanup(shutil.rmtree, self.stubs)
-        for name, body in (("uname", "#!/bin/bash\necho Darwin\n"), ("xcodebuild", "#!/bin/bash\nexit 0\n"),
+        for name, body in (("uname", "#!/bin/bash\necho Darwin\n"), ("xcodebuild", XCODEBUILD_STUB.format(version=self.XCODE)),
                            ("xcodegen", XCODEGEN_STUB)):
             p = self.stubs / name
             p.write_text(body)
@@ -184,6 +192,60 @@ class ArchiveLeavesNoTrace(unittest.TestCase):
         self.assertFalse(self.lock.exists())
         self.assertEqual([], [p.name for p in (ROOT / "ios" / "App").glob("SGGS-TestFlight*")])
         self.assertEqual(before, self._snapshot(), "the archive changed ios/Resources or git status")
+
+
+class ReleaseChannelGate(ArchiveLeavesNoTrace):
+    """The channel is declared up front, and `appstore` is refused without the signed review."""
+
+    test_killed_then_rerun_archive_never_touches_the_dev_pair = None   # covered by the parent class
+
+    def _run(self, **env):
+        return subprocess.run(["bash", str(SCRIPT)], env=dict(self.env, **env),
+                              capture_output=True, text=True, timeout=900)
+
+    def test_unknown_channel_is_refused_before_any_work(self):
+        run = self._run(SGGS_RELEASE_CHANNEL="production")
+        self.assertNotEqual(run.returncode, 0)
+        self.assertIn("SGGS_RELEASE_CHANNEL must be testflight or appstore", run.stderr)
+        self.assertFalse(self.stage.exists())
+
+    def test_testflight_channel_is_the_default_and_passes_the_gate(self):
+        run = self._run()
+        self.assertEqual(run.returncode, 0, run.stdout[-2000:] + run.stderr[-2000:])
+        self.assertIn("channel testflight", run.stdout)
+
+    def test_appstore_channel_follows_the_attestation(self):
+        signed = re.search(r"(?m)^REVIEWED:\s*true\s*$", (RES / "NITNEM-REVIEW.md").read_text())
+        labelled_off = re.search(r"(?m)^\s*static let extraTextReviewed = true\s*$",
+                                 (ROOT / "ios/App/Sources/Data/NitnemSchedule.swift").read_text())
+        run = self._run(SGGS_RELEASE_CHANNEL="appstore")
+        if signed and labelled_off:
+            self.assertEqual(run.returncode, 0, run.stdout[-2000:] + run.stderr[-2000:])
+        else:                                   # today: unsigned → an App Store build cannot be made at all
+            self.assertNotEqual(run.returncode, 0)
+            self.assertRegex(run.stdout + run.stderr, r"NOT yet scholar-reviewed|extraTextReviewed is not true")
+        self.assertFalse((self.stage / "sggs-ios.sqlite").exists(), "staged DB should be removed on exit")
+
+
+class OldXcodeIsRefused(ArchiveLeavesNoTrace):
+    XCODE = "16.4"
+    test_killed_then_rerun_archive_never_touches_the_dev_pair = None
+
+    def test_archive_refuses_an_sdk_apple_will_reject(self):
+        run = subprocess.run(["bash", str(SCRIPT)], env=self.env, capture_output=True, text=True, timeout=120)
+        self.assertNotEqual(run.returncode, 0)
+        self.assertIn("App Store Connect requires Xcode 26+", run.stderr)
+
+
+class UploadProvenance(unittest.TestCase):
+    """Static: an upload must refuse a dirty tree, an off-trunk commit and a red commit."""
+
+    def test_upload_gates_are_hard_failures(self):
+        code = SCRIPT.read_text()
+        self.assertIn('[ "$UPLOAD" = 1 ] && fail "uncommitted changes in shipping sources', code)
+        self.assertIn("git merge-base --is-ancestor HEAD origin/integration", code)
+        self.assertIn("scripts/ci/wait_for_checks.py", code)
+        self.assertIn("--extra parity app", code)
 
 
 if __name__ == "__main__":
