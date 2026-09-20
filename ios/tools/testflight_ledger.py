@@ -131,7 +131,12 @@ def cmd_record(args):
         "build": build,
         "source_commit": cand.get("source_commit"),
         "profile": cand.get("profile"),
+        # "appstore" only when the archive passed the App Store gate (scholar-reviewed Nitnem text).
+        # Older rows have no channel: they are TestFlight builds and must never be submitted.
+        "channel": cand.get("channel", "testflight"),
         "db_sha256": cand.get("db_sha256"),
+        "xcode": cand.get("xcode"),
+        "sdk": cand.get("sdk"),
         "uploaded_at": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
         "note": None,
     })

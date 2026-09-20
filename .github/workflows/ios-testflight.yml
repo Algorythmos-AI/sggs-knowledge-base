@@ -33,6 +33,12 @@ on:
         type: choice
         default: public
         options: [public, personal]
+      channel:
+        description: "testflight = testers only. appstore = a build that may be SUBMITTED: requires the signed Nitnem text review (REVIEWED: true)"
+        required: true
+        type: choice
+        default: testflight
+        options: [testflight, appstore]
       upload:
         description: "Upload to App Store Connect (false = archive + gate only, keep the .ipa as an artifact)"
         required: true
@@ -41,6 +47,8 @@ on:
 
 permissions:
   contents: read
+  checks: read
+  statuses: read
 
 concurrency:
   group: ios-testflight
@@ -53,12 +61,24 @@ jobs:
     timeout-minutes: 90
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0   # the archive script proves HEAD is on origin/integration or origin/main
       - uses: ./.github/actions/lfs-db
       - name: Install XcodeGen
         run: brew install xcodegen
       - name: Select Xcode
         run: |
-          sudo xcode-select -s /Applications/Xcode_16.4.app 2>/dev/null || true
+          # App Store Connect rejects uploads built with anything older than Xcode 26 (iOS 26 SDK).
+          # Pick the newest installed Xcode 26+, and FAIL if the image has none — never fall back
+          # silently to an SDK Apple will refuse after a 40-minute archive.
+          XCODE=""
+          for app in /Applications/Xcode_*.app; do
+            major="${app##*/Xcode_}"; major="${major%%.*}"
+            case "$major" in *[!0-9]*|"") continue ;; esac
+            if [ "$major" -ge 26 ]; then XCODE="$app"; fi   # the glob sorts ascending, so the last match is the newest
+          done
+          test -n "$XCODE" || { echo "::error::no Xcode 26+ on this runner image — move runs-on to an image that has it"; exit 1; }
+          sudo xcode-select -s "$XCODE"
           xcodebuild -version
       - name: Write the App Store Connect API key
         env:
@@ -76,6 +96,8 @@ jobs:
           SGGS_ASC_KEY_PATH: ${{ runner.temp }}/asc/AuthKey.p8
           SGGS_BUILD_NUMBER: ${{ inputs.build_number }}
           SGGS_DB_PROFILE: ${{ inputs.profile }}
+          SGGS_RELEASE_CHANNEL: ${{ inputs.channel }}
+          GH_TOKEN: ${{ github.token }}   # the archive script waits for green CI on this commit before an upload
           SGGS_UPLOAD: ${{ inputs.upload && '1' || '0' }}
         run: bash ios/tools/testflight_archive.sh
       - name: Record the candidate in the job summary
