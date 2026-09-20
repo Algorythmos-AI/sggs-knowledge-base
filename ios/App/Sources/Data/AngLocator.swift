@@ -22,10 +22,10 @@ enum AngLocator {
     /// The span containing `ang`, or nil when meta is unavailable or nothing matches.
     static func location(for ang: Int, meta: CorpusMeta?) -> Location? {
         guard let meta else { return nil }
-        if let r = meta.raags.first(where: { ($0.firstAng...$0.lastAng).contains(ang) }) {
+        if let r = meta.raags.first(where: { $0.firstAng <= ang && ang <= $0.lastAng }) {
             return Location(gurmukhi: r.name, roman: r.roman, firstAng: r.firstAng, lastAng: r.lastAng)
         }
-        if let s = meta.sections.first(where: { ($0.firstAng...$0.lastAng).contains(ang) }) {
+        if let s = meta.sections.first(where: { $0.firstAng <= ang && ang <= $0.lastAng }) {
             return Location(gurmukhi: nil, roman: s.name, firstAng: s.firstAng, lastAng: s.lastAng)
         }
         return nil
