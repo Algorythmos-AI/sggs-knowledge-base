@@ -29,6 +29,6 @@ on the exact commit, then deploys API → verifies → builds web unaliased → 
 smoke public → tags. Details: [runbook: deploy](runbooks/deploy.md).
 
 ## Not yet wired (roadmap)
-`perf` (latency budget + Lighthouse on staging) and a load/soak test. `npm audit` still runs
-non-blocking: it reports advisories in build-time dependencies (astro, sharp, postcss, …) that need
-an upgrade PR before the gate can be made blocking.
+`perf` (latency budget + Lighthouse on staging) and a load/soak test — nothing yet exercises the
+request-cost limits this repo now enforces (the /api/verify claim cap, the socket timeout, the
+bounded worker pool). `npm audit` is already blocking (see the `security` row above).
