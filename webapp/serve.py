@@ -6,7 +6,7 @@ Zero dependencies: Python 3 standard library only.
 
 Run:   python3 serve.py        then open  http://localhost:7777
 """
-import json, os, re, sqlite3, random, sys, threading, webbrowser, mimetypes, math
+import json, os, re, sqlite3, random, sys, threading, webbrowser, mimetypes, math, hashlib, time
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from urllib.parse import urlparse, parse_qs
 
@@ -117,6 +117,7 @@ def _fts_clean(s):
     return str(s).replace('"', '').replace('*', '')
 
 _ID_MAX = 2**31 - 1
+MAX_CLAIM_CHARS = 600                                # /api/verify?q= — see the route
 _BANI_KEY_RE = re.compile(r'^[a-z0-9_]{1,32}$')     # /api/bani/{key}
 _BANI_VARIANTS = ('', 'sgpc', 'taksal', 'kirtan')   # allowlist; never interpolated
 
@@ -822,7 +823,7 @@ def api(path, qs):
         out.setdefault('related_themes', [])         # skipped it); uniform contract for the UI
         return out
     if p[0] == 'ang':
-        ang = max(1, min(1430, int(p[1])))
+        ang = _int_str(p[1], 1, 1430)
         rs = rows_to_list(db().execute(f'SELECT {LINE_COLS} FROM lines WHERE ang = ? ORDER BY id', (ang,)).fetchall())
         continued_from = None
         if rs and not rs[0]['is_header']:
@@ -883,8 +884,12 @@ def api(path, qs):
     if p[0] == 'verify':
         q = qs.get('q', [''])[0].strip()
         if not q: raise ValueError('empty claim')
+        # verify() ORs every token into one FTS query and then runs difflib per candidate, so its
+        # cost grows with the claim: an 18 KB claim measured ~7 s of CPU on one core. A quotation is
+        # a line or two — bound it here (verify.py stays byte-identical to the Swift port).
+        if len(q) > MAX_CLAIM_CHARS: raise ValueError(f'claim too long (max {MAX_CLAIM_CHARS} chars)')
         ang_q = qs.get('ang', [None])[0]
-        ang_n = int(ang_q) if ang_q else None
+        ang_n = _int_str(ang_q, 1, 1430) if ang_q else None
         return verify_claim(q, ang=ang_n, db_path=DB)
     if p[0] == 'word':
         w = _fts_clean(qs.get('w', [''])[0].strip())   # a bare " in MATCH -> OperationalError 500
@@ -1000,7 +1005,13 @@ def api(path, qs):
             return {'raag': raag, 'concepts': [], 'series': {}, 'note': 'analytics tables not present'}
     if p[0] == 'analytics' and len(p) >= 2 and p[1] == 'resonance':   # /api/analytics/resonance
         min_lines = _int(qs, 'min_lines', 250, 1, _ID_MAX)
-        min_lift = float(qs.get('min_lift', ['1.0'])[0])
+        try:
+            min_lift = float(qs.get('min_lift', ['1.0'])[0])
+        except (TypeError, ValueError):
+            min_lift = 1.0
+        if not math.isfinite(min_lift):     # NaN/inf survive max(min()) — same guard as min_ppmi
+            min_lift = 1.0
+        min_lift = max(0.0, min(100.0, min_lift))
         min_edges = _int(qs, 'min_edges', 8, 1, _ID_MAX)
         try:
             nodes = rows_to_list(db().execute(
@@ -1335,8 +1346,29 @@ def api(path, qs):
             return {'available': False, 'comp_id': cid, 'forms': None}
     raise ValueError('unknown endpoint')
 
+# Responses that depend only on the immutable DB: safe for the browser and the CDN in front of
+# the API to cache. Everything else (health, meta, random, search, verify) stays no-store.
+_CACHEABLE = ('ang', 'shabad', 'lines', 'bani', 'banis', 'word', 'analytics', 'themes', 'timing',
+              'forms', 'neighbors', 'related', 'line_concepts')
+_CACHE_IMMUTABLE = 'public, max-age=300, s-maxage=3600'
+_ACCESS_LOG = os.environ.get('SGGS_ACCESS_LOG', '1') != '0'
+
 class H(BaseHTTPRequestHandler):
+    # A client that connects and then sends nothing (or trickles bytes) used to hold its thread
+    # and SQLite connection forever: socketserver applies this to the socket before reading.
+    timeout = 15
+
     def log_message(self, *a): pass
+
+    def log_request(self, code='-', size='-'):
+        # One JSON line per request on stderr (the host's log stream). The path only — never the
+        # query string, so what people search for is not written anywhere.
+        if not _ACCESS_LOG: return
+        t0 = getattr(self, '_t0', None)
+        ms = round((time.monotonic() - t0) * 1000, 1) if t0 else None
+        code = getattr(code, 'value', code)
+        sys.stderr.write(json.dumps({'m': self.command, 'p': urlparse(self.path).path,
+                                     's': code, 'ms': ms}) + '\n')
 
     def _sec_headers(self):
         # Defence-in-depth for the local app. No strict CSP on purpose: the UI relies on
@@ -1345,12 +1377,20 @@ class H(BaseHTTPRequestHandler):
         self.send_header('X-Content-Type-Options', 'nosniff')
         self.send_header('X-Frame-Options', 'DENY')
         self.send_header('Referrer-Policy', 'no-referrer')
+        # Honoured only over HTTPS (the hosted API); browsers ignore it on http://localhost.
+        self.send_header('Strict-Transport-Security', 'max-age=31536000')
 
-    def _respond(self, status, body, ct):
+    def _respond(self, status, body, ct, cache='no-store'):
+        etag = None
+        if cache != 'no-store' and status == 200:
+            etag = '"' + hashlib.sha256(body).hexdigest()[:32] + '"'
+            if self.headers.get('If-None-Match') == etag:
+                status, body = 304, b''
         self.send_response(status)
         self.send_header('Content-Type', ct)
         self.send_header('Content-Length', str(len(body)))
-        self.send_header('Cache-Control', 'no-store')
+        self.send_header('Cache-Control', cache)
+        if etag: self.send_header('ETag', etag)
         self._sec_headers()
         self.end_headers()
         if self.command != 'HEAD':
@@ -1433,13 +1473,16 @@ class H(BaseHTTPRequestHandler):
             self.wfile.write(body)
 
     def _handle(self):
+        self._t0 = time.monotonic()
         u = urlparse(self.path)
         if u.path == '/favicon.ico':
             return self._respond(404, b'', 'image/x-icon')
         try:
             if u.path.startswith('/api/'):
                 body = json.dumps(api(u.path, parse_qs(u.query)), ensure_ascii=False).encode()
-                return self._respond(200, body, 'application/json; charset=utf-8')
+                seg = u.path.split('/')[2] if u.path.count('/') >= 2 else ''
+                cache = _CACHE_IMMUTABLE if seg in _CACHEABLE else 'no-store'
+                return self._respond(200, body, 'application/json; charset=utf-8', cache)
             return self._serve_static(u.path)
         except ApiError as e:                                  # explicit status (e.g. 404 unknown comp_id)
             msg = json.dumps({'error': e.message}).encode()
@@ -1461,6 +1504,35 @@ class H(BaseHTTPRequestHandler):
     def do_GET(self): self._handle()
     def do_HEAD(self): self._handle()
 
+
+class BoundedThreadingHTTPServer(ThreadingHTTPServer):
+    """ThreadingHTTPServer with a ceiling on live handler threads.
+
+    The stock server starts a thread — and, here, a SQLite connection with its page cache — per
+    connection with no upper bound. When every slot is busy the accept loop waits, so extra clients
+    queue in the listen backlog instead of multiplying memory. With `H.timeout` an idle or
+    trickling connection gives its slot back within seconds."""
+    daemon_threads = True
+    request_queue_size = 128
+
+    def __init__(self, *args, max_workers=None, **kwargs):
+        super().__init__(*args, **kwargs)
+        self._slots = threading.BoundedSemaphore(max_workers or int(os.environ.get('SGGS_MAX_WORKERS', '48')))
+
+    def process_request(self, request, client_address):
+        self._slots.acquire()
+        try:
+            super().process_request(request, client_address)
+        except BaseException:
+            self._slots.release()
+            raise
+
+    def process_request_thread(self, request, client_address):
+        try:
+            super().process_request_thread(request, client_address)
+        finally:
+            self._slots.release()
+
 if __name__ == '__main__':
     global_fts = None
     if not os.path.exists(DB):
@@ -1474,7 +1546,7 @@ if __name__ == '__main__':
     HAVE_FTS = None
     # Bind 0.0.0.0 so the app is reachable when hosted (e.g. behind a Vercel /api rewrite);
     # the platform's $PORT is honoured via the PORT env at the top of this file.
-    srv = ThreadingHTTPServer(('0.0.0.0', PORT), H)
+    srv = BoundedThreadingHTTPServer(('0.0.0.0', PORT), H)
     url = f'http://localhost:{PORT}'
     print(f'ੴ  SGGS Knowledge Base serving at {url}   (Ctrl-C to stop)')
     # Only pop a browser for local desktop use; never on a headless host. Opt in with SGGS_OPEN_BROWSER=1.
