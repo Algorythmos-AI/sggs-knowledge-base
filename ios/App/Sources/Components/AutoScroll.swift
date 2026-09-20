@@ -22,7 +22,7 @@ enum AutoScrollMath {
         return min(max(0, maxY), y + pointsPerSecond * CGFloat(dt))
     }
     static func pointsPerSecond(_ pace: AutoScrollPace, fontSize: CGFloat, lowPower: Bool,
-                                override env: [String: String] = ProcessInfo.processInfo.environment) -> CGFloat {
+                                override env: [String: String] = DebugHooks.environment) -> CGFloat {
         if let s = env["SGGS_AUTOSCROLL_PPS"], let v = Double(s) { return CGFloat(v) }
         let scaled = pace.basePointsPerSecond * max(0.75, fontSize / 24)
         return lowPower ? scaled * 0.5 : scaled

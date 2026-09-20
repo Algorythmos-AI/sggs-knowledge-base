@@ -69,7 +69,7 @@ final class AppContainer {
         defaults.set(opened.degraded && !opened.destroyed ? prior + 1 : 0, forKey: Self.savedStoreFailKey)
         // Gentle reminders: a fake scheduler under UI test, the real notification center otherwise.
         #if canImport(UserNotifications)
-        let uiTest = ProcessInfo.processInfo.environment["SGGS_UITEST"] == "1"
+        let uiTest = DebugHooks.isUITest
         let scheduler: NotificationScheduling = uiTest ? FakeNotificationScheduler() : SystemNotificationScheduler()
         #else
         let scheduler: NotificationScheduling = FakeNotificationScheduler()
