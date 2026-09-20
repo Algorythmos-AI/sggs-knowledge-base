@@ -105,7 +105,7 @@ enum NitnemAuthStatus: Sendable { case notDetermined, denied, authorized, provis
 
 #if canImport(UserNotifications)
 /// The real scheduler. Non-repeating calendar triggers; the tap deep-links to `sggs://nitnem`
-/// through `userInfo` (routed by `NotificationRouter`). No badge, no sound beyond the default.
+/// through `userInfo` (routed by `NotificationRouter`). A banner with the default sound; no badge.
 struct SystemNotificationScheduler: NotificationScheduling {
     private var center: UNUserNotificationCenter { .current() }   // the shared singleton; not stored (non-Sendable)
 
@@ -119,9 +119,10 @@ struct SystemNotificationScheduler: NotificationScheduling {
     }
 
     func requestAuthorization() async -> Bool {
-        // Provisional (quiet, no prompt) delivery: the reminder lands silently in the list, the
-        // reader is never interrupted by a permission alert. They can promote it in Settings.
-        (try? await center.requestAuthorization(options: [.alert, .sound, .provisional])) ?? false
+        // A real prompt, and only ever from the reader's own toggle. Provisional delivery looked
+        // polite but is silent by design (Notification Center only — no banner, no sound), so a
+        // 06:00 Amrit Vela reminder never actually reminded anyone.
+        (try? await center.requestAuthorization(options: [.alert, .sound])) ?? false
     }
 
     func pendingIds(withPrefix prefix: String) async -> [String] {
@@ -135,7 +136,11 @@ struct SystemNotificationScheduler: NotificationScheduling {
             content.title = r.title
             content.body = r.body
             content.userInfo = ["url": "sggs://nitnem"]
-            content.interruptionLevel = .passive        // never a hard interruption while reading
+            content.sound = .default
+            // `.active` (the default level): lights the screen and shows a banner, but — unlike
+            // `.timeSensitive` — still respects Focus and Sleep. In the foreground the router
+            // suppresses it, so it never covers the page being read.
+            content.interruptionLevel = .active
             let comps = cal.dateComponents([.year, .month, .day, .hour, .minute], from: r.date)
             let trigger = UNCalendarNotificationTrigger(dateMatching: comps, repeats: false)
             try? await center.add(UNNotificationRequest(identifier: r.id, content: content, trigger: trigger))
@@ -162,7 +167,13 @@ actor FakeNotificationScheduler: NotificationScheduling {
     init(grants: Bool = true, status: NitnemAuthStatus = .authorized) { self.grants = grants; self.status = status }
 
     func authorizationStatus() async -> NitnemAuthStatus { status }
-    func requestAuthorization() async -> Bool { if grants { status = .authorized }; return grants }
+    /// How many times a prompt was asked for — tests assert the prompt is (not) shown.
+    private(set) var promptCount = 0
+    func requestAuthorization() async -> Bool {
+        promptCount += 1
+        status = grants ? .authorized : .denied
+        return grants
+    }
     func pendingIds(withPrefix prefix: String) async -> [String] { pending.map(\.id).filter { $0.hasPrefix(prefix) } }
     func add(_ reminders: [PlannedReminder]) async { pending.append(contentsOf: reminders) }
     func remove(ids: [String]) async { let s = Set(ids); pending.removeAll { s.contains($0.id) } }

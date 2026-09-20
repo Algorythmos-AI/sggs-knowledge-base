@@ -11,6 +11,7 @@ struct NitnemLiveActivity: Widget {
     var body: some WidgetConfiguration {
         ActivityConfiguration(for: NitnemActivityAttributes.self) { context in
             lockScreen(context)
+                .widgetURL(URL(string: "sggs://bani/\(context.attributes.key)"))
                 .activityBackgroundTint(nil)
                 .activitySystemActionForegroundColor(palette.accent)
         } dynamicIsland: { context in

@@ -22,6 +22,9 @@ struct AngPageView: View {
     @AppStorage("sggs_focus_mode") private var focusMode = false
 
     @State private var page: AngPage?
+    @State private var loadFailed = false
+    /// Bumped by "Try again" to re-run the load task (`ang` is fixed for a hosted page).
+    @State private var attempt = 0
     @State private var timingChip: String?
     @State private var timing: RaagTiming?
     @State private var highlightedId: Int?
@@ -37,6 +40,15 @@ struct AngPageView: View {
         Group {
             if let page {
                 content(page)
+            } else if loadFailed {
+                // never a dead end: a failed read says so and offers a way out
+                EmptyStateView(title: "Couldn't load Ang \(String(ang))",
+                               message: "The page didn't open. Your place is kept.",
+                               isError: true, actionTitle: "Try again") {
+                    Haptics.tap(); loadFailed = false; attempt += 1
+                }
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .accessibilityIdentifier("angLoadFailed")
             } else {
                 // quiet skeleton — never a spinner flash (page loads in ~ms from local SQLite)
                 VStack(alignment: .leading, spacing: 18) {
@@ -52,9 +64,15 @@ struct AngPageView: View {
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
         .background(Ink.paper)
-        .task(id: ang) {
-            await model.ensure(ang, isCurrent: isCurrent)
-            page = model.page(ang)
+        .task(id: attempt) {
+            // `ensure` hands back the page it loaded (never a second cache read — see ReaderModel).
+            var loaded = await model.ensure(ang)
+            if loaded == nil, !Task.isCancelled {        // one quiet retry before saying so
+                try? await Task.sleep(for: .milliseconds(300))
+                if !Task.isCancelled { loaded = await model.ensure(ang) }
+            }
+            if let loaded { page = loaded } else if !Task.isCancelled, page == nil { loadFailed = true }
+            guard !Task.isCancelled, page != nil else { return }
             // present a requested verse as the INITIAL scroll offset before first layout
             if isCurrent, let id = container.router.pendingReaderLineId,
                page?.lines.contains(where: { $0.id == id }) == true {
@@ -62,6 +80,11 @@ struct AngPageView: View {
             }
             await loadTiming()
             finishLanding()
+        }
+        // Defence in depth: adopt the page if it reaches the cache by any other route (a neighbour's
+        // pre-warm) while this view is still empty. The local copy is kept, so eviction never blanks it.
+        .onChange(of: model.page(ang) != nil) { _, cached in
+            if cached, page == nil, let p = model.page(ang) { page = p; loadFailed = false }
         }
         // same-Ang landing (e.g. "Open Ang N" while already on N) and tab re-selection
         .onChange(of: container.router.pendingReaderLineId) { _, _ in land() }
@@ -150,6 +173,9 @@ struct AngPageView: View {
         }
         .scrollPosition(id: $landingId, anchor: .center)
         .coordinateSpace(name: "readerScroll")
+        // present only when the Ang's content is up (never on the skeleton) — the UI tests assert it
+        // so a blank page can no longer pass as "landed".
+        .accessibilityIdentifier("angContent-\(String(page.ang))")
         .modifier(ReaderScrollTracking(
             onScroll: { y, content, viewport in
                 if isCurrent && !landingInProgress { onScroll(y, content, viewport) }

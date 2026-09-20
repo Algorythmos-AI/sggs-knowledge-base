@@ -1,6 +1,6 @@
 {
   "name": "sggs-frontend",
-  "version": "1.3.0",
+  "version": "1.3.1",
   "private": true,
   "type": "module",
   "scripts": {
@@ -14,15 +14,15 @@
   },
   "dependencies": {
     "@tailwindcss/vite": "^4.3.1",
-    "astro": "^6.4.6",
+    "astro": "^7.3.3",
     "chart.js": "^4.5.1",
     "d3": "^7.9.0",
     "tailwindcss": "^4.3.1"
   },
   "devDependencies": {
-    "@types/d3": "^7.4.3",
+    "@axe-core/playwright": "^4.10.0",
     "@playwright/test": "^1.48.0",
-    "@axe-core/playwright": "^4.10.0"
+    "@types/d3": "^7.4.3"
   },
   "engines": {
     "node": "22.x"

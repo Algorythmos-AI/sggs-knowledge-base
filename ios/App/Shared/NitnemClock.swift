@@ -12,8 +12,8 @@ enum NitnemClock {
     static let rolloverSeconds: TimeInterval = 3 * 3600
 
     /// Live now, or the pinned time when `SGGS_CLOCK_NOW=<minutes-since-local-midnight>` is set
-    /// (XCUITests). A single definition so tests pin every surface at once.
-    static func now(_ env: [String: String] = ProcessInfo.processInfo.environment) -> Date {
+    /// (XCUITests, Debug builds only — see `DebugHooks`). A single definition so tests pin every surface at once.
+    static func now(_ env: [String: String] = DebugHooks.environment) -> Date {
         if let s = env["SGGS_CLOCK_NOW"], let m = Int(s) {
             return Calendar.current.startOfDay(for: Date()).addingTimeInterval(TimeInterval(m * 60))
         }

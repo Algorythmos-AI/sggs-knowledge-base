@@ -143,6 +143,8 @@ struct MoreScreen: View {
 
 struct AboutScreen: View {
     @Environment(AppContainer.self) private var container
+    /// Local MetricKit files (usually none). State, so "Delete diagnostics" updates the row at once.
+    @State private var diagnostics: [URL] = CrashMonitor.files()
 
     var body: some View {
         List {
@@ -176,9 +178,21 @@ struct AboutScreen: View {
                         .font(.caption2).foregroundStyle(groupOK ? Ink.positive : Ink.negative)
                     Text("Meaningful on a signed device build only — the simulator always reports available.")
                         .font(.caption2).foregroundStyle(.tertiary)
-                    let diag = CrashMonitor.diagnosticCount()
-                    Text("Diagnostics collected on this device: \(String(diag)) (local only, never sent)")
+                    Text("Diagnostics collected on this device: \(String(diagnostics.count)) (local only, never sent)")
                         .font(.caption2).foregroundStyle(.tertiary)
+                    // The only way these files ever leave the device: the reader's own choice, through
+                    // the system share sheet. Nothing is sent automatically ("Data Not Collected").
+                    if !diagnostics.isEmpty {
+                        ShareLink(items: diagnostics) { Label("Share diagnostics…", systemImage: "square.and.arrow.up") }
+                            .font(.footnote)
+                            .accessibilityIdentifier("shareDiagnostics")
+                        Button(role: .destructive) {
+                            CrashMonitor.deleteAll()
+                            diagnostics = CrashMonitor.files()
+                        } label: { Label("Delete diagnostics", systemImage: "trash") }
+                            .font(.footnote)
+                            .accessibilityIdentifier("deleteDiagnostics")
+                    }
                 }
                 .inkRow()
             }
@@ -186,6 +200,10 @@ struct AboutScreen: View {
                 Text("Gurmukhi text: verbatim from the source edition, cited by Ang.")
                 if container.corpus?.capabilities.hasEnglish == true {
                     Text("English translation by Dr. Sant Singh Khalsa (sourced via BaniDB) — a separate labelled layer, never the scripture.")
+                }
+                if container.corpus?.capabilities.hasBanis == true {
+                    // Required in-app attribution, verbatim from NOTICE.md.
+                    Text("Bani ordering and Sri Dasam Granth / Ardaas text via the ShabadOS open database. Sri Guru Granth Sahib Ji text is this project's own verified corpus.")
                 }
                 Text("Font: Sant Lipi © Shabad OS, SIL Open Font License 1.1.")
                 Text("Headings: Source Serif 4 © Adobe, SIL Open Font License 1.1.")

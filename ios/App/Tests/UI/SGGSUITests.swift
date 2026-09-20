@@ -84,6 +84,18 @@ final class SGGSUITests: XCTestCase {
         return app.buttons[action].firstMatch
     }
 
+    // MARK: Jump-sheet helpers
+
+    /// Enter a new Ang into the (seeded, editable) number field: focus, clear the existing digits,
+    /// then type the value. Robust whether or not select-all-on-focus has fired.
+    private func enterAng(_ app: XCUIApplication, _ value: String, file: StaticString = #file, line: UInt = #line) {
+        let field = app.textFields["angField"].firstMatch
+        XCTAssertTrue(field.waitForExistence(timeout: 8), "angField missing", file: file, line: line)
+        field.tap()
+        field.typeText(String(repeating: "\u{8}", count: 5))   // delete up to 5 seeded digits
+        field.typeText(value)
+    }
+
     // MARK: Reader pager helpers
 
     /// The Reader mounts three pages at once (current ±1), so the same in-page control id exists on
@@ -96,6 +108,10 @@ final class SGGSUITests: XCTestCase {
                       "title should read Ang \(n) \(note)", file: file, line: line)
         XCTAssertTrue(app.otherElements["angPager-\(n)-h0"].waitForExistence(timeout: timeout),
                       "the visible page should be Ang \(n) with no self-heal \(note)", file: file, line: line)
+        // The regression that shipped: title + pager agreed while the page stayed a skeleton. Require
+        // the loaded content view (only present when verses rendered, never on the skeleton).
+        XCTAssertTrue(app.scrollViews["angContent-\(n)"].waitForExistence(timeout: timeout),
+                      "Ang \(n) must render verses, not a skeleton \(note)", file: file, line: line)
     }
 
     /// Open the Reader on a specific Ang via the deep link (avoids typing into the Jump sheet and
@@ -131,6 +147,40 @@ final class SGGSUITests: XCTestCase {
     /// the shabad carries over, else the always-present end-of-page "Next · Ang N+1" card.
     private func forwardFooter(_ app: XCUIApplication) -> XCUIElement? {
         hittable(app, button: "continuesOnPill", timeout: 1) ?? hittable(app, button: "endNextAng", timeout: 1)
+    }
+
+    /// THE new regression guard for the reported bug: after a jump, swiping several pages must render
+    /// verses on EVERY page — not a permanent skeleton (TestFlight 1.3.0 (4), Angs 352 / 918 / 1106).
+    /// `assertOnAng` now requires the content view, so a blank page fails here.
+    func testSwipeRunAfterJumpRendersContent() {
+        let app = launchApp()
+        for start in [1100, 348, 915] {
+            goReader(app, at: start)
+            assertOnAng(app, start)
+            for i in 1...8 {                       // swipe forward past the old 3-4 page eviction cliff
+                readerScroll(app).swipeLeft()
+                assertOnAng(app, start + i, "forward swipe #\(i) from \(start)")
+            }
+            for i in stride(from: 7, through: 0, by: -1) {
+                readerScroll(app).swipeRight()
+                assertOnAng(app, start + i, "back swipe to \(start + i)")
+            }
+        }
+    }
+
+    /// The "Ang N" title is a control: tapping it opens Jump with the keypad up, and typing a number
+    /// then Go lands on a rendered page.
+    func testTitleOpensJumpAndTypedAngRenders() {
+        let app = launchApp()
+        goReader(app, at: 500)
+        assertOnAng(app, 500)
+        let title = app.buttons["angTitle"].firstMatch
+        XCTAssertTrue(title.waitForExistence(timeout: 12), "the Ang title should be a button")
+        title.tap()
+        XCTAssertTrue(app.textFields["angField"].firstMatch.waitForExistence(timeout: 8), "title tap should open Jump")
+        enterAng(app, "1106")
+        app.buttons["goToAng"].tap()
+        assertOnAng(app, 1106, "after typing an Ang from the title")
     }
 
     func testLaunchShowsNitnem() {
@@ -482,9 +532,7 @@ final class SGGSUITests: XCTestCase {
         let jump = app.buttons["jumpToAng"].firstMatch
         XCTAssertTrue(jump.waitForExistence(timeout: 15))
         jump.tap()
-        let field = app.textFields["angField"].firstMatch
-        XCTAssertTrue(field.waitForExistence(timeout: 8))
-        field.tap(); field.typeText("1430")
+        enterAng(app, "1430")
         app.buttons["goToAng"].tap()
         XCTAssertTrue(app.navigationBars["Ang 1430"].waitForExistence(timeout: 12), "jump to 1430 failed")
         XCTAssertFalse(app.buttons["Next Ang"].isEnabled, "next must be disabled at Ang 1430")

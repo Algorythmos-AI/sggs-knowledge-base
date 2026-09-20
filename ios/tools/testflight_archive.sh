@@ -25,11 +25,19 @@
 #                       uploaded for this MARKETING_VERSION (App Store Connect rejects reuse).
 #   SGGS_DB_PROFILE     public (default) | personal. `personal` bundles the English layer and is
 #                       accepted only with LICENSED: true in ios/Resources/TRANSLATION-LICENSE.md.
+#   SGGS_RELEASE_CHANNEL testflight (default) | appstore. A TestFlight binary and an App Store binary are
+#                       the same upload, so the channel is declared up front: `appstore` makes
+#                       pipeline/check_release_license.sh REQUIRE the scholar review of the Nitnem
+#                       non-SGGS text (ios/Resources/NITNEM-REVIEW.md → REVIEWED: true) and requires
+#                       the in-app "under review" label to be off. Only a build recorded with
+#                       channel=appstore may be submitted (make appstore-preflight checks the ledger).
 #   SGGS_UPLOAD         1 → export destination "upload" (straight to App Store Connect).
 #                       0 (default) → write an .ipa under ios/App/build/ for Transporter.
 #   SGGS_ASC_KEY_PATH / SGGS_ASC_KEY_ID / SGGS_ASC_ISSUER_ID
 #                       App Store Connect API key (all three, or none). Needed for CI / an
 #                       unattended upload; a logged-in Xcode account suffices locally.
+#   SGGS_SKIP_CI_CHECK  1 → with SGGS_UPLOAD=1, skip waiting for green CI on the commit (offline /
+#                       pipeline-outage use only; the candidate record notes it).
 #   SGGS_ARCHIVE_DRY_RUN 1 → stop after step 3 (stage + gate + generate); nothing is signed,
 #                       archived or uploaded. Used by webapp/tests/test_ios_archive.py.
 #
@@ -57,6 +65,12 @@ BUILD="${SGGS_BUILD_NUMBER:-}";     [ -n "$BUILD" ]   || fail "SGGS_BUILD_NUMBER
 PROFILE="${SGGS_DB_PROFILE:-public}"
 case "$PROFILE" in public|personal) ;; *) fail "SGGS_DB_PROFILE must be public or personal" ;; esac
 UPLOAD="${SGGS_UPLOAD:-0}"
+CHANNEL="${SGGS_RELEASE_CHANNEL:-testflight}"
+case "$CHANNEL" in testflight|appstore) ;; *) fail "SGGS_RELEASE_CHANNEL must be testflight or appstore" ;; esac
+export SGGS_RELEASE_CHANNEL="$CHANNEL"          # read by pipeline/check_release_license.sh (step 2)
+# Apple rejects uploads built with an older SDK (Xcode 26 / iOS 26 SDK required since 2026-04-28).
+# One constant: raise it when developer.apple.com/news/upcoming-requirements raises the floor.
+MIN_XCODE_MAJOR=26
 
 KEY_PATH="${SGGS_ASC_KEY_PATH:-}"; KEY_ID="${SGGS_ASC_KEY_ID:-}"; ISSUER="${SGGS_ASC_ISSUER_ID:-}"
 AUTH_ARGS=()
@@ -84,12 +98,34 @@ TF_NAME="SGGS-TestFlight"
 TF_SPEC="$PROJECT_DIR/$TF_NAME.yml"
 LOCK="$BUILD_DIR/.archive.lock"
 
-say "SGGS TestFlight candidate — version $VERSION build $BUILD · profile $PROFILE · team $TEAM_ID"
+say "SGGS candidate — version $VERSION build $BUILD · channel $CHANNEL · profile $PROFILE · team $TEAM_ID"
 
 say "0/6 preflight"
 head -c 16 db/sggs.sqlite | grep -q "SQLite format 3" || fail "db/sggs.sqlite is an LFS pointer — run: git lfs pull"
-if [ -n "$(git status --porcelain -- ios/App/Sources ios/App/Shared ios/App/Widgets ios/App/project.yml ios/Packages)" ]; then
-  echo "  WARNING: uncommitted iOS source changes — a TestFlight build should come from a committed SHA"
+DIRTY="$(git status --porcelain -- ios/App/Sources ios/App/Shared ios/App/Widgets ios/App/project.yml ios/App/Resources ios/Packages pipeline)"
+if [ -n "$DIRTY" ]; then
+  # What is uploaded must be reproducible from a commit: an upload from a dirty tree is refused.
+  [ "$UPLOAD" = 1 ] && fail "uncommitted changes in shipping sources — an upload must come from a committed SHA:
+$DIRTY"
+  echo "  WARNING: uncommitted iOS source changes — an upload from this tree would be refused"
+fi
+XCODE_VERSION="$(xcodebuild -version | awk 'NR==1{print $2}')"
+[ "${XCODE_VERSION%%.*}" -ge "$MIN_XCODE_MAJOR" ] 2>/dev/null \
+  || fail "Xcode $XCODE_VERSION is too old — App Store Connect requires Xcode $MIN_XCODE_MAJOR+ (select it with xcode-select)"
+echo "  Xcode $XCODE_VERSION"
+if [ "$UPLOAD" = 1 ]; then
+  # The commit must be on the trunk or the production branch — never a local-only or feature SHA.
+  git fetch -q origin integration main 2>/dev/null || echo "  (could not fetch origin; using local remote-tracking refs)"
+  if ! git merge-base --is-ancestor HEAD origin/integration 2>/dev/null && ! git merge-base --is-ancestor HEAD origin/main 2>/dev/null; then
+    fail "HEAD $(git rev-parse --short HEAD) is not on origin/integration or origin/main — merge it first, then build from that commit"
+  fi
+  if [ "${SGGS_SKIP_CI_CHECK:-0}" = 1 ]; then
+    echo "  WARNING: SGGS_SKIP_CI_CHECK=1 — not waiting for green CI on this commit"
+  else
+    command -v gh >/dev/null || fail "gh not found — needed to confirm CI is green on this commit (or set SGGS_SKIP_CI_CHECK=1 in a pipeline outage)"
+    python3 scripts/ci/wait_for_checks.py "$(git rev-parse HEAD)" --extra parity app --timeout 60 \
+      || fail "required checks (incl. the iOS parity + app jobs) are not green on $(git rev-parse --short HEAD)"
+  fi
 fi
 echo "  source commit: $(git rev-parse --short HEAD) ($(git branch --show-current))"
 mkdir -p "$BUILD_DIR"
@@ -129,6 +165,12 @@ python3 pipeline/build_ios_db.py --profile "$PROFILE" db/sggs.sqlite "$DB"
 
 say "2/6 release gate on the artifact that will ship"
 bash pipeline/check_release_license.sh "$MANIFEST" "$DB"
+if [ "$CHANNEL" = appstore ]; then
+  # The gate above proved the attestation; the binary must agree with it, or the App Store build
+  # would still say "Under scholarly review" to the reviewer and to every reader.
+  grep -qE '^[[:space:]]*static let extraTextReviewed = true[[:space:]]*$' ios/App/Sources/Data/NitnemSchedule.swift \
+    || fail "channel=appstore but NitnemReview.extraTextReviewed is not true (ios/App/Sources/Data/NitnemSchedule.swift) — flip it in the commit that signs NITNEM-REVIEW.md"
+fi
 BUNDLED_SHA=$(python3 -c "import json;print(json.load(open('$MANIFEST'))['db_sha256'])")
 EN=$(python3 -c "import json;print(json.load(open('$MANIFEST'))['en_bundled'])")
 echo "  bundling profile=$PROFILE en_bundled=$EN db_sha256=${BUNDLED_SHA:0:16}…"
@@ -152,7 +194,7 @@ if grep -q '\.\./Resources' "$PBX"; then fail "generated project still reference
 if [ "$DRY_RUN" = 1 ]; then
   echo
   echo "OK  DRY RUN — staged + gated + generated; nothing archived, signed or uploaded."
-  echo "    staged: profile=$PROFILE db_sha256=${BUNDLED_SHA:0:16}…"
+  echo "    staged: channel=$CHANNEL profile=$PROFILE db_sha256=${BUNDLED_SHA:0:16}…"
   exit 0
 fi
 
@@ -200,15 +242,30 @@ SHIPPED_PROFILE=$(python3 -c "import json;print(json.load(open('$APP/sggs-ios.ma
 [ "$SHIPPED_PROFILE" = "$PROFILE" ] || fail "profile inside the .app is $SHIPPED_PROFILE, expected $PROFILE"
 ACTUAL_SHA=$(shasum -a 256 "$APP/sggs-ios.sqlite" | cut -d' ' -f1)
 [ "$ACTUAL_SHA" = "$SHIPPED_SHA" ] || fail "DB inside the .app does not hash to its manifest"
+# The SDK the binary was actually built with (what App Store Connect validates), not what we hoped.
+DT_XCODE=$(/usr/libexec/PlistBuddy -c 'Print DTXcode' "$APP/Info.plist")
+DT_SDK=$(/usr/libexec/PlistBuddy -c 'Print DTSDKName' "$APP/Info.plist")
+SDK_MAJOR=$(printf '%s' "$DT_SDK" | sed -E 's/^[a-z]+([0-9]+).*/\1/')
+[ "$SDK_MAJOR" -ge "$MIN_XCODE_MAJOR" ] 2>/dev/null || fail "archived app was built with SDK $DT_SDK — App Store Connect requires the iOS $MIN_XCODE_MAJOR SDK or later"
+# dSYM UUIDs: what a MetricKit / Organizer crash report must match to be symbolicated later.
+DSYM_UUIDS=$(find "$ARCHIVE/dSYMs" -name '*.dSYM' -maxdepth 1 -exec dwarfdump --uuid {} \; 2>/dev/null | awk '{print $2":"$NF}' | paste -sd, -)
+APP_MB=$(du -sm "$APP" | cut -f1)
+echo "  built with Xcode build $DT_XCODE · SDK $DT_SDK · .app ${APP_MB} MB"
 
 cat > "$BUILD_DIR/candidate-$VERSION-$BUILD.json" <<JSON
 {
   "version": "$VERSION",
   "build": $BUILD,
   "profile": "$PROFILE",
+  "channel": "$CHANNEL",
   "en_bundled": "$EN",
   "db_sha256": "$SHIPPED_SHA",
   "source_commit": "$(git rev-parse HEAD)",
+  "xcode": "$XCODE_VERSION",
+  "sdk": "$DT_SDK",
+  "app_mb": $APP_MB,
+  "dsym_uuids": "$DSYM_UUIDS",
+  "ci_check_skipped": $([ "${SGGS_SKIP_CI_CHECK:-0}" = 1 ] && echo true || echo false),
   "archive": "$ARCHIVE",
   "uploaded": $([ "$UPLOAD" = 1 ] && echo true || echo false)
 }
@@ -224,7 +281,7 @@ else
 fi
 
 echo
-echo "OK  SGGS $VERSION ($BUILD) · profile $PROFILE · db_sha256 ${SHIPPED_SHA:0:16}… · commit $(git rev-parse --short HEAD)"
+echo "OK  SGGS $VERSION ($BUILD) · channel $CHANNEL · profile $PROFILE · db_sha256 ${SHIPPED_SHA:0:16}… · commit $(git rev-parse --short HEAD)"
 echo "    archive: $ARCHIVE"
 if [ "$UPLOAD" = 1 ]; then
   echo "    uploaded to App Store Connect — it appears under TestFlight after processing (10–30 min)."

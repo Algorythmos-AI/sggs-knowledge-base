@@ -45,4 +45,4 @@ jobs:
         with:
           node-version-file: ".nvmrc"
       - working-directory: frontend
-        run: npm audit --audit-level=high || true
+        run: npm audit --audit-level=high

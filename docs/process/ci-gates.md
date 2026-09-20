@@ -6,8 +6,9 @@
 | `web-ci · frontend` | Astro builds; `pahar` vectors pass | Node 22 |
 | `scripture-integrity` | MANIFEST↔contract↔attestation hash chain; `verify_regroup --invariants`; `guard_scripture`; timing tests | LFS DB |
 | `version-consistency` | all 8 version strings unified; `main` PRs come from `integration`/`hotfix` | — |
-| `security` | gitleaks; bandit; semgrep OSS; actionlint; `npm audit` | — |
+| `security` | gitleaks; bandit; semgrep OSS; actionlint; **blocking** `npm audit --audit-level=high` on `frontend/` (job `deps`) | — |
 | `pr-hygiene` | conventional-commit PR title | — |
+| `uptime` (every 15 min, not a PR check) | production `/api/health` all-true; `/privacy` and `/support` (the App Store URLs) resolve with their content; a failure opens or updates one issue | — |
 | `ios · parity` | iOS DB matches manifest; Swift golden-vector parity; license gate | macOS, LFS |
 | `ios · app` | app builds; unit + XCUITests pass | macOS |
 
@@ -17,11 +18,17 @@ asserts that attestation's `corpus_sha256` matches the committed corpus.
 
 Run the no-PDF subset locally with `make ci`.
 
+`npm audit` has been **blocking** since the Astro 7 upgrade cleared the advisory backlog
+(2026-09-20): a new high/critical advisory in `frontend/package-lock.json` fails `security · deps`.
+Fix it with `npm audit fix` (never `--force` blind — read the migration notes), rebuild, and
+re-sync `webapp/static/`; do not re-add `|| true`.
+
 ## Deploy pipeline
 `deploy-production` (push to `main`) waits for the required checks above **plus `playwright`**
 on the exact commit, then deploys API → verifies → builds web unaliased → smoke → promotes →
 smoke public → tags. Details: [runbook: deploy](runbooks/deploy.md).
 
 ## Not yet wired (roadmap)
-`e2e` (Playwright + axe), `perf` (latency budget + Lighthouse on staging),
-`deploy-verify`, `uptime`, and `release` — see the delivery plan.
+`perf` (latency budget + Lighthouse on staging) and a load/soak test — nothing yet exercises the
+request-cost limits this repo now enforces (the /api/verify claim cap, the socket timeout, the
+bounded worker pool). `npm audit` is already blocking (see the `security` row above).

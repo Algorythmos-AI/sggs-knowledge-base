@@ -62,6 +62,28 @@ final class AngPagerHostedTests: XCTestCase {
         XCTAssertEqual(coord.currentIndex(), 11)
     }
 
+    /// A theme/accent change re-renders the open page in place: the builder runs again for the
+    /// visible index, on the SAME hosting controller (so scroll position and state survive).
+    func testParentUpdateRefreshesTheVisiblePageInPlace() {
+        var built: [Int] = []
+        let pager = AngPager<Text>(index: 7) { i in built.append(i); return Text("Ang \(i)") }
+        let coord = pager.makeCoordinator()
+        let pvc = UIPageViewController(transitionStyle: .scroll, navigationOrientation: .horizontal)
+        pvc.dataSource = coord
+        pvc.delegate = coord
+        coord.attach(pvc)
+        let before = pvc.viewControllers?.first
+        built.removeAll()
+
+        coord.parent = pager          // what updateUIViewController does on any parent change
+        coord.refreshVisible()
+        coord.reconcile()
+
+        XCTAssertEqual(built, [7], "the visible page — and only it — is rebuilt")
+        XCTAssertTrue(pvc.viewControllers?.first === before, "same controller: nothing was remounted")
+        XCTAssertEqual(coord.currentIndex(), 7)
+    }
+
     func testBoundsClampedAtTheEnds() {
         let (coord, _, _) = makeCoordinator(startAt: 2, inWindow: true)
         coord.parent.index = 0

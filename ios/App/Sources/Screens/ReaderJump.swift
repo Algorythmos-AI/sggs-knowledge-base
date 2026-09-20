@@ -1,37 +1,46 @@
 import SwiftUI
+import UIKit
 import GurbaniSearchKit
 
 /// Jump to Ang — a premium, elder-friendly navigator for the whole Granth.
 ///
-/// One source of truth (`target`); the big number, the location line, the scrubber, the steppers,
-/// the raag menu and the Go label always agree. An exact Ang is reachable three ways: type it,
-/// scrub + nudge with the ±1 / ±10 steppers, or pick a raag. The primary action is pinned to the
-/// bottom, full-width, and restates the destination ("Go to Ang 89"). Display/navigation only —
-/// no scripture is shown or changed here.
+/// The big number is a real, editable field seeded with the current Ang: tap it and the whole
+/// number selects, so a new Ang replaces it in one keystroke — or place the cursor and edit a
+/// single digit / backspace. The location line, scrubber, steppers, raag menu and the Go label
+/// always agree. The primary action is pinned to the bottom, full-width, opaque, and restates the
+/// destination ("Go to Ang 89"). Display/navigation only — no scripture is shown or changed here.
 struct JumpToAngSheet: View {
     let current: Int
+    /// Opened from the Reader's "Ang N" title: the reader wants to TYPE a number, so the keypad is
+    /// up at once (sheet at full height so Go stays visible above it). Other openers leave it down.
+    var focusField = false
     var onGo: (Int) -> Void
 
     @Environment(\.dismiss) private var dismiss
     @Environment(AppContainer.self) private var container
     @Environment(\.dynamicTypeSize) private var typeSize
 
-    /// The single destination the whole sheet edits.
+    /// The committed destination (scrubber / steppers / raag). While the field is focused the reader
+    /// may be part-way through typing a different number — `effectiveTarget` prefers what's typed, so
+    /// Go and the location line follow the keypad without the scrubber lurching on every digit.
     @State private var target: Int
-    /// The number field's raw buffer. Empty ⇒ the hero shows `target`; typing overrides and,
-    /// when valid, writes back into `target` (so scrubber and steppers follow what was typed).
-    @State private var text = ""
+    /// The number field's text — seeded with the Ang so it is genuinely editable (retype after a
+    /// select-all, or edit a digit / backspace). Mirrors `target` whenever the field is not focused.
+    @State private var text: String
     @FocusState private var fieldFocused: Bool
     @State private var detent: PresentationDetent = .fraction(0.65)
 
     private let bounds = 1...1430
 
-    init(current: Int, onGo: @escaping (Int) -> Void) {
+    init(current: Int, focusField: Bool = false, onGo: @escaping (Int) -> Void) {
         self.current = current
+        self.focusField = focusField
         self.onGo = onGo
         _target = State(initialValue: current)
+        _text = State(initialValue: String(current))
     }
 
+    /// The typed number when it is a valid Ang, else nil (empty, non-numeric, or out of range).
     private var typedAng: Int? {
         let t = text.trimmingCharacters(in: .whitespaces)
         guard !t.isEmpty, let n = Int(t), bounds.contains(n) else { return nil }
@@ -40,7 +49,10 @@ struct JumpToAngSheet: View {
     private var invalidTyped: Bool {
         !text.trimmingCharacters(in: .whitespaces).isEmpty && typedAng == nil
     }
-    private var location: AngLocator.Location? { AngLocator.location(for: target, meta: container.meta) }
+    /// A valid typed value wins; otherwise the committed target.
+    private var effectiveTarget: Int { typedAng ?? target }
+    private var canGo: Bool { !invalidTyped && effectiveTarget != current }
+    private var location: AngLocator.Location? { AngLocator.location(for: effectiveTarget, meta: container.meta) }
 
     var body: some View {
         NavigationStack {
@@ -63,52 +75,81 @@ struct JumpToAngSheet: View {
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) { Button("Cancel") { dismiss() } }
+                // "Done" only dismisses the keypad (not the sheet), so the reader can still fine-tune
+                // with the scrubber/steppers before Go. The single Go is the pinned bar below — there
+                // is no duplicate keyboard Go to crowd it or overlap the raag card.
                 ToolbarItemGroup(placement: .keyboard) {
                     Spacer()
-                    Button("Go") { go() }.disabled(!canGo)
+                    Button("Done") { fieldFocused = false }
                 }
             }
             .safeAreaInset(edge: .bottom) { goBar }
             .task { await container.loadMeta() }          // idempotent; fills raag ticks + location
-            .onChange(of: text) { _, _ in if let n = typedAng { target = n } }
-            // scrubber moved the destination out from under a stale typed buffer → clear it so the
-            // hero and Go label follow the scrubber (typing keeps text, because it syncs target).
-            .onChange(of: target) { _, v in if typedAng != v { text = "" } }
+            // Steppers / scrubber / raag move `target` → keep the field showing it, but never while
+            // the reader is mid-type (that would overwrite their digits).
+            .onChange(of: target) { _, v in if !fieldFocused { text = String(v) } }
+            .onChange(of: fieldFocused) { _, focused in
+                if focused {
+                    // select the whole number so the first digit replaces it; backspace still edits
+                    DispatchQueue.main.async {
+                        UIApplication.shared.sendAction(#selector(UIResponder.selectAll(_:)), to: nil, from: nil, for: nil)
+                    }
+                } else {
+                    if let n = typedAng { target = n }     // commit a valid entry (aligns the scrubber)
+                    text = String(target)                  // normalise (revert an empty / invalid entry)
+                }
+            }
             .onChange(of: typeSize) { _, size in if size.isAccessibilitySize { detent = .large } }
             .onAppear { if typeSize.isAccessibilitySize { detent = .large } }
+            .task {
+                guard focusField else { return }
+                // focus after the sheet has presented — a focus request during the transition is dropped
+                try? await Task.sleep(for: .milliseconds(350))
+                if !Task.isCancelled { fieldFocused = true }
+            }
         }
         .presentationDetents([.fraction(0.65), .large], selection: $detent)
         .presentationDragIndicator(.visible)
     }
 
-    // MARK: hero — the big number IS the text field
+    // MARK: hero — the big number is a real, editable field
 
     private var hero: some View {
         VStack(spacing: Theme.Space.s) {
             Text("Ang").font(.subheadline.weight(.semibold))
                 .foregroundStyle(.secondary).textCase(.uppercase).tracking(1)
-            ZStack {
-                // the live destination, shown when nothing is being typed
-                Text(String(target))
-                    .foregroundStyle(text.isEmpty ? Color.primary : Color.clear)
-                    .contentTransition(.numericText())
-                    .allowsHitTesting(false)
-                    .accessibilityHidden(true)
-                // the actual input; transparent text while empty so the label above shows through
-                TextField("", text: $text)
-                    .keyboardType(.numberPad)
-                    .multilineTextAlignment(.center)
-                    .foregroundStyle(text.isEmpty ? Color.clear : Color.primary)
-                    .focused($fieldFocused)
-                    .accessibilityIdentifier("angField")
-                    .accessibilityLabel("Ang number")
-                    .accessibilityValue(String(target))
-            }
-            .font(Brand.heading(.largeTitle, weight: 700))
-            .monospacedDigit()
-            .frame(maxWidth: .infinity)
-            .contentShape(Rectangle())
-            .onTapGesture { fieldFocused = true }
+
+            TextField("", text: $text)
+                .keyboardType(.numberPad)
+                .multilineTextAlignment(.center)
+                .font(Brand.heading(.largeTitle, weight: 700))
+                .monospacedDigit()
+                .foregroundStyle(invalidTyped ? Ink.negative : Color.primary)
+                .focused($fieldFocused)
+                .frame(maxWidth: .infinity)
+                .contentShape(Rectangle())
+                .accessibilityIdentifier("angField")
+                .accessibilityLabel("Ang number")
+                .accessibilityValue(String(effectiveTarget))
+                .accessibilityHint("Edit the number to any Ang from 1 to 1430")
+                // pencil affordance so the number reads as editable, not a static label
+                .overlay(alignment: .trailing) {
+                    if !fieldFocused {
+                        Image(systemName: "pencil.circle.fill")
+                            .font(.title3).foregroundStyle(.secondary)
+                            .padding(.trailing, Theme.Space.l)
+                            .allowsHitTesting(false)
+                            .accessibilityHidden(true)
+                    }
+                }
+                // a quiet underline that says "this is a field", brightening when focused
+                .overlay(alignment: .bottom) {
+                    RoundedRectangle(cornerRadius: 1)
+                        .fill(fieldFocused ? Color.accentColor : Ink.hairline)
+                        .frame(width: 140, height: 2)
+                        .offset(y: 8)
+                        .accessibilityHidden(true)
+                }
 
             if invalidTyped {
                 Text("Enter an Ang between 1 and 1430.")
@@ -166,7 +207,7 @@ struct JumpToAngSheet: View {
         }
         .buttonStyle(.pressableCard)
         .buttonRepeatBehavior(.enabled)
-        .disabled(delta < 0 ? target <= bounds.lowerBound : target >= bounds.upperBound)
+        .disabled(delta < 0 ? effectiveTarget <= bounds.lowerBound : effectiveTarget >= bounds.upperBound)
         .accessibilityLabel(delta > 0 ? "Forward \(delta)" : "Back \(-delta)")
     }
 
@@ -202,44 +243,49 @@ struct JumpToAngSheet: View {
         .disabled((container.meta?.raags ?? []).isEmpty)
     }
 
-    // MARK: pinned primary action
+    // MARK: pinned primary action — one opaque bar, above the keypad, never see-through
 
     private var goBar: some View {
-        Button { go() } label: {
-            Text(target == current ? "You're on Ang \(current)" : "Go to Ang \(target)")
-                .contentTransition(.numericText())
-                .frame(maxWidth: .infinity, minHeight: 56)
+        VStack(spacing: 0) {
+            Divider().overlay(Ink.hairline)
+            Button { go() } label: {
+                Text(canGo ? "Go to Ang \(effectiveTarget)"
+                           : (invalidTyped ? "Enter an Ang from 1 to 1430" : "You're on Ang \(current)"))
+                    .contentTransition(.numericText())
+                    .frame(maxWidth: .infinity, minHeight: 56)
+            }
+            .buttonStyle(.prominentPill)
+            .disabled(!canGo)
+            .opacity(canGo ? 1 : 0.5)          // an honest, clearly-inactive look when there's nowhere to go
+            .accessibilityIdentifier("goToAng")
+            .padding(.horizontal, Theme.Space.l)
+            .padding(.top, Theme.Space.s)
+            .padding(.bottom, Theme.Space.s)
         }
-        .buttonStyle(.prominentPill)
-        .disabled(!canGo)
-        .accessibilityIdentifier("goToAng")
-        .padding(.horizontal, Theme.Space.l)
-        .padding(.bottom, Theme.Space.s)
-        .background(.ultraThinMaterial)
+        .background(Ink.canvas)   // opaque: the raag card can never bleed through the bar
     }
 
     // MARK: actions
 
-    private var canGo: Bool { !invalidTyped && effectiveTarget != current }
-    /// A valid typed value wins; otherwise the shared `target`.
-    private var effectiveTarget: Int { typedAng ?? target }
-
     private func go() {
         guard canGo else { return }
         Haptics.success()
+        fieldFocused = false
         onGo(effectiveTarget)
         dismiss()
     }
 
+    /// Nudge from whatever is showing now (typed value included), so ±1 after typing is exact.
     private func nudge(_ delta: Int) {
         Haptics.tap()
-        setTarget(target + delta)
+        setTarget(effectiveTarget + delta)
     }
 
-    /// Set the destination from a control and clear the typed buffer so the hero shows it.
+    /// Set the destination from a control; dismiss the keypad and show the value in the field.
     private func setTarget(_ v: Int) {
-        target = min(max(bounds.lowerBound, v), bounds.upperBound)
-        text = ""
+        let clamped = min(max(bounds.lowerBound, v), bounds.upperBound)
         fieldFocused = false
+        target = clamped
+        text = String(clamped)
     }
 }

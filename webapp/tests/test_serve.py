@@ -125,3 +125,110 @@ class BaniEndpoints(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main(verbosity=2)
+
+
+@skip_no_db
+class AbuseResistance(unittest.TestCase):
+    """One request must not be able to pin a core, and bad numbers are a 400, never a 500."""
+
+    def test_oversized_verify_claim_is_rejected_fast(self):
+        import time
+        claim = " ".join(["waheguru"] * 2500)            # ~22 KB; measured ~7 s of CPU before the cap
+        t0 = time.monotonic()
+        with self.assertRaises(ValueError):
+            serve.api("/api/verify", {"q": [claim]})
+        self.assertLess(time.monotonic() - t0, 0.5)
+
+    def test_verify_claim_at_the_limit_still_works(self):
+        claim = ("ik oankar sat nam " * 40)[: serve.MAX_CLAIM_CHARS]
+        self.assertIn("verdict", serve.api("/api/verify", {"q": [claim]}))
+
+    def test_verify_ang_goes_through_int_parsing(self):
+        for bad in ("abc", "1" * 40, "1e3"):
+            with self.assertRaises(ValueError, msg=bad):
+                serve.api("/api/verify", {"q": ["ik oankar"], "ang": [bad]})
+
+    def test_ang_path_goes_through_int_parsing(self):
+        for bad in ("abc", "1" * 40):
+            with self.assertRaises(ValueError, msg=bad):
+                serve.api(f"/api/ang/{bad}", {})
+        self.assertEqual(serve.api("/api/ang/99999", {})["ang"], 1430)   # clamped, as before
+
+    def test_resonance_min_lift_is_clamped(self):
+        base = serve.api("/api/analytics/resonance", {})
+        for weird in ("nan", "inf", "-inf", "banana"):
+            r = serve.api("/api/analytics/resonance", {"min_lift": [weird]})
+            self.assertEqual(len(r["edges"]), len(base["edges"]), weird)   # falls back to the default 1.0
+
+
+@skip_no_db
+class HttpBehaviour(unittest.TestCase):
+    """The wire-level guarantees: caching, the idle-socket timeout, the worker ceiling."""
+
+    @classmethod
+    def setUpClass(cls):
+        import threading
+        serve._ACCESS_LOG = False
+        cls._old_timeout = serve.H.timeout
+        serve.H.timeout = 1
+        cls.srv = serve.BoundedThreadingHTTPServer(("127.0.0.1", 0), serve.H, max_workers=2)
+        cls.port = cls.srv.server_address[1]
+        cls.thread = threading.Thread(target=cls.srv.serve_forever, daemon=True)
+        cls.thread.start()
+
+    @classmethod
+    def tearDownClass(cls):
+        cls.srv.shutdown(); cls.srv.server_close()
+        serve.H.timeout = cls._old_timeout
+
+    def get(self, path, headers=None):
+        import http.client
+        con = http.client.HTTPConnection("127.0.0.1", self.port, timeout=10)
+        con.request("GET", path, headers=headers or {})
+        res = con.getresponse(); body = res.read(); con.close()
+        return res, body
+
+    def test_scripture_is_cacheable_with_an_etag(self):
+        res, body = self.get("/api/ang/1")
+        self.assertEqual(res.status, 200)
+        self.assertIn("s-maxage", res.getheader("Cache-Control"))
+        etag = res.getheader("ETag")
+        self.assertTrue(etag)
+        again, empty = self.get("/api/ang/1", {"If-None-Match": etag})
+        self.assertEqual(again.status, 304)
+        self.assertEqual(empty, b"")
+
+    def test_live_endpoints_are_never_cached(self):
+        for path in ("/api/health", "/api/meta", "/api/random", "/api/search?q=waheguru"):
+            res, _ = self.get(path)
+            self.assertEqual(res.getheader("Cache-Control"), "no-store", path)
+            self.assertIsNone(res.getheader("ETag"), path)
+
+    def test_errors_are_never_cached(self):
+        res, _ = self.get("/api/ang/abc")
+        self.assertEqual(res.status, 400)
+        self.assertEqual(res.getheader("Cache-Control"), "no-store")
+
+    def test_security_headers(self):
+        res, _ = self.get("/api/meta")
+        self.assertEqual(res.getheader("X-Content-Type-Options"), "nosniff")
+        self.assertEqual(res.getheader("X-Frame-Options"), "DENY")
+        self.assertIn("max-age", res.getheader("Strict-Transport-Security"))
+
+    def test_idle_connection_is_dropped(self):
+        import socket, time
+        s = socket.create_connection(("127.0.0.1", self.port), timeout=5)
+        t0 = time.monotonic()
+        self.assertEqual(s.recv(1), b"")                  # server closes; a slow-loris gets no thread forever
+        self.assertLess(time.monotonic() - t0, 4)
+        s.close()
+
+    def test_worker_slots_are_released(self):
+        # 2 slots, 12 sequential requests, plus idle sockets that time out: no slot may leak.
+        import socket, time
+        idle = [socket.create_connection(("127.0.0.1", self.port), timeout=5) for _ in range(2)]
+        time.sleep(1.6)                                    # both idle sockets time out and free their slots
+        for _ in range(12):
+            res, _ = self.get("/api/meta")
+            self.assertEqual(res.status, 200)
+        for s in idle: s.close()

@@ -1,0 +1,75 @@
+name: uptime
+
+# Production liveness, every 15 minutes. Two things are watched:
+#   1. the API behind the site (/api/health must report ok with every check true);
+#   2. /privacy and /support — the URLs entered in App Store Connect. If either stops resolving the
+#      listing is non-compliant (guidelines 2.1 / 5.1.1), so they are monitored like the API.
+# The app itself is fully offline and is NOT affected by an outage here.
+# A failure opens one issue (or comments on the open one); it never pages or redeploys.
+
+on:
+  schedule:
+    - cron: "*/15 * * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  issues: write
+
+concurrency:
+  group: uptime
+  cancel-in-progress: true
+
+env:
+  SITE: https://sggs-knowledge-base.vercel.app
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: probe production
+        id: probe
+        run: |
+          set -u
+          fail=""
+          fetch() { curl -fsS --retry 3 --retry-delay 10 --retry-all-errors --max-time 60 "$1"; }
+
+          if health="$(fetch "$SITE/api/health")"; then
+            echo "$health" | python3 -c 'import json,sys; d=json.load(sys.stdin); bad=[k for k,v in d.get("checks",{}).items() if v is not True]; sys.exit(0 if d.get("ok") is True and not bad else "health not ok: %s" % bad)' \
+              || fail="$fail /api/health(checks)"
+          else
+            fail="$fail /api/health(unreachable)"
+          fi
+
+          if page="$(fetch "$SITE/privacy")"; then
+            echo "$page" | grep -q "Data Not Collected" || fail="$fail /privacy(content)"
+          else
+            fail="$fail /privacy(unreachable)"
+          fi
+
+          if page="$(fetch "$SITE/support")"; then
+            echo "$page" | grep -q "mailto:" || fail="$fail /support(content)"
+          else
+            fail="$fail /support(unreachable)"
+          fi
+
+          echo "fail=$fail" >> "$GITHUB_OUTPUT"
+          if [ -n "$fail" ]; then echo "::error::failing:$fail"; exit 1; fi
+          echo "all probes ok"
+
+      - name: open or update the incident issue
+        if: failure()
+        env:
+          GH_TOKEN: ${{ github.token }}
+          FAILING: ${{ steps.probe.outputs.fail }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          title="uptime: production probe failing"
+          body="Failing:${FAILING:- (probe step did not finish)}  ·  run: ${RUN_URL}  ·  runbook: docs/process/runbooks/deploy.md"
+          existing="$(gh issue list --repo "$GITHUB_REPOSITORY" --state open --search "in:title \"$title\"" --json number --jq '.[0].number // empty')"
+          if [ -n "$existing" ]; then
+            gh issue comment "$existing" --repo "$GITHUB_REPOSITORY" --body "$body"
+          else
+            gh issue create --repo "$GITHUB_REPOSITORY" --title "$title" --body "$body"
+          fi

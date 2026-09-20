@@ -3,7 +3,55 @@
 The format below (newest first) follows [Keep a Changelog](https://keepachangelog.com);
 entries prior to v1.1.0 are the project's original prose style and are preserved verbatim.
 
-## [Unreleased] — Reader navigation fix (iOS)
+## [1.3.1] — 2026-09-20 — App Store readiness hardening + Reader navigation fixes
+
+A production-readiness pass ahead of the first public App Store submission (2026-09-20 audit).
+Scripture, corpus and DB are byte-identical to 1.3.0 (`git diff -- corpus db` empty); this release
+is display, web/API, tooling and docs only.
+
+### Added
+- **Executable repo gates** (`webapp/tests/test_repo_gates.py`, run by the required `python` check):
+  crash-hygiene (no `try!`/`as!`, `print`/env-hooks only under `#if DEBUG`, no network code), the
+  design-token gates (`withAnimation`, hex colours) that were prose before, Info.plist and
+  privacy-manifest invariants, an App Store release attestation gate, and store-listing lint.
+- **Field diagnostics** — About → Share / Delete the local MetricKit files (system share sheet, never
+  automatic, so the "Data Not Collected" label stays true); the folder is capped at 50 and excluded
+  from backup.
+- **App Store release gate** — `make testflight … CHANNEL=appstore` and `make appstore-preflight`
+  (`ios/tools/appstore_preflight.py`): an App Store build must be scholar-reviewed, built with the
+  required Xcode/SDK, and come from a clean, green, on-trunk commit; the ledger records channel/toolchain.
+- **Uptime workflow** — 15-min probe of production `/api/health` and the `/privacy` + `/support` App
+  Store URLs; **runbooks** for submission go/no-go, iOS hotfix and the support inbox.
+
+### Changed
+- **Store listing** made accurate and linted: promotional text within 170 chars, no "audio"/"AI" claims,
+  the Nitnem section and the correct widget count, ShabadOS attribution, and the App Store Connect
+  sections (age rating, EU DSA trader, accessibility labels, territories).
+- **Privacy & support pages** renamed to Gurbani Soul and updated for reminders, the Live Activity and
+  Nitnem progress, with `@smoke` coverage.
+- **Web API hardening** — a claim-length cap on `/api/verify`, a socket timeout, a bounded worker pool,
+  `Cache-Control`/`ETag` on immutable scripture responses, HSTS and a query-free access log. Search
+  behaviour is byte-identical.
+- **PR CI now builds and tests iOS on Xcode 26** (the SDK that ships), not the runner default.
+
+### Fixed
+- **Nitnem reminders now actually alert** — a real permission prompt on the explicit toggle and a
+  normal banner + sound (they were requested provisional and delivered passive, so they never showed).
+- **The reading Live Activity now starts on a first read**, not only a resumed one, and its Lock-Screen
+  banner deep-links back to the bani.
+- **A failed `sqlite3_step` is now an error, never "no more rows"** — the 46 read loops could have
+  returned a silently truncated Ang on a corrupt/IO error.
+- **The open Ang re-renders in place on a theme change** (accent no longer stale until the next page turn).
+
+### Data
+- None. Scripture, corpus and DB unchanged from 1.3.0.
+
+---
+
+The remaining notes in this entry are the iOS Reader navigation work that was previously staged as
+Unreleased and ships as part of 1.3.1.
+
+### Reader navigation fix (iOS)
 
 Fixes the Reader page-turn controls reported broken on TestFlight 1.3.0 (2): the bottom-bar
 chevrons and the "Continues on Ang N" pill did nothing after the first tap, and the pill named the
@@ -28,6 +76,51 @@ advancing — title and page desynced.
   `UIPageViewController`), and UI tests for the chevrons, the continuation pills, rapid taps, bounds,
   and navigation around sheets/backgrounding — each asserting the title AND the visible page agree.
   CI now uploads `.xcresult` bundles on failure. Scripture, corpus, DB, API untouched.
+
+### Reader: blank Ang after a few page turns + a tappable "Ang N" title (iOS)
+
+Fixes the Reader going permanently blank (grey skeleton, verses never appear) a few pages after a
+jump — reported on TestFlight 1.3.0 (4) at Angs 352, 918, 1106. Two independent defects in
+`ReaderModel`'s page cache: (1) the eviction anchor only moved when a page loaded *as current*, but a
+swiped-to page mounts *before* it is current, so the anchor stayed on the last jump and the 4th swipe
+evicted the very page it had just loaded; (2) a page that mounted while its Ang was being pre-warmed
+hit the `inflight` guard, got nothing back, and — because the view sampled the cache once and never
+observed it — sat on the skeleton forever.
+
+- The eviction anchor now follows every Ang change via `ReaderModel.setCurrent` (driven by
+  `router.readerAng`, swipe-settle included); eviction protects anchor ±2 and never drops the page it
+  just cached. Loads are coalesced through one shared `Task` per Ang, so a page mounting mid-pre-warm
+  awaits that load instead of skipping it; `ensure` returns the page it loaded rather than making the
+  caller re-read the cache.
+- `AngPageView` observes the cache (adopts a page that arrives by any route), retries once quietly on
+  a failed read, then shows a real "Couldn't load Ang N · Try again" state instead of an endless
+  skeleton, and logs the failure.
+- The "Ang N" reader title is now a control (`angTitle`, with a chevron affordance): tap it to open
+  Jump with the number pad already up and type where to go. The existing top-left button, progress bar
+  and raag banner keep their unfocused open; `.navigationTitle` is unchanged.
+- Tests: new `ReaderModelTests` (the swipe-run eviction regression, the pre-warm race, no-cache-on-
+  failure + retry, eviction invariants, bounds, cancellation safety); `assertOnAng` now also requires
+  the loaded content view (`angContent-N`) so no Ang can pass on a skeleton; new UI tests for an
+  8-page swipe run after a jump and for the tappable title. Scripture, corpus, DB, API untouched.
+
+### Jump-to-Ang sheet: genuinely editable number, working Go, no overlap (iOS)
+
+Follow-up polish on the Jump sheet reported from TestFlight 1.3.0 (5)–(6):
+
+- **The Ang number is now a real, editable field** — seeded with the current Ang and shown with a
+  pencil affordance + an underline (brightening on focus). Tap it and the whole number selects, so a
+  new Ang replaces it in one keystroke, or place the cursor to edit a digit / backspace. (Earlier
+  builds put an *empty* field over the number, so it could only be retyped from blank, not edited —
+  which read as "can't edit".)
+- **One honest Go.** The pinned primary action restates the destination — **"Go to Ang N"** when the
+  number differs from where you are, a dimmed **"You're on Ang N"** when there's nowhere to go, and
+  **"Enter an Ang from 1 to 1430"** on an out-of-range entry. Removed the duplicate keyboard "Go"
+  (which looked broken next to it); the keypad now shows a plain **Done** that only drops the keypad.
+- **No more overlap.** The Go bar is now opaque (`Ink.canvas`) with a top divider, so the "Jump to a
+  raag" card can no longer bleed through it, and it sits cleanly above the number pad.
+
+Verified: app compiles; the Jump UI tests (steppers → Go label + landing, typed-Ang from the title,
+progress-bar open, AX5 layout) pass. Display/navigation only — scripture, corpus, DB, API untouched.
 
 ## [1.3.0] — 2026-09-19 — Nitnem, next level (premium pass)
 

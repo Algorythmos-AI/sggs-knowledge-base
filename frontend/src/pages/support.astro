@@ -1,5 +1,5 @@
 ---
-// support.astro — the public Support page for the SGGS iOS app (org.sggs.app) and this site.
+// support.astro — the public Support page for the Gurbani Soul iOS app (org.sggs.app) and this site.
 // Linked from the App Store listing (Support URL). Answers must match the shipped app: the
 // public (Gurmukhi-only) profile has no English layer; location is optional; nothing is sent.
 import Base from '../layouts/Base.astro';
@@ -7,12 +7,12 @@ import Base from '../layouts/Base.astro';
 <Base title="Support — Sri Guru Granth Sahib Ji Knowledge Base">
   <article class="legal" id="v-support">
     <p class="eyebrow">Support</p>
-    <h2>Help with the SGGS app and this site</h2>
-    <p class="soft">The app is a fully offline reader and search tool for Sri Guru Granth Sahib Ji, all 1,430 Angs. This page answers the common questions; anything else, write to us.</p>
+    <h2>Help with the Gurbani Soul app and this site</h2>
+    <p class="soft">Gurbani Soul is a fully offline reader, search tool and Nitnem companion for Sri Guru Granth Sahib Ji, all 1,430 Angs. This page answers the common questions; anything else, write to us.</p>
 
     <section>
       <h3>Contact</h3>
-      <p>Email <a href="mailto:skalaliya@gmail.com?subject=SGGS%20app%20support">skalaliya@gmail.com</a>. Please include your device model, iOS version, and the app version shown in <em>More → About</em>. We aim to reply within a few days.</p>
+      <p>Email <a href="mailto:skalaliya@gmail.com?subject=Gurbani%20Soul%20support">skalaliya@gmail.com</a>. Please include your device model, iOS version, and the app version shown in <em>More → About</em>. We aim to reply within a few days.</p>
       <p><strong>If something in the Gurmukhi looks wrong</strong>, tell us the Ang and the line, and a photo of the printed page if you have one. We never "correct" the text ourselves: the app reproduces the source edition character for character, so every report is checked against the printed Bir by a person before anything changes.</p>
     </section>
 
@@ -30,6 +30,15 @@ import Base from '../layouts/Base.astro';
 
       <h4>Why does the app ask for my location?</h4>
       <p>Only if you switch the Raag Clock to <em>solar</em> mode, which times the watches of the day by local sunrise and sunset. The location is rounded to about 1 km, kept only on your device, and never transmitted. You can deny the permission and enter a location manually, or stay in fixed mode. See the <a href="/privacy">Privacy Policy</a>.</p>
+
+      <h4>How do Nitnem reminders work?</h4>
+      <p>In <em>More → Reminders</em> you can switch on a reminder for each part of the day and choose its time. iOS asks for notification permission the first time you switch one on. Reminders are scheduled on your device; nothing comes from a server. Once you complete that part of the day's Nitnem, that day's reminder is dropped. If reminders do not appear, check <em>Settings → Notifications → Gurbani Soul</em>.</p>
+
+      <h4>What is the Live Activity while reading?</h4>
+      <p>An optional progress indicator on the Lock Screen and in the Dynamic Island while you read a bani, so you can return to your place with one tap. It is off by default (turn it on in <em>More</em>, under Nitnem), shows progress only, never a verse, and ends when you finish or leave the bani.</p>
+
+      <h4>Where do the Nitnem banis come from?</h4>
+      <p>Banis from Sri Guru Granth Sahib Ji are this project's own verified, verbatim corpus, cited by Ang. Bani ordering and the Sri Dasam Granth / Ardaas text come via the ShabadOS open database and are shown as a separate, labelled layer, never presented as part of Sri Guru Granth Sahib Ji.</p>
 
       <h4>The widgets are empty.</h4>
       <p>Open the app once and open a Hukam; the widgets read a small snapshot the app writes. If they stay empty, check <em>More → About → Integrity</em> and confirm it says "Widget App Group available", then email us with that screen.</p>

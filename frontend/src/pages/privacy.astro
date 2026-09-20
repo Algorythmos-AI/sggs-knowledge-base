@@ -1,17 +1,18 @@
 ---
-// privacy.astro — the public Privacy Policy for the SGGS iOS app (org.sggs.app) and this site.
+// privacy.astro — the public Privacy Policy for the Gurbani Soul iOS app (org.sggs.app) and this site.
 // Linked from the App Store listing (Privacy Policy URL) and from /support. Every statement
 // here is checked against the code: PrivacyInfo.xcprivacy, Info.plist, SolarLocation.swift,
-// CrashMonitor.swift, SpotlightIndex.swift, WidgetShared.swift, and the frontend scripts.
+// CrashMonitor.swift, SpotlightIndex.swift, WidgetShared.swift, NitnemReminders.swift,
+// NitnemProgress.swift, ReadingActivityController.swift, and the frontend scripts.
 // Keep it true before you keep it short.
 import Base from '../layouts/Base.astro';
-const updated = '16 September 2026';
+const updated = '20 September 2026';
 ---
 <Base title="Privacy Policy — Sri Guru Granth Sahib Ji Knowledge Base">
   <article class="legal" id="v-privacy">
     <p class="eyebrow">Privacy Policy</p>
     <h2>We collect nothing. Here is exactly what that means.</h2>
-    <p class="soft">Last updated {updated}. Applies to the <strong>SGGS</strong> app for iPhone and iPad (bundle <code>org.sggs.app</code>, including its Home Screen widgets) and to this website.</p>
+    <p class="soft">Last updated {updated}. Applies to the <strong>Gurbani Soul</strong> app for iPhone and iPad (bundle <code>org.sggs.app</code>, including its widgets and Live Activity) and to this website.</p>
 
     <section>
       <h3>The short version</h3>
@@ -19,21 +20,24 @@ const updated = '16 September 2026';
         <li>No accounts. Nothing to sign up for, nothing to log in to.</li>
         <li>The app makes <strong>no network connections</strong>. It works fully in Airplane Mode.</li>
         <li>No analytics, no advertising, no tracking, no third-party SDKs — in the app or on this site.</li>
-        <li>Everything you do in the app (saved verses, settings, reading position) stays on your device.</li>
+        <li>Everything you do in the app (saved verses, settings, reading position, Nitnem progress and reminders) stays on your device.</li>
         <li>Location is optional, used only on your device, and never transmitted.</li>
       </ul>
     </section>
 
     <section>
       <h3>The app</h3>
-      <p>The app bundles the complete text of Sri Guru Granth Sahib Ji and searches it locally. It never sends a request to any server, so we cannot see what you read, search for or save. Specifically:</p>
+      <p>The app bundles the complete text of Sri Guru Granth Sahib Ji, plus the Nitnem banis as a separate, labelled layer, and searches it locally. It never sends a request to any server, so we cannot see what you read, search for or save. Specifically:</p>
       <ul>
         <li><strong>Saved verses</strong> are stored in the app's own database on your device. If you save a verse, it is also added to your device's Spotlight index so you can find it from the Home Screen search; unsaving removes it. Spotlight data stays on your device.</li>
         <li><strong>Settings</strong> (accent colour, transliteration, traditional rendering, last Ang read) are stored in the app's local preferences.</li>
-        <li><strong>Widgets</strong> read a small snapshot (the current raag watch and the last Hukam verse) that the app writes into its own App Group container on your device. Nothing leaves the device.</li>
+        <li><strong>Nitnem</strong> progress (where you are in each bani, which days you completed it, your own sets and journey) is stored in small files in the app's own App Group container on your device, so the Nitnem widget can show it. It is never transmitted.</li>
+        <li><strong>Reminders</strong> are optional local notifications. The app asks for notification permission only when you turn a reminder on, schedules them on your device at the times you choose, and uses no push service: no notification ever comes from a server, and no device token is created or sent anywhere.</li>
+        <li><strong>Live Activity</strong> is optional and off by default. When you turn it on, a reading session shows its progress on your Lock Screen and in the Dynamic Island. It is driven entirely on your device (no push updates) and never shows a verse.</li>
+        <li><strong>Widgets</strong> read a small snapshot (the current raag watch, the last Hukam verse, today's Nitnem progress) that the app writes into its own App Group container on your device. Nothing leaves the device.</li>
         <li><strong>Location</strong> is used only by the Raag Clock's optional solar mode to compute local sunrise and sunset. It is requested only when you turn that mode on. The fix is rounded to two decimal places (about 1 km) before it is stored in the app's local preferences, and the raw position is never kept. You can enter a location manually instead, or deny the permission; the clock still works.</li>
         <li><strong>Integrity checks</strong> read the bundled scripture database's size and modification date to decide whether its checksum needs re-verifying. This is why the app's privacy manifest declares the "file timestamp" and "user defaults" API reasons. Nothing is displayed or transmitted.</li>
-        <li><strong>Diagnostics</strong>: if the app ever crashes or hangs, iOS may hand it a diagnostic report. The app writes that report to its own local folder so a maintainer can inspect it with your help; it is never uploaded. Separately, Apple may share crash reports with us through App Store Connect <em>only</em> if you have enabled "Share with App Developers" in your iOS Privacy &amp; Security → Analytics settings. Those reports are governed by Apple's privacy policy and contain no account or identity information.</li>
+        <li><strong>Diagnostics</strong>: if the app ever crashes or hangs, iOS may hand it a diagnostic report. The app writes that report to its own local folder; it is never uploaded. You can review, share (via the system share sheet, to a destination you choose) or delete these files under More → About — nothing leaves the device unless you send it. Separately, Apple may share crash reports with us through App Store Connect <em>only</em> if you have enabled "Share with App Developers" in your iOS Privacy &amp; Security → Analytics settings. Those reports are governed by Apple's privacy policy and contain no account or identity information.</li>
       </ul>
       <p>Because the app collects no data, its App Store privacy label is <strong>"Data Not Collected"</strong>.</p>
     </section>

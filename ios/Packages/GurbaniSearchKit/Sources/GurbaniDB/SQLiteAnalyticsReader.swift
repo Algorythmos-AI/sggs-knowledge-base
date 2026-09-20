@@ -16,6 +16,7 @@ extension SQLiteCandidateSource {
 
     /// serve.py:/api/analytics/author?author=X(&full=1) — stylometry + fingerprint + terms.
     public func authorProfile(_ author: String, full: Bool) -> AuthorProfile {
+        var failed = false   // a step error discards the partial result (see SQLiteStep)
         var stylometry: AuthorStylometry?
         var stmt: OpaquePointer?
         if sqlite3_prepare_v2(handle,
@@ -23,7 +24,7 @@ extension SQLiteCandidateSource {
             + "avg_words_line, avg_lines_shabad, top_themes, is_reliable "
             + "FROM author_analytics WHERE author=?", -1, &stmt, nil) == SQLITE_OK {
             sqlite3_bind_text(stmt, 1, author, -1, Self.transientDtor)
-            if sqlite3_step(stmt) == SQLITE_ROW {
+            if stepRow(stmt, failed: &failed) {
                 let themesJSON = aText(stmt, 9) ?? "[]"
                 let themes = (try? JSONDecoder().decode([TopTheme].self, from: Data(themesJSON.utf8))) ?? []
                 stylometry = AuthorStylometry(
@@ -45,7 +46,7 @@ extension SQLiteCandidateSource {
             + "WHERE entity_type='author' AND entity_id=? ORDER BY lift DESC LIMIT ?", -1, &fs, nil) == SQLITE_OK {
             sqlite3_bind_text(fs, 1, author, -1, Self.transientDtor)
             sqlite3_bind_int(fs, 2, fpLim)
-            while sqlite3_step(fs) == SQLITE_ROW {
+            while stepRow(fs, failed: &failed) {
                 fp.append(FingerprintAxis(concept: aText(fs, 0) ?? "", nTagged: aInt(fs, 1) ?? 0,
                                           entityRate: sqlite3_column_double(fs, 2),
                                           corpusRate: sqlite3_column_double(fs, 3),
@@ -60,28 +61,31 @@ extension SQLiteCandidateSource {
             "SELECT term, z_score, rank FROM author_distinctive_terms "
             + "WHERE author=? ORDER BY rank LIMIT 12", -1, &ts, nil) == SQLITE_OK {
             sqlite3_bind_text(ts, 1, author, -1, Self.transientDtor)
-            while sqlite3_step(ts) == SQLITE_ROW {
+            while stepRow(ts, failed: &failed) {
                 terms.append(DistinctiveTerm(term: aText(ts, 0) ?? "",
                                              zScore: sqlite3_column_double(ts, 1),
                                              rank: aInt(ts, 2) ?? 0))
             }
         }
         sqlite3_finalize(ts)
+        if failed { return AuthorProfile(author: author, stylometry: nil, fingerprint: [], distinctiveTerms: []) }
         return AuthorProfile(author: author, stylometry: stylometry, fingerprint: fp, distinctiveTerms: terms)
     }
 
     /// serve.py:/api/analytics/resonance — nodes ≥ minLines, edges filtered to those nodes.
     public func resonance(minLines: Int = 250, minLift: Double = 1.0, minEdges: Int = 8) -> ResonanceGraph {
+        var failed = false   // a step error discards the partial result (see SQLiteStep)
         var nodes: [ResonanceGraph.Node] = []
         var ns: OpaquePointer?
         guard sqlite3_prepare_v2(handle,
             "SELECT name, n_lines, first_ang FROM authors WHERE n_lines >= ? ORDER BY n_lines DESC",
             -1, &ns, nil) == SQLITE_OK else { return ResonanceGraph(nodes: [], edges: []) }
         sqlite3_bind_int(ns, 1, Int32(max(1, minLines)))
-        while sqlite3_step(ns) == SQLITE_ROW {
+        while stepRow(ns, failed: &failed) {
             nodes.append(.init(author: aText(ns, 0) ?? "", nLines: aInt(ns, 1) ?? 0, firstAng: aInt(ns, 2) ?? 0))
         }
         sqlite3_finalize(ns)
+        if failed { return ResonanceGraph(nodes: [], edges: []) }
         if nodes.isEmpty { return ResonanceGraph(nodes: [], edges: []) }
 
         let names = nodes.map { $0.author }
@@ -101,11 +105,12 @@ extension SQLiteCandidateSource {
             sqlite3_bind_text(es, Int32(3 + names.count + i), n, -1, Self.transientDtor)
         }
         var edges: [ResonanceGraph.Edge] = []
-        while sqlite3_step(es) == SQLITE_ROW {
+        while stepRow(es, failed: &failed) {
             edges.append(.init(source: aText(es, 0) ?? "", target: aText(es, 1) ?? "",
                                edges: aInt(es, 2) ?? 0, meanScore: sqlite3_column_double(es, 3),
                                lift: sqlite3_column_double(es, 4)))
         }
+        if failed { return ResonanceGraph(nodes: [], edges: []) }
         return ResonanceGraph(nodes: nodes, edges: edges)
     }
 
@@ -115,6 +120,7 @@ extension SQLiteCandidateSource {
     /// order, truncated toward zero. Do NOT algebraically simplify; the {8,36,80}-bin golden
     /// vectors are the referee.
     public func progression(raag: String, bins binsReq: Int = 36, top topReq: Int = 7) -> Progression? {
+        var failed = false   // a step error discards the partial result (see SQLiteStep)
         var bins = max(8, min(binsReq, 80))
         let top = max(2, min(topReq, 10))
 
@@ -123,7 +129,7 @@ extension SQLiteCandidateSource {
         guard sqlite3_prepare_v2(handle,
             "SELECT id, ang FROM lines WHERE raag=? ORDER BY ang, id", -1, &os, nil) == SQLITE_OK else { return nil }
         sqlite3_bind_text(os, 1, raag, -1, Self.transientDtor)
-        while sqlite3_step(os) == SQLITE_ROW {
+        while stepRow(os, failed: &failed) {
             ordered.append((Int(sqlite3_column_int64(os, 0)), Int(sqlite3_column_int64(os, 1))))
         }
         sqlite3_finalize(os)
@@ -144,7 +150,7 @@ extension SQLiteCandidateSource {
             + "WHERE l.raag=? GROUP BY cl.concept ORDER BY c DESC LIMIT ?", -1, &cs, nil) == SQLITE_OK {
             sqlite3_bind_text(cs, 1, raag, -1, Self.transientDtor)
             sqlite3_bind_int(cs, 2, Int32(top))
-            while sqlite3_step(cs) == SQLITE_ROW { concepts.append(aText(cs, 0) ?? "") }
+            while stepRow(cs, failed: &failed) { concepts.append(aText(cs, 0) ?? "") }
         }
         sqlite3_finalize(cs)
 
@@ -156,7 +162,7 @@ extension SQLiteCandidateSource {
             "SELECT cl.line_id, cl.concept FROM concept_lines cl JOIN lines l ON l.id=cl.line_id "
             + "WHERE l.raag=?", -1, &ls, nil) == SQLITE_OK {
             sqlite3_bind_text(ls, 1, raag, -1, Self.transientDtor)
-            while sqlite3_step(ls) == SQLITE_ROW {
+            while stepRow(ls, failed: &failed) {
                 let lid = Int(sqlite3_column_int64(ls, 0))
                 let concept = aText(ls, 1) ?? ""
                 if cset.contains(concept), let p = pos[lid] {
@@ -176,16 +182,18 @@ extension SQLiteCandidateSource {
         var rs: OpaquePointer?
         if sqlite3_prepare_v2(handle, "SELECT roman FROM raags WHERE name=?", -1, &rs, nil) == SQLITE_OK {
             sqlite3_bind_text(rs, 1, raag, -1, Self.transientDtor)
-            if sqlite3_step(rs) == SQLITE_ROW { roman = aText(rs, 0) ?? "" }
+            if stepRow(rs, failed: &failed) { roman = aText(rs, 0) ?? "" }
         }
         sqlite3_finalize(rs)
 
+        if failed { return nil }
         return Progression(raag: raag, roman: roman, nLines: M, bins: bins, concepts: concepts,
                            series: series, linesPerBin: linesPerBin, angAxis: angAxis)
     }
 
     /// serve.py:/api/analytics/vaars — the 22 Vaar summaries in first_ang order.
     public func vaars() -> [VaarSummary] {
+        var failed = false   // a step error discards the partial result (see SQLiteStep)
         var out: [VaarSummary] = []
         var stmt: OpaquePointer?
         guard sqlite3_prepare_v2(handle,
@@ -193,7 +201,7 @@ extension SQLiteCandidateSource {
             + "pauri_author, salok_authors, cross_author, title FROM vaars ORDER BY first_ang",
             -1, &stmt, nil) == SQLITE_OK else { return [] }
         defer { sqlite3_finalize(stmt) }
-        while sqlite3_step(stmt) == SQLITE_ROW {
+        while stepRow(stmt, failed: &failed) {
             let salokJSON = aText(stmt, 8) ?? "[]"
             let saloks = (try? JSONDecoder().decode([String].self, from: Data(salokJSON.utf8))) ?? []
             out.append(VaarSummary(
@@ -203,11 +211,13 @@ extension SQLiteCandidateSource {
                 pauriAuthor: aText(stmt, 7), salokAuthors: saloks,
                 crossAuthor: (aInt(stmt, 9) ?? 0) != 0, title: aText(stmt, 10)))
         }
+        if failed { return [] }
         return out
     }
 
     /// serve.py:/api/analytics/vaar?id=N — salok + pauri anatomy in reading order.
     public func vaar(id: Int) -> VaarAnatomy {
+        var failed = false   // a step error discards the partial result (see SQLiteStep)
         guard let head = vaars().first(where: { $0.vaarId == id }) else {
             return VaarAnatomy(vaar: nil, units: [])
         }
@@ -217,7 +227,7 @@ extension SQLiteCandidateSource {
             "SELECT seq, kind, author, n_lines, pauri_no, first_line_id, ang, theme "
             + "FROM vaar_units WHERE vaar_id=? ORDER BY seq", -1, &stmt, nil) == SQLITE_OK {
             sqlite3_bind_int(stmt, 1, Int32(id))
-            while sqlite3_step(stmt) == SQLITE_ROW {
+            while stepRow(stmt, failed: &failed) {
                 units.append(VaarUnit(
                     seq: aInt(stmt, 0) ?? 0, kind: aText(stmt, 1) ?? "", author: aText(stmt, 2),
                     nLines: aInt(stmt, 3) ?? 0, pauriNo: aInt(stmt, 4),
@@ -225,6 +235,7 @@ extension SQLiteCandidateSource {
             }
         }
         sqlite3_finalize(stmt)
+        if failed { return VaarAnatomy(vaar: nil, units: []) }
         return VaarAnatomy(vaar: head, units: units)
     }
 }

@@ -32,6 +32,7 @@ extension SQLiteCandidateSource {
 
     /// serve.py /api/banis — ORDER BY order_no, variant.
     public func fetchBanis() -> BaniList {
+        var failed = false   // a step error discards the partial result (see SQLiteStep)
         var stmt: OpaquePointer?
         guard sqlite3_prepare_v2(handle, "SELECT \(Self.summaryCols) FROM banis ORDER BY order_no, variant",
                                  -1, &stmt, nil) == SQLITE_OK else {
@@ -39,13 +40,15 @@ extension SQLiteCandidateSource {
         }
         defer { sqlite3_finalize(stmt) }
         var out: [BaniSummary] = []
-        while sqlite3_step(stmt) == SQLITE_ROW { out.append(mapSummary(stmt)) }
+        while stepRow(stmt, failed: &failed) { out.append(mapSummary(stmt)) }
+        if failed { return BaniList(available: false, banis: []) }
         return BaniList(available: true, banis: out)
     }
 
     /// serve.py /api/bani/{key}?variant= — nil when the key (or key+variant) does not exist.
     /// An empty `variant` resolves the default variant for the key.
     public func fetchBani(key: String, variant: String = "") -> Bani? {
+        var failed = false   // a step error discards the partial result (see SQLiteStep)
         var stmt: OpaquePointer?
         let sql = variant.isEmpty
             ? "SELECT \(Self.summaryCols) FROM banis WHERE key=? AND is_default=1"
@@ -53,7 +56,7 @@ extension SQLiteCandidateSource {
         guard sqlite3_prepare_v2(handle, sql, -1, &stmt, nil) == SQLITE_OK else { return nil }
         sqlite3_bind_text(stmt, 1, key, -1, Self.transientDtor)
         if !variant.isEmpty { sqlite3_bind_text(stmt, 2, variant, -1, Self.transientDtor) }
-        guard sqlite3_step(stmt) == SQLITE_ROW else { sqlite3_finalize(stmt); return nil }
+        guard stepRow(stmt, failed: &failed) else { sqlite3_finalize(stmt); return nil }
         let summary = mapSummary(stmt)
         let baniId = Int(sqlite3_column_int64(stmt, 13))
         sqlite3_finalize(stmt)
@@ -63,10 +66,11 @@ extension SQLiteCandidateSource {
         if sqlite3_prepare_v2(handle, "SELECT variant FROM banis WHERE key=? ORDER BY is_default DESC, variant",
                               -1, &vs, nil) == SQLITE_OK {
             sqlite3_bind_text(vs, 1, key, -1, Self.transientDtor)
-            while sqlite3_step(vs) == SQLITE_ROW { variants.append(colText(vs, 0)) }
+            while stepRow(vs, failed: &failed) { variants.append(colText(vs, 0)) }
         }
         sqlite3_finalize(vs)
 
+        if failed { return nil }
         let lineSQL = """
         SELECT bl.seq, bl.line_group, bl.line_id, bl.extra_id,
                l.ang, l.comp_id, l.is_rahao, l.is_header, l.gurmukhi, l.translit, l.markers,
@@ -83,7 +87,7 @@ extension SQLiteCandidateSource {
         var lines: [BaniLine] = []
         var sggsIds: [Int] = []
         var angs: [Int] = []
-        while sqlite3_step(ls) == SQLITE_ROW {
+        while stepRow(ls, failed: &failed) {
             let seq = Int(sqlite3_column_int64(ls, 0))
             let group = Int(sqlite3_column_int64(ls, 1))
             if let lineId = colOptInt(ls, 2) {
@@ -109,6 +113,7 @@ extension SQLiteCandidateSource {
                     citation: citation))
             }
         }
+        if failed { return nil }
         // serve.py attach_translations — SGGS rows only; no-op on the public profile.
         let en = baniEnMap(ids: sggsIds)
         if !en.isEmpty {
@@ -123,6 +128,7 @@ extension SQLiteCandidateSource {
     }
 
     private func baniEnMap(ids: [Int]) -> [Int: String] {
+        var failed = false   // a step error discards the partial result (see SQLiteStep)
         guard !ids.isEmpty else { return [:] }
         var out: [Int: String] = [:]
         // chunked: Sukhmani has 2,047 ids — stay well under SQLite's default bound-parameter limit.
@@ -133,9 +139,10 @@ extension SQLiteCandidateSource {
             guard sqlite3_prepare_v2(handle, "SELECT line_id, text FROM translations WHERE lang='en' AND line_id IN (\(ph))",
                                      -1, &stmt, nil) == SQLITE_OK else { return [:] }
             for (i, lid) in part.enumerated() { sqlite3_bind_int64(stmt, Int32(i + 1), Int64(lid)) }
-            while sqlite3_step(stmt) == SQLITE_ROW { out[Int(sqlite3_column_int64(stmt, 0))] = colText(stmt, 1) }
+            while stepRow(stmt, failed: &failed) { out[Int(sqlite3_column_int64(stmt, 0))] = colText(stmt, 1) }
             sqlite3_finalize(stmt)
         }
+        if failed { return [:] }
         return out
     }
 }

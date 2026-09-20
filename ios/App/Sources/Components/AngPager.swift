@@ -44,6 +44,7 @@ struct AngPager<Page: View>: UIViewControllerRepresentable {
 
     func updateUIViewController(_ pvc: UIPageViewController, context: Context) {
         context.coordinator.parent = self
+        context.coordinator.refreshVisible()
         context.coordinator.reconcile()
     }
 
@@ -81,6 +82,17 @@ struct AngPager<Page: View>: UIViewControllerRepresentable {
         }
 
         private func host(_ i: Int) -> IndexedHost<Page> { IndexedHost(index: i, root: parent.page(i)) }
+
+        /// A mounted page is its own `UIHostingController`, so it does not see SwiftUI environment
+        /// or closure-captured values change on the parent (a new accent palette stayed stale on the
+        /// open Ang until the next page turn). Re-render the visible page in place — same
+        /// controller, same SwiftUI identity, so its scroll position and state are kept. Skipped
+        /// while a finger is on the pager; the update that follows the settle picks it up.
+        func refreshVisible() {
+            guard !sync.gestureActive, !scrollBusy,
+                  let visible = pvc?.viewControllers?.first as? IndexedHost<Page> else { return }
+            visible.update(root: parent.page(visible.index))
+        }
 
         // MARK: effect runner
 
@@ -206,6 +218,9 @@ final class IndexedHost<Page: View>: UIViewController {
         super.init(nibName: nil, bundle: nil)
     }
     @available(*, unavailable) required init?(coder: NSCoder) { fatalError("init(coder:) unused") }
+
+    /// Re-render this page in place (see `AngPager.Coordinator.refreshVisible`).
+    func update(root: Page) { hosting.rootView = root }
 
     override func viewDidLoad() {
         super.viewDidLoad()

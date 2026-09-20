@@ -123,7 +123,6 @@ struct BaniReaderScreen: View {
         if let resume = container.nitnem.resumeSeq(for: loaded.summary.id, lines: loaded.lines) {
             chrome.landingInProgress = true
             positionId = resume
-            scheduleLiveStart()
             highlightedId = resume
             DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) { chrome.landingInProgress = false }
             Task { @MainActor in
@@ -137,6 +136,10 @@ struct BaniReaderScreen: View {
             positionId = nil
         }
         bani = loaded
+        // After `bani` is set (scheduleLiveStart reads it) and for a first read as much as a
+        // resumed one — it used to run only in the resume branch, before `bani` existed, so the
+        // activity never started on a first load.
+        scheduleLiveStart()
     }
 
     private func anchor(atSeq seq: Int) -> Int? {

@@ -86,6 +86,47 @@ final class NitnemRemindersTests: XCTestCase {
         XCTAssertTrue(pending.isEmpty, "nothing scheduled when denied")
     }
 
+    /// Builds up to 1.3.0 (7) were granted `.provisional` silently, which never alerts. Turning a
+    /// reminder on must upgrade that with a real prompt instead of treating it as good enough.
+    func testProvisionalIsUpgradedWithARealPrompt() async {
+        let fake = FakeNotificationScheduler(grants: true, status: .provisional)
+        let c = NitnemReminderController(scheduler: fake)
+        let d = freshDefaults()
+        let settled = await c.setEnabled(true, band: .amritVela, defaults: d)
+        XCTAssertTrue(settled)
+        let (prompts, status, pending) = await (fake.promptCount, fake.status, fake.snapshot())
+        XCTAssertEqual(prompts, 1, "provisional must be promoted through the system prompt")
+        XCTAssertEqual(status, .authorized)
+        XCTAssertEqual(pending.count, 14)
+    }
+
+    func testDecliningTheUpgradePromptSnapsToggleBack() async {
+        let fake = FakeNotificationScheduler(grants: false, status: .provisional)
+        let c = NitnemReminderController(scheduler: fake)
+        let d = freshDefaults()
+        let settled = await c.setEnabled(true, band: .evening, defaults: d)
+        XCTAssertFalse(settled)
+        XCTAssertFalse(c.isEnabled(.evening, defaults: d))
+        let pending = await fake.snapshot()
+        XCTAssertTrue(pending.isEmpty)
+    }
+
+    func testAlreadyAuthorizedNeverPromptsAgain() async {
+        let fake = FakeNotificationScheduler(grants: true, status: .authorized)
+        let c = NitnemReminderController(scheduler: fake)
+        _ = await c.setEnabled(true, band: .night, defaults: freshDefaults())
+        let prompts = await fake.promptCount
+        XCTAssertEqual(prompts, 0)
+    }
+
+    func testTurningAReminderOffNeverPrompts() async {
+        let fake = FakeNotificationScheduler(grants: true, status: .notDetermined)
+        let c = NitnemReminderController(scheduler: fake)
+        _ = await c.setEnabled(false, band: .night, defaults: freshDefaults())
+        let prompts = await fake.promptCount
+        XCTAssertEqual(prompts, 0, "permission is asked only when a reminder is switched ON")
+    }
+
     func testDisableClearsPending() async {
         let fake = FakeNotificationScheduler()
         let c = NitnemReminderController(scheduler: fake)
