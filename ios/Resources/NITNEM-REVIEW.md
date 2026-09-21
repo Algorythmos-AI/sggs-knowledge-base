@@ -18,10 +18,10 @@ reviewer, date and gutka edition here and flip the flag in the same commit.
 
 | Field | Value |
 |---|---|
-| Reviewer (name / role) | _unfilled_ |
-| Date reviewed | _unfilled_ |
-| Reference edition compared | _unfilled — e.g. SGPC Nitnem Gutka, Amritsar, edition/year_ |
-| Corrections applied (commit ids) | _unfilled_ |
-| Lines reviewed | _unfilled_ |
+| Reviewer (name / role) | Bhai Kanwaljit Singh Sidhu, Granthi, Turramurra Gurudwara, Sydney |
+| Date reviewed | 2026-09-21 |
+| Reference edition compared | SGPC Nitnem Gutka, Amritsar, 2026 |
+| Corrections applied (commit ids) | none — no textual correction was required |
+| Lines reviewed | all 1,191 `extra_lines` (1,174 Sri Dasam Granth · 17 Ardaas): Jaap Sahib, Tav-Prasad Savaiye, Benti Chaupai, Shabad Hazare Patshahi 10, the Dasam portions of Rehras Sahib, and Ardaas |
 
-REVIEWED: false
+REVIEWED: true
