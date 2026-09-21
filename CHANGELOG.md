@@ -3,6 +3,32 @@
 The format below (newest first) follows [Keep a Changelog](https://keepachangelog.com);
 entries prior to v1.1.0 are the project's original prose style and are preserved verbatim.
 
+## [1.3.2] — 2026-09-22 — App Review readiness
+
+Pre-submission pass for the first public App Store release. App display, web/API and docs only —
+scripture, corpus and DB are byte-identical to 1.3.0 (`git diff -- corpus db` empty).
+
+### Added
+- **In-app Privacy Policy + Support** (More → Privacy Policy / Support). A static, offline policy
+  that renders in Airplane Mode and mirrors the web page, with links to the live pages —
+  Guideline 5.1.1(i), since the app prompts for Location and Notifications.
+
+### Changed
+- **App Store listing, review notes and privacy/support pages made accurate to the shipping app**:
+  a working reviewer path (Hukam is in the Reader bar, Save is a long-press); integrity described
+  as verified on install/update and re-checked on change (not "every launch"); the correct Siri
+  phrase list ("Read a bani"; "Open Ang" is a Shortcuts action); solar-mode, widget and screen-label
+  wording; the submission runbook (ASC version string, Mac/Vision Pro unticked, Pending Developer
+  Release → Release) and NOTICE.md (fonts, SQLite).
+
+### Fixed
+- **`PrivacyInfo.xcprivacy`** now declares reason `1C8F.1` for the App Group `UserDefaults` suite
+  shared with the widget extension.
+- A failed scripture-database open shows a plain message instead of a raw Swift error string.
+
+### Data
+- None. Scripture, corpus and DB unchanged from 1.3.0.
+
 ## [1.3.1] — 2026-09-20 — App Store readiness hardening + Reader navigation fixes
 
 A production-readiness pass ahead of the first public App Store submission (2026-09-20 audit).
