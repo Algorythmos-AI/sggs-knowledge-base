@@ -203,6 +203,18 @@ class PrivacyManifestGate(unittest.TestCase):
         self.assertEqual(self.manifest.get("NSPrivacyTrackingDomains", []), [])
         self.assertEqual(self.manifest.get("NSPrivacyCollectedDataTypes", []), [])
 
+    def test_app_group_userdefaults_reason_declared(self):
+        # The app + widget share UserDefaults(suiteName: "group.org.sggs"); that cross-process use
+        # requires reason 1C8F.1 in addition to CA92.1. Apple's upload validator can flag its absence.
+        uses_suite = bool(violations(r'UserDefaults\(suiteName:'))
+        reasons = set()
+        for e in self.manifest["NSPrivacyAccessedAPITypes"]:
+            if e["NSPrivacyAccessedAPIType"] == "NSPrivacyAccessedAPICategoryUserDefaults":
+                reasons = set(e.get("NSPrivacyAccessedAPITypeReasons", []))
+        if uses_suite:
+            self.assertIn("1C8F.1", reasons,
+                          "app uses a shared UserDefaults suite but PrivacyInfo.xcprivacy omits reason 1C8F.1")
+
     def test_manifest_bundled_in_app_and_widget_targets(self):
         project = (APP / "project.yml").read_text(encoding="utf-8")
         # The app target bundles the whole Resources dir; the widget lists the file explicitly.
@@ -316,6 +328,30 @@ class ListingLint(unittest.TestCase):
         pasted = "\n".join([self.promo, self.description])
         stripped = re.sub(r"(?i)never AI-generated|or AI-generated", "", pasted)
         self.assertNotRegex(stripped, r"\bAI\b")
+
+
+class InAppLinksMatchTheListing(unittest.TestCase):
+    """The Privacy/Support URLs shipped inside the app must equal the URLs entered in App Store
+    Connect (the listing's "Submit this" column), so the in-app policy link and the store metadata
+    can never point at different pages."""
+
+    def _app_link(self, name):
+        src = (APP / "Sources" / "Screens" / "PrivacyPolicyScreen.swift").read_text(encoding="utf-8")
+        m = re.search(rf'static let {name} = URL\(string: "([^"]+)"\)', src)
+        self.assertIsNotNone(m, f"AppLinks.{name} not found")
+        return m.group(1)
+
+    def _listing_url(self, label):
+        text = LISTING.read_text(encoding="utf-8")
+        m = re.search(rf'(?m)^\| {re.escape(label)} \| `([^`]+)`', text)
+        self.assertIsNotNone(m, f"listing row {label!r} not found")
+        return m.group(1)
+
+    def test_privacy_url_matches(self):
+        self.assertEqual(self._app_link("privacy"), self._listing_url("Privacy Policy URL"))
+
+    def test_support_url_matches(self):
+        self.assertEqual(self._app_link("support"), self._listing_url("Support URL"))
 
 
 if __name__ == "__main__":
