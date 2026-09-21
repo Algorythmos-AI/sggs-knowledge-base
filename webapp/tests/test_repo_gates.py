@@ -307,6 +307,33 @@ class ListingLint(unittest.TestCase):
                           pasted)
         self.assertEqual(hits, [])
 
+    def test_no_overclaimed_sha_every_launch(self):
+        # F3: the full SHA-256 runs on install/update, not every launch (LaunchIntegrity caches the
+        # fingerprint). Guard the whole listing, incl. review notes, against the overclaim.
+        hits = re.findall(r"(?i)verified (?:by SHA-256 )?(?:every time the app launches|at launch|every launch)",
+                          self.text)
+        self.assertEqual(hits, [], "listing overclaims SHA-256 verification frequency (see LaunchIntegrity)")
+
+    def test_review_notes_use_real_labels(self):
+        # F2/F6: a reviewer follows the review notes verbatim. The row is "About & credits", not "About".
+        notes = _section(self.text, "App Review Information")
+        self.assertNotRegex(notes, r"More → About\b(?! & credits)",
+                            'review notes say "More → About" but the row is "About & credits"')
+        self.assertNotIn("Search tab, type `waheguru` → open a result →\n> tap Hukam", notes,
+                         "review path still routes Hukam through a search result (there is no Hukam control there)")
+
+    def test_siri_phrases_named_in_listing_exist_in_code(self):
+        # F4: every phrase the listing calls a Siri phrase must be a real AppShortcut.
+        intents = (APP / "Sources" / "Intents" / "AppIntents.swift").read_text(encoding="utf-8")
+        shortcut_block = intents[intents.find("AppShortcutsProvider"):] if "AppShortcutsProvider" in intents else intents
+        phrases = set(re.findall(r'phrases:\s*\[(.*?)\]', shortcut_block, re.S))
+        shortcut_text = " ".join(phrases)
+        # "Open Ang" is a Shortcuts action only — it must NOT be sold as a Siri phrase.
+        siri_line = next((l for l in self.description.splitlines() if "Works with Siri" in l), "")
+        if siri_line:
+            self.assertNotRegex(siri_line, r'"Open Ang"(?!\s*action)',
+                                '"Open Ang" is a Shortcuts action, not a Siri phrase')
+
     def test_review_notes_widget_count_matches_code(self):
         widgets = violations(r"struct\s+\w+\s*:\s*Widget\b", dirs=[APP / "Widgets"])
         home_screen = [w for w in widgets if "LiveActivity" not in w]

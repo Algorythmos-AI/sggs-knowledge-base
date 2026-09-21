@@ -52,7 +52,7 @@ are banis it does contain. `webapp/tests/test_repo_gates.py` lints this section.
 
 ## Description (4,000)
 
-> Gurbani Soul is the complete Sri Guru Granth Sahib Ji on your device — all 1,430 Angs, reproduced verbatim and cited by Ang. Nothing is paraphrased, normalised, or AI-generated: what you read is the scripture, exactly, verified every time the app launches.
+> Gurbani Soul is the complete Sri Guru Granth Sahib Ji on your device — all 1,430 Angs, reproduced verbatim and cited by Ang. Nothing is paraphrased, normalised, or AI-generated: what you read is the scripture, exactly, checked against a SHA-256 checksum when installed or updated.
 >
 > READ
 > • The full Granth, verbatim, in a beautiful Gurmukhi typeface (Sant Lipi).
@@ -89,9 +89,9 @@ are banis it does contain. `webapp/tests/test_repo_gates.py` lints this section.
 > • Location, if you allow it, is rounded to about 1 km and never leaves the device.
 >
 > FAITHFUL BY CONSTRUCTION
-> • The text is reproduced character for character from the source edition and is verified by the app every time it launches. Nothing is corrected, normalised or paraphrased.
+> • The text is reproduced character for character from the source edition. Its SHA-256 checksum is verified in full when the app is installed or updated, and re-checked whenever the bundled file changes; every launch confirms the file is unchanged and the structure is intact. Nothing is corrected, normalised or paraphrased.
 >
-> Works with Siri and Shortcuts: "Today's Hukam", "What raag is it now", "Search Gurbani", "Open Ang".
+> Works with Siri and Shortcuts: "Today's Hukam", "What raag is it now", "Read a bani", "Search Gurbani" — plus an "Open Ang" action in the Shortcuts app.
 >
 > Gurbani Soul is built by Algorythmos, an Australian company building trustworthy knowledge systems.
 
@@ -129,7 +129,7 @@ notifications (no push), an on-device Live Activity, no third-party SDKs.
 
 - Do you or your third-party partners collect data from this app? **No.**
 - Result: "Data Not Collected". This matches `PrivacyInfo.xcprivacy` (no tracking, no collected
-  data types, accessed-API reasons `CA92.1` UserDefaults and `C617.1` file timestamps only).
+  data types, accessed-API reasons `CA92.1` + `1C8F.1` (UserDefaults, including the App Group suite shared with the widgets) and `C617.1` (file timestamps) only).
 - Location is used but not collected: it never leaves the device and is not stored beyond the
   rounded value used for the clock. Say exactly this in the review notes.
 
@@ -191,8 +191,10 @@ Store the source PNGs under `ios/AppStore/screenshots/<device>/` (add the direct
 > no account or sign-in exists, so no demo credentials are needed.
 > Airplane Mode is a valid way to test it.
 >
-> The Gurmukhi text is reproduced verbatim from the source edition and is verified by SHA-256 at
-> launch (More → About → Integrity shows the checks). The Gurmukhi typeface is Sant Lipi and the
+> The Gurmukhi text is reproduced verbatim from the source edition. Its SHA-256 is verified in full on
+> first launch after an install or update; later launches confirm the file is unchanged (size + modification
+> date) and re-run the structural checks. Any failure is fail-closed — the app refuses to show scripture.
+> More → About & credits → Integrity shows the checks. The Gurmukhi typeface is Sant Lipi and the
 > heading typeface is Source Serif 4 (both SIL Open Font License 1.1). No third-party translation is bundled in this build.
 >
 > Nitnem (Nitnem tab) lists the daily banis. Banis from Sri Dasam Granth and Ardaas are included as
@@ -201,7 +203,7 @@ Store the source PNGs under `ios/AppStore/screenshots/<device>/` (add the direct
 >
 > Optional Nitnem reminders are local notifications only (scheduled on-device, no push, no server);
 > they do not change the fully-offline promise. The standard notification permission prompt appears
-> only when the user switches a reminder on (More → Reminders); nothing is requested at launch.
+> only when the user switches a reminder on (More → Reminders, under the Nitnem section); nothing is requested at launch.
 >
 > The optional reading Live Activity (default off) is driven entirely on-device with ActivityKit —
 > no push and no server. It shows a bani title and a progress percentage only, never scripture text.
@@ -211,17 +213,20 @@ Store the source PNGs under `ios/AppStore/screenshots/<device>/` (add the direct
 > Location: optional, used only by the Raag Clock's solar mode to compute local sunrise and
 > sunset on the device; the value is rounded to about 1 km, never stored beyond that and never
 > transmitted. The app works fully with location denied (manual entry is offered). To see it:
-> Raag Clock → switch to Solar; the permission prompt appears only then.
+> Explore → Raag Clock. Solar is the default; with no stored location it shows the fixed clock and offers
+> a "Use my location" button — the permission prompt appears only when that button is tapped.
 >
-> Widgets: three Home Screen widgets (Hukam, Raag Now, Nitnem) read a small snapshot the app writes
-> to its App Group (`group.org.sggs`); they contain no personal data. Open the app once before
-> adding them.
+> Widgets: three Home Screen widgets (Hukam verse, Raag now, Nitnem) read a small snapshot the app
+> writes to its App Group (`group.org.sggs`). It stays on the device and is never transmitted; the only
+> personal values in it are today's Nitnem progress and, if the reader enabled solar mode, their location
+> rounded to about 1 km. Open the app once before adding them.
 >
-> URL scheme `sggs://` and App Intents ("Today's Hukam", "What raag is it now", "Search Gurbani",
-> "Open Ang") open screens inside the app only.
+> URL scheme `sggs://` and App Intents ("Today's Hukam", "What raag is it now", "Read a bani",
+> "Search Gurbani" as Siri phrases; "Open Ang" as a Shortcuts action) open screens inside the app only.
 >
-> Suggested path: launch → Reader (turn a page) → Search tab, type `waheguru` → open a result →
-> tap Hukam → Save → Nitnem tab → open Japji Sahib → More → About.
+> Suggested path: launch → Reader (swipe to turn a page) → tap **Hukam** in the bar at the bottom of the
+> Reader → Done → **Search** tab, type `waheguru` → tap a result to open the composition → **long-press**
+> any verse → **Save** → **Nitnem** tab → open Japji Sahib → **More → About & credits** → Integrity.
 
 ## Age rating questionnaire
 

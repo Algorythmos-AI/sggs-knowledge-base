@@ -40,3 +40,14 @@ The pipeline and web app code (everything in `pipeline/` and `webapp/` except da
   The Ardaas wording follows the SGPC Sikh Rehat Maryada.
 - Required in-app attribution: "Bani ordering and Sri Dasam Granth / Ardaas text via the
   ShabadOS open database. Sri Guru Granth Sahib Ji text is this project's own verified corpus."
+
+## Bundled in the iOS app (public build)
+
+- **Sant Lipi** (Gurmukhi typeface) — © Shabad OS, SIL Open Font License 1.1; shipped as
+  `ios/App/Resources/OFL.txt`.
+- **Source Serif 4** (headings) — © Adobe, SIL Open Font License 1.1; shipped as
+  `ios/App/Resources/OFL-SourceSerif4.txt`.
+- **SQLite** — public domain (vendored amalgamation; provenance in
+  `ios/Packages/GurbaniSearchKit/Sources/CSQLite/PROVENANCE.md`).
+- **Bani ordering and Sri Dasam Granth / Ardaas text** — via the ShabadOS open database
+  (release 4.8.7). Scholar review recorded in `ios/Resources/NITNEM-REVIEW.md`.
