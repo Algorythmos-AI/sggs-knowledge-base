@@ -51,7 +51,7 @@ enum NitnemPrefs {
 /// ios/Resources/NITNEM-REVIEW.md (`REVIEWED: true`). Flip this in the same commit so the
 /// in-app label stops saying "under review".
 enum NitnemReview {
-    static let extraTextReviewed = false
+    static let extraTextReviewed = true
     static var extraLayerLabel: String {
         extraTextReviewed
             ? "Sri Dasam Granth / Ardaas text via ShabadOS — a separate layer, not part of Sri Guru Granth Sahib Ji."
