@@ -131,6 +131,10 @@ struct MoreScreen: View {
                             }
                         } icon: { Image(systemName: "bookmark.slash").foregroundStyle(.secondary) }
                     }
+                    NavigationLink { PrivacyPolicyScreen() } label: { Label("Privacy Policy", systemImage: "hand.raised") }
+                        .accessibilityIdentifier("privacyPolicyLink")
+                    Link(destination: AppLinks.support) { Label("Support", systemImage: "lifepreserver") }
+                        .accessibilityIdentifier("supportLink")
                     NavigationLink { AboutScreen() } label: { Label("About & credits", systemImage: "info.circle") }
                 }
                 .inkRow()

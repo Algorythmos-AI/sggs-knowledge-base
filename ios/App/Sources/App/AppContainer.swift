@@ -1,6 +1,7 @@
 import SwiftUI
 import SwiftData
 import WidgetKit
+import OSLog
 import GurbaniSearchKit
 
 /// App-wide dependency root. Owns the CorpusActor + the launch-integrity result + the single shared
@@ -57,7 +58,13 @@ final class AppContainer {
 
     init() {
         do { self.corpus = try CorpusActor() }
-        catch { self.corpus = nil; self.startupError = error.localizedDescription }
+        catch {
+            // Never surface a raw Error/SQLite string to the user (it would read like
+            // "…DBError error 0."); log the detail privately and show a plain sentence.
+            self.corpus = nil
+            self.startupError = "The scripture database could not be opened. Reinstalling from the App Store usually fixes this."
+            Logger(subsystem: "org.sggs", category: "Startup").error("corpus open failed: \(String(describing: error), privacy: .private)")
+        }
 
         let defaults = UserDefaults.standard
         let prior = defaults.integer(forKey: Self.savedStoreFailKey)
