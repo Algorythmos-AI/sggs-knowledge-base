@@ -1,0 +1,145 @@
+---
+import Marketing from "../layouts/Marketing.astro";
+import MarketingNav from "../components/MarketingNav.astro";
+import DeviceFrame from "../components/DeviceFrame.astro";
+import JsonLd from "../components/JsonLd.astro";
+import { SITE_URL, SUPPORT_EMAIL } from "../site.ts";
+import readerShot from "../assets/app/reader.png";
+import nitnemShot from "../assets/app/nitnem.png";
+import raagClockShot from "../assets/app/raag-clock.png";
+import hukamShot from "../assets/app/hukam.png";
+
+const desc =
+  "Everything Gurbani Soul does on your iPhone and iPad — read the whole Granth, search the way you remember, keep your Nitnem, draw a Hukam, and see the Raag Clock. Verbatim, cited by Ang, fully offline.";
+
+// Six capabilities, shown as a hairline definition list (not boxy cards). Copy is lint-clean.
+// (Moved verbatim from the old landing #features section.)
+const features = [
+  { t: "Read the whole Granth", d: "All 1,430 Angs in a clear Gurmukhi typeface. Turn pages, jump to any Ang, resume where you left off. Every composition opens with its printed heading." },
+  { t: "Search how you remember", d: "By word, by how it sounds in Roman letters, by first letters the way Gurbani is recalled, or by theme across the whole text." },
+  { t: "Nitnem, with gentle reminders", d: "The daily banis by time of day, your place kept in each, and a quiet record of the days you read. Optional reminders you set yourself." },
+  { t: "Hukam & the Raag Clock", d: "Draw a complete Hukam any time. See which raags belong to the current watch of the day, with an optional solar mode." },
+  { t: "Widgets & Live Activity", d: "The current watch, the last Hukam and today's Nitnem on your Home Screen; an optional reading Live Activity that never shows a verse." },
+  { t: "Verbatim by construction", d: "The text is reproduced character-for-character from the source edition and checked against a SHA-256 checksum. Nothing is corrected, normalised, or invented." },
+];
+
+const jsonLd = {
+  "@context": "https://schema.org",
+  "@graph": [
+    { "@type": "WebSite", name: "Gurbani Soul", url: SITE_URL, inLanguage: "en" },
+    {
+      "@type": "WebPage",
+      name: "Features — Gurbani Soul",
+      description: desc,
+      url: new URL("/features", SITE_URL).href,
+      inLanguage: "en",
+      isPartOf: { "@type": "WebSite", name: "Gurbani Soul", url: SITE_URL },
+    },
+  ],
+};
+---
+<Marketing title="Features — Gurbani Soul" description={desc} path="/features">
+  <JsonLd slot="head" data={jsonLd} />
+  <MarketingNav overHero={false} />
+
+  <header class="page-hero">
+    <div class="wrap">
+      <p class="eyebrow">Everything, on your device</p>
+      <h1>Made for reading, not for scrolling</h1>
+      <p class="lede">The whole Granth, the daily banis and the study tools — quiet, exact, and entirely
+        on your device. No feeds, no accounts, nothing asking for your attention.</p>
+    </div>
+  </header>
+
+  <!-- Capabilities: staggered device shots + hairline definition list -->
+  <section class="section feat-sec">
+    <div class="wrap feat-grid">
+      <div class="feat-devices reveal" aria-hidden="false">
+        <DeviceFrame src={readerShot} alt="Reader screen showing Ang 1 in Sant Lipi" label="Reader" />
+        <DeviceFrame src={nitnemShot} alt="Nitnem screen listing the daily banis by time of day" label="Nitnem" />
+      </div>
+      <dl class="feat-list">
+        {features.map((f) => (
+          <div class="feat-row reveal">
+            <dt>{f.t}</dt>
+            <dd>{f.d}</dd>
+          </div>
+        ))}
+      </dl>
+    </div>
+  </section>
+
+  <!-- Hukam + Raag Clock shots so all four app screens appear across the site -->
+  <section class="section band feat-shots-sec">
+    <div class="wrap">
+      <div class="shots-head reveal">
+        <p class="eyebrow">On screen</p>
+        <h2>A complete Hukam, and the watch of the day</h2>
+        <p class="muted">Draw a complete Hukam cited by Ang, and glance at the raags of the current watch —
+          both on the same quiet surface as the reader.</p>
+      </div>
+      <div class="feat-shots reveal">
+        <DeviceFrame src={hukamShot} alt="Hukam screen with a complete shabad cited by Ang" label="Hukam" />
+        <DeviceFrame src={raagClockShot} alt="Raag Clock showing the current watch" label="Raag Clock" />
+      </div>
+      <p class="shots-cta reveal"><a class="btn ghost" href="/watch">See the Raag Clock</a></p>
+    </div>
+  </section>
+
+  <footer class="foot">
+    <div class="wrap foot-in">
+      <div>
+        <div class="foot-brand">Gurbani Soul</div>
+        <div>Built by Algorythmos · Sri Guru Granth Sahib Ji is shown verbatim from the source edition, cited by Ang.</div>
+      </div>
+      <nav aria-label="Footer" class="foot-nav">
+        <a href="/">Home</a>
+        <a href="/watch">The watch</a>
+        <a href="/search">Knowledge Base</a>
+        <a href="/learn">Learn</a>
+        <a href="/support">Support</a>
+        <a href="/privacy">Privacy</a>
+      </nav>
+    </div>
+    <div class="wrap credits">
+      <p>Questions or corrections? <a href="/support">Support</a> · {SUPPORT_EMAIL}</p>
+    </div>
+  </footer>
+
+  <style>
+    .page-hero { padding: clamp(96px, 12vw, 150px) 0 clamp(8px, 2vw, 24px); }
+    .page-hero h1 { font-size: clamp(32px, 5.4vw, 54px); margin: 0 0 18px; max-width: 18ch; }
+    .page-hero .lede { max-width: 56ch; color: var(--ink-soft); font-size: clamp(17px, 2vw, 20px); }
+
+    /* Capabilities */
+    .feat-grid { display: grid; grid-template-columns: 1fr; gap: 40px; }
+    .feat-devices { display: flex; gap: 22px; margin: 0 0 4px; justify-content: center; }
+    .feat-devices :global(.device-fig:nth-child(2)) { transform: translateY(28px); }
+    .feat-list { margin: 0; display: grid; gap: 0; }
+    .feat-row { padding: 22px 0; border-top: 1px solid var(--line); }
+    .feat-row:last-child { border-bottom: 1px solid var(--line); }
+    .feat-row dt { font-family: var(--serif-display); font-size: 19px; font-weight: 600; color: var(--ink); margin: 0 0 6px; }
+    .feat-row dd { margin: 0; color: var(--ink-soft); font-size: 15.5px; max-width: 62ch; }
+    @media (min-width: 900px) {
+      .feat-grid { grid-template-columns: 5fr 7fr; gap: 72px; align-items: start; }
+      .feat-devices { position: sticky; top: 96px; justify-content: flex-start; margin-bottom: 0; }
+    }
+
+    /* Hukam + Raag Clock shots */
+    .shots-head { max-width: 52ch; margin: 0 0 clamp(28px, 4vw, 48px); }
+    .shots-head h2 { font-size: clamp(26px, 4vw, 40px); margin: 0 0 14px; }
+    .feat-shots { display: flex; flex-wrap: wrap; gap: 28px 48px; justify-content: center; }
+    .feat-shots :global(.device) { max-width: 240px; }
+    .shots-cta { margin: clamp(32px, 4vw, 48px) 0 0; }
+    @media (min-width: 720px) {
+      .feat-shots { justify-content: flex-start; }
+      .feat-shots :global(.device-fig:nth-child(2)) { transform: translateY(24px); }
+    }
+
+    .foot-in { padding-top: 44px; padding-bottom: 20px; display: flex; flex-wrap: wrap; gap: 16px 32px; align-items: baseline; justify-content: space-between; }
+    .foot-brand { font-family: var(--serif-display); font-size: 18px; color: var(--ink); }
+    .foot-nav { display: flex; gap: 18px; flex-wrap: wrap; }
+    .credits { padding-bottom: 40px; }
+    .credits p { margin: 0; }
+  </style>
+</Marketing>

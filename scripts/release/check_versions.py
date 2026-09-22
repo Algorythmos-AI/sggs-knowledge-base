@@ -15,6 +15,13 @@ iOS build invariants (independent of the marketing version):
   - no <x.y.z>+<n> version literal is hardcoded in ios/App/Tests/UI/*.swift
     (the About-screen UI test must read the built version, not a literal).
 
+One-number policy (web == API == iOS binary):
+  - the newest version in the ledger ios/testflight-builds.json is <= APP_VERSION.
+    The shipped binary may equal APP_VERSION (this release) or trail it (a past
+    release), but it can never be AHEAD of the repo. (This runs on every branch,
+    so it deliberately makes no assertion about commit ancestry, which only holds
+    on main after a release merge.)
+
 Exit 0 if consistent, 1 otherwise.
 """
 import json, re, sys
@@ -53,6 +60,31 @@ def main():
         ("no x.y.z+n literal in UI tests", not ui_literals,
          "found: " + ", ".join(ui_literals) if ui_literals else "none"),
     ]
+
+    # One-number policy: the shipped iOS binary can never be ahead of the repo.
+    def _semver(v):
+        try:
+            return tuple(int(x) for x in v.split("."))
+        except ValueError:
+            return None
+    try:
+        ledger = json.loads(read("ios/testflight-builds.json"))
+        rows = ledger.get("builds", []) if isinstance(ledger, dict) else []
+        led_versions = [r["version"] for r in rows if isinstance(r, dict) and "version" in r]
+    except (FileNotFoundError, json.JSONDecodeError, KeyError):
+        led_versions = []
+    canon_t = _semver(canon)
+    newest = max((_semver(v) for v in led_versions if _semver(v)), default=None)
+    if not led_versions:
+        led_detail, led_ok = "ledger empty (no uploads yet)", True
+    elif canon_t is None:
+        led_detail, led_ok = f"canonical version {canon!r} unparseable", False
+    else:
+        newest_s = ".".join(str(x) for x in newest)
+        led_ok = newest <= canon_t
+        led_detail = (f"newest ledger {newest_s} <= APP_VERSION {canon}" if led_ok
+                      else f"newest ledger {newest_s} is AHEAD of APP_VERSION {canon} — bump the repo")
+    invariants.append(("iOS ledger not ahead of APP_VERSION", led_ok, led_detail))
 
     width = max([len(k) for k in found] + [len(k) for k, _, _ in invariants])
     ok = True

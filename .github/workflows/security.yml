@@ -11,7 +11,7 @@ jobs:
   secrets:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           fetch-depth: ${{ github.event_name == 'schedule' && 0 || 1 }}
       - name: gitleaks (open-source binary — no org license needed)
@@ -22,8 +22,8 @@ jobs:
   static-analysis:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
         with:
           python-version-file: ".python-version"
       - name: bandit (python)
@@ -40,8 +40,8 @@ jobs:
   deps:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
         with:
           node-version-file: ".nvmrc"
       - working-directory: frontend

@@ -1,5 +1,6 @@
 // @ts-check
 import { defineConfig } from 'astro/config';
+import mdx from '@astrojs/mdx';                 // MDX pages/content (the Learn section lands in PR3)
 import tailwindcss from '@tailwindcss/vite';   // Tailwind v4 — compiles at build time, fully offline
 
 // SGGS Knowledge Base — Path A (Offline Monolith).
@@ -10,6 +11,17 @@ export default defineConfig({
   // Canonical production origin — used for <link rel="canonical"> and og:url in the layouts.
   // Keep in step with frontend/src/site.ts SITE_URL and the App Store Connect URLs.
   site: 'https://gurbanisoul.com',
+  // MDX integration (unused until the PR3 Learn section; harmless for the current MPA pages).
+  integrations: [mdx()],
+  // Locale scaffolding for the future Gurmukhi (`pa`) mirror. prefixDefaultLocale:false keeps
+  // English at the bare paths (no /en prefix) so no existing URL moves; no `pa` pages ship yet.
+  i18n: {
+    defaultLocale: 'en',
+    locales: ['en', 'pa'],
+    routing: { prefixDefaultLocale: false, redirectToDefaultLocale: false },
+  },
+  // Opt-in prefetch: only links marked data-astro-prefetch, and on hover — nothing eager.
+  prefetch: { prefetchAll: false, defaultStrategy: 'hover' },
   // Build to frontend/dist/ — NEVER directly at webapp/static/. `astro build` empties
   // its outDir first, so pointing at webapp/static/ would destroy the live app between
   // build and the sync step. The sync script copies dist/ -> webapp/static/ with a backup.

@@ -437,17 +437,20 @@ class LandingPage(unittest.TestCase):
         self.assertEqual([t for t in imgs if not re.search(r'\balt=', t)], [],
                          "an <img> on the landing has no alt attribute")
 
-    def test_photographers_are_credited(self):
-        # Every photo shipped under src/assets/landing must have its photographer named in site.ts
-        # and the credit must render on the page.
+    def test_imagery_is_credited(self):
+        # Every image shipped under src/assets/landing must have its maker named in site.ts
+        # (IMAGE_CREDITS.who) and the credit must render on the page. The hero is now an original
+        # artistic rendering (no stock photography), so the page carries an "Artwork" credit and
+        # must NOT mention Unsplash any more.
         self._skip_if_unbuilt()
         site = (ROOT / "frontend" / "src" / "site.ts").read_text(encoding="utf-8")
         credits = re.findall(r'who:\s*"([^"]+)"', site)
         n_assets = len([p for p in LANDING_ASSETS.glob("*") if p.suffix.lower() in (".jpg", ".jpeg", ".png", ".webp")]) if LANDING_ASSETS.exists() else 0
-        self.assertGreaterEqual(len(credits), n_assets, "fewer photo credits than landing image assets")
-        self.assertIn("Unsplash", self.html, "landing does not credit Unsplash")
+        self.assertGreaterEqual(len(credits), n_assets, "fewer image credits than landing image assets")
+        self.assertIn("Artwork", self.html, "landing does not carry an Artwork credit")
+        self.assertNotIn("Unsplash", self.html, "landing still references Unsplash (photos were removed)")
         for who in credits:
-            self.assertIn(who, self.html, f"photographer {who!r} not credited on the landing")
+            self.assertIn(who, self.html, f"image maker {who!r} not credited on the landing")
 
     def test_seo_head_present(self):
         self._skip_if_unbuilt()
@@ -461,6 +464,105 @@ class LandingPage(unittest.TestCase):
         astro = STATIC / "_astro"
         heavy = [f.name for f in astro.glob("*") if f.suffix in (".avif", ".webp") and f.stat().st_size > 340 * 1024]
         self.assertEqual(heavy, [], f"served image variant(s) over 340 KB: {heavy}")
+
+    def test_cta_state_is_consistent(self):
+        # Exactly one canonical App-Store "coming soon" element (the hero one), and the page never
+        # shows BOTH a real App-Store download link and a coming-soon chip of the same kind.
+        self._skip_if_unbuilt()
+        soon = re.findall(r'data-app-store="coming-soon"', self.html)
+        self.assertEqual(len(soon), 1, f"expected exactly one [data-app-store=coming-soon], got {len(soon)}")
+        download_link = re.search(r'<a\b[^>]*aria-label="[^"]*App Store[^"]*"', self.html)
+        self.assertFalse(download_link and soon,
+                         "page shows both an App-Store download link and a coming-soon chip")
+
+    def test_landing_raags_match_db(self):
+        # The raags listed under each pahar must be exactly the DB's primary claims for that pahar,
+        # and pahar 7 (the silent night) must list none. Since the multi-page redesign the raag
+        # <li data-pahar> markup lives on the dedicated /watch page (webapp/static/watch/index.html).
+        self._skip_if_unbuilt()
+        watch = STATIC / "watch" / "index.html"
+        if not watch.exists():
+            self.skipTest("webapp/static/watch/index.html not built (cd frontend && npm run build:deploy)")
+        html = watch.read_text(encoding="utf-8")
+        db = ROOT / "db" / "sggs.sqlite"
+        if not (db.exists() and db.read_bytes()[:15] == b"SQLite format 3"):
+            self.skipTest("db/sggs.sqlite not present (git lfs pull)")
+        conn = sqlite3.connect(f"file:{db}?mode=ro", uri=True)
+        for p in range(1, 9):
+            m = re.search(rf'<li[^>]*\bdata-pahar="{p}"[^>]*>(.*?)</li>', html, re.S)
+            self.assertIsNotNone(m, f"no <li data-pahar=\"{p}\"> on /watch")
+            shown = set(re.findall(r'<span class="gm" lang="pa"[^>]*>([^<]+)</span>', m.group(1)))
+            want = {r[0] for r in conn.execute(
+                "SELECT raag_name FROM raag_timing_claims WHERE claim_type='primary' AND pahar=?", (p,))}
+            self.assertEqual(shown, want, f"pahar {p}: /watch raags {shown} != DB primary claims {want}")
+        # pahar 7 must have none
+        m7 = re.search(r'<li[^>]*\bdata-pahar="7"[^>]*>(.*?)</li>', html, re.S)
+        self.assertNotIn('class="gm"', m7.group(1), "pahar 7 must list no raags")
+
+
+MARKETING_CSS = ROOT / "frontend" / "src" / "styles" / "marketing.css"
+COMPONENTS = ROOT / "frontend" / "src" / "components"
+PAGES = ROOT / "frontend" / "src" / "pages"
+INDEX_ASTRO = PAGES / "index.astro"
+# Marketing pages (Marketing.astro shell) whose scoped CSS the brand discipline also governs.
+MARKETING_PAGES = ("index.astro", "features.astro", "watch.astro")
+
+
+def _marketing_style_sources():
+    """(name, text) for the marketing stylesheet, every component, and the marketing pages' CSS."""
+    out = [("marketing.css", MARKETING_CSS.read_text(encoding="utf-8"))]
+    for p in sorted(COMPONENTS.glob("*.astro")):
+        out.append((p.name, p.read_text(encoding="utf-8")))
+    for name in MARKETING_PAGES:
+        p = PAGES / name
+        if p.exists():
+            out.append((name, p.read_text(encoding="utf-8")))
+    return out
+
+
+def _strip_dark_scope(css):
+    """Remove balanced `[data-theme="dark"] { … }` blocks so what remains is 'light-mode' CSS."""
+    out, i = [], 0
+    while i < len(css):
+        m = re.search(r'\[data-theme="dark"\][^{]*\{', css[i:])
+        if not m:
+            out.append(css[i:])
+            break
+        start = i + m.start()
+        out.append(css[i:start])
+        j = i + m.end()
+        depth = 1
+        while j < len(css) and depth:
+            if css[j] == "{":
+                depth += 1
+            elif css[j] == "}":
+                depth -= 1
+            j += 1
+        i = j
+    return "".join(out)
+
+
+class BrandDisciplineInSource(unittest.TestCase):
+    """The Soul-Gold brand rules, enforced on the marketing CSS + components + landing scoped CSS."""
+
+    def test_mark_is_flat(self):
+        # The ੴ mark (and everything else on the marketing surface) is flat — no text-shadow.
+        bad = [name for name, text in _marketing_style_sources() if re.search(r"text-shadow", text, re.I)]
+        self.assertEqual(bad, [], f"text-shadow found in: {bad}")
+
+    def test_no_red_and_gold_discipline(self):
+        norm = lambda s: re.sub(r"\s+", "", s).lower()
+        for name, text in _marketing_style_sources():
+            self.assertNotIn("#da291c", text.lower(), f"brand red #DA291C appears in {name}")
+            # Literal gold as a text colour is only allowed inside a [data-theme=\"dark\"] scope.
+            light = norm(_strip_dark_scope(text))
+            self.assertNotIn("color:#ffbc0d", light,
+                             f"{name}: gold #FFBC0D used as a text colour outside a dark scope")
+        # The verse is ink-coloured.
+        idx = INDEX_ASTRO.read_text(encoding="utf-8")
+        m = re.search(r"\.verse\s*\{([^}]*)\}", idx)
+        self.assertIsNotNone(m, "no .verse rule in index.astro scoped styles")
+        self.assertRegex(m.group(1), r"color:\s*var\(--ink\)", ".verse colour is not var(--ink)")
 
 
 class SubmissionUrlsAreLive(unittest.TestCase):
@@ -508,6 +610,523 @@ class DocsHygiene(unittest.TestCase):
         text = readme.read_text(encoding="utf-8")
         self.assertIn("gurbanisoul.com", text)
         self.assertIn("sggs-knowledge-base.vercel.app", text)  # must document the legacy alias
+
+
+class VersionPolicyDocumented(unittest.TestCase):
+    """The one-number policy (web == API == iOS binary, re-archived every release) must stay
+    written down where a future maintainer looks. If someone softens the rule they have to
+    delete the sentence, which fails here — so the policy can't quietly rot."""
+
+    SENTENCE = "re-archived at the same version"
+
+    def test_documented_in_release_and_claude(self):
+        for rel in ("docs/process/release.md", "CLAUDE.md"):
+            text = (ROOT / rel).read_text(encoding="utf-8")
+            self.assertIn(self.SENTENCE, text, f"{rel} no longer states the one-number policy")
+
+    def test_release_complete_checker_exists(self):
+        self.assertTrue((ROOT / "scripts/release/check_release_complete.py").exists(),
+                        "scripts/release/check_release_complete.py is missing")
+
+
+# ------------------------------------------------------------------------------------------------
+# PR1 — web foundations: SEO / sitemap / RSS / analytics / smart-banner / theme-token gates.
+# These read the BUILT webapp/static (skip cleanly if unbuilt) and the tracked frontend source.
+# ------------------------------------------------------------------------------------------------
+import xml.etree.ElementTree as ET  # noqa: E402
+
+SITE = "https://gurbanisoul.com"
+FRONTEND = ROOT / "frontend"
+SITEMAP_NS = "{http://www.sitemaps.org/schemas/sitemap/0.9}"
+
+
+def _norm_url(u):
+    """Compare URLs without caring about a single trailing slash."""
+    return u.rstrip("/")
+
+
+def _built_pages():
+    """Yield (route, path) for every built *.html except 404.html.
+
+    index.html -> "/"; <dir>/index.html -> "/<dir>"; any other x.html -> "/x".
+    """
+    for p in sorted(STATIC.rglob("*.html")):
+        rel = p.relative_to(STATIC)
+        if rel.name == "404.html":
+            continue
+        if rel.name == "index.html":
+            d = rel.parent.as_posix()
+            route = "/" if d == "." else "/" + d
+        else:
+            route = "/" + rel.with_suffix("").as_posix()
+        yield route, p
+
+
+def _unbuilt():
+    return not (STATIC / "index.html").exists()
+
+
+class SeoInvariants(unittest.TestCase):
+    """Every built page carries an honest, self-consistent SEO/social head."""
+
+    def setUp(self):
+        if _unbuilt():
+            self.skipTest("webapp/static not built (cd frontend && npm run build:deploy)")
+
+    def test_every_page_has_correct_seo_head(self):
+        pages = list(_built_pages())
+        self.assertTrue(pages, "no built HTML pages found")
+        marketing = {"/"}
+        for route, path in pages:
+            html = path.read_text(encoding="utf-8")
+            canonical_want = _norm_url(SITE + route)
+
+            cans = re.findall(r'<link rel="canonical" href="([^"]+)"', html)
+            self.assertEqual(len(cans), 1, f"{route}: expected exactly one canonical, got {cans}")
+            self.assertEqual(_norm_url(cans[0]), canonical_want, f"{route}: wrong canonical {cans[0]}")
+
+            desc = re.search(r'<meta name="description" content="([^"]*)"', html)
+            self.assertIsNotNone(desc, f"{route}: no description meta")
+            self.assertGreaterEqual(len(desc.group(1)), 40, f"{route}: description under 40 chars")
+
+            og = re.search(r'<meta property="og:image" content="([^"]+)"', html)
+            self.assertIsNotNone(og, f"{route}: no og:image")
+            og_path = og.group(1).split(SITE, 1)[-1].lstrip("/")
+            self.assertTrue((STATIC / og_path).is_file(), f"{route}: og:image {og.group(1)} missing on disk")
+
+            self.assertGreaterEqual(len(re.findall(r'name="theme-color"', html)), 1, f"{route}: no theme-color")
+
+            if route in marketing:
+                self.assertRegex(html, r'rel="manifest"', f"{route}: marketing page missing manifest link")
+
+            # hreflang alternates (if any) must be en / x-default and self-referential — no /pa/ yet.
+            for lang, href in re.findall(r'<link rel="alternate" hreflang="([^"]+)" href="([^"]+)"', html):
+                self.assertIn(lang, ("en", "x-default"), f"{route}: unexpected hreflang {lang}")
+                self.assertNotIn("/pa/", href, f"{route}: hreflang points at a /pa/ URL")
+                self.assertEqual(_norm_url(href), canonical_want, f"{route}: hreflang not self-referential")
+
+
+class SitemapInvariants(unittest.TestCase):
+    def setUp(self):
+        if _unbuilt() or not (STATIC / "sitemap.xml").exists():
+            self.skipTest("sitemap.xml not built")
+
+    def test_sitemap_matches_built_routes(self):
+        root = ET.parse(STATIC / "sitemap.xml").getroot()
+        locs = {_norm_url(el.text) for el in root.iter(f"{SITEMAP_NS}loc")}
+        built = {_norm_url(SITE + route) for route, _ in _built_pages()}
+        self.assertEqual(locs, built, f"sitemap <loc> set != built HTML routes\n  only in sitemap: "
+                         f"{sorted(locs - built)}\n  only built: {sorted(built - locs)}")
+
+    def test_every_lastmod_is_a_date(self):
+        root = ET.parse(STATIC / "sitemap.xml").getroot()
+        mods = [el.text for el in root.iter(f"{SITEMAP_NS}lastmod")]
+        self.assertTrue(mods, "no <lastmod> in sitemap")
+        for m in mods:
+            self.assertRegex(m, r"^\d{4}-\d{2}-\d{2}", f"lastmod not an ISO date: {m!r}")
+
+    def test_robots_names_sitemap(self):
+        for cand in (STATIC / "robots.txt", FRONTEND / "public" / "robots.txt"):
+            if cand.exists():
+                self.assertIn("sitemap.xml", cand.read_text(encoding="utf-8"))
+                return
+        self.fail("robots.txt not found")
+
+    def test_learn_routes_present(self):
+        root = ET.parse(STATIC / "sitemap.xml").getroot()
+        locs = {_norm_url(el.text) for el in root.iter(f"{SITEMAP_NS}loc")}
+        self.assertIn(_norm_url(SITE + "/learn"), locs, "sitemap missing /learn")
+        # every built Learn article route must be in the sitemap
+        for route, _ in _learn_articles():
+            self.assertIn(_norm_url(SITE + route), locs, f"sitemap missing {route}")
+
+
+class RssInvariants(unittest.TestCase):
+    def setUp(self):
+        if _unbuilt() or not (STATIC / "rss.xml").exists():
+            self.skipTest("rss.xml not built")
+
+    def test_rss_parses_and_links_to_site(self):
+        root = ET.parse(STATIC / "rss.xml").getroot()
+        link = root.find("./channel/link")
+        self.assertIsNotNone(link, "rss has no <channel><link>")
+        self.assertEqual(_norm_url(link.text), _norm_url(SITE))
+
+    def test_rss_item_count_matches_non_draft_articles(self):
+        root = ET.parse(STATIC / "rss.xml").getroot()
+        items = root.findall("./channel/item")
+        self.assertEqual(len(items), _non_draft_article_count(),
+                         "rss item count != number of non-draft Learn articles")
+        for it in items:
+            link = it.find("link")
+            self.assertIsNotNone(link, "rss item has no <link>")
+            self.assertTrue(link.text.startswith(SITE + "/learn/"),
+                            f"rss item link not a /learn/ URL: {link.text}")
+
+
+# ------------------------------------------------------------------------------------------------
+# PR3 — the Learn content section. These read the BUILT webapp/static/learn/** and db/sggs.sqlite
+# (skip cleanly if unbuilt / no DB) plus the tracked Learn source, and enforce that every quoted
+# line is verbatim, declared, cited, labelled, and that the copy stays honest.
+# ------------------------------------------------------------------------------------------------
+LEARN_MDX_DIR = FRONTEND / "src" / "content" / "learn"
+QUOTES_JSON = FRONTEND / "src" / "generated" / "quotes.json"
+DB = ROOT / "db" / "sggs.sqlite"
+
+_VERSE_P = re.compile(r'<p class="verse gm" lang="pa" data-line-id="(\d+)"[^>]*>([^<]*)</p>')
+_FIGURE = re.compile(
+    r'<figure class="verse-fig" data-line-id="(\d+)"[^>]*>.*?'
+    r'<figcaption class="cite"[^>]*>([^<]*)</figcaption>', re.S)
+_LD_JSON = re.compile(r'<script type="application/ld\+json"[^>]*>(.*?)</script>', re.S)
+
+
+def _learn_articles():
+    """(route, html) for every built Learn ARTICLE page (excludes the /learn index)."""
+    base = STATIC / "learn"
+    if not base.exists():
+        return
+    for p in sorted(base.rglob("index.html")):
+        if p.parent.name == "learn":          # the /learn index itself, not an article
+            continue
+        yield "/learn/" + p.parent.name, p.read_text(encoding="utf-8")
+
+
+def _all_learn_html():
+    """html of every built Learn page, index included."""
+    base = STATIC / "learn"
+    if not base.exists():
+        return
+    for p in sorted(base.rglob("index.html")):
+        yield p.read_text(encoding="utf-8")
+
+
+def _non_draft_article_count():
+    n = 0
+    for mdx in LEARN_MDX_DIR.glob("*.mdx"):
+        m = re.search(r"(?ms)^---\s*\n(.*?)\n---", mdx.read_text(encoding="utf-8"))
+        fm = m.group(1) if m else ""
+        if not re.search(r"(?m)^draft:\s*true\s*$", fm):
+            n += 1
+    return n
+
+
+def _iter_ld_objects(node):
+    """Yield every dict in a parsed JSON-LD payload (handles @graph / arrays / nesting)."""
+    if isinstance(node, dict):
+        yield node
+        for v in node.values():
+            yield from _iter_ld_objects(v)
+    elif isinstance(node, list):
+        for v in node:
+            yield from _iter_ld_objects(v)
+
+
+class LearnSection(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        cls.unbuilt = _unbuilt() or not (STATIC / "learn").exists()
+        cls.no_db = not (DB.exists() and DB.read_bytes()[:15] == b"SQLite format 3")
+        cls.conn = None if cls.no_db else sqlite3.connect(f"file:{DB}?mode=ro", uri=True)
+
+    def _need_built(self):
+        if self.unbuilt:
+            self.skipTest("webapp/static/learn not built (cd frontend && npm run build:deploy)")
+
+    def _need_db(self):
+        if self.no_db:
+            self.skipTest("db/sggs.sqlite not present (git lfs pull)")
+
+    def _db_line(self, lid):
+        return self.conn.execute(
+            "SELECT ang, gurmukhi FROM lines WHERE id=?", (lid,)).fetchone()
+
+    def test_quotes_verbatim(self):
+        self._need_built(); self._need_db()
+        quotes = json.loads(QUOTES_JSON.read_text(encoding="utf-8"))["quotes"]
+        seen = 0
+        for route, html in _learn_articles():
+            for m in _VERSE_P.finditer(html):
+                lid, shown = int(m.group(1)), m.group(2).strip()
+                row = self._db_line(lid)
+                self.assertIsNotNone(row, f"{route}: line id {lid} not in DB")
+                self.assertEqual(shown, row[1].strip(),
+                                 f"{route}: rendered verse id {lid} is not verbatim from db")
+                self.assertIn(str(lid), quotes, f"{route}: id {lid} missing from quotes.json")
+                self.assertEqual(quotes[str(lid)]["gurmukhi"].strip(), row[1].strip(),
+                                 f"quotes.json id {lid} gurmukhi != db")
+                seen += 1
+        self.assertGreater(seen, 0, "no rendered verses found in any Learn article")
+
+    def test_quotes_declared(self):
+        self._need_built()
+        quotes = json.loads(QUOTES_JSON.read_text(encoding="utf-8"))["quotes"]
+        for route, html in _learn_articles():
+            for lid in set(re.findall(r'data-line-id="(\d+)"', html)):
+                self.assertIn(lid, quotes, f"{route}: body data-line-id {lid} not in quotes.json")
+
+    def test_explanation_labelled(self):
+        self._need_built()
+        LABEL = "Explanation (interpretation, not scripture)"
+        for route, html in _learn_articles():
+            if 'class="verse gm"' in html:
+                self.assertIn(LABEL, html,
+                              f"{route}: quotes scripture but has no labelled Explanation")
+
+    def test_citation_format(self):
+        self._need_built(); self._need_db()
+        pat = re.compile(r"^Sri Guru Granth Sahib Ji · Ang (\d{1,4})")
+        seen = 0
+        for route, html in _learn_articles():
+            for m in _FIGURE.finditer(html):
+                lid, cite = int(m.group(1)), m.group(2).strip()
+                cm = pat.match(cite)
+                self.assertIsNotNone(cm, f"{route}: bad citation format: {cite!r}")
+                row = self._db_line(lid)
+                self.assertIsNotNone(row, f"{route}: line id {lid} not in DB")
+                self.assertEqual(int(cm.group(1)), row[0],
+                                 f"{route}: citation Ang for id {lid} != db Ang {row[0]}")
+                seen += 1
+        self.assertGreater(seen, 0, "no citations found in any Learn article")
+
+    def test_learn_honest_copy(self):
+        self._need_built()
+        for html in _all_learn_html():
+            stripped = re.sub(r"(?i)\bAI-generated\b", "", html)
+            self.assertNotRegex(stripped, r"\bAI\b", "Learn HTML mentions AI other than 'AI-generated'")
+            self.assertNotRegex(html, r"(?i)>[^<]*\bbeta\b", "Learn HTML says 'beta'")
+            self.assertNotRegex(html, r"(?i)\b(audio|kirtan|android)\b",
+                                "Learn HTML claims audio/kirtan/android")
+
+    def test_article_jsonld_valid(self):
+        self._need_built()
+        for route, html in _learn_articles():
+            blocks = _LD_JSON.findall(html)
+            self.assertTrue(blocks, f"{route}: no application/ld+json block")
+            objs = []
+            for b in blocks:
+                try:
+                    objs.extend(_iter_ld_objects(json.loads(b)))
+                except json.JSONDecodeError as e:
+                    self.fail(f"{route}: ld+json does not parse: {e}")
+            types = {o.get("@type") for o in objs}
+            self.assertIn("BreadcrumbList", types, f"{route}: no BreadcrumbList JSON-LD")
+            article = next((o for o in objs if o.get("@type") == "Article"), None)
+            self.assertIsNotNone(article, f"{route}: no Article JSON-LD")
+            self.assertTrue(article.get("headline"), f"{route}: Article missing headline")
+            self.assertTrue(article.get("datePublished"), f"{route}: Article missing datePublished")
+
+
+class ExternalRequestAllowlist(unittest.TestCase):
+    """The marketing page (and the JS it loads) may only reference an approved set of external
+    hosts, and the Vercel analytics loader must always sit behind the gurbanisoul.com hostname
+    guard — never an unconditional request."""
+
+    ALLOWED = {
+        "gurbanisoul.com", "unsplash.com", "apps.apple.com",
+        "github.com", "buttondown.com", "sggs-knowledge-base.onrender.com",
+        # JSON-LD vocabulary URI (@context / @type). It is a structured-data namespace, never a
+        # network request, so it does not widen the CSP connect-src.
+        "schema.org",
+    }
+
+    def setUp(self):
+        if _unbuilt():
+            self.skipTest("webapp/static not built")
+
+    def _marketing_sources(self):
+        index = STATIC / "index.html"
+        html = index.read_text(encoding="utf-8")
+        sources = [("index.html", html)]
+        for ref in re.findall(r'(?:src|href)="(/_astro/[^"]+\.js)"', html):
+            js = STATIC / ref.lstrip("/")
+            if js.is_file():
+                sources.append((ref, js.read_text(encoding="utf-8")))
+        return sources
+
+    def test_absolute_hosts_are_allowlisted(self):
+        bad = []
+        for name, text in self._marketing_sources():
+            for host in re.findall(r'https?://([a-z0-9.-]+)', text, re.I):
+                if host.lower() not in self.ALLOWED:
+                    bad.append(f"{name}: {host}")
+        self.assertEqual(bad, [], f"marketing references non-allowlisted host(s): {bad}")
+
+    def test_vercel_insights_is_hostname_guarded(self):
+        html = (STATIC / "index.html").read_text(encoding="utf-8").splitlines()
+        for i, line in enumerate(html):
+            if "_vercel/insights" in line:
+                window = " ".join(html[max(0, i - 1): i + 2])
+                self.assertIn("gurbanisoul.com", window,
+                              f"line {i+1}: /_vercel/insights is not beside a gurbanisoul.com guard")
+
+
+class SmartBannerConsistency(unittest.TestCase):
+    """If the App Store id or URL is set in site.ts, both must be, and APP_STORE_URL must end with
+    /id + APP_STORE_ID (so the Smart App Banner and the download link can never disagree)."""
+
+    def test_app_store_id_and_url_agree(self):
+        site = (FRONTEND / "src" / "site.ts").read_text(encoding="utf-8")
+        app_id = re.search(r'APP_STORE_ID\s*=\s*"([^"]*)"', site).group(1)
+        app_url = re.search(r'APP_STORE_URL\s*=\s*"([^"]*)"', site).group(1)
+        if not app_id and not app_url:
+            return
+        self.assertTrue(app_id and app_url, "one of APP_STORE_ID / APP_STORE_URL is set but not the other")
+        self.assertTrue(app_url.endswith("/id" + app_id),
+                        f"APP_STORE_URL {app_url!r} must end with /id{app_id}")
+
+
+class NoSecretsInFrontend(unittest.TestCase):
+    """No obvious secrets in tracked frontend source. (The newsletter form URL is a build-time
+    env var, `import.meta.env.PUBLIC_NEWSLETTER_FORM_URL`; that its VALUE — a buttondown.com URL —
+    never lands in src is enforced separately by NewsletterPrivacy.)"""
+
+    SECRET_PATTERNS = [
+        r"AKIA[0-9A-Z]{16}",                       # AWS access key id
+        r"AIza[0-9A-Za-z_\-]{35}",                 # Google API key
+        r"sk_live_[0-9A-Za-z]{16,}",               # Stripe secret
+        r"gh[pousr]_[0-9A-Za-z]{20,}",             # GitHub token
+        r"-----BEGIN (?:RSA |EC |OPENSSH )?PRIVATE KEY-----",
+    ]
+
+    def test_no_secret_patterns(self):
+        rx = re.compile("|".join(self.SECRET_PATTERNS))
+        offenders = []
+        src = FRONTEND / "src"
+        for p in src.rglob("*"):
+            if not p.is_file() or p.suffix in (".ttf", ".woff2", ".woff", ".png", ".jpg", ".jpeg", ".webp", ".avif"):
+                continue
+            if rx.search(p.read_text(encoding="utf-8", errors="ignore")):
+                offenders.append(str(p.relative_to(ROOT)))
+        self.assertEqual(offenders, [], f"possible secret/newsletter-URL literal in: {offenders}")
+
+
+class WebThemeMatchesTokens(unittest.TestCase):
+    """frontend/src/theme.ts hex values must equal the light/dark legs of docs/brand/tokens.json."""
+
+    # theme.ts key -> (tokens.json group, key)
+    MAP = {
+        "paper": ("surfaces", "paper"),
+        "paperWarm": ("surfaces", "paperWarm"),
+        "card": ("surfaces", "card"),
+        "accentFill": ("soul", "accentFill"),
+        "accent": ("soul", "accent"),
+        "accentText": ("soul", "accentText"),
+        "onAccent": ("soul", "onAccent"),
+    }
+
+    @staticmethod
+    def _leg(theme_ts, leg):
+        m = re.search(rf"{leg}:\s*\{{(.*?)\}}", theme_ts, re.S)
+        assert m, f"theme.ts has no {leg} block"
+        return dict(re.findall(r'(\w+):\s*"(#[0-9A-Fa-f]{6})"', m.group(1)))
+
+    def test_theme_ts_equals_tokens(self):
+        tokens = json.loads((ROOT / "docs/brand/tokens.json").read_text(encoding="utf-8"))
+        theme_ts = (FRONTEND / "src" / "theme.ts").read_text(encoding="utf-8")
+        light, dark = self._leg(theme_ts, "light"), self._leg(theme_ts, "dark")
+        for key, (grp, tkey) in self.MAP.items():
+            legs = tokens[grp][tkey]
+            self.assertEqual(light[key].upper(), legs[0].upper(), f"theme.ts light.{key} != tokens {grp}.{tkey}[0]")
+            self.assertEqual(dark[key].upper(), legs[1].upper(), f"theme.ts dark.{key} != tokens {grp}.{tkey}[1]")
+
+
+class JsonLdInvariants(unittest.TestCase):
+    """Every JSON-LD block in the built HTML parses, and the landing + /support carry the expected,
+    self-consistent structured-data types (PR4)."""
+
+    def setUp(self):
+        if _unbuilt():
+            self.skipTest("webapp/static not built (cd frontend && npm run build:deploy)")
+
+    def _page_html(self, route):
+        for r, path in _built_pages():
+            if r == route:
+                return path.read_text(encoding="utf-8")
+        self.fail(f"built page for route {route!r} not found")
+
+    def _ld_objects(self, html):
+        objs = []
+        for block in _LD_JSON.findall(html):
+            try:
+                objs.extend(_iter_ld_objects(json.loads(block)))
+            except json.JSONDecodeError as e:
+                self.fail(f"ld+json does not parse: {e}")
+        return objs
+
+    def test_all_ldjson_parses_everywhere(self):
+        for route, path in _built_pages():
+            html = path.read_text(encoding="utf-8")
+            for block in _LD_JSON.findall(html):
+                try:
+                    json.loads(block)
+                except json.JSONDecodeError as e:
+                    self.fail(f"{route}: ld+json does not parse: {e}")
+
+    def test_landing_has_org_website_and_software_application(self):
+        objs = self._ld_objects(self._page_html("/"))
+        types = [o.get("@type") for o in objs]
+        self.assertIn("Organization", types, "landing missing Organization JSON-LD")
+
+        website = next((o for o in objs if o.get("@type") == "WebSite"), None)
+        self.assertIsNotNone(website, "landing missing WebSite JSON-LD")
+        action = website.get("potentialAction") or {}
+        self.assertEqual(action.get("@type"), "SearchAction", "WebSite has no SearchAction")
+        target = action.get("target", "")
+        host = re.match(r"https?://([^/]+)/", target)
+        self.assertIsNotNone(host, f"SearchAction target is not an absolute URL: {target!r}")
+        canonical_host = SITE.split("://", 1)[1]
+        self.assertEqual(host.group(1), canonical_host,
+                         f"SearchAction target host {host.group(1)!r} != canonical {canonical_host!r}")
+
+        app = next((o for o in objs if o.get("@type") == "SoftwareApplication"), None)
+        self.assertIsNotNone(app, "landing missing SoftwareApplication JSON-LD")
+        self.assertEqual((app.get("offers") or {}).get("price"), "0",
+                         "SoftwareApplication offers.price must be \"0\"")
+        self.assertNotIn("aggregateRating", app,
+                         "SoftwareApplication must not carry a fabricated aggregateRating")
+
+    def test_support_faqpage_questions_are_visible_h4s(self):
+        html = self._page_html("/support")
+        objs = self._ld_objects(html)
+        faq = next((o for o in objs if o.get("@type") == "FAQPage"), None)
+        self.assertIsNotNone(faq, "/support missing FAQPage JSON-LD")
+        questions = [q.get("name", "") for q in faq.get("mainEntity", [])
+                     if q.get("@type") == "Question"]
+        self.assertTrue(questions, "FAQPage has no Question entries")
+        # Visible <h4> text on the page (tags stripped, entities normalised for the compare).
+        h4s = [re.sub(r"<[^>]+>", "", m).strip()
+               for m in re.findall(r"<h4[^>]*>(.*?)</h4>", html, re.S)]
+        import html as _htmlmod
+        h4_norm = {_htmlmod.unescape(t) for t in h4s}
+        for q in questions:
+            self.assertIn(_htmlmod.unescape(q), h4_norm,
+                          f"FAQPage question not present as a visible <h4>: {q!r}")
+
+
+class NewsletterPrivacy(unittest.TestCase):
+    """The newsletter is env-gated and privacy-safe: the Buttondown URL is never a literal in src,
+    and with the env var unset (CI/local/this build) the built static carries no buttondown.com
+    reference and no newsletter <form>."""
+
+    def test_no_buttondown_value_in_src(self):
+        src = FRONTEND / "src"
+        offenders = []
+        for p in src.rglob("*"):
+            if not p.is_file() or p.suffix in (".ttf", ".woff2", ".woff", ".png", ".jpg", ".jpeg", ".webp", ".avif"):
+                continue
+            if "buttondown.com" in p.read_text(encoding="utf-8", errors="ignore"):
+                offenders.append(str(p.relative_to(ROOT)))
+        self.assertEqual(offenders, [], f"buttondown.com literal in tracked src: {offenders}")
+
+    def test_built_static_has_no_newsletter_when_env_unset(self):
+        if _unbuilt():
+            self.skipTest("webapp/static not built")
+        for _, path in _built_pages():
+            html = path.read_text(encoding="utf-8")
+            self.assertNotIn("buttondown.com", html,
+                             f"{path.name}: buttondown.com in built HTML (env should be unset)")
+            self.assertNotRegex(html, r'<form[^>]*class="[^"]*\bnewsletter\b',
+                                f"{path.name}: a newsletter <form> is in the built HTML")
 
 
 if __name__ == "__main__":

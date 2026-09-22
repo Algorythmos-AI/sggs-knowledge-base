@@ -66,14 +66,26 @@ gh release create vX.Y.Z --repo Algorythmos-AI/sggs-knowledge-base --title "vX.Y
 Never tag before a verified deploy; never "fix" a deploy by pushing to main directly or deploying
 by hand from a dirty tree (a manual hotfix is only for a pipeline outage — see runbooks/deploy.md).
 
-## 6. iOS build (only when this release ships app changes — macOS, human)
-The web/API release above does not build the iOS app. When the same version goes to TestFlight,
-after `main` is tagged:
+## 6. iOS build — EVERY release (one-number policy, macOS, human)
+The web/API release above does not build the iOS app, but the App Store binary must carry the **same
+number** — so **every** release re-archives and uploads iOS `X.Y.Z (1)` from the tag, even a web-only
+change (`CLAUDE.md` "Versioning convention"). The archive script refuses a `channel=appstore` upload
+whose HEAD is not on `main` and tagged `vX.Y.Z`, so do this **after** step 5. Build from a detached
+worktree at the tag:
 ```bash
-make testflight-next                                   # prints the next build number for this version
-make testflight TEAM_ID=<Team ID> BUILD=<next> UPLOAD=1 # gates → archive → upload → records the ledger
-git add ios/testflight-builds.json && git commit -m "ios: record TestFlight <version> (<next>)"
+git worktree add --detach <scratch>/wt-ios vX.Y.Z
+make testflight-next                                                    # prints the next build (=1 for a new version)
+make testflight TEAM_ID=<Team ID> BUILD=1 CHANNEL=appstore UPLOAD=1     # gates → archive → upload → records the ledger
+git add ios/testflight-builds.json && git commit -m "chore(ios): record App Store upload X.Y.Z (1)"  # open as a PR into integration
 ```
-The script refuses a reused build number or a marketing-version downgrade *before* archiving, proves
-the version/build/DB-hash inside the `.app`, and appends the upload to `ios/testflight-builds.json`.
-`DEVELOPMENT_TEAM` in `project.yml` stays empty (passed on the command line); default profile `public`.
+The script refuses a reused build number, a marketing-version downgrade, or (for `appstore`) an
+untagged/off-`main` HEAD *before* archiving; it proves the version/build/DB-hash inside the `.app`,
+and appends the upload to `ios/testflight-builds.json`. `DEVELOPMENT_TEAM` stays empty (passed on the
+command line); default profile `public`. The upload is outward-facing — the **owner** runs the
+`UPLOAD=1` line unless they already asked for it.
+
+## 7. Confirm the release is COMPLETE (all three surfaces agree)
+```bash
+python3 scripts/release/check_release_complete.py X.Y.Z    # prod web+API at the tag commit AND ledger appstore X.Y.Z (1) from it
+```
+Only when this passes is the release done. (Equivalent: `verify_prod.py --version X.Y.Z --ios`.)

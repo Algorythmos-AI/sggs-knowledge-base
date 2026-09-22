@@ -60,7 +60,7 @@ jobs:
     environment: testflight
     timeout-minutes: 90
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           fetch-depth: 0   # the archive script proves HEAD is on origin/integration or origin/main
       - uses: ./.github/actions/lfs-db
@@ -116,7 +116,7 @@ jobs:
           } >> "$GITHUB_STEP_SUMMARY"
       - name: Upload the candidate record (append it to ios/testflight-builds.json)
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: SGGS-candidate-build-${{ inputs.build_number }}
           path: ios/App/build/candidate-*.json
@@ -124,7 +124,7 @@ jobs:
           retention-days: 90
       - name: Keep the .ipa when not uploading
         if: ${{ !inputs.upload }}
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: SGGS-ipa-build-${{ inputs.build_number }}
           path: ios/App/build/export-*/*.ipa

@@ -2,8 +2,15 @@
 // Base.astro — the shared MPA shell: head, header (with theme toggle), nav, footer,
 // the shared composition modal (#panel) + toast, and the global core/panel scripts.
 import '../styles/global.css';
-export interface Props { title?: string; }
-const { title = 'ੴ Sri Guru Granth Sahib Ji — Knowledge Base' } = Astro.props;
+import Seo from '../components/Seo.astro';
+import { normPath } from '../routes';
+export interface Props { title?: string; description?: string; }
+const {
+  title = 'ੴ Sri Guru Granth Sahib Ji — Knowledge Base',
+  description = 'Study Sri Guru Granth Sahib Ji online: all 1430 Angs in verbatim Gurmukhi, cited by Ang, searchable by word, sound, first letters and theme.',
+} = Astro.props;
+// Canonical/OG derive from the page's own route (KB pages resolve to the knowledge-base OG card).
+const path = normPath(Astro.url.pathname);
 ---
 <!DOCTYPE html>
 <html lang="en">
@@ -11,6 +18,7 @@ const { title = 'ੴ Sri Guru Granth Sahib Ji — Knowledge Base' } = Astro.prop
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=5, user-scalable=yes" />
   <title>{title}</title>
+  <Seo title={title} description={description} path={path} />
   <!-- Resolve the theme before first paint (no flash). Inline + un-bundled on purpose. -->
   <script is:inline>
     (function () {

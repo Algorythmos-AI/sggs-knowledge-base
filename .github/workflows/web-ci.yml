@@ -12,9 +12,9 @@ jobs:
   python:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - uses: ./.github/actions/lfs-db
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@v6
         with:
           python-version-file: ".python-version"
       - name: Ruff (bug-only lint gate)
@@ -48,7 +48,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - uses: ./.github/actions/lfs-db
       - name: Build the production API image
         run: docker build -f webapp/Dockerfile --build-arg RENDER_GIT_COMMIT="$GITHUB_SHA" -t sggs-api:ci .
@@ -63,8 +63,8 @@ jobs:
   frontend:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
         with:
           node-version-file: ".nvmrc"
           cache: npm

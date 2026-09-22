@@ -255,5 +255,18 @@ class UploadProvenance(unittest.TestCase):
         self.assertIn("--extra parity app", code)
 
 
+class AppStoreTagProvenance(unittest.TestCase):
+    """One-number policy: a channel=appstore upload must build from the release tag on main,
+    so the ledger's source_commit is always the commit web+API serve. Rehearsals opt out."""
+
+    def test_appstore_upload_requires_the_release_tag(self):
+        code = SCRIPT.read_text()
+        self.assertIn('git describe --exact-match --tags HEAD', code)
+        self.assertIn('= "v$VERSION"', code)
+        self.assertIn("SGGS_ALLOW_UNTAGGED", code)
+        # Guarded by the appstore channel, not applied to TestFlight builds.
+        self.assertIn('if [ "$CHANNEL" = appstore ] && [ "${SGGS_ALLOW_UNTAGGED:-0}" != 1 ]; then', code)
+
+
 if __name__ == "__main__":
     unittest.main()

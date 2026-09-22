@@ -1,0 +1,23 @@
+---
+// Explanation.astro — wraps interpretive prose about a quote. Per Answer-Protocol §3, any meaning
+// or teaching drawn from scripture must be visibly labelled as interpretation, not scripture. The
+// label text is load-bearing (the LearnSection gate asserts its exact string).
+---
+<aside class="explain">
+  <p class="explain-label">Explanation (interpretation, not scripture)</p>
+  <div class="explain-body"><slot /></div>
+</aside>
+
+<style>
+  .explain {
+    margin: 28px 0; padding: 18px 20px; border: 1px solid var(--line);
+    border-radius: 12px; background: var(--paper-2);
+  }
+  .explain-label {
+    margin: 0 0 8px; font-size: 12.5px; font-weight: 700; letter-spacing: .04em;
+    color: var(--accent-text); text-transform: none;
+  }
+  .explain-body { color: var(--ink-soft); font-size: 15.5px; }
+  .explain-body :global(p) { margin: 0 0 12px; }
+  .explain-body :global(p:last-child) { margin-bottom: 0; }
+</style>

@@ -1,0 +1,69 @@
+{
+  "_db_sha256": "30739ee5bc45bee29cc7ec4b79814bd370804e9916c87999998f7a96e2c1317f",
+  "quotes": {
+    "1": {
+      "ang": 1,
+      "line_no": 1,
+      "raag": null,
+      "author": null,
+      "is_header": true,
+      "gurmukhi": "ੴ ਸਤਿ ਨਾਮੁ ਕਰਤਾ ਪੁਰਖੁ ਨਿਰਭਉ ਨਿਰਵੈਰੁ ਅਕਾਲ ਮੂਰਤਿ ਅਜੂਨੀ ਸੈਭੰ ਗੁਰ ਪ੍ਰਸਾਦਿ ॥"
+    },
+    "3": {
+      "ang": 1,
+      "line_no": 3,
+      "raag": null,
+      "author": null,
+      "is_header": false,
+      "gurmukhi": "ਆਦਿ ਸਚੁ ਜੁਗਾਦਿ ਸਚੁ ॥"
+    },
+    "380": {
+      "ang": 8,
+      "line_no": 2,
+      "raag": null,
+      "author": null,
+      "is_header": false,
+      "gurmukhi": "ਪਵਣੁ ਗੁਰੂ ਪਾਣੀ ਪਿਤਾ ਮਾਤਾ ਧਰਤਿ ਮਹਤੁ ॥"
+    },
+    "512": {
+      "ang": 12,
+      "line_no": 16,
+      "raag": "ਆਸਾ",
+      "author": "Guru Ram Das Ji (M4)",
+      "is_header": false,
+      "gurmukhi": "ਤੂ ਆਪੇ ਕਰਤਾ ਤੇਰਾ ਕੀਆ ਸਭੁ ਹੋਇ ॥"
+    },
+    "591": {
+      "ang": 14,
+      "line_no": 2,
+      "raag": "ਸਿਰੀਰਾਗੁ",
+      "author": "Guru Nanak Dev Ji (M1)",
+      "is_header": true,
+      "gurmukhi": "ਰਾਗੁ ਸਿਰੀਰਾਗੁ ਮਹਲਾ ਪਹਿਲਾ ੧ ਘਰੁ ੧ ॥"
+    },
+    "592": {
+      "ang": 14,
+      "line_no": 3,
+      "raag": "ਸਿਰੀਰਾਗੁ",
+      "author": "Guru Nanak Dev Ji (M1)",
+      "is_header": false,
+      "gurmukhi": "ਮੋਤੀ ਤ ਮੰਦਰ ਊਸਰਹਿ ਰਤਨੀ ਤ ਹੋਹਿ ਜੜਾਉ ॥"
+    },
+    "39335": {
+      "ang": 917,
+      "line_no": 3,
+      "raag": "ਰਾਮਕਲੀ",
+      "author": "Guru Amar Das Ji (M3)",
+      "is_header": false,
+      "gurmukhi": "ਅਨੰਦੁ ਭਇਆ ਮੇਰੀ ਮਾਏ ਸਤਿਗੁਰੂ ਮੈ ਪਾਇਆ ॥"
+    },
+    "60587": {
+      "ang": 1429,
+      "line_no": 2,
+      "raag": null,
+      "author": "Guru Arjan Dev Ji (M5)",
+      "is_header": false,
+      "gurmukhi": "ਥਾਲ ਵਿਚਿ ਤਿੰਨਿ ਵਸਤੂ ਪਈਓ ਸਤੁ ਸੰਤੋਖੁ ਵੀਚਾਰੋ ॥"
+    }
+  }
+}

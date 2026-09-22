@@ -1,24 +1,80 @@
 ---
 import { Picture } from 'astro:assets';
-import Landing from '../layouts/Landing.astro';
-import { APP_STORE_URL } from '../site.ts';
+import Marketing from '../layouts/Marketing.astro';
+import MarketingNav from '../components/MarketingNav.astro';
+import DeviceFrame from '../components/DeviceFrame.astro';
+import Newsletter from '../components/Newsletter.astro';
+import JsonLd from '../components/JsonLd.astro';
+import { SITE_URL, APP_STORE_URL, SUPPORT_EMAIL } from '../site.ts';
 import verse from '../generated/landing-verse.json';
-import heroImg from '../assets/landing/harmandir-sahib-reflection.jpg';
-import goldenImg from '../assets/landing/harmandir-sahib-golden.jpg';
+import heroImg from '../assets/landing/harmandir-sahib-sunset.jpg';
+import readerShot from '../assets/app/reader.png';
 
 const desc = "Gurbani Soul is a quiet, exact companion to Sri Guru Granth Sahib Ji for iPhone and iPad — the complete Granth, verbatim and cited by Ang, fully offline, never AI-generated.";
 
-const features = [
-  { t: "Read the whole Granth", d: "All 1,430 Angs in a clear Gurmukhi typeface. Turn pages, jump to any Ang, resume where you left off. Every composition opens with its printed heading." },
-  { t: "Search how you remember", d: "By word, by how it sounds in Roman letters, by first letters the way Gurbani is recalled, or by theme across the whole text." },
-  { t: "Nitnem, with gentle reminders", d: "The daily banis by time of day, your place kept in each, and a quiet record of the days you read. Optional reminders you set yourself." },
-  { t: "Hukam & the Raag Clock", d: "Draw a complete Hukam any time. See which raags belong to the current watch of the day, with an optional solar mode." },
-  { t: "Widgets & Live Activity", d: "The current watch, the last Hukam and today's Nitnem on your Home Screen; an optional reading Live Activity that never shows a verse." },
-  { t: "Verbatim by construction", d: "The text is reproduced character-for-character from the source edition and checked against a SHA-256 checksum. Nothing is corrected, normalised, or invented." },
+// The four places the nav leads, shown as a compact overview grid (hairline cards, not boxes).
+const overview = [
+  { href: "/features", eyebrow: "Features", title: "Everything, on your device", body: "The whole Granth, search the way you remember, Nitnem with your place kept, Hukam, widgets and Live Activity." },
+  { href: "/watch", eyebrow: "The watch", title: "The Raag Clock", body: "See which raags belong to the current watch of the day — eight pahars, with an optional solar mode." },
+  { href: "/learn", eyebrow: "Learn", title: "Understanding the Granth", body: "Short, plain explanations — what a Hukamnama is, how to read Nitnem, the raags and the watches of the day." },
+  { href: "/search", eyebrow: "On the web", title: "Knowledge Base", body: "Prefer the browser? The same verified text and study tools live on the web, cited by Ang." },
 ];
+
+// A short trust strip — the same facts as the app's privacy stance, kept honest and lint-clean.
+const trustFacts = [
+  "Works in Airplane Mode",
+  "No account, no tracking",
+  "Verbatim, cited by Ang",
+  "Data Not Collected",
+];
+
+// --- Structured data (JSON-LD) — emitted via <JsonLd>, which escapes "<". ---
+// One Organization node, referenced by @id from WebSite and SoftwareApplication so search engines
+// resolve them to the same publisher. installUrl/url are added only once the App Store URL exists.
+const orgId = `${SITE_URL}/#org`;
+const organization = {
+  "@context": "https://schema.org",
+  "@type": "Organization",
+  "@id": orgId,
+  name: "Algorythmos Pty Ltd",
+  url: SITE_URL,
+  logo: `${SITE_URL}/icons/icon-512.png`,
+  contactPoint: {
+    "@type": "ContactPoint",
+    contactType: "customer support",
+    email: SUPPORT_EMAIL,
+  },
+};
+const website = {
+  "@context": "https://schema.org",
+  "@type": "WebSite",
+  url: SITE_URL,
+  name: "Gurbani Soul",
+  publisher: { "@id": orgId },
+  potentialAction: {
+    "@type": "SearchAction",
+    target: `${SITE_URL}/search?q={search_term_string}`,
+    "query-input": "required name=search_term_string",
+  },
+};
+const softwareApplication = {
+  "@context": "https://schema.org",
+  "@type": "SoftwareApplication",
+  name: "Gurbani Soul",
+  applicationCategory: "ReferenceApplication",
+  operatingSystem: "iOS",
+  offers: { "@type": "Offer", price: "0", priceCurrency: "USD" },
+  publisher: { "@id": orgId },
+  ...(APP_STORE_URL ? { url: APP_STORE_URL, installUrl: APP_STORE_URL } : {}),
+};
 ---
-<Landing title="Gurbani Soul — Sri Guru Granth Sahib Ji, verbatim & offline" description={desc} path="/">
-  <!-- Forward legacy /?q=… search bookmarks to the Knowledge Base search page. -->
+<Marketing title="Gurbani Soul — Sri Guru Granth Sahib Ji, verbatim & offline" description={desc} path="/">
+  <JsonLd slot="head" data={organization} />
+  <JsonLd slot="head" data={website} />
+  <JsonLd slot="head" data={softwareApplication} />
+
+  <!-- Forward legacy /?q=… search bookmarks to the Knowledge Base search page (first load; the
+       client-router case is handled in landing.ts astro:after-swap). -->
   <script is:inline>
     (function () {
       try {
@@ -28,128 +84,190 @@ const features = [
     })();
   </script>
 
-  <!-- HERO -->
-  <section class="hero">
+  <MarketingNav />
+
+  <!-- (b) HERO — unchanged: copy left, floating iPhone right -->
+  <section class="hero" id="top">
     <div class="hero-media">
-      <Picture src={heroImg} formats={["avif","webp"]} widths={[480,800,1200,1600]}
-        sizes="100vw" alt="Sri Harmandir Sahib reflected in the sarovar at Amritsar" loading="eager" fetchpriority="high"
-        pictureAttributes={{ class: "hero-pic" }} />
+      <Picture src={heroImg} formats={['avif','webp']} widths={[640,960,1280,1600,1920]}
+        sizes="100vw" quality={62} loading="eager" fetchpriority="high"
+        alt="Sri Harmandir Sahib at sunset — artistic rendering"
+        pictureAttributes={{ class: 'hero-pic' }} />
       <div class="hero-scrim"></div>
     </div>
     <div class="wrap hero-in">
-      <div class="onkar gm" aria-hidden="true">ੴ</div>
-      <h1>Gurbani Soul</h1>
-      <p class="lede">A quiet, exact companion to Sri Guru Granth Sahib Ji.<br/>Verbatim, cited by Ang, never invented.</p>
-      <div class="cta">
-        {APP_STORE_URL
-          ? <a class="btn" href={APP_STORE_URL} aria-label="Download Gurbani Soul on the App Store">Download on the App Store</a>
-          : <span class="soon" data-app-store="coming-soon">Coming soon to the App Store</span>}
-        <a class="btn ghost" href="/search">Open the Knowledge Base</a>
+      <div class="hero-grid">
+        <div class="hero-copy">
+          <p class="eyebrow" style="color:#f4d38a">For iPhone and iPad</p>
+          <h1>Gurbani Soul</h1>
+          <p class="hero-lede">A quiet, exact companion to Sri Guru Granth Sahib Ji. Verbatim, cited by Ang, never invented.</p>
+          <div class="hero-cta">
+            {APP_STORE_URL
+              ? <a class="pill" href={APP_STORE_URL} aria-label="Get Gurbani Soul on the App Store">Download on the App Store</a>
+              : <span class="pill soon" data-app-store="coming-soon">Coming soon to the App Store</span>}
+            <a class="hero-ghost" href="/search">Open the Knowledge Base</a>
+          </div>
+          <p class="hero-fine">Fully offline · no account · no tracking</p>
+        </div>
+        <div class="hero-device" aria-hidden="false">
+          <DeviceFrame src={readerShot} alt="Gurbani Soul on iPhone, open at Ang 1 in Sant Lipi" />
+        </div>
       </div>
-      <p class="sub">iPhone &amp; iPad · fully offline · no account · no tracking</p>
     </div>
   </section>
 
-  <!-- THE VERSE -->
-  <section class="band">
-    <div class="wrap verse-in">
+  <!-- (c) THE VERSE -->
+  <section class="verse-band">
+    <div class="wrap verse-in reveal">
+      <hr class="gold-rule" aria-hidden="true" />
       <p class="verse gm" lang="pa">{verse.gurmukhi}</p>
       <p class="cite">Sri Guru Granth Sahib Ji · Ang {verse.ang}</p>
       <p class="verse-note">Shown verbatim from the source edition. The app verifies the bundled scripture against a SHA-256 checksum when it is installed or updated, and refuses to show the text rather than risk showing it altered.</p>
     </div>
   </section>
 
-  <!-- FEATURES -->
-  <section class="wrap feats">
-    <h2>Everything, on your device</h2>
-    <div class="grid">
-      {features.map((f) => (
-        <div class="feat">
-          <h3>{f.t}</h3>
-          <p>{f.d}</p>
-        </div>
-      ))}
+  <!-- (d) OVERVIEW — the four places the nav leads -->
+  <section class="section">
+    <div class="wrap">
+      <div class="ov-head reveal">
+        <p class="eyebrow">Explore</p>
+        <h2>A quiet place for the whole Granth</h2>
+        <p class="muted ov-intro">Read, search and keep your Nitnem on your device — or explore the same verified text on the web.</p>
+      </div>
+      <ul class="ov-grid">
+        {overview.map((c) => (
+          <li class="ov-card reveal">
+            <a href={c.href}>
+              <p class="eyebrow">{c.eyebrow}</p>
+              <h3>{c.title}</h3>
+              <p class="ov-body">{c.body}</p>
+              <span class="ov-more" aria-hidden="true">Explore &rarr;</span>
+            </a>
+          </li>
+        ))}
+      </ul>
     </div>
   </section>
 
-  <!-- PRIVATE BY DESIGN -->
-  <section class="band alt">
-    <div class="wrap priv">
-      <h2>Private by design</h2>
-      <p>Gurbani Soul makes no network connection — it works entirely in Airplane Mode. No account, no analytics, no advertising, no tracking, and no third-party SDKs. Everything you do stays on your device. Its App Store privacy label is <strong>“Data Not Collected.”</strong></p>
-      <p><a href="/privacy">Read the privacy policy →</a></p>
+  <!-- (e) PRIVACY TRUST STRIP -->
+  <section class="section priv-band" id="privacy-strip" data-theme="dark">
+    <div class="wrap priv-in reveal">
+      <p class="eyebrow">Private by design</p>
+      <h2 class="priv-h">Nothing leaves your device.</h2>
+      <ul class="factrail priv-facts">
+        {trustFacts.map((f) => <li>{f}</li>)}
+      </ul>
+      <p class="priv-link"><a href="/privacy">Read the privacy policy</a></p>
     </div>
   </section>
 
-  <!-- KNOWLEDGE BASE -->
-  <section class="wrap kb">
-    <div class="kb-card">
-      <div class="kb-media">
-        <Picture src={goldenImg} formats={["avif","webp"]} widths={[480,800,1200]}
-          sizes="(max-width: 800px) 100vw, 480px" alt="Sri Harmandir Sahib, Amritsar" loading="lazy" />
+  <!-- (f) LAUNCH NOTICE — env-gated; renders nothing unless PUBLIC_NEWSLETTER_FORM_URL is set -->
+  <Newsletter />
+
+  <!-- (g) FOOTER -->
+  <footer class="foot">
+    <div class="wrap foot-in">
+      <div>
+        <div class="foot-brand">Gurbani Soul</div>
+        <div>Built by Algorythmos · Sri Guru Granth Sahib Ji is shown verbatim from the source edition, cited by Ang.</div>
       </div>
-      <div class="kb-body">
-        <h2>The Knowledge Base</h2>
-        <p>Prefer the browser? The same verified text and search, plus study tools — reader, themes, lineage, insights, the raag clock — live on the web.</p>
-        <a class="btn ghost" href="/search">Explore the Knowledge Base</a>
-      </div>
+      <nav aria-label="Footer" class="foot-nav">
+        <a href="/features">Features</a>
+        <a href="/watch">The watch</a>
+        <a href="/search">Knowledge Base</a>
+        <a href="/learn">Learn</a>
+        <a href="/support">Support</a>
+        <a href="/privacy">Privacy</a>
+        <a href="/rss.xml">RSS</a>
+      </nav>
     </div>
-  </section>
+    <div class="wrap credits">
+      <p>Artwork: an artistic rendering of Sri Harmandir Sahib at sunset, made for Gurbani Soul.</p>
+      <p>Type: Sant Lipi and <a href="/fonts/OFL-SourceSerif4.txt">Source Serif 4</a> — <a href="/fonts/OFL.txt">SIL Open Font License</a>.</p>
+    </div>
+  </footer>
 
   <style>
-    .hero { position: relative; min-height: min(88vh, 760px); display: flex; align-items: flex-end; overflow: clip; }
-    .hero-media, .hero-media :global(.hero-pic), .hero-media :global(img) {
-      position: absolute; inset: 0; width: 100%; height: 100%;
+    #top { scroll-margin-top: 76px; }
+
+    /* (b) Hero */
+    .hero { position: relative; min-height: min(94svh, 860px); display: flex; align-items: center;
+      overflow: clip; margin-top: -66px; }
+    .hero-media, .hero-media :global(.hero-pic), .hero-media :global(img) { position: absolute; inset: 0; width: 100%; height: 100%; }
+    .hero-media { background: #17110a; }
+    .hero-media :global(img) { object-fit: cover; object-position: center 46%; }
+    .hero-scrim { position: absolute; inset: 0;
+      background:
+        radial-gradient(120% 90% at 18% 60%, rgba(15,10,5,.62) 0%, rgba(15,10,5,.28) 42%, transparent 72%),
+        linear-gradient(180deg, rgba(15,10,5,.44) 0%, rgba(15,10,5,.20) 34%, rgba(15,10,5,.72) 100%); }
+    .hero-in { position: relative; width: 100%; padding: 120px 20px 96px; }
+    .hero-grid { display: grid; grid-template-columns: 1fr; gap: 40px; align-items: center; }
+    .hero-copy { color: #fff; }
+    .hero-copy h1 { font-size: clamp(44px, 7.5vw, 92px); margin: 0 0 16px; color: #fff; line-height: 1.01; letter-spacing: -.02em; }
+    .hero-lede { font-family: var(--serif-display); font-size: clamp(18px, 2.6vw, 26px); line-height: 1.4;
+      max-width: 32ch; margin: 0 0 28px; color: #f3ead9; }
+    .hero-cta { display: flex; flex-wrap: wrap; gap: 14px 20px; align-items: center; }
+    .hero-cta .pill.soon { color: #fff; border-color: rgba(255,255,255,.6); }
+    .hero-ghost { color: #fff; text-decoration: none; font-weight: 600; font-size: 15.5px;
+      border-bottom: 1px solid rgba(255,255,255,.5); padding-bottom: 2px; }
+    .hero-fine { margin: 22px 0 0; color: #e6dcc9; font-size: 14px; }
+    /* Floating product shot fills the right of the hero on desktop; hidden on small screens
+       (the hero stays light on mobile; screenshots live on /features and /watch). */
+    .hero-device { display: none; }
+    .hero-device :global(.device) { width: min(340px, 90%); box-shadow: 0 40px 90px rgba(0,0,0,.5); }
+    @media (min-width: 980px) {
+      .hero-grid { grid-template-columns: 1.05fr 0.95fr; gap: 56px; }
+      .hero-device { display: flex; justify-content: center; position: relative; }
+      /* soft gold aura behind the phone — accentFill wash, well under the 14% ceiling */
+      .hero-device::before { content: ""; position: absolute; inset: -8% -6%; z-index: 0;
+        background: radial-gradient(60% 55% at 50% 42%, rgba(255,188,13,.13), transparent 70%); }
+      .hero-device :global(.device) { position: relative; z-index: 1; transform: rotate(-3deg); }
     }
-    .hero-media :global(img) { object-fit: cover; object-position: center 42%; }
-    .hero-media { background: #1a2b3a; }
-    .hero-scrim {
-      position: absolute; inset: 0;
-      background: linear-gradient(180deg, rgba(14,12,10,.28) 0%, rgba(14,12,10,.12) 38%, rgba(14,12,10,.72) 100%);
+    @media (min-width: 1200px) { .hero-device :global(.device) { width: 368px; } }
+
+    /* (c) Verse */
+    .verse-band { border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); background: var(--paper-2); }
+    .verse-in { padding: clamp(56px, 8vw, 96px) 20px; text-align: center; display: flex; flex-direction: column; align-items: center; }
+    .gold-rule { margin: 0 0 28px; }
+    .verse { font-size: clamp(21px, 3.2vw, 31px); line-height: 1.95; color: var(--ink); margin: 0; max-width: 24ch; }
+    .cite { margin: 20px 0 0; color: var(--accent-text); font-weight: 600; font-size: 14px; letter-spacing: .01em; }
+    .verse-note { margin: 18px auto 0; max-width: 58ch; color: var(--ink-soft); font-size: 14.5px; }
+
+    /* (d) Overview grid */
+    .ov-head { max-width: 46ch; margin: 0 0 clamp(28px, 4vw, 48px); }
+    .ov-head h2 { font-size: clamp(28px, 4.4vw, 44px); margin: 0 0 14px; }
+    .ov-intro { font-size: 16.5px; }
+    .ov-grid { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: 1fr; gap: 0; }
+    .ov-card { border-top: 1px solid var(--line); }
+    .ov-card:last-child { border-bottom: 1px solid var(--line); }
+    .ov-card a { display: flex; flex-direction: column; gap: 8px; padding: 26px 0; text-decoration: none; color: inherit; height: 100%; }
+    .ov-card .eyebrow { margin: 0; }
+    .ov-card h3 { font-size: clamp(20px, 2.6vw, 26px); margin: 0; color: var(--ink); }
+    .ov-card .ov-body { margin: 0; color: var(--ink-soft); font-size: 15.5px; max-width: 52ch; }
+    .ov-card .ov-more { margin-top: auto; padding-top: 6px; color: var(--accent-text); font-weight: 650; font-size: 14.5px; }
+    .ov-card a:hover h3 { text-decoration: underline; text-decoration-color: var(--accent); text-underline-offset: 3px; }
+    @media (min-width: 720px) {
+      .ov-grid { grid-template-columns: 1fr 1fr; column-gap: 48px; }
+      /* Hairline separators between the two columns as well as the rows. */
+      .ov-card a { padding-left: 0; padding-right: 0; }
     }
-    .hero-in { position: relative; padding: 40px 20px 56px; color: #fff; }
-    .onkar { font-size: 60px; line-height: 1; margin-bottom: 6px; color: #FFC72C;
-      text-shadow: 0 2px 24px rgba(0,0,0,.5); }
-    .hero-in h1 { font-size: clamp(40px, 8vw, 74px); margin: 0 0 10px; color: #fff;
-      text-shadow: 0 2px 30px rgba(0,0,0,.55); }
-    .lede { font-size: clamp(17px, 2.6vw, 22px); max-width: 34ch; margin: 0 0 22px; color: #f4efe6;
-      text-shadow: 0 1px 16px rgba(0,0,0,.6); }
-    .cta { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; }
-    .cta .btn.ghost { color: #fff; border-color: rgba(255,255,255,.55); background: rgba(0,0,0,.18); }
-    .soon { display: inline-flex; align-items: center; padding: 13px 22px; border-radius: 999px;
-      border: 1px dashed rgba(255,255,255,.6); color: #fff; font-weight: 650; }
-    .sub { margin: 16px 0 0; color: #e8e0d2; font-size: 14px; text-shadow: 0 1px 12px rgba(0,0,0,.6); }
-
-    .band { background: var(--paper-2); border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); }
-    .band.alt { background: var(--card); }
-    .verse-in { padding: 44px 20px; text-align: center; }
-    .verse { font-size: clamp(20px, 3.4vw, 30px); line-height: 1.9; color: var(--ink); margin: 0 auto; max-width: 22ch; }
-    .cite { margin: 14px 0 0; color: var(--accent-text); font-weight: 600; font-size: 14px; }
-    .verse-note { margin: 16px auto 0; max-width: 60ch; color: var(--ink-soft); font-size: 14.5px; }
-
-    .feats { padding: 56px 20px; }
-    .feats h2 { font-size: clamp(26px, 4vw, 34px); margin: 0 0 26px; }
-    .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 18px; }
-    .feat { background: var(--card); border: 1px solid var(--line); border-radius: 16px; padding: 22px; }
-    .feat h3 { font-size: 19px; margin: 0 0 8px; color: var(--ink); }
-    .feat p { margin: 0; color: var(--ink-soft); font-size: 15px; }
-
-    .priv { padding: 48px 20px; max-width: 68ch; }
-    .priv h2 { font-size: clamp(24px, 3.6vw, 30px); margin: 0 0 12px; }
-    .priv p { color: var(--ink-soft); font-size: 16px; }
-    .priv strong { color: var(--ink); }
-
-    .kb { padding: 48px 20px 64px; }
-    .kb-card { display: grid; grid-template-columns: 1fr; gap: 0; background: var(--card);
-      border: 1px solid var(--line); border-radius: 18px; overflow: hidden; }
-    .kb-media { position: relative; aspect-ratio: 16 / 9; background: #1a2b3a; }
-    .kb-media :global(img) { width: 100%; height: 100%; object-fit: cover; }
-    .kb-body { padding: 26px; }
-    .kb-body h2 { font-size: 24px; margin: 0 0 10px; }
-    .kb-body p { color: var(--ink-soft); margin: 0 0 18px; }
-    @media (min-width: 820px) {
-      .kb-card { grid-template-columns: 1.1fr 1fr; align-items: center; }
-      .kb-media { height: 100%; aspect-ratio: auto; min-height: 260px; }
+    @media (min-width: 1040px) {
+      .ov-grid { grid-template-columns: repeat(4, 1fr); column-gap: 40px; }
     }
+
+    /* (e) Privacy trust strip — warm-ink band even in light mode (data-theme="dark" scope) */
+    .priv-band { background: var(--paper); }
+    .priv-in { max-width: 62ch; }
+    .priv-h { font-size: clamp(28px, 5vw, 48px); margin: 0 0 22px; color: var(--ink); }
+    .priv-facts { margin: 0 0 22px; }
+    .priv-link { margin: 0; }
+    .priv-band a { color: var(--accent-text); }
+
+    /* (g) Footer */
+    .foot-in { padding-top: 44px; padding-bottom: 20px; display: flex; flex-wrap: wrap; gap: 16px 32px; align-items: baseline; justify-content: space-between; }
+    .foot-brand { font-family: var(--serif-display); font-size: 18px; color: var(--ink); }
+    .foot-nav { display: flex; gap: 18px; flex-wrap: wrap; }
+    .credits { padding-bottom: 40px; display: grid; gap: 4px; }
+    .credits p { margin: 0; }
   </style>
-</Landing>
+</Marketing>

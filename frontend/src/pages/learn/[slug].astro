@@ -1,0 +1,126 @@
+---
+import { getCollection, render } from "astro:content";
+import Marketing from "../../layouts/Marketing.astro";
+import MarketingNav from "../../components/MarketingNav.astro";
+import Breadcrumbs from "../../components/Breadcrumbs.astro";
+import JsonLd from "../../components/JsonLd.astro";
+import Verse from "../../components/Verse.astro";
+import Explanation from "../../components/Explanation.astro";
+import { SITE_URL, SUPPORT_EMAIL } from "../../site";
+import { LEARN_SLUGS } from "../../routes";
+
+export async function getStaticPaths() {
+  const entries = (await getCollection("learn")).filter((e) => !e.data.draft);
+  const order = new Map(LEARN_SLUGS.map((s, i) => [s, i]));
+  const ordered = [...entries].sort((a, b) => (order.get(a.id) ?? 0) - (order.get(b.id) ?? 0));
+  return ordered.map((entry, i) => ({
+    params: { slug: entry.id },
+    props: {
+      entry,
+      prev: ordered[i - 1] ?? null,
+      next: ordered[i + 1] ?? null,
+    },
+  }));
+}
+
+const { entry, prev, next } = Astro.props;
+const { Content } = await render(entry);
+const { title, description, pubDate, updatedDate, tags } = entry.data;
+
+const fmtDate = (d: Date) =>
+  d.toLocaleDateString("en-GB", { year: "numeric", month: "long", day: "numeric" });
+const iso = (d: Date) => d.toISOString().slice(0, 10);
+const canonical = new URL(`/learn/${entry.id}`, SITE_URL).href;
+const ogImage = `/og/learn-${entry.id}.png`;
+
+const articleJsonLd = {
+  "@context": "https://schema.org",
+  "@type": "Article",
+  headline: title,
+  description,
+  datePublished: iso(pubDate),
+  dateModified: iso(updatedDate ?? pubDate),
+  author: { "@type": "Organization", name: "Algorythmos" },
+  publisher: { "@type": "Organization", name: "Algorythmos" },
+  inLanguage: "en",
+  isAccessibleForFree: true,
+  image: new URL(ogImage, SITE_URL).href,
+  mainEntityOfPage: canonical,
+};
+---
+<Marketing title={`${title} — Gurbani Soul`} description={description} path={`/learn/${entry.id}`} ogImage={ogImage}>
+  <JsonLd slot="head" data={articleJsonLd} />
+  <MarketingNav overHero={false} />
+
+  <article class="learn-article">
+    <div class="wrap col">
+      <Breadcrumbs title={title} slug={entry.id} />
+
+      <header class="art-head">
+        <h1>{title}</h1>
+        <p class="art-meta">
+          <time datetime={iso(pubDate)}>{fmtDate(pubDate)}</time>
+          {updatedDate && <span>· updated {fmtDate(updatedDate)}</span>}
+          <span class="tags">{tags.map((t) => <span class="tag">{t}</span>)}</span>
+        </p>
+      </header>
+
+      <div class="prose">
+        <Content components={{ Verse, Explanation }} />
+      </div>
+
+      <nav class="art-nav" aria-label="More articles">
+        <a class="back" href="/learn">← Back to Learn</a>
+        <div class="prevnext">
+          {prev && <a href={`/learn/${prev.id}`} rel="prev">← {prev.data.title}</a>}
+          {next && <a href={`/learn/${next.id}`} rel="next">{next.data.title} →</a>}
+        </div>
+      </nav>
+    </div>
+  </article>
+
+  <footer class="foot">
+    <div class="wrap foot-in">
+      <div>
+        <div class="foot-brand">Gurbani Soul</div>
+        <div>Built by Algorythmos · Sri Guru Granth Sahib Ji is shown verbatim from the source edition, cited by Ang.</div>
+      </div>
+      <nav aria-label="Footer" class="foot-nav">
+        <a href="/">Home</a>
+        <a href="/learn">Learn</a>
+        <a href="/search">Knowledge Base</a>
+        <a href="/support">Support</a>
+        <a href="/privacy">Privacy</a>
+      </nav>
+    </div>
+    <div class="wrap credits">
+      <p>Questions or corrections? <a href="/support">Support</a> · {SUPPORT_EMAIL}</p>
+    </div>
+  </footer>
+
+  <style>
+    .learn-article { padding: clamp(88px, 11vw, 128px) 0 0; }
+    .col { max-width: 720px; }
+    .art-head { margin: 22px 0 8px; }
+    .art-head h1 { font-size: clamp(30px, 5vw, 46px); margin: 0 0 14px; }
+    .art-meta { margin: 0; display: flex; flex-wrap: wrap; gap: 8px 14px; align-items: center; font-size: 13.5px; color: var(--ink-soft); }
+    .art-meta .tags { display: inline-flex; flex-wrap: wrap; gap: 8px; }
+    .art-meta .tag { border: 1px solid var(--line); border-radius: 999px; padding: 3px 11px; font-size: 12px; color: var(--accent-text); }
+    .prose { margin: 28px 0 0; font-size: 17px; color: var(--ink); }
+    .prose :global(p) { margin: 0 0 18px; color: var(--ink); }
+    .prose :global(h2) { font-size: clamp(22px, 3vw, 28px); margin: 40px 0 14px; }
+    .prose :global(ul) { margin: 0 0 18px; padding-left: 22px; }
+    .prose :global(li) { margin: 0 0 8px; }
+    .prose :global(a) { color: var(--accent-text); }
+    .art-nav { margin: 48px 0; padding: 24px 0 0; border-top: 1px solid var(--line); display: grid; gap: 18px; }
+    .art-nav .back { font-weight: 650; text-decoration: none; }
+    .art-nav .prevnext { display: flex; flex-wrap: wrap; gap: 12px 28px; justify-content: space-between; font-size: 15px; }
+    .art-nav .prevnext a { text-decoration: none; }
+    .foot { margin-top: 40px; }
+    .foot-in { padding-top: 44px; padding-bottom: 20px; display: flex; flex-wrap: wrap; gap: 16px 32px; align-items: baseline; justify-content: space-between; }
+    .foot-brand { font-family: var(--serif-display); font-size: 18px; color: var(--ink); }
+    .foot-nav { display: flex; gap: 18px; flex-wrap: wrap; }
+    .credits { padding-bottom: 40px; }
+    .credits p { margin: 0; }
+  </style>
+</Marketing>

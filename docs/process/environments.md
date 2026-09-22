@@ -36,6 +36,14 @@ is needed:
 - `deploy-verify` CI curls `/api/health` and asserts `/api/meta.version` matches the
   branch's `APP_VERSION` after each deploy (catches a stale API).
 
+## Environment variables (Vercel)
+| Var | Scope | Purpose |
+|---|---|---|
+| `PUBLIC_NEWSLETTER_FORM_URL` | Production + Preview (unset in Development/CI/local) | Buttondown embed form endpoint for the landing's launch-notice sign-up. **Unset ⇒ the section, form and any Buttondown reference are absent from the built HTML.** Public POST endpoint, not a secret, but must never be committed (`NewsletterPrivacy` gate). See [runbook: newsletter](runbooks/newsletter.md). |
+
+The App Store Connect API-key secrets used by TestFlight live in **GitHub Environments**
+(`production`/`staging`), not Vercel — never echo a value; a pasted secret is a leaked secret.
+
 ## Rollback
 Web: Vercel Instant Rollback. API: Render redeploy of the previous image. Data:
 each GitHub Release attaches the DB manifest; restore from the tagged LFS object.

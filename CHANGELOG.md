@@ -3,6 +3,94 @@
 The format below (newest first) follows [Keep a Changelog](https://keepachangelog.com);
 entries prior to v1.1.0 are the project's original prose style and are preserved verbatim.
 
+## [1.3.4] — 2026-09-22 — gurbanisoul.com: a next-level marketing site
+
+The public site becomes a real, **multi-page** marketing property for Gurbani Soul — redesigned,
+SEO-ready, with a Learn section — while staying scripture-faithful (Gurmukhi-only on the web; every
+quoted line generated **verbatim** from the corpus and gate-checked). Web/presentation, docs and
+tests only; scripture, corpus and DB **byte-identical** to 1.3.3. Under the one-number policy,
+iOS **1.3.4 (1)** is re-archived at the same version with no app-code change.
+
+**Highlights**
+- **Soul-Gold redesign + accessible nav** — dark-first editorial design; sticky nav with a mobile
+  `<dialog>` menu (focus trap, Esc, scroll lock); theme toggle shared with the Knowledge Base.
+- **Multi-page structure** — Home (hero + verse + overview grid + trust strip), **/features**, and
+  **/watch** (the Raag Clock, properly composed with the live pahar/raags). Nav = real routes with
+  path-based active state; ClientRouter page transitions. The Knowledge Base keeps its own name/theme.
+- **Real hero + app screenshots** — a two-column hero on the owner's artistic rendering of Sri
+  Harmandir Sahib at sunset (no saroop in frame), with a floating iPhone showing the real Reader; the
+  device frames across the site use real public-profile screenshots.
+- **Learn** — 8 evergreen articles for reach; scripture quoted only via a component that renders the
+  verbatim DB line (build fails on drift), every explanation labelled per the Answer-Protocol. The
+  article explanations passed a **Granthi review** (2026-09-22).
+- **SEO / structured data / feeds** — canonical + Open Graph + `theme-color` + Smart App Banner
+  scaffold; generated sitemap (hreflang) and RSS; build-time OG share cards; JSON-LD (Organization,
+  WebSite+SearchAction, SoftwareApplication, Article, BreadcrumbList, FAQPage).
+- **Privacy & security** — Vercel Web Analytics loaded only on `gurbanisoul.com` (no-op elsewhere,
+  cookieless); an **enforced CSP** (proven zero-violation across every route first); an env-gated
+  launch-notice sign-up that ships nothing until configured.
+
+
+### Added — growth & polish (PR4)
+- **Structured data (JSON-LD)** via `JsonLd.astro`: the landing (`/`) now emits **Organization**
+  (Algorythmos Pty Ltd), **WebSite** (with a `SearchAction` → `/search?q={search_term_string}` on the
+  canonical host) and **SoftwareApplication** (Gurbani Soul, iOS, `offers.price "0"`, no
+  `aggregateRating`; `installUrl`/`url` added only once `APP_STORE_URL` is set); **`/support`** emits
+  a **FAQPage** generated from the same data array that renders the visible `<h4>`/`<p>` FAQ, so the
+  two can never diverge.
+- **Launch-notice sign-up** (`Newsletter.astro` + `scripts/newsletter.ts`, wired through the
+  idempotent `landing.ts` `init()`): **env-gated** on `PUBLIC_NEWSLETTER_FORM_URL` (Buttondown). Unset
+  in CI/local/this build ⇒ **no section, no form, no Buttondown reference** in the built HTML. When
+  set: email-only, `mode:'no-cors'` submit with an off-screen honeypot, inline confirmation/offline
+  status, and a working no-JS native POST. Honest copy (a launch notice, not a "newsletter"), no
+  tracking.
+- **CSP is now enforcing.** `frontend/vercel.json` flips `Content-Security-Policy-Report-Only` →
+  `Content-Security-Policy` (same directive string), gated on `frontend/e2e/csp.spec.ts` proving
+  **zero** `securitypolicyviolation` events across **every** route (marketing + Knowledge Base +
+  `/learn/*`) under the enforced header, on load and after theme-toggle / mobile-menu (46/46 green,
+  desktop + mobile).
+- **Gates**: `JsonLdInvariants` and `NewsletterPrivacy` (repo gates). `NoSecretsInFrontend` no longer
+  forbids the `PUBLIC_NEWSLETTER_FORM_URL` env-var *name* (its *value*/host is covered by
+  `NewsletterPrivacy`); `ExternalRequestAllowlist` allows the `schema.org` JSON-LD vocabulary URI.
+- **e2e**: `csp.spec.ts`, `newsletter.spec.ts` (env-unset assertions + documented skip for the
+  enabled path), `headers.spec.ts` (`@smoke`, remote-only; no-op locally).
+- **Docs**: `docs/process/runbooks/newsletter.md`; Newsletter/JSON-LD/enforced-CSP sections in
+  `docs/website/README.md`; `PUBLIC_NEWSLETTER_FORM_URL` listed in `docs/process/environments.md`.
+
+Web/presentation, docs and tests only — scripture, corpus and DB byte-identical.
+
+### Added — web foundations (PR1)
+- **Shared SEO/social/PWA head** (`frontend/src/components/Seo.astro`) used by both the marketing
+  shell and the Knowledge Base (`Base.astro`): canonical, Open Graph/Twitter, `theme-color`,
+  `<link rel="manifest">`, and the `apple-itunes-app` Smart App Banner (once `APP_STORE_ID` is set).
+- **Routes manifest** (`frontend/src/routes.ts`) driving a **generated sitemap**
+  (`src/pages/sitemap.xml.ts`, fixed `lastmod`, self-referencing `en`/`x-default` hreflang) and an
+  **RSS feed** (`src/pages/rss.xml.ts`, "Gurbani Soul — Learn", empty until PR3). Deleted the static
+  `public/sitemap.xml`.
+- **OG image cards** (`src/pages/og/[slug].png.ts`) rendered at build with satori + @resvg/resvg-js
+  (gold ੴ, title in Source Serif 4, wordmark); byte-deterministic, ≤ 150 KB each.
+- **Privacy-scoped analytics** (`frontend/src/components/Analytics.astro`): Vercel Web Analytics
+  loaded only on `gurbanisoul.com`; a no-op everywhere else. `JsonLd.astro` helper added.
+- **Design tokens for the web** (`frontend/src/theme.ts`, mirrored to `styles/marketing.css`), kept
+  equal to `docs/brand/tokens.json` by the `WebThemeMatchesTokens` gate.
+- **Fonts**: a Latin subset of **Source Serif 4** (`public/fonts/SourceSerif4-latin.woff2`, ≤ 130 KB,
+  `scripts/subset-serif.sh`). **PWA**: `public/site.webmanifest` + `public/icons/*`
+  (`scripts/gen-icons.mjs`).
+- **Theme module** (`frontend/src/scripts/theme.ts`) extracted verbatim from `core.ts` so the
+  toggle is shared; behaviour identical.
+- **Security headers** (`frontend/vercel.json`): `Content-Security-Policy-Report-Only` (not yet
+  enforcing), HSTS (preload), `Permissions-Policy`, `Cross-Origin-Opener-Policy`, and immutable
+  cache for `/og` and `/icons`.
+- **Config**: `@astrojs/mdx`, i18n scaffolding (`en`/`pa`, no default prefix, no `pa` pages yet),
+  hover prefetch. **Deps**: `@astrojs/mdx`, `@astrojs/rss`, `satori`, `@resvg/resvg-js`, `sharp`
+  (exact), and `@types/node` (dev).
+- **Gates**: `SeoInvariants`, `SitemapInvariants`, `RssInvariants`, `ExternalRequestAllowlist`,
+  `SmartBannerConsistency`, `NoSecretsInFrontend`, `WebThemeMatchesTokens` (repo gates) and
+  `StaticRoutes` (`test_serve.py`). `Landing.astro` renamed to `Marketing.astro`.
+
+Web/presentation, docs and tests only — scripture, corpus and DB byte-identical (`git diff -- corpus
+db` empty). The landing and every Knowledge Base page render exactly as before.
+
 ## [1.3.3] — 2026-09-22 — gurbanisoul.com: landing page, canonical domain, great docs
 
 Web, iOS links, ops and docs only — scripture, corpus and DB byte-identical to 1.3.2

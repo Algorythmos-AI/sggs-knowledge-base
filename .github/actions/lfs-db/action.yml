@@ -15,7 +15,7 @@ runs:
         [ -n "$OID" ] || { echo "::error::db/sggs.sqlite is not tracked by Git LFS"; exit 1; }
         echo "oid=$OID" >> "$GITHUB_OUTPUT"
     - name: Restore LFS object cache
-      uses: actions/cache@v4
+      uses: actions/cache@v5
       with:
         path: .git/lfs/objects
         key: lfs-db-${{ runner.os }}-${{ steps.oid.outputs.oid }}

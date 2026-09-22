@@ -1,5 +1,8 @@
 // core.ts — shared across every MPA page: DOM helpers, API, store, toast, META cache,
 // theme (light/dark/system), nav active-state, cross-page navigation, prefs, footer.
+// The theme toggle lives in ./theme (shared with the marketing shell); core just wires it up.
+import { initTheme } from './theme';
+export { applyTheme } from './theme';
 export const $ = (s: string) => document.querySelector(s) as HTMLElement | null;
 export const esc = (s: any) =>
   (s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
@@ -64,28 +67,7 @@ export async function meta(): Promise<any> {
   return META;
 }
 
-// ---- theme: light / dark / system, resolved to data-theme on <html> ----
-type Theme = 'light' | 'dark' | 'system';
-const ICON: Record<Theme, string> = { light: '☀', dark: '☾', system: '◐' };
-const resolve = (t: Theme): 'light' | 'dark' =>
-  t === 'system' ? (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light') : t;
-export function applyTheme(t: Theme) {
-  document.documentElement.setAttribute('data-theme', resolve(t));
-  const b = document.getElementById('themeBtn');
-  if (b) { b.textContent = ICON[t]; b.setAttribute('aria-label', `Theme: ${t} — click to change`); b.title = `Theme: ${t}`; }
-}
-function initTheme() {
-  applyTheme(store.get('theme', 'system') as Theme);
-  matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => {
-    if (store.get('theme', 'system') === 'system') applyTheme('system');
-  });
-  const b = document.getElementById('themeBtn');
-  if (b) b.onclick = () => {
-    const order: Theme[] = ['system', 'light', 'dark'];
-    const next = order[(order.indexOf(store.get('theme', 'system') as Theme) + 1) % order.length];
-    store.set('theme', next); applyTheme(next);
-  };
-}
+// ---- theme: light / dark / system — see ./theme (initTheme called in shared init below) ----
 
 // ---- cross-page navigation (MPA) ----
 // opts.line / opts.comp: land the Reader on a specific verse / composition (scrolled + highlighted)
