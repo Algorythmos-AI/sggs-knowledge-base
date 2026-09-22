@@ -1,0 +1,42 @@
+---
+// Seo.astro — the shared <head> SEO/social/PWA block for both the marketing shell and the
+// Knowledge Base (Base.astro). Emits an absolute canonical + Open Graph/Twitter/theme-color/
+// manifest set. Does NOT emit <title> (the layout owns it). No hreflang here — locale alternates
+// live only in sitemap.xml until the `pa` pages exist.
+import { SITE_URL, APP_STORE_ID } from "../site";
+import { ogForPath } from "../routes";
+
+export interface Props {
+  title: string;
+  description: string;
+  path: string;          // root-relative, e.g. "/" or "/search"
+  ogImage?: string;      // root-relative or absolute; defaults to the path's OG card
+  type?: string;         // og:type, default "website"
+}
+const { title, description, path, ogImage, type = "website" } = Astro.props;
+
+const canonical = new URL(path, SITE_URL).href;
+const ogPath = ogImage ?? `/og/${ogForPath(path)}.png`;
+const ogAbsolute = new URL(ogPath, SITE_URL).href;
+---
+<link rel="canonical" href={canonical} />
+<meta name="description" content={description} />
+
+<meta property="og:type" content={type} />
+<meta property="og:site_name" content="Gurbani Soul" />
+<meta property="og:title" content={title} />
+<meta property="og:description" content={description} />
+<meta property="og:url" content={canonical} />
+<meta property="og:image" content={ogAbsolute} />
+
+<meta name="twitter:card" content="summary_large_image" />
+<meta name="twitter:title" content={title} />
+<meta name="twitter:description" content={description} />
+<meta name="twitter:image" content={ogAbsolute} />
+
+<meta name="theme-color" content="#FBF7F0" media="(prefers-color-scheme: light)" />
+<meta name="theme-color" content="#171412" media="(prefers-color-scheme: dark)" />
+
+<link rel="manifest" href="/site.webmanifest" />
+<meta name="apple-mobile-web-app-title" content="Gurbani Soul" />
+{APP_STORE_ID && <meta name="apple-itunes-app" content={`app-id=${APP_STORE_ID}`} />}

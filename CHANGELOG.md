@@ -3,6 +3,40 @@
 The format below (newest first) follows [Keep a Changelog](https://keepachangelog.com);
 entries prior to v1.1.0 are the project's original prose style and are preserved verbatim.
 
+## [Unreleased]
+
+### Added — web foundations (PR1)
+- **Shared SEO/social/PWA head** (`frontend/src/components/Seo.astro`) used by both the marketing
+  shell and the Knowledge Base (`Base.astro`): canonical, Open Graph/Twitter, `theme-color`,
+  `<link rel="manifest">`, and the `apple-itunes-app` Smart App Banner (once `APP_STORE_ID` is set).
+- **Routes manifest** (`frontend/src/routes.ts`) driving a **generated sitemap**
+  (`src/pages/sitemap.xml.ts`, fixed `lastmod`, self-referencing `en`/`x-default` hreflang) and an
+  **RSS feed** (`src/pages/rss.xml.ts`, "Gurbani Soul — Learn", empty until PR3). Deleted the static
+  `public/sitemap.xml`.
+- **OG image cards** (`src/pages/og/[slug].png.ts`) rendered at build with satori + @resvg/resvg-js
+  (gold ੴ, title in Source Serif 4, wordmark); byte-deterministic, ≤ 150 KB each.
+- **Privacy-scoped analytics** (`frontend/src/components/Analytics.astro`): Vercel Web Analytics
+  loaded only on `gurbanisoul.com`; a no-op everywhere else. `JsonLd.astro` helper added.
+- **Design tokens for the web** (`frontend/src/theme.ts`, mirrored to `styles/marketing.css`), kept
+  equal to `docs/brand/tokens.json` by the `WebThemeMatchesTokens` gate.
+- **Fonts**: a Latin subset of **Source Serif 4** (`public/fonts/SourceSerif4-latin.woff2`, ≤ 130 KB,
+  `scripts/subset-serif.sh`). **PWA**: `public/site.webmanifest` + `public/icons/*`
+  (`scripts/gen-icons.mjs`).
+- **Theme module** (`frontend/src/scripts/theme.ts`) extracted verbatim from `core.ts` so the
+  toggle is shared; behaviour identical.
+- **Security headers** (`frontend/vercel.json`): `Content-Security-Policy-Report-Only` (not yet
+  enforcing), HSTS (preload), `Permissions-Policy`, `Cross-Origin-Opener-Policy`, and immutable
+  cache for `/og` and `/icons`.
+- **Config**: `@astrojs/mdx`, i18n scaffolding (`en`/`pa`, no default prefix, no `pa` pages yet),
+  hover prefetch. **Deps**: `@astrojs/mdx`, `@astrojs/rss`, `satori`, `@resvg/resvg-js`, `sharp`
+  (exact), and `@types/node` (dev).
+- **Gates**: `SeoInvariants`, `SitemapInvariants`, `RssInvariants`, `ExternalRequestAllowlist`,
+  `SmartBannerConsistency`, `NoSecretsInFrontend`, `WebThemeMatchesTokens` (repo gates) and
+  `StaticRoutes` (`test_serve.py`). `Landing.astro` renamed to `Marketing.astro`.
+
+Web/presentation, docs and tests only — scripture, corpus and DB byte-identical (`git diff -- corpus
+db` empty). The landing and every Knowledge Base page render exactly as before.
+
 ## [1.3.3] — 2026-09-22 — gurbanisoul.com: landing page, canonical domain, great docs
 
 Web, iOS links, ops and docs only — scripture, corpus and DB byte-identical to 1.3.2

@@ -232,3 +232,38 @@ class HttpBehaviour(unittest.TestCase):
             res, _ = self.get("/api/meta")
             self.assertEqual(res.status, 200)
         for s in idle: s.close()
+
+
+class StaticRoutes(unittest.TestCase):
+    """serve.py's static resolver + pinned content types (PR1 web-foundations).
+
+    _resolve_static is a plain method (it uses only STATIC_ROOT + os), so it can be called on the
+    class with a dummy self. Skips the route-mapping check if webapp/static is not built.
+    """
+
+    import mimetypes as _mimetypes
+
+    def _resolve(self, url_path):
+        return serve.H._resolve_static(None, url_path)
+
+    def test_nested_route_maps_to_index_html(self):
+        if not os.path.exists(os.path.join(serve.STATIC_ROOT, "index.html")):
+            self.skipTest("webapp/static not built")
+        # A built KB route (a nested path) must resolve to its <dir>/index.html.
+        full = self._resolve("/search")
+        self.assertIsNotNone(full, "/search did not resolve")
+        self.assertEqual(full, os.path.join(serve.STATIC_ROOT, "search", "index.html"))
+        # Root resolves to index.html.
+        self.assertEqual(self._resolve("/"), os.path.join(serve.STATIC_ROOT, "index.html"))
+
+    def test_path_traversal_is_rejected(self):
+        for evil in ("/../../etc/passwd", "/../serve.py", "/../../../../etc/hosts"):
+            self.assertIsNone(self._resolve(evil), f"traversal not rejected: {evil}")
+
+    def test_content_types_are_pinned(self):
+        # serve.py pins these on import (mimetypes.add_type); assert the shapes StaticRoutes serves.
+        self.assertEqual(self._mimetypes.guess_type("x.png")[0], "image/png")
+        self.assertEqual(self._mimetypes.guess_type("x.webmanifest")[0], "application/manifest+json")
+        xml_ct = self._mimetypes.guess_type("x.xml")[0]
+        self.assertIsNotNone(xml_ct)
+        self.assertIn("xml", xml_ct)

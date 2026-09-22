@@ -7,6 +7,11 @@ export const SUPPORT_EMAIL = "support@gurbanisoul.com";
 // "Coming soon" note for the official App Store badge (see docs/website/README.md).
 export const APP_STORE_URL = "";
 
+// Apple's numeric App Store id (the digits after `/id` in APP_STORE_URL). Empty until Apple
+// assigns it. When set, <Seo> emits the Smart App Banner (`apple-itunes-app`). Keep in step with
+// APP_STORE_URL — the SmartBannerConsistency gate requires APP_STORE_URL to end with `/id`+this.
+export const APP_STORE_ID = "";
+
 // Unsplash photography used on the landing. Credited here, in the page footer, and in NOTICE.md,
 // per the Unsplash License (commercial use + modification permitted; attribution appreciated).
 export const PHOTO_CREDITS = [

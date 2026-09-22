@@ -13,16 +13,22 @@
     "test:e2e": "playwright test"
   },
   "dependencies": {
+    "@astrojs/mdx": "8.0.1",
+    "@astrojs/rss": "4.0.19",
+    "@resvg/resvg-js": "2.6.2",
     "@tailwindcss/vite": "^4.3.1",
     "astro": "^7.3.3",
     "chart.js": "^4.5.1",
     "d3": "^7.9.0",
+    "satori": "0.33.4",
+    "sharp": "0.35.4",
     "tailwindcss": "^4.3.1"
   },
   "devDependencies": {
     "@axe-core/playwright": "^4.10.0",
     "@playwright/test": "^1.48.0",
-    "@types/d3": "^7.4.3"
+    "@types/d3": "^7.4.3",
+    "@types/node": "26.6.2"
   },
   "engines": {
     "node": "22.x"
