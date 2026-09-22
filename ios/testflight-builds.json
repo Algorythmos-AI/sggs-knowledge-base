@@ -118,6 +118,18 @@
       "db_sha256": "f30a2fc090bc2bf039ba4092f2eedcddeb552fd4125b17dfbe25799ecc2e8c7a",
       "uploaded_at": "2026-09-19T22:24:42Z",
       "note": null
+    },
+    {
+      "version": "1.3.2",
+      "build": 1,
+      "source_commit": "ad7b83c3cf8777ee972a2bfcd2f71a0cf77dc770",
+      "profile": "public",
+      "channel": "appstore",
+      "db_sha256": "f30a2fc090bc2bf039ba4092f2eedcddeb552fd4125b17dfbe25799ecc2e8c7a",
+      "xcode": "26.5",
+      "sdk": "iphoneos26.5",
+      "uploaded_at": "2026-09-22T00:35:58Z",
+      "note": null
     }
   ]
 }
