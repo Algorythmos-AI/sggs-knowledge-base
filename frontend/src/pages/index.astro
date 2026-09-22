@@ -1,6 +1,6 @@
 ---
 import { Picture } from 'astro:assets';
-import Landing from '../layouts/Landing.astro';
+import Marketing from '../layouts/Marketing.astro';
 import { APP_STORE_URL } from '../site.ts';
 import verse from '../generated/landing-verse.json';
 import heroImg from '../assets/landing/harmandir-sahib-reflection.jpg';
@@ -17,7 +17,7 @@ const features = [
   { t: "Verbatim by construction", d: "The text is reproduced character-for-character from the source edition and checked against a SHA-256 checksum. Nothing is corrected, normalised, or invented." },
 ];
 ---
-<Landing title="Gurbani Soul — Sri Guru Granth Sahib Ji, verbatim & offline" description={desc} path="/">
+<Marketing title="Gurbani Soul — Sri Guru Granth Sahib Ji, verbatim & offline" description={desc} path="/">
   <!-- Forward legacy /?q=… search bookmarks to the Knowledge Base search page. -->
   <script is:inline>
     (function () {
@@ -152,4 +152,4 @@ const features = [
       .kb-media { height: 100%; aspect-ratio: auto; min-height: 260px; }
     }
   </style>
-</Landing>
+</Marketing>

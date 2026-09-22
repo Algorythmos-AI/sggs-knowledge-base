@@ -7,11 +7,13 @@ docs/brand/contrast-report.md and exits 1 if any required pair fails. The
 light-leg ratio must stay under `max` (proving the ban is real, not taste).
 """
 import json
+import re
 import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
 TOKENS = ROOT / "docs/brand/tokens.json"
+WEB_THEME = ROOT / "frontend/src/theme.ts"
 OUT = ROOT / "docs/brand/contrast-report.md"
 LEGS = ["light", "dark", "lightHC", "darkHC"]
 
@@ -33,6 +35,45 @@ def resolve(tokens, name):
         group, key = name.split(".", 1)
         return tokens[group][key]
     return tokens["surfaces"][name]
+
+
+def web_theme_legs():
+    """Parse frontend/src/theme.ts into {'light': {...}, 'dark': {...}} of hex values.
+
+    Read-only validation that the marketing site's token module is present and parseable; the
+    WebThemeMatchesTokens gate proves it equals tokens.json. Returns {} if the file is absent.
+    """
+    if not WEB_THEME.exists():
+        return {}
+    text = WEB_THEME.read_text()
+    out = {}
+    for leg in ("light", "dark"):
+        m = re.search(rf"{leg}:\s*\{{(.*?)\}}", text, re.S)
+        if m:
+            out[leg] = dict(re.findall(r'(\w+):\s*"(#[0-9A-Fa-f]{6})"', m.group(1)))
+    return out
+
+
+def web_theme_section():
+    """Report the marketing site's gold/ink contrast pairs (informational; never fails the run)."""
+    legs = web_theme_legs()
+    lines = ["", "## Web theme (frontend/src/theme.ts) — informational", ""]
+    if not legs:
+        return lines + ["_theme.ts not found._"]
+    lines += ["| Pair | Light | Dark |", "|---|---|---|"]
+    checks = [
+        ("accentText on paper", "accentText", "paper"),
+        ("accentText on card", "accentText", "card"),
+        ("ink on paper", "ink", "paper"),
+        ("onAccent on accentFill", "onAccent", "accentFill"),
+    ]
+    for label, fg, bg in checks:
+        cells = []
+        for leg in ("light", "dark"):
+            d = legs.get(leg, {})
+            cells.append(f"{ratio(d[fg], d[bg]):.2f}" if fg in d and bg in d else "n/a")
+        lines.append(f"| {label} | {cells[0]} | {cells[1]} |")
+    return lines
 
 
 def main():
@@ -60,6 +101,7 @@ def main():
             if r >= ban["max"]:
                 failed += 1
             lines.append(f"| `{ban['fg']}` | `{bg_name}` | {r:.2f} | < {ban['max']} | {ban['why']} |")
+    lines += web_theme_section()
     OUT.write_text("\n".join(lines) + "\n")
     print(f"wrote {OUT.relative_to(ROOT)}; failures: {failed}")
     return 1 if failed else 0

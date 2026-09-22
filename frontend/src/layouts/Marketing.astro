@@ -1,0 +1,64 @@
+---
+// Marketing.astro — the Gurbani Soul marketing shell for `/` (renamed from Landing.astro in the
+// PR1 web-foundations pass). Separate from Base.astro (the Knowledge Base's own layout/name/theme,
+// per CLAUDE.md). Head SEO/social/PWA is delegated to <Seo>; brand styles live in
+// ../styles/marketing.css; Vercel analytics is loaded only on gurbanisoul.com via <Analytics>.
+// Visual output is unchanged from Landing.astro — the redesign is PR2.
+import Seo from "../components/Seo.astro";
+import Analytics from "../components/Analytics.astro";
+import "../styles/marketing.css";
+export interface Props {
+  title: string;
+  description: string;
+  path?: string;      // e.g. "/" — for canonical + og:url
+  ogImage?: string;   // absolute or root-relative; defaults to the path's OG card
+}
+const { title, description, path = "/", ogImage } = Astro.props;
+---
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>{title}</title>
+  <Seo title={title} description={description} path={path} ogImage={ogImage} />
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+  <!-- Resolve theme before first paint (shared convention with the Knowledge Base). -->
+  <script is:inline>
+    (function () {
+      try {
+        var t = localStorage.getItem('theme') || 'system';
+        var d = t === 'system'
+          ? (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light')
+          : t;
+        document.documentElement.setAttribute('data-theme', d);
+      } catch (e) {}
+    })();
+  </script>
+  <link rel="preload" href="/fonts/SantLipi-VF.woff2" as="font" type="font/woff2" crossorigin />
+  <slot name="head" />
+</head>
+<body>
+  <a href="#main" class="lp-skip">Skip to content</a>
+  <main id="main"><slot /></main>
+  <footer class="foot">
+    <div class="wrap" style="padding-top:28px;padding-bottom:36px;display:flex;flex-wrap:wrap;gap:14px 28px;align-items:baseline;justify-content:space-between">
+      <div>
+        <div style="font-family:var(--serif);font-size:17px;color:var(--ink)">Gurbani Soul</div>
+        <div>Built by Algorythmos · Sri Guru Granth Sahib Ji is shown verbatim from the source edition, cited by Ang.</div>
+      </div>
+      <nav aria-label="Footer" style="display:flex;gap:18px;flex-wrap:wrap">
+        <a href="/search">Knowledge Base</a>
+        <a href="/support">Support</a>
+        <a href="/privacy">Privacy</a>
+      </nav>
+    </div>
+    <div class="wrap credits" style="padding-bottom:28px">
+      Photography of Sri Harmandir Sahib by
+      <a href="https://unsplash.com/@aryannikhil">Aryan Nikhil</a> and
+      <a href="https://unsplash.com/@travelphotographer">Laurentiu Morariu</a> on Unsplash.
+    </div>
+  </footer>
+  <Analytics />
+</body>
+</html>

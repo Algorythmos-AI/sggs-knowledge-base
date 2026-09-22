@@ -527,5 +527,231 @@ class VersionPolicyDocumented(unittest.TestCase):
                         "scripts/release/check_release_complete.py is missing")
 
 
+# ------------------------------------------------------------------------------------------------
+# PR1 — web foundations: SEO / sitemap / RSS / analytics / smart-banner / theme-token gates.
+# These read the BUILT webapp/static (skip cleanly if unbuilt) and the tracked frontend source.
+# ------------------------------------------------------------------------------------------------
+import xml.etree.ElementTree as ET  # noqa: E402
+
+SITE = "https://gurbanisoul.com"
+FRONTEND = ROOT / "frontend"
+SITEMAP_NS = "{http://www.sitemaps.org/schemas/sitemap/0.9}"
+
+
+def _norm_url(u):
+    """Compare URLs without caring about a single trailing slash."""
+    return u.rstrip("/")
+
+
+def _built_pages():
+    """Yield (route, path) for every built *.html except 404.html.
+
+    index.html -> "/"; <dir>/index.html -> "/<dir>"; any other x.html -> "/x".
+    """
+    for p in sorted(STATIC.rglob("*.html")):
+        rel = p.relative_to(STATIC)
+        if rel.name == "404.html":
+            continue
+        if rel.name == "index.html":
+            d = rel.parent.as_posix()
+            route = "/" if d == "." else "/" + d
+        else:
+            route = "/" + rel.with_suffix("").as_posix()
+        yield route, p
+
+
+def _unbuilt():
+    return not (STATIC / "index.html").exists()
+
+
+class SeoInvariants(unittest.TestCase):
+    """Every built page carries an honest, self-consistent SEO/social head."""
+
+    def setUp(self):
+        if _unbuilt():
+            self.skipTest("webapp/static not built (cd frontend && npm run build:deploy)")
+
+    def test_every_page_has_correct_seo_head(self):
+        pages = list(_built_pages())
+        self.assertTrue(pages, "no built HTML pages found")
+        marketing = {"/"}
+        for route, path in pages:
+            html = path.read_text(encoding="utf-8")
+            canonical_want = _norm_url(SITE + route)
+
+            cans = re.findall(r'<link rel="canonical" href="([^"]+)"', html)
+            self.assertEqual(len(cans), 1, f"{route}: expected exactly one canonical, got {cans}")
+            self.assertEqual(_norm_url(cans[0]), canonical_want, f"{route}: wrong canonical {cans[0]}")
+
+            desc = re.search(r'<meta name="description" content="([^"]*)"', html)
+            self.assertIsNotNone(desc, f"{route}: no description meta")
+            self.assertGreaterEqual(len(desc.group(1)), 40, f"{route}: description under 40 chars")
+
+            og = re.search(r'<meta property="og:image" content="([^"]+)"', html)
+            self.assertIsNotNone(og, f"{route}: no og:image")
+            og_path = og.group(1).split(SITE, 1)[-1].lstrip("/")
+            self.assertTrue((STATIC / og_path).is_file(), f"{route}: og:image {og.group(1)} missing on disk")
+
+            self.assertGreaterEqual(len(re.findall(r'name="theme-color"', html)), 1, f"{route}: no theme-color")
+
+            if route in marketing:
+                self.assertRegex(html, r'rel="manifest"', f"{route}: marketing page missing manifest link")
+
+            # hreflang alternates (if any) must be en / x-default and self-referential — no /pa/ yet.
+            for lang, href in re.findall(r'<link rel="alternate" hreflang="([^"]+)" href="([^"]+)"', html):
+                self.assertIn(lang, ("en", "x-default"), f"{route}: unexpected hreflang {lang}")
+                self.assertNotIn("/pa/", href, f"{route}: hreflang points at a /pa/ URL")
+                self.assertEqual(_norm_url(href), canonical_want, f"{route}: hreflang not self-referential")
+
+
+class SitemapInvariants(unittest.TestCase):
+    def setUp(self):
+        if _unbuilt() or not (STATIC / "sitemap.xml").exists():
+            self.skipTest("sitemap.xml not built")
+
+    def test_sitemap_matches_built_routes(self):
+        root = ET.parse(STATIC / "sitemap.xml").getroot()
+        locs = {_norm_url(el.text) for el in root.iter(f"{SITEMAP_NS}loc")}
+        built = {_norm_url(SITE + route) for route, _ in _built_pages()}
+        self.assertEqual(locs, built, f"sitemap <loc> set != built HTML routes\n  only in sitemap: "
+                         f"{sorted(locs - built)}\n  only built: {sorted(built - locs)}")
+
+    def test_every_lastmod_is_a_date(self):
+        root = ET.parse(STATIC / "sitemap.xml").getroot()
+        mods = [el.text for el in root.iter(f"{SITEMAP_NS}lastmod")]
+        self.assertTrue(mods, "no <lastmod> in sitemap")
+        for m in mods:
+            self.assertRegex(m, r"^\d{4}-\d{2}-\d{2}", f"lastmod not an ISO date: {m!r}")
+
+    def test_robots_names_sitemap(self):
+        for cand in (STATIC / "robots.txt", FRONTEND / "public" / "robots.txt"):
+            if cand.exists():
+                self.assertIn("sitemap.xml", cand.read_text(encoding="utf-8"))
+                return
+        self.fail("robots.txt not found")
+
+
+class RssInvariants(unittest.TestCase):
+    def setUp(self):
+        if _unbuilt() or not (STATIC / "rss.xml").exists():
+            self.skipTest("rss.xml not built")
+
+    def test_rss_parses_and_links_to_site(self):
+        root = ET.parse(STATIC / "rss.xml").getroot()
+        link = root.find("./channel/link")
+        self.assertIsNotNone(link, "rss has no <channel><link>")
+        self.assertEqual(_norm_url(link.text), _norm_url(SITE))
+
+
+class ExternalRequestAllowlist(unittest.TestCase):
+    """The marketing page (and the JS it loads) may only reference an approved set of external
+    hosts, and the Vercel analytics loader must always sit behind the gurbanisoul.com hostname
+    guard — never an unconditional request."""
+
+    ALLOWED = {
+        "gurbanisoul.com", "unsplash.com", "apps.apple.com",
+        "github.com", "buttondown.com", "sggs-knowledge-base.onrender.com",
+    }
+
+    def setUp(self):
+        if _unbuilt():
+            self.skipTest("webapp/static not built")
+
+    def _marketing_sources(self):
+        index = STATIC / "index.html"
+        html = index.read_text(encoding="utf-8")
+        sources = [("index.html", html)]
+        for ref in re.findall(r'(?:src|href)="(/_astro/[^"]+\.js)"', html):
+            js = STATIC / ref.lstrip("/")
+            if js.is_file():
+                sources.append((ref, js.read_text(encoding="utf-8")))
+        return sources
+
+    def test_absolute_hosts_are_allowlisted(self):
+        bad = []
+        for name, text in self._marketing_sources():
+            for host in re.findall(r'https?://([a-z0-9.-]+)', text, re.I):
+                if host.lower() not in self.ALLOWED:
+                    bad.append(f"{name}: {host}")
+        self.assertEqual(bad, [], f"marketing references non-allowlisted host(s): {bad}")
+
+    def test_vercel_insights_is_hostname_guarded(self):
+        html = (STATIC / "index.html").read_text(encoding="utf-8").splitlines()
+        for i, line in enumerate(html):
+            if "_vercel/insights" in line:
+                window = " ".join(html[max(0, i - 1): i + 2])
+                self.assertIn("gurbanisoul.com", window,
+                              f"line {i+1}: /_vercel/insights is not beside a gurbanisoul.com guard")
+
+
+class SmartBannerConsistency(unittest.TestCase):
+    """If the App Store id or URL is set in site.ts, both must be, and APP_STORE_URL must end with
+    /id + APP_STORE_ID (so the Smart App Banner and the download link can never disagree)."""
+
+    def test_app_store_id_and_url_agree(self):
+        site = (FRONTEND / "src" / "site.ts").read_text(encoding="utf-8")
+        app_id = re.search(r'APP_STORE_ID\s*=\s*"([^"]*)"', site).group(1)
+        app_url = re.search(r'APP_STORE_URL\s*=\s*"([^"]*)"', site).group(1)
+        if not app_id and not app_url:
+            return
+        self.assertTrue(app_id and app_url, "one of APP_STORE_ID / APP_STORE_URL is set but not the other")
+        self.assertTrue(app_url.endswith("/id" + app_id),
+                        f"APP_STORE_URL {app_url!r} must end with /id{app_id}")
+
+
+class NoSecretsInFrontend(unittest.TestCase):
+    """No obvious secrets, and no baked newsletter form URL, in tracked frontend source."""
+
+    SECRET_PATTERNS = [
+        r"AKIA[0-9A-Z]{16}",                       # AWS access key id
+        r"AIza[0-9A-Za-z_\-]{35}",                 # Google API key
+        r"sk_live_[0-9A-Za-z]{16,}",               # Stripe secret
+        r"gh[pousr]_[0-9A-Za-z]{20,}",             # GitHub token
+        r"-----BEGIN (?:RSA |EC |OPENSSH )?PRIVATE KEY-----",
+        r"PUBLIC_NEWSLETTER_FORM_URL",             # form URL must not be a literal in src
+    ]
+
+    def test_no_secret_patterns(self):
+        rx = re.compile("|".join(self.SECRET_PATTERNS))
+        offenders = []
+        src = FRONTEND / "src"
+        for p in src.rglob("*"):
+            if not p.is_file() or p.suffix in (".ttf", ".woff2", ".woff", ".png", ".jpg", ".jpeg", ".webp", ".avif"):
+                continue
+            if rx.search(p.read_text(encoding="utf-8", errors="ignore")):
+                offenders.append(str(p.relative_to(ROOT)))
+        self.assertEqual(offenders, [], f"possible secret/newsletter-URL literal in: {offenders}")
+
+
+class WebThemeMatchesTokens(unittest.TestCase):
+    """frontend/src/theme.ts hex values must equal the light/dark legs of docs/brand/tokens.json."""
+
+    # theme.ts key -> (tokens.json group, key)
+    MAP = {
+        "paper": ("surfaces", "paper"),
+        "paperWarm": ("surfaces", "paperWarm"),
+        "card": ("surfaces", "card"),
+        "accentFill": ("soul", "accentFill"),
+        "accent": ("soul", "accent"),
+        "accentText": ("soul", "accentText"),
+        "onAccent": ("soul", "onAccent"),
+    }
+
+    @staticmethod
+    def _leg(theme_ts, leg):
+        m = re.search(rf"{leg}:\s*\{{(.*?)\}}", theme_ts, re.S)
+        assert m, f"theme.ts has no {leg} block"
+        return dict(re.findall(r'(\w+):\s*"(#[0-9A-Fa-f]{6})"', m.group(1)))
+
+    def test_theme_ts_equals_tokens(self):
+        tokens = json.loads((ROOT / "docs/brand/tokens.json").read_text(encoding="utf-8"))
+        theme_ts = (FRONTEND / "src" / "theme.ts").read_text(encoding="utf-8")
+        light, dark = self._leg(theme_ts, "light"), self._leg(theme_ts, "dark")
+        for key, (grp, tkey) in self.MAP.items():
+            legs = tokens[grp][tkey]
+            self.assertEqual(light[key].upper(), legs[0].upper(), f"theme.ts light.{key} != tokens {grp}.{tkey}[0]")
+            self.assertEqual(dark[key].upper(), legs[1].upper(), f"theme.ts dark.{key} != tokens {grp}.{tkey}[1]")
+
+
 if __name__ == "__main__":
     unittest.main()

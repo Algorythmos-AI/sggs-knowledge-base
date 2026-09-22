@@ -49,22 +49,94 @@ public contact in the App Store listing, `SECURITY.md`, and the privacy/support 
 ## SEO
 
 `frontend/astro.config.mjs` sets `site: 'https://gurbanisoul.com'`; `frontend/src/site.ts` holds
-`SITE_URL`, `SUPPORT_EMAIL`, `APP_STORE_URL`, and the photo-credit list. Every page emits:
+`SITE_URL`, `SUPPORT_EMAIL`, `APP_STORE_URL`, `APP_STORE_ID`, and the photo-credit list. The head
+SEO/social/PWA block is a shared component, **`frontend/src/components/Seo.astro`** (used by both
+`Marketing.astro` and the Knowledge Base's `Base.astro`). Every page emits:
 
-- `<link rel="canonical">` and `og:url` built from `Astro.site` + the path (bare apex host);
+- `<link rel="canonical">` and `og:url` built from `SITE_URL` + the path (bare apex host);
 - `description`, `og:title/description/type/image/site_name`, `twitter:card=summary_large_image`;
-- `theme-color` per colour scheme, `apple-mobile-web-app-title`, an SVG favicon.
+- `theme-color` per colour scheme, `apple-mobile-web-app-title`, `<link rel="manifest">`, an SVG
+  favicon, and — once `APP_STORE_ID` is set — the `apple-itunes-app` Smart App Banner.
 
-`frontend/public/robots.txt` and `frontend/public/sitemap.xml` list the public routes and point
-crawlers at the canonical host. `public/og.jpg` (1200×630) is a crop of the hero image.
+`og:image` defaults to the page's OG card (`/og/<slug>.png`, see **OG images** below).
+`frontend/public/robots.txt` points crawlers at the canonical host and names `/sitemap.xml`, which
+is now **generated** (see **Routes, sitemap & RSS**). `Base.astro` derives its canonical/OG from
+`Astro.url.pathname` so every Knowledge Base page is self-consistent without per-page props.
+
+The `SeoInvariants` gate checks every built page's canonical/description/`og:image`(exists on disk)/
+`theme-color`, and that any `hreflang` alternate is `en`/`x-default` and self-referential (no `/pa/`).
+
+### Routes, sitemap & RSS
+
+- **`frontend/src/routes.ts`** is the single manifest of public routes (`{ path, lastmod,
+  changefreq, priority, og }`). It must list **exactly** the pages that build to HTML — the
+  `SitemapInvariants` gate compares the sitemap's `<loc>` set to the built HTML route set. `lastmod`
+  is a **fixed** ISO date (never `Date.now()`) so the sitemap is byte-deterministic.
+- **`frontend/src/pages/sitemap.xml.ts`** emits `/sitemap.xml` over the manifest, each URL
+  self-referencing its `en` + `x-default` hreflang alternates (no `pa` pages ship yet).
+- **`frontend/src/pages/rss.xml.ts`** emits `/rss.xml` ("Gurbani Soul — Learn") with an **empty**
+  item list for now; PR3 fills it. `RssInvariants` checks it parses and links to the site.
+- The old `frontend/public/sitemap.xml` was deleted (Astro forbids a public file colliding with a
+  page route).
+
+### OG images
+
+`frontend/src/pages/og/[slug].png.ts` renders each 1200×630 card at build with **satori**
+(HTML/CSS → SVG) + **@resvg/resvg-js** (SVG → PNG): warm-ink background, a gold ੴ, the title in
+Source Serif 4, the "Gurbani Soul" wordmark, a thin gold rule. `getStaticPaths` returns one card per
+distinct `og` slug in `routes.ts` (at least `home` and `knowledge-base`). satori needs **static**
+(non-variable) TTFs, so `frontend/src/og/fonts/` holds pinned instances (`*-og.ttf`) of Source
+Serif 4 and Sant Lipi with their OFL licences; only the single ੴ glyph is Gurmukhi (satori has no
+Indic shaping). Cards are byte-deterministic and each ≤ 150 KB. `public/og.jpg` remains a hero crop
+for any fixed-image use.
+
+### Analytics
+
+`frontend/src/components/Analytics.astro` is an `is:inline` loader that injects
+`/_vercel/insights/script.js` **only** when `location.hostname` matches `/(^|\.)gurbanisoul\.com$/`
+— a true no-op on serve.py, localhost and staging. There is **no** `@vercel/analytics` import and no
+third-party host. Vercel Web Analytics must also be **enabled in the Vercel project** (owner action)
+for data to be collected; until then the loader simply fetches nothing. The `ExternalRequestAllowlist`
+gate proves the marketing HTML/JS only references an approved host set and that the insights loader
+is always behind the hostname guard.
+
+### Security headers
+
+`frontend/vercel.json` adds, on top of the existing `nosniff` / `X-Frame-Options: DENY` /
+`Referrer-Policy`:
+
+- **`Content-Security-Policy-Report-Only`** (not enforcing yet — it reports violations so the policy
+  can be tuned before it is switched to an enforcing `Content-Security-Policy` in a later PR):
+  `default-src 'self'`, inline script/style allowed, `img-src 'self' data:`, `font-src 'self'`,
+  `connect-src`/`form-action` add `https://buttondown.com` (the future newsletter), `frame-ancestors
+  'none'`, `base-uri 'self'`, `object-src 'none'`.
+- **`Strict-Transport-Security`** (2-year, `includeSubDomains; preload`),
+  **`Permissions-Policy`** (`camera=(), microphone=(), geolocation=(self), payment=()`), and
+  **`Cross-Origin-Opener-Policy: same-origin`**.
+- Long-lived immutable `Cache-Control` for `/og/:path*` and `/icons/:path*`.
+
+### Fonts & PWA
+
+- **Sant Lipi** (SIL OFL 1.1) — the bundled Gurmukhi webfont, `unicode-range`-scoped, shared with
+  the Knowledge Base; declared in `marketing.css` (rule copied from `global.css`).
+- **Source Serif 4** (SIL OFL 1.1) — a Latin subset for headings (Brand.heading), regenerated by
+  `frontend/scripts/subset-serif.sh` into `frontend/public/fonts/SourceSerif4-latin.woff2`
+  (≤ 130 KB; licence at `/fonts/OFL-SourceSerif4.txt`). Declared in `marketing.css` and wired into
+  the heading stack in PR2 (this PR keeps the page pixel-identical).
+- **PWA**: `frontend/public/site.webmanifest` (name/short_name, warm-ink theme/background,
+  `display: standalone`) and `frontend/public/icons/` (192, 512, maskable-512, apple-touch),
+  regenerated deterministically by `frontend/scripts/gen-icons.mjs` (a gold ੴ on warm ink).
 
 ---
 
 ## The landing page (`/`)
 
-- **Layout:** `frontend/src/layouts/Landing.astro` — its own shell, brand tokens as CSS variables
-  from `docs/brand/tokens.json`, the shared pre-paint theme script, Sant Lipi + a serif heading
-  stack, a skip link, `lang="pa"` on Gurmukhi, and `prefers-reduced-motion` respected.
+- **Layout:** `frontend/src/layouts/Marketing.astro` (renamed from `Landing.astro` in the PR1
+  web-foundations pass) — its own shell, brand tokens as CSS variables in
+  `frontend/src/styles/marketing.css` (mirrored, typed, in `frontend/src/theme.ts`, which the
+  `WebThemeMatchesTokens` gate keeps equal to `docs/brand/tokens.json`), the shared pre-paint theme
+  script, `<Seo>`, `<Analytics>`, Sant Lipi + a serif heading stack, a skip link, `lang="pa"` on
+  Gurmukhi, and `prefers-reduced-motion` respected.
 - **Page:** `frontend/src/pages/index.astro` — hero, the verse band, six feature cards,
   "Private by design", a Knowledge Base card, and the App Store slot.
 - **Brand rules are law** (`docs/brand/gurbani-soul-brand-book.md`): gold leads on warm paper/ink;
@@ -122,9 +194,10 @@ Until the app is approved, `APP_STORE_URL` in `frontend/src/site.ts` is `''` and
 ---
 
 ## Adding a page
-Create `frontend/src/pages/<name>.astro` using `Base.astro` (Knowledge Base) or `Landing.astro`
-(Gurbani Soul). Add it to `frontend/public/sitemap.xml`. If it is a nav destination, add it to the
-`Base.astro` nav with a `data-path`. Build + sync.
+Create `frontend/src/pages/<name>.astro` using `Base.astro` (Knowledge Base) or `Marketing.astro`
+(Gurbani Soul). Add its route to `frontend/src/routes.ts` (the sitemap and OG default derive from
+it — the `SitemapInvariants` gate fails if the manifest and the built HTML routes disagree). If it
+is a nav destination, add it to the `Base.astro` nav with a `data-path`. Build + sync.
 
 ---
 
@@ -132,7 +205,10 @@ Create `frontend/src/pages/<name>.astro` using `Base.astro` (Knowledge Base) or 
 - **Repo gates** (`webapp/tests/test_repo_gates.py`, run by the required `python` check):
   `LandingPage` (verse verbatim, honest copy, alt text, SEO head, page-weight budget),
   `SubmissionUrlsAreLive`, `InAppLinksMatchTheListing`, and `DocsHygiene` (this doc set is the only
-  place the legacy `vercel.app` alias may be named).
+  place the legacy `vercel.app` alias may be named); plus the PR1 web-foundations gates
+  `SeoInvariants`, `SitemapInvariants`, `RssInvariants`, `ExternalRequestAllowlist`,
+  `SmartBannerConsistency`, `NoSecretsInFrontend`, and `WebThemeMatchesTokens`.
+  `StaticRoutes` in `test_serve.py` covers serve.py's static resolver + content types.
 - **`@smoke` Playwright** (`frontend/e2e/landing.spec.ts`, run in the production deploy gate against
   `https://gurbanisoul.com`): landing renders, verse present, exactly one App-Store slot, canonical
   host, axe serious/critical = 0.
