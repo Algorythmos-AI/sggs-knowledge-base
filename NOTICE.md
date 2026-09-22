@@ -51,3 +51,17 @@ The pipeline and web app code (everything in `pipeline/` and `webapp/` except da
   `ios/Packages/GurbaniSearchKit/Sources/CSQLite/PROVENANCE.md`).
 - **Bani ordering and Sri Dasam Granth / Ardaas text** — via the ShabadOS open database
   (release 4.8.7). Scholar review recorded in `ios/Resources/NITNEM-REVIEW.md`.
+
+## Website imagery (gurbanisoul.com landing)
+
+Photographs of Sri Harmandir Sahib on the Gurbani Soul landing page
+(`frontend/src/assets/landing/`) are used under the
+[Unsplash License](https://unsplash.com/license) — commercial use and modification permitted, no
+permission required; attribution appreciated. We credit anyway, in the landing footer and here:
+
+- **Aryan Nikhil** — https://unsplash.com/@aryannikhil
+- **Laurentiu Morariu** — https://unsplash.com/@travelphotographer
+
+Selection is limited to respectful devotional imagery (no saroop being handled, no identifiable
+faces). Add a credit here and in the footer whenever a photo is added — see
+`docs/website/README.md` → "Image policy".

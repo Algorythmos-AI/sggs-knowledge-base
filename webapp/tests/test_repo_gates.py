@@ -469,5 +469,46 @@ class SubmissionUrlsAreLive(unittest.TestCase):
             self.assertTrue((STATIC / f).exists() or (ROOT / "frontend" / "public" / f).exists(), f"missing {f}")
 
 
+class DocsHygiene(unittest.TestCase):
+    """The canonical public host is gurbanisoul.com. The legacy production alias
+    `sggs-knowledge-base.vercel.app` may still be *named* — but only in the two docs whose
+    job is to record the domain topology, and only as a legacy alias. Anywhere else in the
+    tracked Markdown it is a stale URL that will mislead a reader (or get baked into a link),
+    so it is forbidden. (Staging's `sggs-staging.vercel.app` is a different host and is fine.)"""
+
+    ALLOWED = {
+        Path("docs/process/environments.md"),
+        Path("docs/website/README.md"),
+    }
+
+    def _tracked_markdown(self):
+        # Read-only, stdlib: walk the repo for *.md, skipping vendored/build trees.
+        skip = {"node_modules", "dist", "static", "static.bak", ".git", "_astro", "build"}
+        for p in ROOT.rglob("*.md"):
+            rel = p.relative_to(ROOT)
+            if any(part in skip for part in rel.parts):
+                continue
+            yield rel, p
+
+    def test_legacy_vercel_alias_only_in_domain_docs(self):
+        offenders = []
+        for rel, p in self._tracked_markdown():
+            if "sggs-knowledge-base.vercel.app" in p.read_text(encoding="utf-8", errors="ignore"):
+                if rel not in self.ALLOWED:
+                    offenders.append(str(rel))
+        self.assertEqual(
+            sorted(offenders), [],
+            "legacy vercel.app alias must appear only in the domain-topology docs "
+            f"({sorted(str(a) for a in self.ALLOWED)}); found in: {sorted(offenders)}",
+        )
+
+    def test_website_readme_exists_and_names_canonical_host(self):
+        readme = ROOT / "docs" / "website" / "README.md"
+        self.assertTrue(readme.exists(), "docs/website/README.md is missing")
+        text = readme.read_text(encoding="utf-8")
+        self.assertIn("gurbanisoul.com", text)
+        self.assertIn("sggs-knowledge-base.vercel.app", text)  # must document the legacy alias
+
+
 if __name__ == "__main__":
     unittest.main()

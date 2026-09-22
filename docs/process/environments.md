@@ -3,11 +3,16 @@
 | | Local | Staging | Production |
 |---|---|---|---|
 | Branch | working tree | `integration` | `main` |
-| Web | `serve.py` on :7777 | `sggs-staging.vercel.app` (SSO-protected; open logged in) | `sggs-knowledge-base.vercel.app` |
+| Web | `serve.py` on :7777 | `sggs-staging.vercel.app` (SSO-protected; open logged in) | **`gurbanisoul.com`** (canonical) |
 | API | same process | Render `sggs-api-staging.onrender.com` (free; cold-starts) | Render `sggs-knowledge-base.onrender.com` |
 | iOS | simulator | TestFlight **Internal** | TestFlight **External** / App Store |
 | DB profile | full | full | full (public profile until the English licence is recorded) |
 | Who deploys | you | `deploy-staging.yml` on push to integration | `deploy-production.yml` on push to main |
+
+**Production domain.** The canonical public host is **`gurbanisoul.com`** (apex, 200, no redirect).
+`www.gurbanisoul.com` and the legacy Vercel alias `sggs-knowledge-base.vercel.app` both **308**
+→ apex, so there is one indexable host. DNS is Cloudflare DNS-only → Vercel; full topology and the
+email routing are in [`docs/website/README.md`](../website/README.md).
 
 ## Same-origin API (no CORS)
 The browser always calls `/api/*`; Vercel rewrites those to the Render service.
