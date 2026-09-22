@@ -3,7 +3,33 @@
 The format below (newest first) follows [Keep a Changelog](https://keepachangelog.com);
 entries prior to v1.1.0 are the project's original prose style and are preserved verbatim.
 
-## [Unreleased]
+## [1.3.4] — 2026-09-22 — gurbanisoul.com: a next-level marketing site
+
+The public site becomes a real, **multi-page** marketing property for Gurbani Soul — redesigned,
+SEO-ready, with a Learn section — while staying scripture-faithful (Gurmukhi-only on the web; every
+quoted line generated **verbatim** from the corpus and gate-checked). Web/presentation, docs and
+tests only; scripture, corpus and DB **byte-identical** to 1.3.3. Under the one-number policy,
+iOS **1.3.4 (1)** is re-archived at the same version with no app-code change.
+
+**Highlights**
+- **Soul-Gold redesign + accessible nav** — dark-first editorial design; sticky nav with a mobile
+  `<dialog>` menu (focus trap, Esc, scroll lock); theme toggle shared with the Knowledge Base.
+- **Multi-page structure** — Home (hero + verse + overview grid + trust strip), **/features**, and
+  **/watch** (the Raag Clock, properly composed with the live pahar/raags). Nav = real routes with
+  path-based active state; ClientRouter page transitions. The Knowledge Base keeps its own name/theme.
+- **Real hero + app screenshots** — a two-column hero on the owner's artistic rendering of Sri
+  Harmandir Sahib at sunset (no saroop in frame), with a floating iPhone showing the real Reader; the
+  device frames across the site use real public-profile screenshots.
+- **Learn** — 8 evergreen articles for reach; scripture quoted only via a component that renders the
+  verbatim DB line (build fails on drift), every explanation labelled per the Answer-Protocol. The
+  article explanations passed a **Granthi review** (2026-09-22).
+- **SEO / structured data / feeds** — canonical + Open Graph + `theme-color` + Smart App Banner
+  scaffold; generated sitemap (hreflang) and RSS; build-time OG share cards; JSON-LD (Organization,
+  WebSite+SearchAction, SoftwareApplication, Article, BreadcrumbList, FAQPage).
+- **Privacy & security** — Vercel Web Analytics loaded only on `gurbanisoul.com` (no-op elsewhere,
+  cookieless); an **enforced CSP** (proven zero-violation across every route first); an env-gated
+  launch-notice sign-up that ships nothing until configured.
+
 
 ### Added — growth & polish (PR4)
 - **Structured data (JSON-LD)** via `JsonLd.astro`: the landing (`/`) now emits **Organization**
