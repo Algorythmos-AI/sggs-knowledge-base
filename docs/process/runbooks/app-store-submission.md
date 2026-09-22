@@ -54,8 +54,11 @@ file that proves it. Audit and plan: 2026-09-20.
 - [ ] Age rating questionnaire → 4+. Read the live form; answer what it asks.
 - [ ] **New app record / version**: create the App Store version with the string **exactly matching
       the binary's `MARKETING_VERSION`** (a new app record defaults to 1.0; the build is not
-      selectable until the version string matches). Select the processed build once it leaves
-      "Processing".
+      selectable until the version string matches). **Submit the build whose version equals the live
+      site** (`/api/meta.version` on `gurbanisoul.com`) — one number everywhere. Confirm with
+      `python3 scripts/release/check_release_complete.py X.Y.Z` before selecting. Any earlier
+      superseded upload (e.g. a prior patch) is left unsubmitted; Apple expires it. Select the
+      processed build once it leaves "Processing".
 - [ ] **App Information**: Primary category Reference, Secondary Education; Content Rights.
 - [ ] Content rights: **Yes, contains third-party content, and I have the rights** (list from the doc).
 - [ ] Export compliance: answered by `ITSAppUsesNonExemptEncryption = false`.

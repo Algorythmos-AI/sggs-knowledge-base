@@ -119,6 +119,16 @@ if [ "$UPLOAD" = 1 ]; then
   if ! git merge-base --is-ancestor HEAD origin/integration 2>/dev/null && ! git merge-base --is-ancestor HEAD origin/main 2>/dev/null; then
     fail "HEAD $(git rev-parse --short HEAD) is not on origin/integration or origin/main — merge it first, then build from that commit"
   fi
+  # One-number policy: an App Store binary is the released commit — HEAD must be on main and carry the
+  # exact tag v$VERSION, so the ledger's source_commit is always what web+API serve. TestFlight
+  # rehearsals from integration set SGGS_ALLOW_UNTAGGED=1 to skip this (they are not App Store builds).
+  if [ "$CHANNEL" = appstore ] && [ "${SGGS_ALLOW_UNTAGGED:-0}" != 1 ]; then
+    git merge-base --is-ancestor HEAD origin/main 2>/dev/null \
+      || fail "channel=appstore upload must build from origin/main — HEAD $(git rev-parse --short HEAD) is not on main (or set SGGS_ALLOW_UNTAGGED=1 for a TestFlight rehearsal)"
+    EXACT_TAG="$(git describe --exact-match --tags HEAD 2>/dev/null || true)"
+    [ "$EXACT_TAG" = "v$VERSION" ] \
+      || fail "channel=appstore upload must build from the release tag v$VERSION — HEAD is tagged '${EXACT_TAG:-<none>}'. Tag the release first (sggs-release), then build from it (or SGGS_ALLOW_UNTAGGED=1 to rehearse)."
+  fi
   if [ "${SGGS_SKIP_CI_CHECK:-0}" = 1 ]; then
     echo "  WARNING: SGGS_SKIP_CI_CHECK=1 — not waiting for green CI on this commit"
   else
