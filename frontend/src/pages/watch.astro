@@ -1,0 +1,157 @@
+---
+import Marketing from "../layouts/Marketing.astro";
+import MarketingNav from "../components/MarketingNav.astro";
+import RaagArc from "../components/RaagArc.astro";
+import DeviceFrame from "../components/DeviceFrame.astro";
+import JsonLd from "../components/JsonLd.astro";
+import { SITE_URL, SUPPORT_EMAIL } from "../site.ts";
+import raagData from "../generated/landing-raags.json";
+import raagClockShot from "../assets/app/raag-clock.png";
+
+const desc =
+  "The Raag Clock in Gurbani Soul follows the eight pahars — the watches of the day — and shows which raags belong to the current watch, with an optional solar mode. Times follow your device's clock.";
+
+const pahars = raagData.pahars as Record<string, { name: string; roman: string }[]>;
+
+const jsonLd = {
+  "@context": "https://schema.org",
+  "@graph": [
+    { "@type": "WebSite", name: "Gurbani Soul", url: SITE_URL, inLanguage: "en" },
+    {
+      "@type": "WebPage",
+      name: "The Raag Clock — Gurbani Soul",
+      description: desc,
+      url: new URL("/watch", SITE_URL).href,
+      inLanguage: "en",
+      isPartOf: { "@type": "WebSite", name: "Gurbani Soul", url: SITE_URL },
+    },
+  ],
+};
+---
+<Marketing title="The Raag Clock — Gurbani Soul" description={desc} path="/watch">
+  <JsonLd slot="head" data={jsonLd} />
+  <MarketingNav overHero={false} />
+
+  <header class="page-hero">
+    <div class="wrap">
+      <p class="eyebrow">The Raag Clock</p>
+      <h1>The watch of the day</h1>
+    </div>
+  </header>
+
+  <!-- Balanced two columns: prose + CTA on the left, the live dial with its caption on the right -->
+  <section class="section watch-sec">
+    <div class="wrap watch-grid">
+      <div class="watch-copy reveal">
+        <p class="lead">The day is divided into eight pahars — the watches of the day — and different
+          raags belong to different watches.</p>
+        <p class="muted">The dial follows the current watch: as the pahar turns, the raags beneath it
+          change with it. The deep night, from midnight to the small hours, is left in silence and
+          carries no raag.</p>
+        <p class="muted">Times follow your device's clock; the app can also follow sunrise and sunset.</p>
+        <p class="watch-cta"><a class="btn" href="/raag-clock">Open the Raag Clock</a></p>
+      </div>
+
+      <figure class="watch-dial reveal">
+        <p class="dial-now lead" data-raag-now>The dial follows the eight pahars — the watches of the day.</p>
+        <div class="watch-arc"><RaagArc /></div>
+        <figcaption class="dial-cap">
+          <p class="dial-cap-label eyebrow">Raags of this watch</p>
+          <ul class="raags">
+            {Array.from({ length: 8 }, (_, i) => String(i + 1)).map((p) => (
+              <li data-pahar={p} hidden>
+                {pahars[p] && pahars[p].length
+                  ? pahars[p].map((r) => (
+                      <span class="raag-chip"><span class="gm" lang="pa">{r.name}</span> <span class="rom">{r.roman}</span></span>
+                    ))
+                  : <span class="silence">The deep night is left in silence.</span>}
+              </li>
+            ))}
+          </ul>
+        </figcaption>
+      </figure>
+    </div>
+  </section>
+
+  <!-- The Raag Clock on iPhone -->
+  <section class="section band watch-shot-sec">
+    <div class="wrap watch-shot-grid">
+      <div class="shot-copy reveal">
+        <p class="eyebrow">On your Home Screen</p>
+        <h2>The watch, at a glance</h2>
+        <p class="muted">The current watch and its raags sit on the same quiet surface as the reader,
+          and on an optional Home Screen widget — never a feed, never a notification you did not ask for.</p>
+      </div>
+      <div class="shot-device reveal">
+        <DeviceFrame src={raagClockShot} alt="Raag Clock showing the current watch" label="Raag Clock" />
+      </div>
+    </div>
+  </section>
+
+  <footer class="foot">
+    <div class="wrap foot-in">
+      <div>
+        <div class="foot-brand">Gurbani Soul</div>
+        <div>Built by Algorythmos · Sri Guru Granth Sahib Ji is shown verbatim from the source edition, cited by Ang.</div>
+      </div>
+      <nav aria-label="Footer" class="foot-nav">
+        <a href="/">Home</a>
+        <a href="/features">Features</a>
+        <a href="/search">Knowledge Base</a>
+        <a href="/learn">Learn</a>
+        <a href="/support">Support</a>
+        <a href="/privacy">Privacy</a>
+      </nav>
+    </div>
+    <div class="wrap credits">
+      <p>Questions or corrections? <a href="/support">Support</a> · {SUPPORT_EMAIL}</p>
+    </div>
+  </footer>
+
+  <style>
+    .page-hero { padding: clamp(96px, 12vw, 150px) 0 clamp(4px, 2vw, 16px); }
+    .page-hero h1 { font-size: clamp(32px, 5.4vw, 54px); margin: 0; }
+
+    /* Two-column body — prose left, dial right */
+    .watch-grid { display: grid; grid-template-columns: 1fr; gap: clamp(40px, 6vw, 72px); align-items: center; }
+    .watch-copy .lead { margin: 0 0 20px; }
+    .watch-copy .muted { max-width: 46ch; font-size: 16px; }
+    .watch-copy .muted + .muted { margin-top: 14px; }
+    .watch-cta { margin: 28px 0 0; }
+
+    /* Dial column — arc centred in its column, caption directly under it (no orphaned elements) */
+    .watch-dial { margin: 0; display: flex; flex-direction: column; align-items: center; text-align: center; gap: 20px; }
+    .dial-now { margin: 0; max-width: 30ch; }
+    .watch-arc { display: flex; justify-content: center; }
+    .dial-cap { max-width: 34ch; }
+    .dial-cap-label { margin: 0 0 12px; }
+    .raags { list-style: none; padding: 0; margin: 0; display: flex; flex-wrap: wrap; gap: 10px 12px; justify-content: center; }
+    /* Only the current watch's raags show; [hidden] must beat the flex rule (attribute specificity). */
+    .raags li { display: flex; flex-wrap: wrap; gap: 10px 12px; justify-content: center; }
+    .raags li[hidden] { display: none; }
+    .raag-chip { display: inline-flex; align-items: baseline; gap: 7px; padding: 7px 13px; border: 1px solid var(--line); border-radius: 999px; font-size: 15px; }
+    .raag-chip .gm { color: var(--ink); font-size: 16px; }
+    .raag-chip .rom { color: var(--ink-soft); font-size: 13px; }
+    .silence { font-family: var(--serif-display); font-size: 18px; color: var(--ink-soft); font-style: italic; }
+    @media (min-width: 900px) {
+      .watch-grid { grid-template-columns: 5fr 6fr; align-items: center; }
+      .watch-copy .muted { max-width: 44ch; }
+    }
+
+    /* Device shot band */
+    .watch-shot-grid { display: grid; grid-template-columns: 1fr; gap: 40px; align-items: center; }
+    .shot-copy h2 { font-size: clamp(26px, 4vw, 40px); margin: 0 0 14px; }
+    .shot-copy .muted { max-width: 46ch; }
+    .shot-device { display: flex; justify-content: center; }
+    @media (min-width: 900px) {
+      .watch-shot-grid { grid-template-columns: 6fr 5fr; gap: 64px; }
+      .shot-device { justify-content: flex-end; }
+    }
+
+    .foot-in { padding-top: 44px; padding-bottom: 20px; display: flex; flex-wrap: wrap; gap: 16px 32px; align-items: baseline; justify-content: space-between; }
+    .foot-brand { font-family: var(--serif-display); font-size: 18px; color: var(--ink); }
+    .foot-nav { display: flex; gap: 18px; flex-wrap: wrap; }
+    .credits { padding-bottom: 40px; }
+    .credits p { margin: 0; }
+  </style>
+</Marketing>

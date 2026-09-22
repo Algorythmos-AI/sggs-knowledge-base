@@ -477,35 +477,46 @@ class LandingPage(unittest.TestCase):
 
     def test_landing_raags_match_db(self):
         # The raags listed under each pahar must be exactly the DB's primary claims for that pahar,
-        # and pahar 7 (the silent night) must list none.
+        # and pahar 7 (the silent night) must list none. Since the multi-page redesign the raag
+        # <li data-pahar> markup lives on the dedicated /watch page (webapp/static/watch/index.html).
         self._skip_if_unbuilt()
+        watch = STATIC / "watch" / "index.html"
+        if not watch.exists():
+            self.skipTest("webapp/static/watch/index.html not built (cd frontend && npm run build:deploy)")
+        html = watch.read_text(encoding="utf-8")
         db = ROOT / "db" / "sggs.sqlite"
         if not (db.exists() and db.read_bytes()[:15] == b"SQLite format 3"):
             self.skipTest("db/sggs.sqlite not present (git lfs pull)")
         conn = sqlite3.connect(f"file:{db}?mode=ro", uri=True)
         for p in range(1, 9):
-            m = re.search(rf'<li[^>]*\bdata-pahar="{p}"[^>]*>(.*?)</li>', self.html, re.S)
-            self.assertIsNotNone(m, f"no <li data-pahar=\"{p}\"> on the landing")
+            m = re.search(rf'<li[^>]*\bdata-pahar="{p}"[^>]*>(.*?)</li>', html, re.S)
+            self.assertIsNotNone(m, f"no <li data-pahar=\"{p}\"> on /watch")
             shown = set(re.findall(r'<span class="gm" lang="pa"[^>]*>([^<]+)</span>', m.group(1)))
             want = {r[0] for r in conn.execute(
                 "SELECT raag_name FROM raag_timing_claims WHERE claim_type='primary' AND pahar=?", (p,))}
-            self.assertEqual(shown, want, f"pahar {p}: landing raags {shown} != DB primary claims {want}")
+            self.assertEqual(shown, want, f"pahar {p}: /watch raags {shown} != DB primary claims {want}")
         # pahar 7 must have none
-        m7 = re.search(r'<li[^>]*\bdata-pahar="7"[^>]*>(.*?)</li>', self.html, re.S)
+        m7 = re.search(r'<li[^>]*\bdata-pahar="7"[^>]*>(.*?)</li>', html, re.S)
         self.assertNotIn('class="gm"', m7.group(1), "pahar 7 must list no raags")
 
 
 MARKETING_CSS = ROOT / "frontend" / "src" / "styles" / "marketing.css"
 COMPONENTS = ROOT / "frontend" / "src" / "components"
-INDEX_ASTRO = ROOT / "frontend" / "src" / "pages" / "index.astro"
+PAGES = ROOT / "frontend" / "src" / "pages"
+INDEX_ASTRO = PAGES / "index.astro"
+# Marketing pages (Marketing.astro shell) whose scoped CSS the brand discipline also governs.
+MARKETING_PAGES = ("index.astro", "features.astro", "watch.astro")
 
 
 def _marketing_style_sources():
-    """(name, text) for the marketing stylesheet, every component, and the landing's scoped CSS."""
+    """(name, text) for the marketing stylesheet, every component, and the marketing pages' CSS."""
     out = [("marketing.css", MARKETING_CSS.read_text(encoding="utf-8"))]
     for p in sorted(COMPONENTS.glob("*.astro")):
         out.append((p.name, p.read_text(encoding="utf-8")))
-    out.append(("index.astro", INDEX_ASTRO.read_text(encoding="utf-8")))
+    for name in MARKETING_PAGES:
+        p = PAGES / name
+        if p.exists():
+            out.append((name, p.read_text(encoding="utf-8")))
     return out
 
 

@@ -47,6 +47,8 @@ const learnRoutes: Route[] = [
 
 export const routes: Route[] = [
   { path: "/",             lastmod: LASTMOD, changefreq: "weekly",  priority: 1.0, og: "home" },
+  { path: "/features",     lastmod: LASTMOD, changefreq: "weekly",  priority: 0.8, og: "features" },
+  { path: "/watch",        lastmod: LASTMOD, changefreq: "weekly",  priority: 0.7, og: "watch" },
   { path: "/search",       lastmod: LASTMOD, changefreq: "weekly",  priority: 0.9, og: "knowledge-base" },
   { path: "/reader",       lastmod: LASTMOD, changefreq: "weekly",  priority: 0.8, og: "knowledge-base" },
   { path: "/nitnem",       lastmod: LASTMOD, changefreq: "weekly",  priority: 0.7, og: "knowledge-base" },

@@ -26,6 +26,8 @@ const PAPER = theme.light.paper;     // #FBF7F0 (title ink on the dark card)
 
 const TITLES: Record<string, string> = {
   "home": "A quiet, exact companion to Sri Guru Granth Sahib Ji",
+  "features": "Gurbani Soul — everything, on your device",
+  "watch": "The Raag Clock — the watches of the day",
   "knowledge-base": "Sri Guru Granth Sahib Ji — Knowledge Base",
   "learn": "Learn — Sri Guru Granth Sahib Ji",
 };

@@ -8,35 +8,37 @@
 import { APP_STORE_URL } from "../site";
 
 // `overHero` (default) floats the bar over the dark hero with white text until scrolled. Pages with
-// no dark hero (e.g. Learn) pass overHero={false} so the resting bar uses ink text on paper —
-// otherwise white-on-paper fails colour contrast.
+// no dark hero (e.g. Learn, Features, The watch) pass overHero={false} so the resting bar uses ink
+// text on paper — otherwise white-on-paper fails colour contrast.
 export interface Props { overHero?: boolean }
 const { overHero = true } = Astro.props;
 
-// In-page section anchors only work on the landing. From any other marketing page (e.g. Learn)
-// they must point back to the landing's sections, so "#features" becomes "/#features".
-const onLanding = Astro.url.pathname === "/";
-const sec = (hash: string) => (onLanding ? hash : "/" + hash);
+// The nav is a genuine multi-page site now — every item is its own route (no in-page anchors).
+// Active state is by PATHNAME: aria-current="page" on the link whose href matches the current path.
+// landing.ts re-asserts this after each ClientRouter swap (see wireNavActive).
+const here = (Astro.url.pathname || "/").replace(/\/+$/, "") || "/";
+const isCurrent = (href: string) => (href.replace(/\/+$/, "") || "/") === here;
 
 const links = [
-  { href: sec("#features"), label: "Features" },
-  { href: sec("#clock"), label: "The watch" },
-  { href: sec("#privacy"), label: "Privacy" },
-  { href: sec("#knowledge-base"), label: "Knowledge Base" },
-  { href: sec("#support"), label: "Support" },
+  { href: "/features", label: "Features", prefetch: true },
+  { href: "/watch", label: "The watch", prefetch: true },
+  { href: "/privacy", label: "Privacy" },
+  { href: "/search", label: "Knowledge Base" },
+  { href: "/support", label: "Support" },
   { href: "/learn", label: "Learn", prefetch: true },
 ];
 ---
 <header class:list={["mnav", { "mnav--solid": !overHero }]} id="mnav">
   <div class="mnav-in">
-    <a class="brand" href={onLanding ? "#top" : "/"}>
+    <a class="brand" href="/">
       <span class="gm" aria-hidden="true">ੴ</span>
       <span>Gurbani Soul</span>
     </a>
 
     <nav class="mnav-links" aria-label="Primary">
       {links.map((l) => (
-        <a href={l.href} data-astro-prefetch={l.prefetch ? "" : undefined}>{l.label}</a>
+        <a href={l.href} data-astro-prefetch={l.prefetch ? "" : undefined}
+           aria-current={isCurrent(l.href) ? "page" : undefined}>{l.label}</a>
       ))}
     </nav>
 
@@ -61,7 +63,8 @@ const links = [
       <button class="mm-close" aria-label="Close menu">&times;</button>
     </div>
     {links.map((l) => (
-      <a href={l.href} data-astro-prefetch={l.prefetch ? "" : undefined}>{l.label}</a>
+      <a href={l.href} data-astro-prefetch={l.prefetch ? "" : undefined}
+         aria-current={isCurrent(l.href) ? "page" : undefined}>{l.label}</a>
     ))}
     {APP_STORE_URL
       ? <a class="pill mm-cta" href={APP_STORE_URL} aria-label="Get Gurbani Soul on the App Store">Get the app</a>
