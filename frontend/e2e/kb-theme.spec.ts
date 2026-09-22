@@ -4,9 +4,12 @@ import { test, expect } from '@playwright/test';
 // behave identically: #themeBtn, glyphs ☀/☾/◐, cycle order system→light→dark, and a choice that
 // persists in localStorage across a reload. Exercised on /search (a Knowledge Base page).
 test('theme toggle cycles system→light→dark and persists @smoke', async ({ page }) => {
-  await page.addInitScript(() => { try { localStorage.removeItem('theme'); } catch (e) {} });
+  // Start from a clean "no stored choice" state. Clear once, then reload — NOT via addInitScript,
+  // which would re-run on the persistence-check reload below and wipe the choice we're testing.
   const res = await page.goto('/search');
   expect(res?.status()).toBe(200);
+  await page.evaluate(() => { try { localStorage.removeItem('theme'); } catch (e) {} });
+  await page.reload();
 
   const btn = page.locator('#themeBtn');
   const html = page.locator('html');
