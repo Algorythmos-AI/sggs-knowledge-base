@@ -21,7 +21,7 @@ concurrency:
   cancel-in-progress: true
 
 env:
-  SITE: https://sggs-knowledge-base.vercel.app
+  SITE: https://gurbanisoul.com
 
 jobs:
   probe:
@@ -33,13 +33,19 @@ jobs:
         run: |
           set -u
           fail=""
-          fetch() { curl -fsS --retry 3 --retry-delay 10 --retry-all-errors --max-time 60 "$1"; }
+          fetch() { curl -fsSL --retry 3 --retry-delay 10 --retry-all-errors --max-time 60 "$1"; }
 
           if health="$(fetch "$SITE/api/health")"; then
             echo "$health" | python3 -c 'import json,sys; d=json.load(sys.stdin); bad=[k for k,v in d.get("checks",{}).items() if v is not True]; sys.exit(0 if d.get("ok") is True and not bad else "health not ok: %s" % bad)' \
               || fail="$fail /api/health(checks)"
           else
             fail="$fail /api/health(unreachable)"
+          fi
+
+          if page="$(fetch "$SITE/")"; then
+            echo "$page" | grep -q "Gurbani Soul" || fail="$fail /(content)"
+          else
+            fail="$fail /(unreachable)"
           fi
 
           if page="$(fetch "$SITE/privacy")"; then

@@ -2,8 +2,11 @@
 """Verify SGGS production: API identity + health + heading regression + web domain."""
 import argparse, json, subprocess, sys, urllib.error, urllib.request
 
+class _NoRedirect(urllib.request.HTTPRedirectHandler):
+    def redirect_request(self, *a, **k): return None
+
 API = "https://sggs-knowledge-base.onrender.com"
-WEB = "https://sggs-knowledge-base.vercel.app"
+WEB = "https://gurbanisoul.com"
 TODI = "ਟੋਡੀ ਮਹਲਾ ੫ ਘਰੁ ੨ ਚਉਪਦੇ"
 
 def get(url, timeout=60):
@@ -38,6 +41,20 @@ def main():
         check(f"{label} Ang 712 heading", first.startswith(TODI), first[:40])
         s, _ = get(base + "/api/shabad/2844")
         check(f"{label} gap comp 2844 → 404", s == 404, f"HTTP {s}")
+
+    # Directional guard: the canonical host must serve /privacy and /support 200 WITHOUT a
+    # redirect hop (App Store URLs should not bounce). Catches a flipped Vercel redirect.
+    if a.web.rstrip("/").endswith("gurbanisoul.com"):
+        print(f"[canonical] {a.web}")
+        opener = urllib.request.build_opener(_NoRedirect)
+        for path in ("/privacy", "/support", "/"):
+            try:
+                code = opener.open(urllib.request.Request(a.web + path, headers={"User-Agent": "sggs-verify"}), timeout=60).status
+            except urllib.error.HTTPError as e:
+                code = e.code
+            except Exception as e:
+                code = str(e)
+            check(f"canonical {path} is 200 (no redirect)", code == 200, f"HTTP {code}")
 
     try:
         out = subprocess.run(["vercel", "inspect", a.web.replace("https://", ""), "--scope", "skalaliyas-projects"],

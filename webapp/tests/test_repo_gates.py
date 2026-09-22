@@ -345,7 +345,7 @@ class ListingLint(unittest.TestCase):
     def test_submission_urls_are_live_hosts(self):
         # The "Submit this" column is what gets typed into App Store Connect. Only hosts that
         # serve the pages today belong there; add gurbanisoul.com here when it goes live.
-        live_hosts = {"sggs-knowledge-base.vercel.app"}
+        live_hosts = {"gurbanisoul.com"}
         rows = re.findall(r"(?m)^\| (?:Support|Marketing|Privacy Policy) URL \| `https://([^/`]+)[^`]*` \|",
                           _section(self.text, "URLs"))
         self.assertEqual(len(rows), 3, "Support, Marketing and Privacy rows must each give a URL")
@@ -380,6 +380,16 @@ class InAppLinksMatchTheListing(unittest.TestCase):
 
     def test_support_url_matches(self):
         self.assertEqual(self._app_link("support"), self._listing_url("Support URL"))
+
+    def test_app_links_use_the_canonical_host(self):
+        # The in-app links must be https on the bare canonical host — no www, no vercel.app,
+        # and nowhere in shipping Swift may the interim host survive.
+        for name in ("privacy", "support"):
+            u = self._app_link(name)
+            self.assertTrue(u.startswith("https://gurbanisoul.com/"), f"AppLinks.{name} = {u}")
+        self.assertEqual(
+            violations(r"sggs-knowledge-base\.vercel\.app|www\.gurbanisoul\.com"), [],
+            "shipping Swift references the interim/www host")
 
 
 STATIC = ROOT / "webapp" / "static"
