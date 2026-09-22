@@ -7,18 +7,29 @@
 // canonical "coming soon" element (data-app-store="coming-soon") remains the hero one.
 import { APP_STORE_URL } from "../site";
 
+// `overHero` (default) floats the bar over the dark hero with white text until scrolled. Pages with
+// no dark hero (e.g. Learn) pass overHero={false} so the resting bar uses ink text on paper —
+// otherwise white-on-paper fails colour contrast.
+export interface Props { overHero?: boolean }
+const { overHero = true } = Astro.props;
+
+// In-page section anchors only work on the landing. From any other marketing page (e.g. Learn)
+// they must point back to the landing's sections, so "#features" becomes "/#features".
+const onLanding = Astro.url.pathname === "/";
+const sec = (hash: string) => (onLanding ? hash : "/" + hash);
+
 const links = [
-  { href: "#features", label: "Features" },
-  { href: "#clock", label: "The watch" },
-  { href: "#privacy", label: "Privacy" },
-  { href: "#knowledge-base", label: "Knowledge Base" },
-  { href: "#support", label: "Support" },
+  { href: sec("#features"), label: "Features" },
+  { href: sec("#clock"), label: "The watch" },
+  { href: sec("#privacy"), label: "Privacy" },
+  { href: sec("#knowledge-base"), label: "Knowledge Base" },
+  { href: sec("#support"), label: "Support" },
   { href: "/learn", label: "Learn", prefetch: true },
 ];
 ---
-<header class="mnav" id="mnav">
+<header class:list={["mnav", { "mnav--solid": !overHero }]} id="mnav">
   <div class="mnav-in">
-    <a class="brand" href="#top">
+    <a class="brand" href={onLanding ? "#top" : "/"}>
       <span class="gm" aria-hidden="true">ੴ</span>
       <span>Gurbani Soul</span>
     </a>

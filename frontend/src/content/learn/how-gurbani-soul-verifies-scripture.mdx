@@ -1,0 +1,44 @@
+---
+title: "How Gurbani Soul verifies scripture"
+description: "Verbatim extraction, character-for-character reconciliation, and the SHA-256 checksum that guards the bundled scripture on install and update."
+pubDate: 2026-09-22
+tags: [verification]
+quotes: [3]
+---
+
+The single most important promise Gurbani Soul makes is that the scripture it shows is exactly the
+scripture in the source edition — character for character, never corrected, normalised, or
+AI-generated. Everything below is how that promise is kept.
+
+<Verse id={3} />
+
+<Explanation>
+This line, from Ang 1, speaks of what is true from the beginning and through the ages. It is shown
+here because fidelity to the received text is the whole point of this page. Reading a settled meaning
+into the line would be interpretation; the note stops at pointing to why the line was chosen.
+</Explanation>
+
+## Verbatim by construction
+
+The text is extracted directly from the source edition into a machine-readable corpus. It is then
+**reconciled character for character** against the source — an automated proof that the corpus and
+the source agree exactly, byte for byte. If they ever disagreed, the build would stop. Nothing about
+the Gurmukhi is "improved" in passing: spacing and spelling are preserved as printed.
+
+## The SHA-256 checksum
+
+The corpus is built into a database that ships inside the app. That database has a **SHA-256
+checksum** — a fingerprint that changes if even one character changes. When the app is installed or
+updated, it checks the bundled database against the expected checksum. If the fingerprint does not
+match, the app refuses to show the text rather than risk showing it altered.
+
+## Cited, and checkable
+
+Every line is presented with its Ang, so you can confirm it against a physical Saroop or any other
+copy. The Knowledge Base also exposes a verification step that takes a line and a claimed Ang and
+reports whether the quotation is an exact match in the corpus — the same discipline the
+[Answer Protocol](/support) requires of any answer.
+
+None of this depends on a network. The whole chain — corpus, database, checksum, citation — lives on
+your device, so the text you read is verifiable offline. You can start reading from the
+[reader](/reader) or look up a line in [search](/search).

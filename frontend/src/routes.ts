@@ -20,6 +20,31 @@ export interface Route {
 
 const LASTMOD = "2026-09-22";
 
+// Learn article slugs (src/content/learn/<slug>.mdx), newest-first for the index + teaser order.
+// Kept here so the sitemap, the OG cards and the /learn index share one ordered list. Must list
+// exactly the non-draft articles — the SitemapInvariants gate compares this to the built HTML.
+export const LEARN_SLUGS: string[] = [
+  "what-is-a-hukamnama",
+  "how-to-read-nitnem",
+  "the-31-raags-and-the-watches-of-the-day",
+  "what-is-an-ang",
+  "how-gurbani-soul-verifies-scripture",
+  "search-by-first-letters",
+  "offline-and-private-by-design",
+  "widgets-and-live-activity",
+];
+
+const learnRoutes: Route[] = [
+  { path: "/learn", lastmod: LASTMOD, changefreq: "weekly", priority: 0.7, og: "learn" },
+  ...LEARN_SLUGS.map((slug): Route => ({
+    path: `/learn/${slug}`,
+    lastmod: LASTMOD,
+    changefreq: "monthly",
+    priority: 0.5,
+    og: `learn-${slug}`,
+  })),
+];
+
 export const routes: Route[] = [
   { path: "/",             lastmod: LASTMOD, changefreq: "weekly",  priority: 1.0, og: "home" },
   { path: "/search",       lastmod: LASTMOD, changefreq: "weekly",  priority: 0.9, og: "knowledge-base" },
@@ -35,6 +60,7 @@ export const routes: Route[] = [
   { path: "/divergence",   lastmod: LASTMOD, changefreq: "monthly", priority: 0.4, og: "knowledge-base" },
   { path: "/privacy",      lastmod: LASTMOD, changefreq: "yearly",  priority: 0.4, og: "knowledge-base" },
   { path: "/support",      lastmod: LASTMOD, changefreq: "yearly",  priority: 0.4, og: "knowledge-base" },
+  ...learnRoutes,
 ];
 
 // The set of distinct OG card slugs the site needs (drives og/[slug].png getStaticPaths).

@@ -1,8 +1,14 @@
 #!/usr/bin/env python3
-"""Extract the verbatim opening line (Ang 1) from db/sggs.sqlite into the landing's generated
-data. Run from the repo root. The LandingVerseIsVerbatim gate re-checks the built page vs the DB,
-so scripture on the landing can never drift from the corpus."""
-import sqlite3, json, sys, pathlib
+"""Extract verbatim Gurmukhi from db/sggs.sqlite into the landing + Learn generated data.
+Run from the repo root. The LandingPage / LearnSection gates re-check the built pages against the
+DB, so scripture on the site can never drift from the corpus.
+
+Emits (all under frontend/src/generated/, byte-stable across runs):
+  - landing-verse.json   the verbatim opening line of Ang 1 (landing hero verse)
+  - landing-raags.json   primary raag-timing claims per pahar (metadata, not scripture)
+  - quotes.json          verbatim rows for every line id quoted by a Learn article
+"""
+import sqlite3, json, sys, re, pathlib
 root = pathlib.Path(__file__).resolve().parents[1]
 db = root / "db" / "sggs.sqlite"
 conn = sqlite3.connect(f"file:{db}?mode=ro", uri=True)
@@ -37,3 +43,53 @@ try:
     print("wrote", raags)
 except sqlite3.OperationalError as e:
     sys.exit(f"raag_timing_claims not available in this DB: {e}")
+
+# 3) quotes.json — every verbatim line quoted by a Learn article. The union of each article's
+#    frontmatter `quotes: [ids]` and the `<Verse id={N}` occurrences in its body. A body id that is
+#    not also declared in that file's frontmatter is a fidelity hazard (an undeclared quote), so we
+#    FAIL rather than silently emit it. Every emitted id must exist in db/sggs.sqlite (else FAIL).
+learn_dir = root / "frontend" / "src" / "content" / "learn"
+FM = re.compile(r"^---\s*\n(.*?)\n---", re.S)
+FM_QUOTES = re.compile(r"(?m)^quotes:\s*\[([^\]]*)\]")
+BODY_VERSE = re.compile(r"<Verse\s+id=\{(\d+)\}")
+
+def int_list(s):
+    return [int(x) for x in re.findall(r"\d+", s)]
+
+wanted = set()
+if learn_dir.is_dir():
+    for mdx in sorted(learn_dir.glob("*.mdx")):
+        text = mdx.read_text(encoding="utf-8")
+        fm = FM.search(text)
+        fm_body_split = text[fm.end():] if fm else text
+        declared = set()
+        if fm:
+            mq = FM_QUOTES.search(fm.group(1))
+            if mq:
+                declared = set(int_list(mq.group(1)))
+        body_ids = set(int(x) for x in BODY_VERSE.findall(fm_body_split))
+        undeclared = sorted(body_ids - declared)
+        if undeclared:
+            sys.exit(f"{mdx.name}: <Verse id> {undeclared} used in body but not declared in "
+                     f"frontmatter `quotes:` — declare every quoted id.")
+        wanted |= declared | body_ids
+
+quotes = {}
+for lid in sorted(wanted):
+    row = conn.execute(
+        "SELECT ang, line_no, raag, author, is_header, gurmukhi FROM lines WHERE id=?",
+        (lid,)).fetchone()
+    if not row:
+        sys.exit(f"quotes.json: line id {lid} not found in db/sggs.sqlite")
+    ang, line_no, raag, author, is_header, gurmukhi = row
+    quotes[str(lid)] = {
+        "ang": ang, "line_no": line_no, "raag": raag, "author": author,
+        "is_header": bool(is_header), "gurmukhi": gurmukhi,
+    }
+
+manifest = json.loads((root / "MANIFEST.json").read_text(encoding="utf-8"))
+out = gen / "quotes.json"
+out.write_text(json.dumps(
+    {"_db_sha256": manifest.get("db_sha256", ""), "quotes": quotes},
+    ensure_ascii=False, indent=2, sort_keys=False) + "\n", encoding="utf-8")
+print("wrote", out, f"({len(quotes)} line(s))")

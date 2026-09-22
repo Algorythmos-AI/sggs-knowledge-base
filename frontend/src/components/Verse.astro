@@ -1,0 +1,41 @@
+---
+// Verse.astro — render one line of scripture, verbatim, cited by Ang. The ONLY way scripture may
+// appear in a Learn article. The Gurmukhi is read from generated/quotes.json (built from
+// db/sggs.sqlite by scripts/gen_landing_verse.py) — never typed by hand. If the id is not in
+// quotes.json the build THROWS, so a stale or invented id can never ship.
+//
+// Public web is Gurmukhi-only: no English translation, no transliteration of the verse — just the
+// verbatim line (ink-coloured) and the citation "Sri Guru Granth Sahib Ji · Ang N".
+import data from "../generated/quotes.json";
+
+export interface Props { id: number }
+const { id } = Astro.props;
+
+const quotes = (data as { quotes: Record<string, {
+  ang: number; line_no: number; raag: string | null; author: string | null;
+  is_header: boolean; gurmukhi: string;
+}> }).quotes;
+
+const q = quotes[String(id)];
+if (!q) {
+  throw new Error(
+    `<Verse id={${id}} />: line id ${id} is not in generated/quotes.json. ` +
+    "Declare it in the article frontmatter `quotes:` and run scripts/gen_landing_verse.py.",
+  );
+}
+
+const cite =
+  `Sri Guru Granth Sahib Ji · Ang ${q.ang}` +
+  (q.raag ? ` · ${q.raag}` : "") +
+  (q.author ? ` · ${q.author}` : "");
+---
+<figure class="verse-fig" data-line-id={id}>
+  <p class="verse gm" lang="pa" data-line-id={id}>{q.gurmukhi}</p>
+  <figcaption class="cite">{cite}</figcaption>
+</figure>
+
+<style>
+  .verse-fig { margin: 32px 0; padding: 0 0 0 20px; border-left: 2px solid var(--accent); }
+  .verse { font-size: clamp(20px, 2.8vw, 27px); line-height: 1.9; color: var(--ink); margin: 0; }
+  .cite { margin: 12px 0 0; color: var(--accent-text); font-weight: 600; font-size: 13.5px; letter-spacing: .01em; }
+</style>

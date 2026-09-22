@@ -10,6 +10,7 @@ import satori from "satori";
 import { Resvg } from "@resvg/resvg-js";
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
+import { getCollection } from "astro:content";
 import { ogSlugs } from "../../routes";
 import theme from "../../theme";
 
@@ -26,16 +27,23 @@ const PAPER = theme.light.paper;     // #FBF7F0 (title ink on the dark card)
 const TITLES: Record<string, string> = {
   "home": "A quiet, exact companion to Sri Guru Granth Sahib Ji",
   "knowledge-base": "Sri Guru Granth Sahib Ji — Knowledge Base",
+  "learn": "Learn — Sri Guru Granth Sahib Ji",
 };
-const titleFor = (slug: string) => TITLES[slug] ?? TITLES["knowledge-base"];
 
-export function getStaticPaths() {
-  return ogSlugs().map((slug) => ({ params: { slug } }));
+// Per-article OG cards (slug "learn-<articleId>") carry the article's own title in Source Serif 4.
+// Only the ੴ glyph is Gurmukhi; article titles are English, so satori (no Indic shaping) is fine.
+export async function getStaticPaths() {
+  const learn = await getCollection("learn");
+  const learnTitle: Record<string, string> = {};
+  for (const a of learn) learnTitle[`learn-${a.id}`] = a.data.title;
+  return ogSlugs().map((slug) => ({
+    params: { slug },
+    props: { title: TITLES[slug] ?? learnTitle[slug] ?? TITLES["knowledge-base"] },
+  }));
 }
 
-export const GET: APIRoute = async ({ params }) => {
-  const slug = String(params.slug);
-  const title = titleFor(slug);
+export const GET: APIRoute = async ({ props }) => {
+  const title = (props as { title: string }).title;
 
   const svg = await satori(
     {
