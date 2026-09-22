@@ -12,6 +12,10 @@ import { LEARN_SLUGS } from '../routes.ts';
 import verse from '../generated/landing-verse.json';
 import raagData from '../generated/landing-raags.json';
 import heroImg from '../assets/landing/harmandir-sahib-sunset.jpg';
+import readerShot from '../assets/app/reader.png';
+import nitnemShot from '../assets/app/nitnem.png';
+import raagClockShot from '../assets/app/raag-clock.png';
+import hukamShot from '../assets/app/hukam.png';
 
 // Three newest Learn articles for the teaser (ties broken by the LEARN_SLUGS order).
 const learnOrder = new Map(LEARN_SLUGS.map((s, i) => [s, i]));
@@ -140,8 +144,8 @@ const softwareApplication = {
       </div>
       <div class="feat-body">
         <div class="feat-devices" aria-hidden="false">
-          <DeviceFrame alt="The reader, showing a shabad in a clear Gurmukhi typeface" label="Reader" />
-          <DeviceFrame alt="Nitnem — the daily banis, kept by time of day" label="Nitnem" />
+          <DeviceFrame src={readerShot} alt="Reader screen showing Ang 1 in Sant Lipi" label="Reader" />
+          <DeviceFrame src={nitnemShot} alt="Nitnem screen listing the daily banis by time of day" label="Nitnem" />
         </div>
         <dl class="feat-list">
           {features.map((f) => (
@@ -178,7 +182,7 @@ const softwareApplication = {
         </ul>
         <p class="muted watch-note">Times follow your device's clock; the app can also follow sunrise and sunset.</p>
         <div class="watch-device">
-          <DeviceFrame alt="The Raag Clock, showing the raags of the current watch" label="Raag Clock" />
+          <DeviceFrame src={raagClockShot} alt="Raag Clock showing the current watch" label="Raag Clock" />
         </div>
       </div>
     </div>
@@ -200,7 +204,7 @@ const softwareApplication = {
         <p><a href="/privacy">Read the privacy policy</a></p>
       </div>
       <div class="priv-device reveal">
-        <DeviceFrame alt="A Hukam drawn on the device, shown offline" label="Hukam" />
+        <DeviceFrame src={hukamShot} alt="Hukam screen with a complete shabad cited by Ang" label="Hukam" />
       </div>
     </div>
   </section>
