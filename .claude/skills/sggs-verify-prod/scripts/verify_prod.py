@@ -22,6 +22,8 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--commit"); ap.add_argument("--version")
     ap.add_argument("--api", default=API); ap.add_argument("--web", default=WEB)
+    ap.add_argument("--ios", action="store_true",
+                    help="also require the iOS binary to match: runs check_release_complete.py --version")
     a = ap.parse_args()
     fails = []
     def check(name, ok, detail=""):
@@ -63,6 +65,17 @@ def main():
         print(f"[vercel] public domain served by: {ids[0] if ids else 'unknown (vercel CLI not logged in?)'}")
     except (FileNotFoundError, subprocess.TimeoutExpired):
         print("[vercel] CLI unavailable — deployment id not checked")
+
+    # One-number policy: optionally require the shipped iOS binary to match this release too.
+    if a.ios:
+        if not a.version:
+            check("ios: --version required for --ios", False)
+        else:
+            import pathlib
+            # scripts/ → sggs-verify-prod/ → skills/ → .claude/ → repo root
+            checker = pathlib.Path(__file__).resolve().parents[4] / "scripts/release/check_release_complete.py"
+            rc = subprocess.run([sys.executable, str(checker), a.version, "--api", a.api, "--web", a.web])
+            check(f"iOS {a.version} release-complete (web==API==binary)", rc.returncode == 0)
 
     print("RESULT:", "PASS" if not fails else f"FAIL ({', '.join(fails)})")
     return 1 if fails else 0

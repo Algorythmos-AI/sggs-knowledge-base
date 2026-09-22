@@ -115,7 +115,8 @@ DB also has: `fts`/`fts_en`/`fts_shabad`/`fts_tri`, `translations`, `variants`, 
 ## Versioning convention (important)
 
 - **`APP_VERSION` in `webapp/serve.py` is the source of truth** for the running build. Bump it on every search-logic/UI release.
-- The UI footer reads `/api/meta → meta.version`, which returns `APP_VERSION`. The DB's own build version is returned separately as `db_version` and is **not** shown in the UI. This decoupling is intentional: a search-only patch shouldn't force a re-commit of the ~104 MiB LFS DB.
+- **One number, everywhere.** The web footer, `/api/meta`, `/api/health`, the iOS About screen (`MARKETING_VERSION`) and the App Store all report the same X.Y.Z; they are **never allowed to differ** (`check_versions.py` gates the 8 in-repo strings **and** that the iOS ledger is not ahead of `APP_VERSION`). **Every release is re-archived at the same version** and uploaded as iOS `X.Y.Z (1)` from the release tag `vX.Y.Z`, even a web-only change — so the App Store number always equals the live site. The **build number restarts at 1 per version** (only a re-upload of the *same* version increments it). A release is *complete* only when `scripts/release/check_release_complete.py X.Y.Z` passes (prod web+API at the tag commit **and** an `appstore` ledger entry of X.Y.Z from that commit). Never ship a one-sided hotfix — patch-bump both surfaces.
+- The DB's own build version is returned separately as `db_version` and is **not** shown in the UI. This decoupling is intentional: a search-only patch shouldn't force a re-commit of the ~104 MiB LFS DB.
 - Keep `MANIFEST.json`, `README.md`, `CHANGELOG.md`, and `MASTER-INDEX.md` in step when you bump (synced to 1.1.0 on 2026-09-15).
 
 ---

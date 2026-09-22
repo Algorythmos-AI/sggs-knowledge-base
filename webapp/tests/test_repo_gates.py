@@ -510,5 +510,22 @@ class DocsHygiene(unittest.TestCase):
         self.assertIn("sggs-knowledge-base.vercel.app", text)  # must document the legacy alias
 
 
+class VersionPolicyDocumented(unittest.TestCase):
+    """The one-number policy (web == API == iOS binary, re-archived every release) must stay
+    written down where a future maintainer looks. If someone softens the rule they have to
+    delete the sentence, which fails here — so the policy can't quietly rot."""
+
+    SENTENCE = "re-archived at the same version"
+
+    def test_documented_in_release_and_claude(self):
+        for rel in ("docs/process/release.md", "CLAUDE.md"):
+            text = (ROOT / rel).read_text(encoding="utf-8")
+            self.assertIn(self.SENTENCE, text, f"{rel} no longer states the one-number policy")
+
+    def test_release_complete_checker_exists(self):
+        self.assertTrue((ROOT / "scripts/release/check_release_complete.py").exists(),
+                        "scripts/release/check_release_complete.py is missing")
+
+
 if __name__ == "__main__":
     unittest.main()

@@ -32,9 +32,27 @@ else fail "CHANGELOG missing ## [$V] section"; fi
 git worktree remove --force "$TMP" >/dev/null 2>&1
 
 if git rev-parse -q --verify "refs/tags/v$V" >/dev/null; then
-  warn "v$V is already tagged — no new tag will be cut. Fine for CI/infra-only changes; bump (scripts/release/bump.py) if users see a change"
+  fail "v$V is already tagged — under the one-number policy every release to main bumps at least the patch (run scripts/release/bump.py). Never redeploy the same version."
 else
   ok "v$V not yet tagged — this release will tag it"
+fi
+
+# One-number policy: the iOS ledger must not already hold this version from a different commit
+# (that would mean an App Store binary was archived before this release — a number mismatch).
+LEDGER_SHAS=$(python3 - "$V" <<'PY' 2>/dev/null
+import json, sys
+v = sys.argv[1]
+try:
+    rows = json.load(open("ios/testflight-builds.json")).get("builds", [])
+except Exception:
+    rows = []
+print(" ".join(sorted({r.get("source_commit","")[:12] for r in rows if r.get("version")==v and r.get("source_commit")})))
+PY
+)
+if [ -n "$LEDGER_SHAS" ]; then
+  warn "iOS $V already in the ledger from $LEDGER_SHAS — the release-complete check will require it to match the tag commit; if it was a different commit, bump instead"
+else
+  ok "no iOS $V upload yet — release completes when iOS $V (1) is uploaded from tag v$V (check_release_complete.py)"
 fi
 
 OPEN=$(gh pr list --repo "$REPO" --base main --state open --json number --jq 'map(.number)|join(",")')
