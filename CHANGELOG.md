@@ -3,6 +3,45 @@
 The format below (newest first) follows [Keep a Changelog](https://keepachangelog.com);
 entries prior to v1.1.0 are the project's original prose style and are preserved verbatim.
 
+## [1.3.3] — 2026-09-22 — gurbanisoul.com: landing page, canonical domain, great docs
+
+Web, iOS links, ops and docs only — scripture, corpus and DB byte-identical to 1.3.2
+(`git diff -- corpus db` empty).
+
+### Added
+- **Gurbani Soul landing page at `/`** (`frontend/src/pages/index.astro`, `layouts/Landing.astro`):
+  hero with respectful Unsplash photography of Sri Harmandir Sahib, the Mool Mantar verse
+  (generated verbatim from the DB, cited Ang 1), feature cards, a "Private by design" section, a
+  Knowledge Base card, and a "Coming soon"/App-Store slot. The Knowledge Base search page moves to
+  `/search` (old `/?q=…` bookmarks forward automatically); it keeps its own name and theme.
+- **SEO + site config**: `astro.config.mjs site`, `frontend/src/site.ts` (`SITE_URL`,
+  `SUPPORT_EMAIL`, `APP_STORE_URL`, photo credits), canonical/OG/Twitter tags, `robots.txt`,
+  `sitemap.xml`, `og.jpg`, favicon.
+- **New docs**: [`docs/website/README.md`](docs/website/README.md) (site architecture, domains &
+  DNS, SEO, landing/brand rules, image policy, badge swap, gates). README rewritten to cover both
+  the Knowledge Base site and the Gurbani Soul app, with live URLs, a production diagram and links
+  to every runbook.
+- **Gates**: `LandingPage` (verse verbatim vs. DB, honest copy, alt text, SEO head, page-weight
+  budget), `SubmissionUrlsAreLive`, `test_app_links_use_the_canonical_host`, and `DocsHygiene`
+  (the legacy `vercel.app` alias may be named only in the domain-topology docs). `@smoke`
+  `frontend/e2e/landing.spec.ts`.
+
+### Changed
+- **Canonical public host is now `gurbanisoul.com`** everywhere: iOS `AppLinks` (Privacy/Support),
+  the App Store listing URLs and contact (`support@gurbanisoul.com`), `deploy-production` /
+  `uptime` / `sggs-verify-prod` targets (with a no-redirect directional guard and a landing check),
+  `SECURITY.md`, `NOTICE.md`, `CLAUDE.md` and `docs/process/environments.md`. `www` and the legacy
+  Vercel alias 308-redirect to the apex.
+- `testflight_archive.sh` defaults `GITHUB_REPOSITORY` from the git remote so a local
+  `make testflight … UPLOAD=1` no longer trips the CI-green check.
+
+### Removed
+- The superseded standalone `landing/` static site (its policy pages are now the Astro
+  `/privacy` and `/support`; keeping a second copy risked a divergent policy).
+
+### Data
+- None. Scripture, corpus and DB unchanged from 1.3.2.
+
 ## [1.3.2] — 2026-09-22 — App Review readiness
 
 Pre-submission pass for the first public App Store release. App display, web/API and docs only —

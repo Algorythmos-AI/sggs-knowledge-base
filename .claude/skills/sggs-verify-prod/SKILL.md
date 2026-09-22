@@ -5,7 +5,7 @@ description: Prove what the SGGS Knowledge Base production site is actually serv
 
 # Verify production (SGGS Knowledge Base)
 
-Production = web on Vercel (`https://sggs-knowledge-base.vercel.app`) + API on Render
+Production = web on Vercel at the canonical domain (`https://gurbanisoul.com`; `www.` and the legacy Vercel alias 308-redirect to it) + API on Render
 (`https://sggs-knowledge-base.onrender.com`). The web proxies `/api/*` to Render, so a
 healthy `/api` through the web domain does NOT prove the website build changed — check
 both the API identity and the Vercel deployment serving the domain.

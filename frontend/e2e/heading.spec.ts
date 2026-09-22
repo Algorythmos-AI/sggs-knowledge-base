@@ -9,7 +9,7 @@ test('Reader renders the printed heading on Ang 712 @smoke', async ({ page }) =>
 });
 
 test('search → composition sheet shows the heading (the v1.1.0 fix) @smoke', async ({ page }) => {
-  await page.goto('/');
+  await page.goto('/search');
   await page.locator('#q').fill('Maya magan swad lobh');
   await page.locator('#q').press('Enter');
   const firstCard = page.locator('#results .card[role="button"]').first();
@@ -23,7 +23,7 @@ test('search → composition sheet shows the heading (the v1.1.0 fix) @smoke', a
 });
 
 test('home page has no serious/critical accessibility violations', async ({ page }) => {
-  await page.goto('/');
+  await page.goto('/search');
   const results = await new AxeBuilder({ page })
     .withTags(['wcag2a', 'wcag2aa'])
     .analyze();

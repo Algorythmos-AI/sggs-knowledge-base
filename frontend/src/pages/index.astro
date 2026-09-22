@@ -1,20 +1,155 @@
 ---
-import Base from '../layouts/Base.astro';
+import { Picture } from 'astro:assets';
+import Landing from '../layouts/Landing.astro';
+import { APP_STORE_URL } from '../site.ts';
+import verse from '../generated/landing-verse.json';
+import heroImg from '../assets/landing/harmandir-sahib-reflection.jpg';
+import goldenImg from '../assets/landing/harmandir-sahib-golden.jpg';
+
+const desc = "Gurbani Soul is a quiet, exact companion to Sri Guru Granth Sahib Ji for iPhone and iPad — the complete Granth, verbatim and cited by Ang, fully offline, never AI-generated.";
+
+const features = [
+  { t: "Read the whole Granth", d: "All 1,430 Angs in a clear Gurmukhi typeface. Turn pages, jump to any Ang, resume where you left off. Every composition opens with its printed heading." },
+  { t: "Search how you remember", d: "By word, by how it sounds in Roman letters, by first letters the way Gurbani is recalled, or by theme across the whole text." },
+  { t: "Nitnem, with gentle reminders", d: "The daily banis by time of day, your place kept in each, and a quiet record of the days you read. Optional reminders you set yourself." },
+  { t: "Hukam & the Raag Clock", d: "Draw a complete Hukam any time. See which raags belong to the current watch of the day, with an optional solar mode." },
+  { t: "Widgets & Live Activity", d: "The current watch, the last Hukam and today's Nitnem on your Home Screen; an optional reading Live Activity that never shows a verse." },
+  { t: "Verbatim by construction", d: "The text is reproduced character-for-character from the source edition and checked against a SHA-256 checksum. Nothing is corrected, normalised, or invented." },
+];
 ---
-<Base title="ੴ Sri Guru Granth Sahib Ji — Search">
-  <section id="v-search">
-    <div class="searchbar">
-      <input id="q" class="gm" placeholder="ਨਾਮੁ · waheguru · saadh sangat · ਧ ਧ ਰ ਗ · dh dh r g …" autofocus />
-      <button onclick="go(0)">Search</button>
+<Landing title="Gurbani Soul — Sri Guru Granth Sahib Ji, verbatim & offline" description={desc} path="/">
+  <!-- Forward legacy /?q=… search bookmarks to the Knowledge Base search page. -->
+  <script is:inline>
+    (function () {
+      try {
+        var p = new URLSearchParams(location.search);
+        if (p.has('q')) location.replace('/search' + location.search);
+      } catch (e) {}
+    })();
+  </script>
+
+  <!-- HERO -->
+  <section class="hero">
+    <div class="hero-media">
+      <Picture src={heroImg} formats={["avif","webp"]} widths={[480,800,1200,1600]}
+        sizes="100vw" alt="Sri Harmandir Sahib reflected in the sarovar at Amritsar" loading="eager" fetchpriority="high"
+        pictureAttributes={{ class: "hero-pic" }} />
+      <div class="hero-scrim"></div>
     </div>
-    <div class="modes" id="modes" role="radiogroup" aria-label="Search mode">
-      <span data-m="auto" class="on">Auto</span><span data-m="gurmukhi">Gurmukhi</span>
-      <span data-m="roman">Roman</span><span data-m="english">English</span>
-      <span data-m="first">First letters</span><span data-m="theme">Theme</span>
-      <span data-m="verify">Verify quote</span>
+    <div class="wrap hero-in">
+      <div class="onkar gm" aria-hidden="true">ੴ</div>
+      <h1>Gurbani Soul</h1>
+      <p class="lede">A quiet, exact companion to Sri Guru Granth Sahib Ji.<br/>Verbatim, cited by Ang, never invented.</p>
+      <div class="cta">
+        {APP_STORE_URL
+          ? <a class="btn" href={APP_STORE_URL} aria-label="Download Gurbani Soul on the App Store">Download on the App Store</a>
+          : <span class="soon" data-app-store="coming-soon">Coming soon to the App Store</span>}
+        <a class="btn ghost" href="/search">Open the Knowledge Base</a>
+      </div>
+      <p class="sub">iPhone &amp; iPad · fully offline · no account · no tracking</p>
     </div>
-    <div class="hint">Roman search is spelling-tolerant — <i>waheguru</i>, <i>satgur kirpa</i>, <i>gobind</i> all work. Type word first-letters (<span class="gm">ਧ ਧ ਰ ਗ</span> / <i>dh dh r g</i>) for a line you half-remember, or a theme (<i>naam, hukam, haumai</i>…). <b>Verify quote</b> checks any claimed line against the canonical corpus (add <i>@ang</i> to also check the Ang, e.g. <i>… @8</i>).</div>
-    <div id="results" aria-live="polite" aria-atomic="false"></div>
   </section>
-  <script>import '../scripts/search';</script>
-</Base>
+
+  <!-- THE VERSE -->
+  <section class="band">
+    <div class="wrap verse-in">
+      <p class="verse gm" lang="pa">{verse.gurmukhi}</p>
+      <p class="cite">Sri Guru Granth Sahib Ji · Ang {verse.ang}</p>
+      <p class="verse-note">Shown verbatim from the source edition. The app verifies the bundled scripture against a SHA-256 checksum when it is installed or updated, and refuses to show the text rather than risk showing it altered.</p>
+    </div>
+  </section>
+
+  <!-- FEATURES -->
+  <section class="wrap feats">
+    <h2>Everything, on your device</h2>
+    <div class="grid">
+      {features.map((f) => (
+        <div class="feat">
+          <h3>{f.t}</h3>
+          <p>{f.d}</p>
+        </div>
+      ))}
+    </div>
+  </section>
+
+  <!-- PRIVATE BY DESIGN -->
+  <section class="band alt">
+    <div class="wrap priv">
+      <h2>Private by design</h2>
+      <p>Gurbani Soul makes no network connection — it works entirely in Airplane Mode. No account, no analytics, no advertising, no tracking, and no third-party SDKs. Everything you do stays on your device. Its App Store privacy label is <strong>“Data Not Collected.”</strong></p>
+      <p><a href="/privacy">Read the privacy policy →</a></p>
+    </div>
+  </section>
+
+  <!-- KNOWLEDGE BASE -->
+  <section class="wrap kb">
+    <div class="kb-card">
+      <div class="kb-media">
+        <Picture src={goldenImg} formats={["avif","webp"]} widths={[480,800,1200]}
+          sizes="(max-width: 800px) 100vw, 480px" alt="Sri Harmandir Sahib, Amritsar" loading="lazy" />
+      </div>
+      <div class="kb-body">
+        <h2>The Knowledge Base</h2>
+        <p>Prefer the browser? The same verified text and search, plus study tools — reader, themes, lineage, insights, the raag clock — live on the web.</p>
+        <a class="btn ghost" href="/search">Explore the Knowledge Base</a>
+      </div>
+    </div>
+  </section>
+
+  <style>
+    .hero { position: relative; min-height: min(88vh, 760px); display: flex; align-items: flex-end; overflow: clip; }
+    .hero-media, .hero-media :global(.hero-pic), .hero-media :global(img) {
+      position: absolute; inset: 0; width: 100%; height: 100%;
+    }
+    .hero-media :global(img) { object-fit: cover; object-position: center 42%; }
+    .hero-media { background: #1a2b3a; }
+    .hero-scrim {
+      position: absolute; inset: 0;
+      background: linear-gradient(180deg, rgba(14,12,10,.28) 0%, rgba(14,12,10,.12) 38%, rgba(14,12,10,.72) 100%);
+    }
+    .hero-in { position: relative; padding: 40px 20px 56px; color: #fff; }
+    .onkar { font-size: 60px; line-height: 1; margin-bottom: 6px; color: #FFC72C;
+      text-shadow: 0 2px 24px rgba(0,0,0,.5); }
+    .hero-in h1 { font-size: clamp(40px, 8vw, 74px); margin: 0 0 10px; color: #fff;
+      text-shadow: 0 2px 30px rgba(0,0,0,.55); }
+    .lede { font-size: clamp(17px, 2.6vw, 22px); max-width: 34ch; margin: 0 0 22px; color: #f4efe6;
+      text-shadow: 0 1px 16px rgba(0,0,0,.6); }
+    .cta { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; }
+    .cta .btn.ghost { color: #fff; border-color: rgba(255,255,255,.55); background: rgba(0,0,0,.18); }
+    .soon { display: inline-flex; align-items: center; padding: 13px 22px; border-radius: 999px;
+      border: 1px dashed rgba(255,255,255,.6); color: #fff; font-weight: 650; }
+    .sub { margin: 16px 0 0; color: #e8e0d2; font-size: 14px; text-shadow: 0 1px 12px rgba(0,0,0,.6); }
+
+    .band { background: var(--paper-2); border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); }
+    .band.alt { background: var(--card); }
+    .verse-in { padding: 44px 20px; text-align: center; }
+    .verse { font-size: clamp(20px, 3.4vw, 30px); line-height: 1.9; color: var(--ink); margin: 0 auto; max-width: 22ch; }
+    .cite { margin: 14px 0 0; color: var(--accent-text); font-weight: 600; font-size: 14px; }
+    .verse-note { margin: 16px auto 0; max-width: 60ch; color: var(--ink-soft); font-size: 14.5px; }
+
+    .feats { padding: 56px 20px; }
+    .feats h2 { font-size: clamp(26px, 4vw, 34px); margin: 0 0 26px; }
+    .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 18px; }
+    .feat { background: var(--card); border: 1px solid var(--line); border-radius: 16px; padding: 22px; }
+    .feat h3 { font-size: 19px; margin: 0 0 8px; color: var(--ink); }
+    .feat p { margin: 0; color: var(--ink-soft); font-size: 15px; }
+
+    .priv { padding: 48px 20px; max-width: 68ch; }
+    .priv h2 { font-size: clamp(24px, 3.6vw, 30px); margin: 0 0 12px; }
+    .priv p { color: var(--ink-soft); font-size: 16px; }
+    .priv strong { color: var(--ink); }
+
+    .kb { padding: 48px 20px 64px; }
+    .kb-card { display: grid; grid-template-columns: 1fr; gap: 0; background: var(--card);
+      border: 1px solid var(--line); border-radius: 18px; overflow: hidden; }
+    .kb-media { position: relative; aspect-ratio: 16 / 9; background: #1a2b3a; }
+    .kb-media :global(img) { width: 100%; height: 100%; object-fit: cover; }
+    .kb-body { padding: 26px; }
+    .kb-body h2 { font-size: 24px; margin: 0 0 10px; }
+    .kb-body p { color: var(--ink-soft); margin: 0 0 18px; }
+    @media (min-width: 820px) {
+      .kb-card { grid-template-columns: 1.1fr 1fr; align-items: center; }
+      .kb-media { height: 100%; aspect-ratio: auto; min-height: 260px; }
+    }
+  </style>
+</Landing>

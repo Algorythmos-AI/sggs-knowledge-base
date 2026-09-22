@@ -1,7 +1,7 @@
 # Security Policy
 
 ## Reporting a vulnerability
-Email **skalaliya@gmail.com** with the details and a proof of concept. Please do
+Email **support@gurbanisoul.com** with the details and a proof of concept. Please do
 not open a public issue for security problems. We aim to acknowledge within a few
 days. This repository is private; the app serves a read-only, offline corpus and
 holds no user accounts or personal data.

@@ -1,0 +1,20 @@
+---
+import Base from '../layouts/Base.astro';
+---
+<Base title="ੴ Sri Guru Granth Sahib Ji — Search">
+  <section id="v-search">
+    <div class="searchbar">
+      <input id="q" class="gm" placeholder="ਨਾਮੁ · waheguru · saadh sangat · ਧ ਧ ਰ ਗ · dh dh r g …" autofocus />
+      <button onclick="go(0)">Search</button>
+    </div>
+    <div class="modes" id="modes" role="radiogroup" aria-label="Search mode">
+      <span data-m="auto" class="on">Auto</span><span data-m="gurmukhi">Gurmukhi</span>
+      <span data-m="roman">Roman</span><span data-m="english">English</span>
+      <span data-m="first">First letters</span><span data-m="theme">Theme</span>
+      <span data-m="verify">Verify quote</span>
+    </div>
+    <div class="hint">Roman search is spelling-tolerant — <i>waheguru</i>, <i>satgur kirpa</i>, <i>gobind</i> all work. Type word first-letters (<span class="gm">ਧ ਧ ਰ ਗ</span> / <i>dh dh r g</i>) for a line you half-remember, or a theme (<i>naam, hukam, haumai</i>…). <b>Verify quote</b> checks any claimed line against the canonical corpus (add <i>@ang</i> to also check the Ang, e.g. <i>… @8</i>).</div>
+    <div id="results" aria-live="polite" aria-atomic="false"></div>
+  </section>
+  <script>import '../scripts/search';</script>
+</Base>

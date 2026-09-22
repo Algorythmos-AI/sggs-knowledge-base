@@ -7,6 +7,9 @@ import tailwindcss from '@tailwindcss/vite';   // Tailwind v4 — compiles at bu
 // Python serve.py. 100% offline: NO CDN, no SSR, no adapter, no network at runtime.
 export default defineConfig({
   output: 'static',
+  // Canonical production origin — used for <link rel="canonical"> and og:url in the layouts.
+  // Keep in step with frontend/src/site.ts SITE_URL and the App Store Connect URLs.
+  site: 'https://gurbanisoul.com',
   // Build to frontend/dist/ — NEVER directly at webapp/static/. `astro build` empties
   // its outDir first, so pointing at webapp/static/ would destroy the live app between
   // build and the sync step. The sync script copies dist/ -> webapp/static/ with a backup.

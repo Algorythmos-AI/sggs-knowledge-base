@@ -12,6 +12,7 @@ move from "known-open" to "enforcing", never silently back.
 import json
 import plistlib
 import re
+import sqlite3
 import unittest
 from pathlib import Path
 
@@ -344,7 +345,7 @@ class ListingLint(unittest.TestCase):
     def test_submission_urls_are_live_hosts(self):
         # The "Submit this" column is what gets typed into App Store Connect. Only hosts that
         # serve the pages today belong there; add gurbanisoul.com here when it goes live.
-        live_hosts = {"sggs-knowledge-base.vercel.app"}
+        live_hosts = {"gurbanisoul.com"}
         rows = re.findall(r"(?m)^\| (?:Support|Marketing|Privacy Policy) URL \| `https://([^/`]+)[^`]*` \|",
                           _section(self.text, "URLs"))
         self.assertEqual(len(rows), 3, "Support, Marketing and Privacy rows must each give a URL")
@@ -379,6 +380,134 @@ class InAppLinksMatchTheListing(unittest.TestCase):
 
     def test_support_url_matches(self):
         self.assertEqual(self._app_link("support"), self._listing_url("Support URL"))
+
+    def test_app_links_use_the_canonical_host(self):
+        # The in-app links must be https on the bare canonical host — no www, no vercel.app,
+        # and nowhere in shipping Swift may the interim host survive.
+        for name in ("privacy", "support"):
+            u = self._app_link(name)
+            self.assertTrue(u.startswith("https://gurbanisoul.com/"), f"AppLinks.{name} = {u}")
+        self.assertEqual(
+            violations(r"sggs-knowledge-base\.vercel\.app|www\.gurbanisoul\.com"), [],
+            "shipping Swift references the interim/www host")
+
+
+STATIC = ROOT / "webapp" / "static"
+LANDING_ASSETS = ROOT / "frontend" / "src" / "assets" / "landing"
+
+
+class LandingPage(unittest.TestCase):
+    """The gurbanisoul.com landing page (built into webapp/static/index.html) must stay verbatim,
+    honest, credited and light. Skips cleanly if the site has not been built yet."""
+
+    @classmethod
+    def setUpClass(cls):
+        cls.index = STATIC / "index.html"
+        cls.html = cls.index.read_text(encoding="utf-8") if cls.index.exists() else None
+
+    def _skip_if_unbuilt(self):
+        if self.html is None:
+            self.skipTest("webapp/static/index.html not built (run: cd frontend && npm run build && npm run sync)")
+
+    def test_landing_verse_is_verbatim(self):
+        # The Gurmukhi on the landing must byte-match the corpus (Ang 1, first line).
+        self._skip_if_unbuilt()
+        db = ROOT / "db" / "sggs.sqlite"
+        if not (db.exists() and db.read_bytes()[:15] == b"SQLite format 3"):
+            self.skipTest("db/sggs.sqlite not present (git lfs pull)")
+        m = re.search(r'<p class="verse gm" lang="pa"[^>]*>([^<]+)</p>', self.html)
+        self.assertIsNotNone(m, "landing verse <p class=\"verse gm\" lang=\"pa\"> not found")
+        shown = m.group(1).strip()
+        want = sqlite3.connect(f"file:{db}?mode=ro", uri=True).execute(
+            "SELECT gurmukhi FROM lines WHERE ang=1 ORDER BY id LIMIT 1").fetchone()[0].strip()
+        self.assertEqual(shown, want, "landing verse is not verbatim from db/sggs.sqlite (Ang 1)")
+
+    def test_landing_copy_is_honest(self):
+        self._skip_if_unbuilt()
+        # No "AI" except "AI-generated" (the negative claim), no "beta". Same spirit as the listing lint.
+        stripped = re.sub(r"(?i)\bAI-generated\b", "", self.html)
+        self.assertNotRegex(stripped, r"\bAI\b", "landing mentions AI other than 'AI-generated'")
+        # visible-text "beta" (not the CSS/hash noise): check the body text only, roughly.
+        self.assertNotRegex(self.html, r"(?i)>[^<]*\bbeta\b", "landing says 'beta'")
+
+    def test_every_img_has_an_alt_attribute(self):
+        self._skip_if_unbuilt()
+        imgs = re.findall(r"<img\b[^>]*>", self.html)
+        self.assertTrue(imgs, "no <img> on the landing")
+        self.assertEqual([t for t in imgs if not re.search(r'\balt=', t)], [],
+                         "an <img> on the landing has no alt attribute")
+
+    def test_photographers_are_credited(self):
+        # Every photo shipped under src/assets/landing must have its photographer named in site.ts
+        # and the credit must render on the page.
+        self._skip_if_unbuilt()
+        site = (ROOT / "frontend" / "src" / "site.ts").read_text(encoding="utf-8")
+        credits = re.findall(r'who:\s*"([^"]+)"', site)
+        n_assets = len([p for p in LANDING_ASSETS.glob("*") if p.suffix.lower() in (".jpg", ".jpeg", ".png", ".webp")]) if LANDING_ASSETS.exists() else 0
+        self.assertGreaterEqual(len(credits), n_assets, "fewer photo credits than landing image assets")
+        self.assertIn("Unsplash", self.html, "landing does not credit Unsplash")
+        for who in credits:
+            self.assertIn(who, self.html, f"photographer {who!r} not credited on the landing")
+
+    def test_seo_head_present(self):
+        self._skip_if_unbuilt()
+        self.assertIn('rel="canonical" href="https://gurbanisoul.com/"', self.html)
+        self.assertRegex(self.html, r'property="og:image" content="https://gurbanisoul\.com/')
+        self.assertRegex(self.html, r'name="description" content="[^"]{40,}"')
+
+    def test_page_weight_budget(self):
+        self._skip_if_unbuilt()
+        self.assertLessEqual(len(self.index.read_bytes()), 60 * 1024, "index.html over 60 KB")
+        astro = STATIC / "_astro"
+        heavy = [f.name for f in astro.glob("*") if f.suffix in (".avif", ".webp") and f.stat().st_size > 340 * 1024]
+        self.assertEqual(heavy, [], f"served image variant(s) over 340 KB: {heavy}")
+
+
+class SubmissionUrlsAreLive(unittest.TestCase):
+    def test_robots_and_sitemap_shipped(self):
+        for f in ("robots.txt", "sitemap.xml"):
+            self.assertTrue((STATIC / f).exists() or (ROOT / "frontend" / "public" / f).exists(), f"missing {f}")
+
+
+class DocsHygiene(unittest.TestCase):
+    """The canonical public host is gurbanisoul.com. The legacy production alias
+    `sggs-knowledge-base.vercel.app` may still be *named* — but only in the two docs whose
+    job is to record the domain topology, and only as a legacy alias. Anywhere else in the
+    tracked Markdown it is a stale URL that will mislead a reader (or get baked into a link),
+    so it is forbidden. (Staging's `sggs-staging.vercel.app` is a different host and is fine.)"""
+
+    ALLOWED = {
+        Path("docs/process/environments.md"),
+        Path("docs/website/README.md"),
+    }
+
+    def _tracked_markdown(self):
+        # Read-only, stdlib: walk the repo for *.md, skipping vendored/build trees.
+        skip = {"node_modules", "dist", "static", "static.bak", ".git", "_astro", "build"}
+        for p in ROOT.rglob("*.md"):
+            rel = p.relative_to(ROOT)
+            if any(part in skip for part in rel.parts):
+                continue
+            yield rel, p
+
+    def test_legacy_vercel_alias_only_in_domain_docs(self):
+        offenders = []
+        for rel, p in self._tracked_markdown():
+            if "sggs-knowledge-base.vercel.app" in p.read_text(encoding="utf-8", errors="ignore"):
+                if rel not in self.ALLOWED:
+                    offenders.append(str(rel))
+        self.assertEqual(
+            sorted(offenders), [],
+            "legacy vercel.app alias must appear only in the domain-topology docs "
+            f"({sorted(str(a) for a in self.ALLOWED)}); found in: {sorted(offenders)}",
+        )
+
+    def test_website_readme_exists_and_names_canonical_host(self):
+        readme = ROOT / "docs" / "website" / "README.md"
+        self.assertTrue(readme.exists(), "docs/website/README.md is missing")
+        text = readme.read_text(encoding="utf-8")
+        self.assertIn("gurbanisoul.com", text)
+        self.assertIn("sggs-knowledge-base.vercel.app", text)  # must document the legacy alias
 
 
 if __name__ == "__main__":

@@ -5,8 +5,8 @@ import SwiftUI
 /// repo gate asserts they never drift. Opening one hands the URL to Safari — the app itself still
 /// makes no network request, so the "works fully offline" promise is intact.
 enum AppLinks {
-    static let privacy = URL(string: "https://sggs-knowledge-base.vercel.app/privacy")!
-    static let support = URL(string: "https://sggs-knowledge-base.vercel.app/support")!
+    static let privacy = URL(string: "https://gurbanisoul.com/privacy")!
+    static let support = URL(string: "https://gurbanisoul.com/support")!
 }
 
 /// The in-app Privacy Policy (Guideline 5.1.1(i): reachable inside the app). Deliberately static
