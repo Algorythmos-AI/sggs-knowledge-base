@@ -27,7 +27,7 @@ jobs:
   parity:
     runs-on: macos-15
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - uses: ./.github/actions/lfs-db
       - uses: ./.github/actions/select-xcode   # build + test with the SDK that ships (was the image default, Xcode 16.4)
       - name: Build the bundled (personal-profile) iOS DB from the source (deterministic)
@@ -62,7 +62,7 @@ jobs:
   app:
     runs-on: macos-15
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - uses: ./.github/actions/lfs-db
       - uses: ./.github/actions/select-xcode   # build + test with the SDK that ships (was the image default, Xcode 16.4)
       - name: Build the bundled (personal-profile) iOS DB
@@ -105,7 +105,7 @@ jobs:
       # result bundles so a failure is actually diagnosable (screenshots, per-test logs).
       - name: Upload test result bundles
         if: failure()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: ios-test-results
           path: |
