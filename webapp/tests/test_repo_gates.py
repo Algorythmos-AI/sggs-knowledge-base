@@ -913,6 +913,9 @@ class ExternalRequestAllowlist(unittest.TestCase):
     ALLOWED = {
         "gurbanisoul.com", "unsplash.com", "apps.apple.com",
         "github.com", "buttondown.com", "sggs-knowledge-base.onrender.com",
+        # JSON-LD vocabulary URI (@context / @type). It is a structured-data namespace, never a
+        # network request, so it does not widen the CSP connect-src.
+        "schema.org",
     }
 
     def setUp(self):
@@ -962,7 +965,9 @@ class SmartBannerConsistency(unittest.TestCase):
 
 
 class NoSecretsInFrontend(unittest.TestCase):
-    """No obvious secrets, and no baked newsletter form URL, in tracked frontend source."""
+    """No obvious secrets in tracked frontend source. (The newsletter form URL is a build-time
+    env var, `import.meta.env.PUBLIC_NEWSLETTER_FORM_URL`; that its VALUE — a buttondown.com URL —
+    never lands in src is enforced separately by NewsletterPrivacy.)"""
 
     SECRET_PATTERNS = [
         r"AKIA[0-9A-Z]{16}",                       # AWS access key id
@@ -970,7 +975,6 @@ class NoSecretsInFrontend(unittest.TestCase):
         r"sk_live_[0-9A-Za-z]{16,}",               # Stripe secret
         r"gh[pousr]_[0-9A-Za-z]{20,}",             # GitHub token
         r"-----BEGIN (?:RSA |EC |OPENSSH )?PRIVATE KEY-----",
-        r"PUBLIC_NEWSLETTER_FORM_URL",             # form URL must not be a literal in src
     ]
 
     def test_no_secret_patterns(self):
@@ -1013,6 +1017,105 @@ class WebThemeMatchesTokens(unittest.TestCase):
             legs = tokens[grp][tkey]
             self.assertEqual(light[key].upper(), legs[0].upper(), f"theme.ts light.{key} != tokens {grp}.{tkey}[0]")
             self.assertEqual(dark[key].upper(), legs[1].upper(), f"theme.ts dark.{key} != tokens {grp}.{tkey}[1]")
+
+
+class JsonLdInvariants(unittest.TestCase):
+    """Every JSON-LD block in the built HTML parses, and the landing + /support carry the expected,
+    self-consistent structured-data types (PR4)."""
+
+    def setUp(self):
+        if _unbuilt():
+            self.skipTest("webapp/static not built (cd frontend && npm run build:deploy)")
+
+    def _page_html(self, route):
+        for r, path in _built_pages():
+            if r == route:
+                return path.read_text(encoding="utf-8")
+        self.fail(f"built page for route {route!r} not found")
+
+    def _ld_objects(self, html):
+        objs = []
+        for block in _LD_JSON.findall(html):
+            try:
+                objs.extend(_iter_ld_objects(json.loads(block)))
+            except json.JSONDecodeError as e:
+                self.fail(f"ld+json does not parse: {e}")
+        return objs
+
+    def test_all_ldjson_parses_everywhere(self):
+        for route, path in _built_pages():
+            html = path.read_text(encoding="utf-8")
+            for block in _LD_JSON.findall(html):
+                try:
+                    json.loads(block)
+                except json.JSONDecodeError as e:
+                    self.fail(f"{route}: ld+json does not parse: {e}")
+
+    def test_landing_has_org_website_and_software_application(self):
+        objs = self._ld_objects(self._page_html("/"))
+        types = [o.get("@type") for o in objs]
+        self.assertIn("Organization", types, "landing missing Organization JSON-LD")
+
+        website = next((o for o in objs if o.get("@type") == "WebSite"), None)
+        self.assertIsNotNone(website, "landing missing WebSite JSON-LD")
+        action = website.get("potentialAction") or {}
+        self.assertEqual(action.get("@type"), "SearchAction", "WebSite has no SearchAction")
+        target = action.get("target", "")
+        host = re.match(r"https?://([^/]+)/", target)
+        self.assertIsNotNone(host, f"SearchAction target is not an absolute URL: {target!r}")
+        canonical_host = SITE.split("://", 1)[1]
+        self.assertEqual(host.group(1), canonical_host,
+                         f"SearchAction target host {host.group(1)!r} != canonical {canonical_host!r}")
+
+        app = next((o for o in objs if o.get("@type") == "SoftwareApplication"), None)
+        self.assertIsNotNone(app, "landing missing SoftwareApplication JSON-LD")
+        self.assertEqual((app.get("offers") or {}).get("price"), "0",
+                         "SoftwareApplication offers.price must be \"0\"")
+        self.assertNotIn("aggregateRating", app,
+                         "SoftwareApplication must not carry a fabricated aggregateRating")
+
+    def test_support_faqpage_questions_are_visible_h4s(self):
+        html = self._page_html("/support")
+        objs = self._ld_objects(html)
+        faq = next((o for o in objs if o.get("@type") == "FAQPage"), None)
+        self.assertIsNotNone(faq, "/support missing FAQPage JSON-LD")
+        questions = [q.get("name", "") for q in faq.get("mainEntity", [])
+                     if q.get("@type") == "Question"]
+        self.assertTrue(questions, "FAQPage has no Question entries")
+        # Visible <h4> text on the page (tags stripped, entities normalised for the compare).
+        h4s = [re.sub(r"<[^>]+>", "", m).strip()
+               for m in re.findall(r"<h4[^>]*>(.*?)</h4>", html, re.S)]
+        import html as _htmlmod
+        h4_norm = {_htmlmod.unescape(t) for t in h4s}
+        for q in questions:
+            self.assertIn(_htmlmod.unescape(q), h4_norm,
+                          f"FAQPage question not present as a visible <h4>: {q!r}")
+
+
+class NewsletterPrivacy(unittest.TestCase):
+    """The newsletter is env-gated and privacy-safe: the Buttondown URL is never a literal in src,
+    and with the env var unset (CI/local/this build) the built static carries no buttondown.com
+    reference and no newsletter <form>."""
+
+    def test_no_buttondown_value_in_src(self):
+        src = FRONTEND / "src"
+        offenders = []
+        for p in src.rglob("*"):
+            if not p.is_file() or p.suffix in (".ttf", ".woff2", ".woff", ".png", ".jpg", ".jpeg", ".webp", ".avif"):
+                continue
+            if "buttondown.com" in p.read_text(encoding="utf-8", errors="ignore"):
+                offenders.append(str(p.relative_to(ROOT)))
+        self.assertEqual(offenders, [], f"buttondown.com literal in tracked src: {offenders}")
+
+    def test_built_static_has_no_newsletter_when_env_unset(self):
+        if _unbuilt():
+            self.skipTest("webapp/static not built")
+        for _, path in _built_pages():
+            html = path.read_text(encoding="utf-8")
+            self.assertNotIn("buttondown.com", html,
+                             f"{path.name}: buttondown.com in built HTML (env should be unset)")
+            self.assertNotRegex(html, r'<form[^>]*class="[^"]*\bnewsletter\b',
+                                f"{path.name}: a newsletter <form> is in the built HTML")
 
 
 if __name__ == "__main__":

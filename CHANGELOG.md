@@ -5,6 +5,34 @@ entries prior to v1.1.0 are the project's original prose style and are preserved
 
 ## [Unreleased]
 
+### Added — growth & polish (PR4)
+- **Structured data (JSON-LD)** via `JsonLd.astro`: the landing (`/`) now emits **Organization**
+  (Algorythmos Pty Ltd), **WebSite** (with a `SearchAction` → `/search?q={search_term_string}` on the
+  canonical host) and **SoftwareApplication** (Gurbani Soul, iOS, `offers.price "0"`, no
+  `aggregateRating`; `installUrl`/`url` added only once `APP_STORE_URL` is set); **`/support`** emits
+  a **FAQPage** generated from the same data array that renders the visible `<h4>`/`<p>` FAQ, so the
+  two can never diverge.
+- **Launch-notice sign-up** (`Newsletter.astro` + `scripts/newsletter.ts`, wired through the
+  idempotent `landing.ts` `init()`): **env-gated** on `PUBLIC_NEWSLETTER_FORM_URL` (Buttondown). Unset
+  in CI/local/this build ⇒ **no section, no form, no Buttondown reference** in the built HTML. When
+  set: email-only, `mode:'no-cors'` submit with an off-screen honeypot, inline confirmation/offline
+  status, and a working no-JS native POST. Honest copy (a launch notice, not a "newsletter"), no
+  tracking.
+- **CSP is now enforcing.** `frontend/vercel.json` flips `Content-Security-Policy-Report-Only` →
+  `Content-Security-Policy` (same directive string), gated on `frontend/e2e/csp.spec.ts` proving
+  **zero** `securitypolicyviolation` events across **every** route (marketing + Knowledge Base +
+  `/learn/*`) under the enforced header, on load and after theme-toggle / mobile-menu (46/46 green,
+  desktop + mobile).
+- **Gates**: `JsonLdInvariants` and `NewsletterPrivacy` (repo gates). `NoSecretsInFrontend` no longer
+  forbids the `PUBLIC_NEWSLETTER_FORM_URL` env-var *name* (its *value*/host is covered by
+  `NewsletterPrivacy`); `ExternalRequestAllowlist` allows the `schema.org` JSON-LD vocabulary URI.
+- **e2e**: `csp.spec.ts`, `newsletter.spec.ts` (env-unset assertions + documented skip for the
+  enabled path), `headers.spec.ts` (`@smoke`, remote-only; no-op locally).
+- **Docs**: `docs/process/runbooks/newsletter.md`; Newsletter/JSON-LD/enforced-CSP sections in
+  `docs/website/README.md`; `PUBLIC_NEWSLETTER_FORM_URL` listed in `docs/process/environments.md`.
+
+Web/presentation, docs and tests only — scripture, corpus and DB byte-identical.
+
 ### Added — web foundations (PR1)
 - **Shared SEO/social/PWA head** (`frontend/src/components/Seo.astro`) used by both the marketing
   shell and the Knowledge Base (`Base.astro`): canonical, Open Graph/Twitter, `theme-color`,
