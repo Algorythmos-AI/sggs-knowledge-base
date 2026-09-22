@@ -3,7 +3,7 @@
 The format below (newest first) follows [Keep a Changelog](https://keepachangelog.com);
 entries prior to v1.1.0 are the project's original prose style and are preserved verbatim.
 
-## [Unreleased] — gurbanisoul.com: landing page, canonical domain, great docs
+## [1.3.3] — 2026-09-22 — gurbanisoul.com: landing page, canonical domain, great docs
 
 Web, iOS links, ops and docs only — scripture, corpus and DB byte-identical to 1.3.2
 (`git diff -- corpus db` empty).
