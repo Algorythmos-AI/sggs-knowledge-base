@@ -12,6 +12,7 @@ move from "known-open" to "enforcing", never silently back.
 import json
 import plistlib
 import re
+import sqlite3
 import unittest
 from pathlib import Path
 
@@ -379,6 +380,83 @@ class InAppLinksMatchTheListing(unittest.TestCase):
 
     def test_support_url_matches(self):
         self.assertEqual(self._app_link("support"), self._listing_url("Support URL"))
+
+
+STATIC = ROOT / "webapp" / "static"
+LANDING_ASSETS = ROOT / "frontend" / "src" / "assets" / "landing"
+
+
+class LandingPage(unittest.TestCase):
+    """The gurbanisoul.com landing page (built into webapp/static/index.html) must stay verbatim,
+    honest, credited and light. Skips cleanly if the site has not been built yet."""
+
+    @classmethod
+    def setUpClass(cls):
+        cls.index = STATIC / "index.html"
+        cls.html = cls.index.read_text(encoding="utf-8") if cls.index.exists() else None
+
+    def _skip_if_unbuilt(self):
+        if self.html is None:
+            self.skipTest("webapp/static/index.html not built (run: cd frontend && npm run build && npm run sync)")
+
+    def test_landing_verse_is_verbatim(self):
+        # The Gurmukhi on the landing must byte-match the corpus (Ang 1, first line).
+        self._skip_if_unbuilt()
+        db = ROOT / "db" / "sggs.sqlite"
+        if not (db.exists() and db.read_bytes()[:15] == b"SQLite format 3"):
+            self.skipTest("db/sggs.sqlite not present (git lfs pull)")
+        m = re.search(r'<p class="verse gm" lang="pa"[^>]*>([^<]+)</p>', self.html)
+        self.assertIsNotNone(m, "landing verse <p class=\"verse gm\" lang=\"pa\"> not found")
+        shown = m.group(1).strip()
+        want = sqlite3.connect(f"file:{db}?mode=ro", uri=True).execute(
+            "SELECT gurmukhi FROM lines WHERE ang=1 ORDER BY id LIMIT 1").fetchone()[0].strip()
+        self.assertEqual(shown, want, "landing verse is not verbatim from db/sggs.sqlite (Ang 1)")
+
+    def test_landing_copy_is_honest(self):
+        self._skip_if_unbuilt()
+        # No "AI" except "AI-generated" (the negative claim), no "beta". Same spirit as the listing lint.
+        stripped = re.sub(r"(?i)\bAI-generated\b", "", self.html)
+        self.assertNotRegex(stripped, r"\bAI\b", "landing mentions AI other than 'AI-generated'")
+        # visible-text "beta" (not the CSS/hash noise): check the body text only, roughly.
+        self.assertNotRegex(self.html, r"(?i)>[^<]*\bbeta\b", "landing says 'beta'")
+
+    def test_every_img_has_an_alt_attribute(self):
+        self._skip_if_unbuilt()
+        imgs = re.findall(r"<img\b[^>]*>", self.html)
+        self.assertTrue(imgs, "no <img> on the landing")
+        self.assertEqual([t for t in imgs if not re.search(r'\balt=', t)], [],
+                         "an <img> on the landing has no alt attribute")
+
+    def test_photographers_are_credited(self):
+        # Every photo shipped under src/assets/landing must have its photographer named in site.ts
+        # and the credit must render on the page.
+        self._skip_if_unbuilt()
+        site = (ROOT / "frontend" / "src" / "site.ts").read_text(encoding="utf-8")
+        credits = re.findall(r'who:\s*"([^"]+)"', site)
+        n_assets = len([p for p in LANDING_ASSETS.glob("*") if p.suffix.lower() in (".jpg", ".jpeg", ".png", ".webp")]) if LANDING_ASSETS.exists() else 0
+        self.assertGreaterEqual(len(credits), n_assets, "fewer photo credits than landing image assets")
+        self.assertIn("Unsplash", self.html, "landing does not credit Unsplash")
+        for who in credits:
+            self.assertIn(who, self.html, f"photographer {who!r} not credited on the landing")
+
+    def test_seo_head_present(self):
+        self._skip_if_unbuilt()
+        self.assertIn('rel="canonical" href="https://gurbanisoul.com/"', self.html)
+        self.assertRegex(self.html, r'property="og:image" content="https://gurbanisoul\.com/')
+        self.assertRegex(self.html, r'name="description" content="[^"]{40,}"')
+
+    def test_page_weight_budget(self):
+        self._skip_if_unbuilt()
+        self.assertLessEqual(len(self.index.read_bytes()), 60 * 1024, "index.html over 60 KB")
+        astro = STATIC / "_astro"
+        heavy = [f.name for f in astro.glob("*") if f.suffix in (".avif", ".webp") and f.stat().st_size > 340 * 1024]
+        self.assertEqual(heavy, [], f"served image variant(s) over 340 KB: {heavy}")
+
+
+class SubmissionUrlsAreLive(unittest.TestCase):
+    def test_robots_and_sitemap_shipped(self):
+        for f in ("robots.txt", "sitemap.xml"):
+            self.assertTrue((STATIC / f).exists() or (ROOT / "frontend" / "public" / f).exists(), f"missing {f}")
 
 
 if __name__ == "__main__":
