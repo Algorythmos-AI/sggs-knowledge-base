@@ -12,9 +12,9 @@ export const APP_STORE_URL = "";
 // APP_STORE_URL — the SmartBannerConsistency gate requires APP_STORE_URL to end with `/id`+this.
 export const APP_STORE_ID = "";
 
-// Unsplash photography used on the landing. Credited here, in the page footer, and in NOTICE.md,
-// per the Unsplash License (commercial use + modification permitted; attribution appreciated).
-export const PHOTO_CREDITS = [
-  { who: "Aryan Nikhil", url: "https://unsplash.com/@aryannikhil", what: "Sri Harmandir Sahib, reflection" },
-  { who: "Laurentiu Morariu", url: "https://unsplash.com/@travelphotographer", what: "Sri Harmandir Sahib" },
+// Imagery used on the landing. The hero is an original artistic rendering commissioned for
+// Gurbani Soul (no stock photography), so the credit is to Algorythmos. Credited here and in the
+// page footer. `who` is read by the imagery-credit gate (webapp/tests/test_repo_gates.py).
+export const IMAGE_CREDITS = [
+  { who: "Algorythmos", what: "Sri Harmandir Sahib at sunset — artistic rendering" },
 ];

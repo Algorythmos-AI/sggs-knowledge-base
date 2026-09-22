@@ -437,17 +437,20 @@ class LandingPage(unittest.TestCase):
         self.assertEqual([t for t in imgs if not re.search(r'\balt=', t)], [],
                          "an <img> on the landing has no alt attribute")
 
-    def test_photographers_are_credited(self):
-        # Every photo shipped under src/assets/landing must have its photographer named in site.ts
-        # and the credit must render on the page.
+    def test_imagery_is_credited(self):
+        # Every image shipped under src/assets/landing must have its maker named in site.ts
+        # (IMAGE_CREDITS.who) and the credit must render on the page. The hero is now an original
+        # artistic rendering (no stock photography), so the page carries an "Artwork" credit and
+        # must NOT mention Unsplash any more.
         self._skip_if_unbuilt()
         site = (ROOT / "frontend" / "src" / "site.ts").read_text(encoding="utf-8")
         credits = re.findall(r'who:\s*"([^"]+)"', site)
         n_assets = len([p for p in LANDING_ASSETS.glob("*") if p.suffix.lower() in (".jpg", ".jpeg", ".png", ".webp")]) if LANDING_ASSETS.exists() else 0
-        self.assertGreaterEqual(len(credits), n_assets, "fewer photo credits than landing image assets")
-        self.assertIn("Unsplash", self.html, "landing does not credit Unsplash")
+        self.assertGreaterEqual(len(credits), n_assets, "fewer image credits than landing image assets")
+        self.assertIn("Artwork", self.html, "landing does not carry an Artwork credit")
+        self.assertNotIn("Unsplash", self.html, "landing still references Unsplash (photos were removed)")
         for who in credits:
-            self.assertIn(who, self.html, f"photographer {who!r} not credited on the landing")
+            self.assertIn(who, self.html, f"image maker {who!r} not credited on the landing")
 
     def test_seo_head_present(self):
         self._skip_if_unbuilt()
@@ -461,6 +464,94 @@ class LandingPage(unittest.TestCase):
         astro = STATIC / "_astro"
         heavy = [f.name for f in astro.glob("*") if f.suffix in (".avif", ".webp") and f.stat().st_size > 340 * 1024]
         self.assertEqual(heavy, [], f"served image variant(s) over 340 KB: {heavy}")
+
+    def test_cta_state_is_consistent(self):
+        # Exactly one canonical App-Store "coming soon" element (the hero one), and the page never
+        # shows BOTH a real App-Store download link and a coming-soon chip of the same kind.
+        self._skip_if_unbuilt()
+        soon = re.findall(r'data-app-store="coming-soon"', self.html)
+        self.assertEqual(len(soon), 1, f"expected exactly one [data-app-store=coming-soon], got {len(soon)}")
+        download_link = re.search(r'<a\b[^>]*aria-label="[^"]*App Store[^"]*"', self.html)
+        self.assertFalse(download_link and soon,
+                         "page shows both an App-Store download link and a coming-soon chip")
+
+    def test_landing_raags_match_db(self):
+        # The raags listed under each pahar must be exactly the DB's primary claims for that pahar,
+        # and pahar 7 (the silent night) must list none.
+        self._skip_if_unbuilt()
+        db = ROOT / "db" / "sggs.sqlite"
+        if not (db.exists() and db.read_bytes()[:15] == b"SQLite format 3"):
+            self.skipTest("db/sggs.sqlite not present (git lfs pull)")
+        conn = sqlite3.connect(f"file:{db}?mode=ro", uri=True)
+        for p in range(1, 9):
+            m = re.search(rf'<li[^>]*\bdata-pahar="{p}"[^>]*>(.*?)</li>', self.html, re.S)
+            self.assertIsNotNone(m, f"no <li data-pahar=\"{p}\"> on the landing")
+            shown = set(re.findall(r'<span class="gm" lang="pa"[^>]*>([^<]+)</span>', m.group(1)))
+            want = {r[0] for r in conn.execute(
+                "SELECT raag_name FROM raag_timing_claims WHERE claim_type='primary' AND pahar=?", (p,))}
+            self.assertEqual(shown, want, f"pahar {p}: landing raags {shown} != DB primary claims {want}")
+        # pahar 7 must have none
+        m7 = re.search(r'<li[^>]*\bdata-pahar="7"[^>]*>(.*?)</li>', self.html, re.S)
+        self.assertNotIn('class="gm"', m7.group(1), "pahar 7 must list no raags")
+
+
+MARKETING_CSS = ROOT / "frontend" / "src" / "styles" / "marketing.css"
+COMPONENTS = ROOT / "frontend" / "src" / "components"
+INDEX_ASTRO = ROOT / "frontend" / "src" / "pages" / "index.astro"
+
+
+def _marketing_style_sources():
+    """(name, text) for the marketing stylesheet, every component, and the landing's scoped CSS."""
+    out = [("marketing.css", MARKETING_CSS.read_text(encoding="utf-8"))]
+    for p in sorted(COMPONENTS.glob("*.astro")):
+        out.append((p.name, p.read_text(encoding="utf-8")))
+    out.append(("index.astro", INDEX_ASTRO.read_text(encoding="utf-8")))
+    return out
+
+
+def _strip_dark_scope(css):
+    """Remove balanced `[data-theme="dark"] { … }` blocks so what remains is 'light-mode' CSS."""
+    out, i = [], 0
+    while i < len(css):
+        m = re.search(r'\[data-theme="dark"\][^{]*\{', css[i:])
+        if not m:
+            out.append(css[i:])
+            break
+        start = i + m.start()
+        out.append(css[i:start])
+        j = i + m.end()
+        depth = 1
+        while j < len(css) and depth:
+            if css[j] == "{":
+                depth += 1
+            elif css[j] == "}":
+                depth -= 1
+            j += 1
+        i = j
+    return "".join(out)
+
+
+class BrandDisciplineInSource(unittest.TestCase):
+    """The Soul-Gold brand rules, enforced on the marketing CSS + components + landing scoped CSS."""
+
+    def test_mark_is_flat(self):
+        # The ੴ mark (and everything else on the marketing surface) is flat — no text-shadow.
+        bad = [name for name, text in _marketing_style_sources() if re.search(r"text-shadow", text, re.I)]
+        self.assertEqual(bad, [], f"text-shadow found in: {bad}")
+
+    def test_no_red_and_gold_discipline(self):
+        norm = lambda s: re.sub(r"\s+", "", s).lower()
+        for name, text in _marketing_style_sources():
+            self.assertNotIn("#da291c", text.lower(), f"brand red #DA291C appears in {name}")
+            # Literal gold as a text colour is only allowed inside a [data-theme=\"dark\"] scope.
+            light = norm(_strip_dark_scope(text))
+            self.assertNotIn("color:#ffbc0d", light,
+                             f"{name}: gold #FFBC0D used as a text colour outside a dark scope")
+        # The verse is ink-coloured.
+        idx = INDEX_ASTRO.read_text(encoding="utf-8")
+        m = re.search(r"\.verse\s*\{([^}]*)\}", idx)
+        self.assertIsNotNone(m, "no .verse rule in index.astro scoped styles")
+        self.assertRegex(m.group(1), r"color:\s*var\(--ink\)", ".verse colour is not var(--ink)")
 
 
 class SubmissionUrlsAreLive(unittest.TestCase):
