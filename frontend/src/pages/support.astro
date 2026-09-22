@@ -3,6 +3,54 @@
 // Linked from the App Store listing (Support URL). Answers must match the shipped app: the
 // public (Gurmukhi-only) profile has no English layer; location is optional; nothing is sent.
 import Base from '../layouts/Base.astro';
+import JsonLd from '../components/JsonLd.astro';
+import { SITE_URL } from '../site.ts';
+
+// Single source for the "Frequently asked" block: it renders BOTH the visible <h4>+<p> HTML and the
+// FAQPage JSON-LD below, so the two can never diverge (the FAQPage `name`s are exactly these
+// questions — enforced by the JsonLdInvariants gate). Answers may carry the same inline HTML the
+// visible copy uses; JsonLd.astro escapes "<" so the payload is always well-formed.
+const faqs: { q: string; a: string }[] = [
+  { q: "Does the app need an internet connection?",
+    a: "No. The whole Granth is bundled inside the app. It never connects to any server, so it works on a flight, in a basement, or with mobile data switched off." },
+  { q: "Why is there no English translation in the app?",
+    a: "The English translation we would like to include is licensed for personal study only, and distributing it through the App Store requires a written licence we do not yet hold. Rather than ship it without permission, the app is Gurmukhi-only, with transliteration. If a licence is granted, the translation will arrive in an update as a separate, clearly labelled layer, never mixed into the scripture." },
+  { q: "What does the \"traditional saroop\" toggle do?",
+    a: "It changes only how the text is <em>drawn</em>: the doubled subjoined ya (<span class=\"gm\" lang=\"pa\">੍ਯ੍ਯ</span>) is shown as the single tucked form used in the printed Bir. The stored text, search, and Copy are always the verbatim characters. Turn it off in the Reader's reading options to see the exact source characters." },
+  { q: "Why does the app ask for my location?",
+    a: "Only if you tap “Use my location” on the Raag Clock’s solar mode, which times the watches of the day by local sunrise and sunset. The location is rounded to about 1 km, kept only on your device, and never transmitted. You can deny the permission and enter a location manually, or stay in fixed mode. See the <a href=\"/privacy\">Privacy Policy</a>." },
+  { q: "How do Nitnem reminders work?",
+    a: "In <em>More → Reminders</em> you can switch on a reminder for each part of the day and choose its time. iOS asks for notification permission the first time you switch one on. Reminders are scheduled on your device; nothing comes from a server. Once you complete that part of the day's Nitnem, that day's reminder is dropped. If reminders do not appear, check <em>Settings → Notifications → Gurbani Soul</em>." },
+  { q: "What is the Live Activity while reading?",
+    a: "An optional progress indicator on the Lock Screen and in the Dynamic Island while you read a bani, so you can return to your place with one tap. It is off by default (turn it on in <em>More</em>, under Nitnem), shows progress only, never a verse, and ends when you finish or leave the bani." },
+  { q: "Where do the Nitnem banis come from?",
+    a: "Banis from Sri Guru Granth Sahib Ji are this project's own verified, verbatim corpus, cited by Ang. Bani ordering and the Sri Dasam Granth / Ardaas text come via the ShabadOS open database and are shown as a separate, labelled layer, never presented as part of Sri Guru Granth Sahib Ji." },
+  { q: "The widgets are empty.",
+    a: "Open the app once and open a Hukam; the widgets read a small snapshot the app writes. If they stay empty, check <em>More → About → Integrity</em> and confirm it says \"Widget App Group available\", then email us with that screen." },
+  { q: "What is the Integrity section in About?",
+    a: "When you install or update the app, it verifies that the bundled scripture database is bit-for-bit the certified one (a SHA-256 checksum). Every launch after that re-checks that the file has not changed and re-runs the structural checks. If verification ever fails, the app refuses to show scripture rather than risk showing altered text. Reinstalling from the App Store fixes a corrupted download." },
+  { q: "How do I save, share, or find a verse later?",
+    a: "Long-press a verse (or use the actions on a verse card) to Save, Copy, Share or Explore related verses. Saved verses appear under <em>More → Saved</em> and in your device's Spotlight search. Share cards always carry the Ang citation." },
+  { q: "Siri and Shortcuts",
+    a: "The app offers \"Today's Hukam\", \"What raag is it now\", \"Read a bani\" and \"Search Gurbani\" as Siri phrases, and \"Open Ang\" as a Shortcuts action. Links of the form <code>sggs://ang/500</code> or <code>sggs://hukam</code> open the app directly." },
+  { q: "Accessibility",
+    a: "The app supports VoiceOver (each verse is read as one item, in Punjabi, with its Ang), Dynamic Type up to the largest accessibility sizes, Reduce Motion and Increase Contrast. If something is unreadable or unreachable with assistive technology, that is a bug: please tell us." },
+  { q: "iPad",
+    a: "The app runs on iPad in portrait and landscape. It deliberately runs as a single window." },
+];
+
+// Plain-text answer for JSON-LD (strip the inline HTML tags the visible copy uses).
+const stripTags = (s: string) => s.replace(/<[^>]+>/g, "");
+const faqLd = {
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  "@id": `${SITE_URL}/support#faq`,
+  mainEntity: faqs.map((f) => ({
+    "@type": "Question",
+    name: f.q,
+    acceptableAnswer: { "@type": "Answer", text: stripTags(f.a) },
+  })),
+};
 ---
 <Base title="Support — Sri Guru Granth Sahib Ji Knowledge Base">
   <article class="legal" id="v-support">
@@ -18,45 +66,12 @@ import Base from '../layouts/Base.astro';
 
     <section>
       <h3>Frequently asked</h3>
-
-      <h4>Does the app need an internet connection?</h4>
-      <p>No. The whole Granth is bundled inside the app. It never connects to any server, so it works on a flight, in a basement, or with mobile data switched off.</p>
-
-      <h4>Why is there no English translation in the app?</h4>
-      <p>The English translation we would like to include is licensed for personal study only, and distributing it through the App Store requires a written licence we do not yet hold. Rather than ship it without permission, the app is Gurmukhi-only, with transliteration. If a licence is granted, the translation will arrive in an update as a separate, clearly labelled layer, never mixed into the scripture.</p>
-
-      <h4>What does the "traditional saroop" toggle do?</h4>
-      <p>It changes only how the text is <em>drawn</em>: the doubled subjoined ya (<span class="gm" lang="pa">੍ਯ੍ਯ</span>) is shown as the single tucked form used in the printed Bir. The stored text, search, and Copy are always the verbatim characters. Turn it off in the Reader's reading options to see the exact source characters.</p>
-
-      <h4>Why does the app ask for my location?</h4>
-      <p>Only if you tap “Use my location” on the Raag Clock’s solar mode, which times the watches of the day by local sunrise and sunset. The location is rounded to about 1 km, kept only on your device, and never transmitted. You can deny the permission and enter a location manually, or stay in fixed mode. See the <a href="/privacy">Privacy Policy</a>.</p>
-
-      <h4>How do Nitnem reminders work?</h4>
-      <p>In <em>More → Reminders</em> you can switch on a reminder for each part of the day and choose its time. iOS asks for notification permission the first time you switch one on. Reminders are scheduled on your device; nothing comes from a server. Once you complete that part of the day's Nitnem, that day's reminder is dropped. If reminders do not appear, check <em>Settings → Notifications → Gurbani Soul</em>.</p>
-
-      <h4>What is the Live Activity while reading?</h4>
-      <p>An optional progress indicator on the Lock Screen and in the Dynamic Island while you read a bani, so you can return to your place with one tap. It is off by default (turn it on in <em>More</em>, under Nitnem), shows progress only, never a verse, and ends when you finish or leave the bani.</p>
-
-      <h4>Where do the Nitnem banis come from?</h4>
-      <p>Banis from Sri Guru Granth Sahib Ji are this project's own verified, verbatim corpus, cited by Ang. Bani ordering and the Sri Dasam Granth / Ardaas text come via the ShabadOS open database and are shown as a separate, labelled layer, never presented as part of Sri Guru Granth Sahib Ji.</p>
-
-      <h4>The widgets are empty.</h4>
-      <p>Open the app once and open a Hukam; the widgets read a small snapshot the app writes. If they stay empty, check <em>More → About → Integrity</em> and confirm it says "Widget App Group available", then email us with that screen.</p>
-
-      <h4>What is the Integrity section in About?</h4>
-      <p>When you install or update the app, it verifies that the bundled scripture database is bit-for-bit the certified one (a SHA-256 checksum). Every launch after that re-checks that the file has not changed and re-runs the structural checks. If verification ever fails, the app refuses to show scripture rather than risk showing altered text. Reinstalling from the App Store fixes a corrupted download.</p>
-
-      <h4>How do I save, share, or find a verse later?</h4>
-      <p>Long-press a verse (or use the actions on a verse card) to Save, Copy, Share or Explore related verses. Saved verses appear under <em>More → Saved</em> and in your device's Spotlight search. Share cards always carry the Ang citation.</p>
-
-      <h4>Siri and Shortcuts</h4>
-      <p>The app offers "Today's Hukam", "What raag is it now", "Read a bani" and "Search Gurbani" as Siri phrases, and "Open Ang" as a Shortcuts action. Links of the form <code>sggs://ang/500</code> or <code>sggs://hukam</code> open the app directly.</p>
-
-      <h4>Accessibility</h4>
-      <p>The app supports VoiceOver (each verse is read as one item, in Punjabi, with its Ang), Dynamic Type up to the largest accessibility sizes, Reduce Motion and Increase Contrast. If something is unreadable or unreachable with assistive technology, that is a bug: please tell us.</p>
-
-      <h4>iPad</h4>
-      <p>The app runs on iPad in portrait and landscape. It deliberately runs as a single window.</p>
+      {faqs.map((f) => (
+        <>
+          <h4>{f.q}</h4>
+          <p set:html={f.a} />
+        </>
+      ))}
     </section>
 
     <section>
@@ -68,6 +83,7 @@ import Base from '../layouts/Base.astro';
       <h3>This website</h3>
       <p>The site offers the same text and search in a browser, plus study tools (themes, lineage, insights, constellation, Raag Clock). It stores your theme and pinned verses in your browser only. See the <a href="/privacy">Privacy Policy</a>.</p>
     </section>
+    <JsonLd data={faqLd} />
   </article>
 </Base>
 

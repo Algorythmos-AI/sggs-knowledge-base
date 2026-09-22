@@ -1,0 +1,58 @@
+---
+// Newsletter.astro — a quiet, one-time launch-notice sign-up, powered by Buttondown.
+//
+// It is ENV-GATED: the whole section renders ONLY when the build-time env var
+// `PUBLIC_NEWSLETTER_FORM_URL` is set to the Buttondown embed endpoint. When it is unset — the
+// case in CI, locally and in this build — the component renders NOTHING, so the built HTML contains
+// no <form> and no Buttondown host reference at all (proved by the NewsletterPrivacy gate).
+//
+// Honest by design: it is a launch notice, not a "newsletter" funnel. Only the `email` field is
+// ever sent (see scripts/newsletter.ts). The native POST works without JS (Buttondown's own
+// confirmation page); the enhancement in newsletter.ts adds no-cors submit + inline status and a
+// honeypot check. See docs/process/runbooks/newsletter.md.
+const formUrl = import.meta.env.PUBLIC_NEWSLETTER_FORM_URL;
+---
+{formUrl && (
+  <section class="nl-band" id="notify" aria-labelledby="nl-h">
+    <div class="wrap nl-in">
+      <p class="eyebrow">Stay in the loop</p>
+      <h2 id="nl-h">Know when it is on the App Store</h2>
+      <p class="nl-note">One short email when the app is on the App Store. No tracking, unsubscribe any time.</p>
+      <form class="newsletter" method="post" action={formUrl}>
+        <label class="nl-field">
+          <span class="nl-label">Email address</span>
+          <input type="email" name="email" required autocomplete="email"
+            placeholder="you@example.com" aria-label="Email address" />
+        </label>
+        <!-- Honeypot: a real person never fills this. Off-screen, unfocusable, hidden from AT. -->
+        <div class="nl-hp" aria-hidden="true">
+          <label>Leave this field empty
+            <input type="text" name="hp_name" tabindex="-1" autocomplete="off" />
+          </label>
+        </div>
+        <button type="submit" class="btn ghost nl-submit">Notify me</button>
+        <p class="nl-status" data-nl-status aria-live="polite"></p>
+      </form>
+    </div>
+  </section>
+)}
+
+<style>
+  .nl-band { background: var(--paper-2); border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); }
+  .nl-in { padding: clamp(48px, 7vw, 80px) 20px; max-width: 640px; }
+  .nl-in h2 { font-size: clamp(24px, 3.6vw, 36px); margin: 0 0 12px; }
+  .nl-note { color: var(--ink-soft); font-size: 15.5px; margin: 0 0 22px; max-width: 52ch; }
+  .newsletter { display: flex; flex-wrap: wrap; gap: 12px; align-items: flex-end; }
+  .nl-field { display: flex; flex-direction: column; gap: 6px; flex: 1 1 260px; }
+  .nl-label { font-size: 13px; font-weight: 600; color: var(--ink-soft); }
+  .newsletter input[type="email"] {
+    padding: 11px 14px; font-size: 15.5px; border: 1px solid var(--line); border-radius: 10px;
+    background: var(--paper); color: var(--ink); width: 100%;
+  }
+  .newsletter input[type="email"]:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+  .nl-submit { flex: 0 0 auto; }
+  /* Off-screen honeypot — present in the DOM, invisible and unreachable for humans and AT. */
+  .nl-hp { position: absolute; left: -9999px; width: 1px; height: 1px; overflow: hidden; }
+  .nl-status { flex: 1 1 100%; margin: 6px 0 0; font-size: 14px; color: var(--ink-soft); min-height: 1.2em; }
+  .nl-status:empty { margin: 0; }
+</style>

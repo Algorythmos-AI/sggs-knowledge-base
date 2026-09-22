@@ -4,6 +4,7 @@
 // core.ts (the Knowledge Base's DOM/API layer) — only the self-contained theme + pahar helpers.
 import { initTheme, applyTheme } from "./theme";
 import { paharFixed, paharLabel, paharRange } from "./pahar.js";
+import { wireNewsletter } from "./newsletter";
 
 type Theme = "light" | "dark" | "system";
 
@@ -158,6 +159,8 @@ function init() {
   wireScrollSpy();
   wireReveal();
   wireRaagClock();
+  const nl = wireNewsletter(); // no-op when the env-gated form is absent (this build)
+  if (nl) cleanups.push(nl);
 }
 
 // Forward legacy /?q= bookmarks to /search after a client-side swap lands on `/`.

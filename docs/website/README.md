@@ -100,16 +100,53 @@ for data to be collected; until then the loader simply fetches nothing. The `Ext
 gate proves the marketing HTML/JS only references an approved host set and that the insights loader
 is always behind the hostname guard.
 
+### Structured data (JSON-LD)
+
+Emitted through **`frontend/src/components/JsonLd.astro`**, which serialises the object and escapes
+`<` so the payload can never break out of its `<script type="application/ld+json">`.
+
+- **Landing (`/`)** carries three nodes (`src/pages/index.astro` frontmatter): an **Organization**
+  ("Algorythmos Pty Ltd", logo `/icons/icon-512.png`, a customer-support `contactPoint`), a
+  **WebSite** ("Gurbani Soul") with a `SearchAction` targeting `/search?q={search_term_string}` on
+  the canonical host, and a **SoftwareApplication** ("Gurbani Soul", iOS, `ReferenceApplication`,
+  `offers.price "0"`, publisher → the Organization by `@id`). There is deliberately **no
+  `aggregateRating`** (we have no ratings). `installUrl`/`url` are added only once `APP_STORE_URL`
+  is set.
+- **`/support`** carries a **FAQPage** generated from the same `faqs` array that renders the visible
+  `<h4>` question / `<p>` answer block, so the structured data can never drift from the page. The
+  `JsonLdInvariants` gate parses every block, checks the landing's three types (and the
+  SearchAction host), and checks that every FAQPage `name` is a visible `<h4>`.
+
+### Newsletter (launch notice) — env-gated
+
+**`frontend/src/components/Newsletter.astro`** renders a quiet launch-notice sign-up **only** when the
+build-time env var `PUBLIC_NEWSLETTER_FORM_URL` (the Buttondown embed endpoint) is set. It is **unset
+in CI, locally, and in the current build**, so the section — and any Buttondown reference — is
+**absent from the built HTML**. When set, it renders a single `<input type="email" name="email"
+required>`, a ghost-gold submit, an off-screen honeypot (`hp_name`), an honest one-line note ("One
+short email when the app is on the App Store. No tracking, unsubscribe any time.") and a
+`data-nl-status` live region. Progressive enhancement lives in **`frontend/src/scripts/newsletter.ts`**
+(wired by the idempotent `landing.ts` `init()`, view-transition safe): the honeypot short-circuits to
+a no-op; otherwise it POSTs **only** the `email` field with `mode:'no-cors'` and shows an inline
+confirmation, or an offline/error hint. With JS off, the native POST reaches Buttondown's own
+confirmation page. The URL is **never** a literal in `src` (`NewsletterPrivacy` gate); set it in the
+Vercel Production + Preview envs — see [runbook: newsletter](../process/runbooks/newsletter.md).
+
 ### Security headers
 
 `frontend/vercel.json` adds, on top of the existing `nosniff` / `X-Frame-Options: DENY` /
 `Referrer-Policy`:
 
-- **`Content-Security-Policy-Report-Only`** (not enforcing yet — it reports violations so the policy
-  can be tuned before it is switched to an enforcing `Content-Security-Policy` in a later PR):
+- **`Content-Security-Policy`** — **enforcing as of PR4.** Directive string:
   `default-src 'self'`, inline script/style allowed, `img-src 'self' data:`, `font-src 'self'`,
-  `connect-src`/`form-action` add `https://buttondown.com` (the future newsletter), `frame-ancestors
-  'none'`, `base-uri 'self'`, `object-src 'none'`.
+  `connect-src`/`form-action` add `https://buttondown.com` (the launch-notice sign-up), `frame-ancestors
+  'none'`, `base-uri 'self'`, `object-src 'none'`. The flip from `-Report-Only` to enforcing was
+  gated on proof: `frontend/e2e/csp.spec.ts` loads **every** route in `routes.ts` (marketing AND
+  Knowledge Base, `/learn/*` included) under the enforced header — injected via `page.route` — and
+  asserts **zero** `securitypolicyviolation` events on load, after toggling the theme, and after
+  opening the mobile menu (46/46 green, desktop + mobile). The directive string is unchanged from
+  the Report-Only version; only the header key changed. If a future page needs a new origin, add it
+  to the directive, re-run `csp.spec.ts` to zero, and only then ship.
 - **`Strict-Transport-Security`** (2-year, `includeSubDomains; preload`),
   **`Permissions-Policy`** (`camera=(), microphone=(), geolocation=(self), payment=()`), and
   **`Cross-Origin-Opener-Policy: same-origin`**.
@@ -207,7 +244,9 @@ is a nav destination, add it to the `Base.astro` nav with a `data-path`. Build +
   `SubmissionUrlsAreLive`, `InAppLinksMatchTheListing`, and `DocsHygiene` (this doc set is the only
   place the legacy `vercel.app` alias may be named); plus the PR1 web-foundations gates
   `SeoInvariants`, `SitemapInvariants`, `RssInvariants`, `ExternalRequestAllowlist`,
-  `SmartBannerConsistency`, `NoSecretsInFrontend`, and `WebThemeMatchesTokens`.
+  `SmartBannerConsistency`, `NoSecretsInFrontend`, and `WebThemeMatchesTokens`; plus the PR4
+  growth/polish gates `JsonLdInvariants` (structured data on `/` and `/support`) and
+  `NewsletterPrivacy` (no Buttondown literal in `src`; no form/host in the env-less build).
   `StaticRoutes` in `test_serve.py` covers serve.py's static resolver + content types.
 - **`@smoke` Playwright** (`frontend/e2e/landing.spec.ts`, run in the production deploy gate against
   `https://gurbanisoul.com`): landing renders, verse present, exactly one App-Store slot, canonical

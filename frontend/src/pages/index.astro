@@ -5,7 +5,9 @@ import Marketing from '../layouts/Marketing.astro';
 import MarketingNav from '../components/MarketingNav.astro';
 import RaagArc from '../components/RaagArc.astro';
 import DeviceFrame from '../components/DeviceFrame.astro';
-import { APP_STORE_URL, SUPPORT_EMAIL } from '../site.ts';
+import Newsletter from '../components/Newsletter.astro';
+import JsonLd from '../components/JsonLd.astro';
+import { SITE_URL, APP_STORE_URL, SUPPORT_EMAIL } from '../site.ts';
 import { LEARN_SLUGS } from '../routes.ts';
 import verse from '../generated/landing-verse.json';
 import raagData from '../generated/landing-raags.json';
@@ -34,8 +36,52 @@ const features = [
 ];
 
 const pahars = raagData.pahars as Record<string, { name: string; roman: string }[]>;
+
+// --- Structured data (JSON-LD) — emitted via <JsonLd>, which escapes "<". ---
+// One Organization node, referenced by @id from WebSite and SoftwareApplication so search engines
+// resolve them to the same publisher. installUrl/url are added only once the App Store URL exists.
+const orgId = `${SITE_URL}/#org`;
+const organization = {
+  "@context": "https://schema.org",
+  "@type": "Organization",
+  "@id": orgId,
+  name: "Algorythmos Pty Ltd",
+  url: SITE_URL,
+  logo: `${SITE_URL}/icons/icon-512.png`,
+  contactPoint: {
+    "@type": "ContactPoint",
+    contactType: "customer support",
+    email: SUPPORT_EMAIL,
+  },
+};
+const website = {
+  "@context": "https://schema.org",
+  "@type": "WebSite",
+  url: SITE_URL,
+  name: "Gurbani Soul",
+  publisher: { "@id": orgId },
+  potentialAction: {
+    "@type": "SearchAction",
+    target: `${SITE_URL}/search?q={search_term_string}`,
+    "query-input": "required name=search_term_string",
+  },
+};
+const softwareApplication = {
+  "@context": "https://schema.org",
+  "@type": "SoftwareApplication",
+  name: "Gurbani Soul",
+  applicationCategory: "ReferenceApplication",
+  operatingSystem: "iOS",
+  offers: { "@type": "Offer", price: "0", priceCurrency: "USD" },
+  publisher: { "@id": orgId },
+  ...(APP_STORE_URL ? { url: APP_STORE_URL, installUrl: APP_STORE_URL } : {}),
+};
 ---
 <Marketing title="Gurbani Soul — Sri Guru Granth Sahib Ji, verbatim & offline" description={desc} path="/">
+  <JsonLd slot="head" data={organization} />
+  <JsonLd slot="head" data={website} />
+  <JsonLd slot="head" data={softwareApplication} />
+
   <!-- Forward legacy /?q=… search bookmarks to the Knowledge Base search page (first load; the
        client-router case is handled in landing.ts astro:after-swap). -->
   <script is:inline>
@@ -214,6 +260,9 @@ const pahars = raagData.pahars as Record<string, { name: string; roman: string }
       <p class="support-line">Questions or corrections? <a href="/support">Support</a> · {SUPPORT_EMAIL}</p>
     </div>
   </section>
+
+  <!-- (h2) LAUNCH NOTICE — env-gated; renders nothing unless PUBLIC_NEWSLETTER_FORM_URL is set -->
+  <Newsletter />
 
   <!-- (i) FOOTER -->
   <footer class="foot">
