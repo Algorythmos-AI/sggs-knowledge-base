@@ -2,6 +2,13 @@
 
 A **sovereign, verifiable Gurbani corpus** with a zero-dependency local web app. Built from a 1,483-page Unicode Gurmukhi edition of Sri Guru Granth Sahib Ji — every line verbatim, every line carrying its Ang, with a machine-verification engine so that no AI (or human) can misquote scripture unchecked.
 
+One corpus powers two things people can use today:
+
+- **The Knowledge Base** — the scholarly study website: search, reader, themes, lineage, insights and the raag clock. Live at **[gurbanisoul.com/search](https://gurbanisoul.com/search)** (and fully offline via `serve.py`).
+- **Gurbani Soul** — the native iOS/iPadOS app (SwiftUI): the whole Granth verbatim and offline, Nitnem with gentle reminders, Hukam, the raag clock, widgets and a Live Activity. Its landing page is **[gurbanisoul.com](https://gurbanisoul.com)**. Built by **Algorythmos Pty Ltd**.
+
+The website and the app keep separate names and identities on purpose — see [CLAUDE.md → Brand & domains](CLAUDE.md) and [`docs/website/README.md`](docs/website/README.md).
+
 ![version](https://img.shields.io/badge/version-1.3.2-1a3a6b)
 ![python](https://img.shields.io/badge/python-3.8%2B%20·%20stdlib%20only-3776ab)
 ![dependencies](https://img.shields.io/badge/dependencies-none-2e7d32)
@@ -63,6 +70,44 @@ Health check: open **`http://localhost:7777/api/health`** — it self-tests line
 
 ---
 
+## Where it runs (production)
+
+The same offline app runs unchanged in the cloud. The browser only ever calls `/api/*`; the host rewrites those to the API, so there is no CORS and no client config.
+
+```
+                          Cloudflare DNS-only (CNAME → Vercel)
+                                       │
+                    ┌──────────────────┴───────────────────┐
+   gurbanisoul.com (canonical apex, 200)      www + *.vercel.app (308 → apex)
+                    │
+     ┌──────────────┴───────────────┐
+     │  Vercel — Astro static site   │   /            → Gurbani Soul landing
+     │  (frontend/ → webapp/static/) │   /search /reader … → Knowledge Base
+     └──────────────┬───────────────┘   /privacy /support  → policy (App Store URLs)
+                    │  /api/*  (rewrite)
+                    ▼
+     ┌───────────────────────────────┐
+     │  Render — stdlib Python API    │   webapp/serve.py, DB opened read-only
+     │  (webapp/Dockerfile)           │   /api/search /ang /shabad /verify /health …
+     └───────────────────────────────┘
+
+     Gurbani Soul (iOS) — no network at all: the DB ships inside the app.
+```
+
+| | Local | Staging | Production |
+|---|---|---|---|
+| Web | `serve.py` :7777 | `sggs-staging.vercel.app` (SSO) | **`gurbanisoul.com`** |
+| API | same process | `sggs-api-staging.onrender.com` | `sggs-knowledge-base.onrender.com` |
+| Branch | working tree | `integration` | `main` |
+
+**Delivery is CI-gated end to end** — no hand deploys. Branch → PR into `integration` → merge auto-deploys **staging** → release PR `integration → main` (merge commit) runs the gated production deploy, verified by the running **commit**, then a `vX.Y.Z` tag. Full topology, DNS and email: [`docs/website/README.md`](docs/website/README.md). Process and runbooks:
+
+- [Environments](docs/process/environments.md) · [Branching](docs/process/branching.md) · [CI gates](docs/process/ci-gates.md) · [Release](docs/process/release.md)
+- Runbooks: [deploy](docs/process/runbooks/deploy.md) · [rollback](docs/process/runbooks/rollback.md) · [rebuild-db](docs/process/runbooks/rebuild-db.md) · [app-store-submission](docs/process/runbooks/app-store-submission.md) · [ios-hotfix](docs/process/runbooks/ios-hotfix.md) · [support-inbox](docs/process/runbooks/support-inbox.md)
+- Skills that run the loop: `sggs-ship`, `sggs-release`, `sggs-verify-prod`, `sggs-rebuild-db`.
+
+---
+
 ## The app
 
 Five views, all keyboard-friendly, with a labeled transliteration toggle, adjustable Gurmukhi font size, and automatic dark mode.
@@ -74,6 +119,10 @@ Five views, all keyboard-friendly, with a labeled transliteration toggle, adjust
 | **Index** | The whole structural index, tabbed: **Major Compositions** (one-tap routes to Sukhmani Sahib, Asa Ki Vaar, Anand Sahib, Bavan Akhri, Sidh Gosht, Dakhni Oankaar), **The 31 Raags** (canonical order), and **Banis & Sections** (Nitnem and the closing banis). |
 | **Themes** | 53 corpus-verified concepts grouped into six theological categories — tap one to read the verbatim lines where its Gurmukhi terms occur. |
 | **Hukam-style random** | Draws a *complete structural unit* — a full shabad, or a Vaar's Pauri with its preceding Saloks — never a fragment. |
+
+### Gurbani Soul (iOS / iPadOS)
+
+The native SwiftUI app (`ios/`, Swift package `GurbaniSearchKit`) ships the **same verified corpus inside the binary** and makes **no network requests at all** — it works in Airplane Mode, with no account and no tracking (App Store privacy label: *Data Not Collected*). Beyond reader and search it adds **Nitnem** (daily banis by time of day, place kept, optional gentle reminders), **Hukam**, the **Raag Clock** (optional solar mode), **widgets + a Live Activity**, App Intents/Siri and Spotlight. The Gurmukhi engine is pinned to this Python source of truth by golden vectors in `contract/`. Distribution, gates and the store listing: [`docs/ios/`](docs/ios/) and the [app-store-submission runbook](docs/process/runbooks/app-store-submission.md).
 
 ---
 

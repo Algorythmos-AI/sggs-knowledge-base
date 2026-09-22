@@ -106,19 +106,19 @@ are banis it does contain. `webapp/tests/test_repo_gates.py` lints this section.
 
 ## URLs
 
-Target product domain is **`gurbanisoul.com`** (marketing), with `docs.gurbanisoul.com`
-(sources / translation methodology / AI-safety — genuinely helps App Store review) and
-`api.gurbanisoul.com` (backend). Until that domain is live, the existing Knowledge Base URLs
-serve as the support/privacy targets; swap them once `gurbanisoul.com` is up.
+The product domain **`gurbanisoul.com`** is **live** and canonical (apex serves 200; `www` and the
+legacy Vercel alias 308-redirect to it). `docs.gurbanisoul.com` (sources /
+translation methodology) and `api.gurbanisoul.com` (backend) are optional future subdomains, not on
+the launch path. Domain topology: [`docs/website/README.md`](../website/README.md).
 
 **Enter only URLs that resolve today.** A Support or Privacy URL that 404s is a direct rejection
-(2.1 / 5.1.1). `gurbanisoul.com` is registered but serves nothing yet, so the submission values are
-the live Knowledge Base pages; the uptime workflow and the `@smoke` specs watch them.
+(2.1 / 5.1.1). All three below serve 200 on the canonical host today; the `uptime` workflow and the
+`@smoke` landing spec watch them, and `sggs-verify-prod` proves each answers with no redirect.
 
-| Field | Submit this | Later, once it serves these pages |
+| Field | Submit this | Status |
 |---|---|---|
 | Support URL | `https://gurbanisoul.com/support` | live |
-| Marketing URL | `https://gurbanisoul.com` | live — the app landing page |
+| Marketing URL | `https://gurbanisoul.com` | live — the Gurbani Soul landing page |
 | Privacy Policy URL | `https://gurbanisoul.com/privacy` | live |
 
 The privacy page must stay true to the binary: no data collected, no network requests, location
@@ -180,8 +180,8 @@ Store the source PNGs under `ios/AppStore/screenshots/<device>/` (add the direct
 
 - Sign-in required: **No** (there are no accounts).
 - Contact: first name, last name, **phone (required by App Store Connect)** and email of the
-  maintainer (`skalaliya@gmail.com` is the security contact in `SECURITY.md`; use the same, or the
-  monitored support alias once it exists).
+  maintainer. Use the monitored support alias **`support@gurbanisoul.com`** (also the EU-DSA
+  trader contact and the `SECURITY.md` security contact).
 - Attachment: none needed.
 
 ### Review notes
