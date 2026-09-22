@@ -9,7 +9,7 @@ One corpus powers two things people can use today:
 
 The website and the app keep separate names and identities on purpose — see [CLAUDE.md → Brand & domains](CLAUDE.md) and [`docs/website/README.md`](docs/website/README.md).
 
-![version](https://img.shields.io/badge/version-1.3.3-1a3a6b)
+![version](https://img.shields.io/badge/version-1.3.4-1a3a6b)
 ![python](https://img.shields.io/badge/python-3.8%2B%20·%20stdlib%20only-3776ab)
 ![dependencies](https://img.shields.io/badge/dependencies-none-2e7d32)
 ![corpus](https://img.shields.io/badge/corpus-60%2C658%20lines%20·%201%2C430%20Angs-9a3412)
@@ -307,7 +307,7 @@ bash pipeline/rebuild_all.sh <the-source-pdf>
 
 ## Versioning
 
-Current release: **v1.3.3** (`MANIFEST.json`). The running build is stamped in the footer and at `/api/health`. Every change — search-logic, data, or UI — is recorded in `CHANGELOG.md` with its before/after metrics and whether the DB changed. Search-only patches never re-commit the DB; the `db_sha256` in `MANIFEST.json` always matches the shipped `db/sggs.sqlite`.
+Current release: **v1.3.4** (`MANIFEST.json`). The running build is stamped in the footer and at `/api/health`. Every change — search-logic, data, or UI — is recorded in `CHANGELOG.md` with its before/after metrics and whether the DB changed. Search-only patches never re-commit the DB; the `db_sha256` in `MANIFEST.json` always matches the shipped `db/sggs.sqlite`.
 
 ---
 
