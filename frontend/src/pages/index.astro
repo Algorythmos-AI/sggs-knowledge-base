@@ -109,17 +109,22 @@ const softwareApplication = {
       <div class="hero-scrim"></div>
     </div>
     <div class="wrap hero-in">
-      <div class="hero-copy">
-        <p class="eyebrow" style="color:#f4d38a">For iPhone and iPad</p>
-        <h1>Gurbani Soul</h1>
-        <p class="hero-lede">A quiet, exact companion to Sri Guru Granth Sahib Ji. Verbatim, cited by Ang, never invented.</p>
-        <div class="hero-cta">
-          {APP_STORE_URL
-            ? <a class="pill" href={APP_STORE_URL} aria-label="Get Gurbani Soul on the App Store">Download on the App Store</a>
-            : <span class="pill soon" data-app-store="coming-soon">Coming soon to the App Store</span>}
-          <a class="hero-ghost" href="/search">Open the Knowledge Base</a>
+      <div class="hero-grid">
+        <div class="hero-copy">
+          <p class="eyebrow" style="color:#f4d38a">For iPhone and iPad</p>
+          <h1>Gurbani Soul</h1>
+          <p class="hero-lede">A quiet, exact companion to Sri Guru Granth Sahib Ji. Verbatim, cited by Ang, never invented.</p>
+          <div class="hero-cta">
+            {APP_STORE_URL
+              ? <a class="pill" href={APP_STORE_URL} aria-label="Get Gurbani Soul on the App Store">Download on the App Store</a>
+              : <span class="pill soon" data-app-store="coming-soon">Coming soon to the App Store</span>}
+            <a class="hero-ghost" href="/search">Open the Knowledge Base</a>
+          </div>
+          <p class="hero-fine">Fully offline · no account · no tracking</p>
         </div>
-        <p class="hero-fine">Fully offline · no account · no tracking</p>
+        <div class="hero-device" aria-hidden="false">
+          <DeviceFrame src={readerShot} alt="Gurbani Soul on iPhone, open at Ang 1 in Sant Lipi" />
+        </div>
       </div>
     </div>
   </section>
@@ -307,24 +312,39 @@ const softwareApplication = {
     @media (min-width: 900px) { .learn-teaser { grid-template-columns: 5fr 6fr; gap: 64px; } }
 
     /* (b) Hero */
-    .hero { position: relative; min-height: min(92svh, 820px); display: flex; align-items: flex-end;
+    .hero { position: relative; min-height: min(94svh, 860px); display: flex; align-items: center;
       overflow: clip; margin-top: -66px; }
     .hero-media, .hero-media :global(.hero-pic), .hero-media :global(img) { position: absolute; inset: 0; width: 100%; height: 100%; }
     .hero-media { background: #17110a; }
     .hero-media :global(img) { object-fit: cover; object-position: center 46%; }
     .hero-scrim { position: absolute; inset: 0;
-      background: linear-gradient(180deg, rgba(15,10,5,.42) 0%, rgba(15,10,5,.18) 34%, rgba(15,10,5,.78) 100%); }
-    .hero-in { position: relative; padding: 96px 20px 72px; }
-    .hero-copy { max-width: 62%; color: #fff; }
-    .hero-copy h1 { font-size: clamp(44px, 8vw, 88px); margin: 0 0 16px; color: #fff; line-height: 1.02; }
-    .hero-lede { font-family: var(--serif-display); font-size: clamp(18px, 2.6vw, 25px); line-height: 1.4;
-      max-width: 30ch; margin: 0 0 26px; color: #f3ead9; }
+      background:
+        radial-gradient(120% 90% at 18% 60%, rgba(15,10,5,.62) 0%, rgba(15,10,5,.28) 42%, transparent 72%),
+        linear-gradient(180deg, rgba(15,10,5,.44) 0%, rgba(15,10,5,.20) 34%, rgba(15,10,5,.72) 100%); }
+    .hero-in { position: relative; width: 100%; padding: 120px 20px 96px; }
+    .hero-grid { display: grid; grid-template-columns: 1fr; gap: 40px; align-items: center; }
+    .hero-copy { color: #fff; }
+    .hero-copy h1 { font-size: clamp(44px, 7.5vw, 92px); margin: 0 0 16px; color: #fff; line-height: 1.01; letter-spacing: -.02em; }
+    .hero-lede { font-family: var(--serif-display); font-size: clamp(18px, 2.6vw, 26px); line-height: 1.4;
+      max-width: 32ch; margin: 0 0 28px; color: #f3ead9; }
     .hero-cta { display: flex; flex-wrap: wrap; gap: 14px 20px; align-items: center; }
     .hero-cta .pill.soon { color: #fff; border-color: rgba(255,255,255,.6); }
     .hero-ghost { color: #fff; text-decoration: none; font-weight: 600; font-size: 15.5px;
       border-bottom: 1px solid rgba(255,255,255,.5); padding-bottom: 2px; }
     .hero-fine { margin: 22px 0 0; color: #e6dcc9; font-size: 14px; }
-    @media (max-width: 720px) { .hero-copy { max-width: 100%; } }
+    /* Floating product shot fills the right of the hero on desktop; hidden on small screens
+       (the Features section shows the app there instead, keeping the hero light on mobile). */
+    .hero-device { display: none; }
+    .hero-device :global(.device) { width: min(340px, 90%); box-shadow: 0 40px 90px rgba(0,0,0,.5); }
+    @media (min-width: 980px) {
+      .hero-grid { grid-template-columns: 1.05fr 0.95fr; gap: 56px; }
+      .hero-device { display: flex; justify-content: center; position: relative; }
+      /* soft gold aura behind the phone — accentFill wash, well under the 14% ceiling */
+      .hero-device::before { content: ""; position: absolute; inset: -8% -6%; z-index: 0;
+        background: radial-gradient(60% 55% at 50% 42%, rgba(255,188,13,.13), transparent 70%); }
+      .hero-device :global(.device) { position: relative; z-index: 1; transform: rotate(-3deg); }
+    }
+    @media (min-width: 1200px) { .hero-device :global(.device) { width: 368px; } }
 
     /* (c) Verse */
     .verse-band { border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); background: var(--paper-2); }
