@@ -1,0 +1,30 @@
+---
+// RaagArc.astro — a build-time inline SVG dial of the eight pahars (watches of the day). Eight
+// equal 45° arc segments starting at the top and running clockwise; pahar 7 (the silent night,
+// 00:00–03:00, which carries no raags) is drawn as a dashed hairline. SSR renders no "current"
+// segment — landing.ts adds `.now` to the live pahar and rotates #arcHand. Colours come from
+// marketing.css: an inactive segment is a --line hairline; the current one is bordered gold
+// (valid in light). The centre ੴ is flat ink. Reduced motion disables the hand transition (CSS).
+const cx = 120, cy = 120, r = 92;
+const GAP = 3.2;                       // degrees trimmed at each end so segments read as separate
+const polar = (deg: number) => {
+  const a = (deg - 90) * Math.PI / 180; // 0° at the top, clockwise
+  return [cx + r * Math.cos(a), cy + r * Math.sin(a)];
+};
+const segPath = (i: number) => {
+  const a0 = i * 45 + GAP, a1 = (i + 1) * 45 - GAP;
+  const [x0, y0] = polar(a0), [x1, y1] = polar(a1);
+  return `M ${x0.toFixed(2)} ${y0.toFixed(2)} A ${r} ${r} 0 0 1 ${x1.toFixed(2)} ${y1.toFixed(2)}`;
+};
+const segs = Array.from({ length: 8 }, (_, i) => ({ pahar: i + 1, d: segPath(i) }));
+---
+<svg class="raag-arc" viewBox="0 0 240 240" role="img" aria-label="A dial of the eight pahars — the watches of the day">
+  {segs.map((s) => (
+    <path class={`seg${s.pahar === 7 ? " dashed" : ""}`} data-pahar={s.pahar} d={s.d} />
+  ))}
+  <g id="arcHand" aria-hidden="true">
+    <line x1={cx} y1={cy} x2={cx} y2={cy - r + 14} />
+    <circle cx={cx} cy={cy} r="4" />
+  </g>
+  <text class="arc-onkar" x={cx} y={cy + 15} text-anchor="middle" font-size="44" aria-hidden="true">ੴ</text>
+</svg>

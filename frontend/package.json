@@ -25,10 +25,12 @@
     "tailwindcss": "^4.3.1"
   },
   "devDependencies": {
+    "@astrojs/check": "^0.9.10",
     "@axe-core/playwright": "^4.10.0",
     "@playwright/test": "^1.48.0",
     "@types/d3": "^7.4.3",
-    "@types/node": "26.6.2"
+    "@types/node": "26.6.2",
+    "typescript": "^6.0.3"
   },
   "engines": {
     "node": "22.x"

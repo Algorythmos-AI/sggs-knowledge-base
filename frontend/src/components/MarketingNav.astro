@@ -1,0 +1,59 @@
+---
+// MarketingNav.astro — sticky top bar for the gurbanisoul.com landing. White text over the dark
+// hero before scroll; frosted paper with a hairline once scrolled (both handled in marketing.css,
+// toggled by landing.ts). Inline links + CTA collapse into a hamburger <dialog> under 840px.
+// The CTA is a real App Store link only when APP_STORE_URL is set; otherwise a "Coming soon" chip.
+// The nav's coming-soon chip is tagged data-app-store="coming-soon-nav" so the page's single
+// canonical "coming soon" element (data-app-store="coming-soon") remains the hero one.
+import { APP_STORE_URL } from "../site";
+
+const links = [
+  { href: "#features", label: "Features" },
+  { href: "#clock", label: "The watch" },
+  { href: "#privacy", label: "Privacy" },
+  { href: "#knowledge-base", label: "Knowledge Base" },
+  { href: "#support", label: "Support" },
+  { href: "/learn", label: "Learn", prefetch: true },
+];
+---
+<header class="mnav" id="mnav">
+  <div class="mnav-in">
+    <a class="brand" href="#top">
+      <span class="gm" aria-hidden="true">ੴ</span>
+      <span>Gurbani Soul</span>
+    </a>
+
+    <nav class="mnav-links" aria-label="Primary">
+      {links.map((l) => (
+        <a href={l.href} data-astro-prefetch={l.prefetch ? "" : undefined}>{l.label}</a>
+      ))}
+    </nav>
+
+    <div class="mnav-right">
+      <button id="themeBtn" aria-label="Theme">◐</button>
+      {APP_STORE_URL
+        ? <a class="pill" href={APP_STORE_URL} aria-label="Get Gurbani Soul on the App Store">Get the app</a>
+        : <span class="pill soon" data-app-store="coming-soon-nav">Coming soon</span>}
+      <button class="burger" aria-expanded="false" aria-controls="mobileMenu" aria-label="Open menu">
+        <svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+          <line x1="3" y1="7" x2="21" y2="7" /><line x1="3" y1="12" x2="21" y2="12" /><line x1="3" y1="17" x2="21" y2="17" />
+        </svg>
+      </button>
+    </div>
+  </div>
+</header>
+
+<dialog id="mobileMenu" aria-label="Menu">
+  <div class="mm-in">
+    <div class="mm-top">
+      <span class="brand" style="color:var(--ink)"><span class="gm" aria-hidden="true">ੴ</span> <span>Gurbani Soul</span></span>
+      <button class="mm-close" aria-label="Close menu">&times;</button>
+    </div>
+    {links.map((l) => (
+      <a href={l.href} data-astro-prefetch={l.prefetch ? "" : undefined}>{l.label}</a>
+    ))}
+    {APP_STORE_URL
+      ? <a class="pill mm-cta" href={APP_STORE_URL} aria-label="Get Gurbani Soul on the App Store">Get the app</a>
+      : <span class="pill soon mm-cta" data-app-store="coming-soon-nav">Coming soon</span>}
+  </div>
+</dialog>

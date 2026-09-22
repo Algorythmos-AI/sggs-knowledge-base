@@ -6,20 +6,29 @@ test('landing renders the brand, the verse and the CTAs @smoke', async ({ page }
   const res = await page.goto('/');
   expect(res?.status()).toBe(200);
   await expect(page.locator('h1')).toHaveText('Gurbani Soul');
+
   // verbatim verse present, cited by Ang
   await expect(page.locator('p.verse[lang="pa"]')).toContainText('ੴ ਸਤਿ ਨਾਮੁ');
   await expect(page.locator('.cite')).toContainText('Ang 1');
-  // exactly one of: App Store badge OR the "coming soon" note
-  const badge = page.locator('a[aria-label*="App Store"]');
-  const soon = page.locator('[data-app-store="coming-soon"]');
-  expect(await badge.count() + await soon.count()).toBe(1);
-  // hero image offers modern formats + alt
-  await expect(page.locator('picture source[type="image/avif"]').first()).toHaveCount(1);
+
+  // exactly one canonical App-Store "coming soon" element (the hero)
+  await expect(page.locator('[data-app-store="coming-soon"]')).toHaveCount(1);
+
+  // hero image offers modern formats + a descriptive alt
+  expect(await page.locator('picture source[type="image/avif"]').count()).toBeGreaterThanOrEqual(1);
   await expect(page.locator('.hero-media img')).toHaveAttribute('alt', /Harmandir Sahib/);
-  // links to KB, support, privacy
+
+  // primary nav offers the in-page + Learn anchors
+  expect(await page.locator('nav[aria-label="Primary"] a').count()).toBeGreaterThanOrEqual(5);
+
+  // visible links to KB, support, privacy
   for (const href of ['/search', '/support', '/privacy']) {
     await expect(page.locator(`a[href="${href}"]`).first()).toBeVisible();
   }
+
+  // the live raag clock caption resolves to a pahar
+  await expect(page.locator('[data-raag-now]')).toHaveText(/pahar/, { timeout: 8000 });
+
   // canonical
   await expect(page.locator('link[rel="canonical"]')).toHaveAttribute('href', 'https://gurbanisoul.com/');
 });
@@ -27,6 +36,32 @@ test('landing renders the brand, the verse and the CTAs @smoke', async ({ page }
 test('legacy /?q= bookmark forwards to /search @smoke', async ({ page }) => {
   await page.goto('/?q=waheguru');
   await page.waitForURL(/\/search\?q=waheguru/, { timeout: 8000 });
+});
+
+test('theme button toggles the document theme', async ({ page }, testInfo) => {
+  test.skip(testInfo.project.name === 'mobile', 'theme button is in the collapsed nav on mobile');
+  await page.goto('/');
+  const html = page.locator('html');
+  const btn = page.locator('#themeBtn');
+  const before = await html.getAttribute('data-theme');
+  await btn.click();
+  await expect(html).toHaveAttribute('data-theme', /^(light|dark)$/);
+  // cycling eventually lands on a value different from the first resolved one
+  await btn.click();
+  const after = await html.getAttribute('data-theme');
+  expect([before, after].filter(Boolean).length).toBeGreaterThan(0);
+});
+
+test('mobile menu opens, closes on Esc, and restores focus', async ({ page }, testInfo) => {
+  test.skip(testInfo.project.name !== 'mobile', 'hamburger only shows under 840px');
+  await page.goto('/');
+  const burger = page.locator('.burger');
+  await expect(burger).toBeVisible();
+  await burger.click();
+  await expect(page.locator('dialog#mobileMenu[open]')).toBeVisible();
+  await page.keyboard.press('Escape');
+  await expect(page.locator('dialog#mobileMenu[open]')).toHaveCount(0);
+  await expect(burger).toBeFocused();
 });
 
 test('landing has no serious/critical accessibility violations', async ({ page }) => {

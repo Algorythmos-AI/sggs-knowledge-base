@@ -1,0 +1,149 @@
+{
+  "_note": "primary raag-timing claims per pahar (metadata, not scripture); pahar 7 (00:00-03:00) intentionally empty. Generated from db/sggs.sqlite.",
+  "convention": "pahar 1 = 06:00-09:00 ... pahar 8 = 03:00-06:00 (fixed-clock, 6 AM anchor)",
+  "pahars": {
+    "1": [
+      {
+        "name": "ਦੇਵਗੰਧਾਰੀ",
+        "roman": "devagandhaaree"
+      },
+      {
+        "name": "ਬੈਰਾੜੀ",
+        "roman": "bairaarhee"
+      },
+      {
+        "name": "ਬਿਲਾਵਲੁ",
+        "roman": "bilaaval"
+      }
+    ],
+    "2": [
+      {
+        "name": "ਗੂਜਰੀ",
+        "roman": "goojaree"
+      },
+      {
+        "name": "ਟੋਡੀ",
+        "roman": "todee"
+      },
+      {
+        "name": "ਸੂਹੀ",
+        "roman": "soohee"
+      },
+      {
+        "name": "ਬਿਲਾਵਲੁ",
+        "roman": "bilaaval"
+      },
+      {
+        "name": "ਗੋਂਡ",
+        "roman": "gond"
+      },
+      {
+        "name": "ਸਾਰੰਗ",
+        "roman": "saarang"
+      }
+    ],
+    "3": [
+      {
+        "name": "ਵਡਹੰਸੁ",
+        "roman": "vadahans"
+      },
+      {
+        "name": "ਧਨਾਸਰੀ",
+        "roman": "dhanaasaree"
+      },
+      {
+        "name": "ਮਾਰੂ",
+        "roman": "maaroo"
+      }
+    ],
+    "4": [
+      {
+        "name": "ਮਾਝ",
+        "roman": "maajh"
+      },
+      {
+        "name": "ਗਉੜੀ",
+        "roman": "gaurhee"
+      },
+      {
+        "name": "ਤਿਲੰਗ",
+        "roman": "tilang"
+      },
+      {
+        "name": "ਤੁਖਾਰੀ",
+        "roman": "tukhaaree"
+      }
+    ],
+    "5": [
+      {
+        "name": "ਸਿਰੀਰਾਗੁ",
+        "roman": "sireeraag"
+      },
+      {
+        "name": "ਜੈਤਸਰੀ",
+        "roman": "jaitasaree"
+      },
+      {
+        "name": "ਮਾਲੀ ਗਉੜਾ",
+        "roman": "maalee gaurhaa"
+      },
+      {
+        "name": "ਕੇਦਾਰਾ",
+        "roman": "kedaaraa"
+      },
+      {
+        "name": "ਬਸੰਤੁ",
+        "roman": "basant"
+      },
+      {
+        "name": "ਕਲਿਆਨੁ",
+        "roman": "kaliaan"
+      }
+    ],
+    "6": [
+      {
+        "name": "ਬਿਹਾਗੜਾ",
+        "roman": "bihaagarhaa"
+      },
+      {
+        "name": "ਸੋਰਠਿ",
+        "roman": "sorath"
+      },
+      {
+        "name": "ਨਟ",
+        "roman": "nat"
+      },
+      {
+        "name": "ਮਲਾਰ",
+        "roman": "malaar"
+      },
+      {
+        "name": "ਕਾਨੜਾ",
+        "roman": "kaanarhaa"
+      },
+      {
+        "name": "ਜੈਜਾਵੰਤੀ",
+        "roman": "jaijaavantee"
+      }
+    ],
+    "7": [],
+    "8": [
+      {
+        "name": "ਆਸਾ",
+        "roman": "aasaa"
+      },
+      {
+        "name": "ਰਾਮਕਲੀ",
+        "roman": "raamakalee"
+      },
+      {
+        "name": "ਭੈਰਉ",
+        "roman": "bhairau"
+      },
+      {
+        "name": "ਪ੍ਰਭਾਤੀ",
+        "roman": "prabhaatee"
+      }
+    ]
+  }
+}
