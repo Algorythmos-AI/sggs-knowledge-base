@@ -123,6 +123,12 @@ if [ "$UPLOAD" = 1 ]; then
     echo "  WARNING: SGGS_SKIP_CI_CHECK=1 — not waiting for green CI on this commit"
   else
     command -v gh >/dev/null || fail "gh not found — needed to confirm CI is green on this commit (or set SGGS_SKIP_CI_CHECK=1 in a pipeline outage)"
+    # wait_for_checks reads --repo or $GITHUB_REPOSITORY; a local `make testflight` run has neither,
+    # so default it from the git remote (CI sets GITHUB_REPOSITORY itself).
+    if [ -z "${GITHUB_REPOSITORY:-}" ]; then
+      GITHUB_REPOSITORY="$(git remote get-url origin 2>/dev/null | sed -E 's#(git@github.com:|https://github.com/)##; s#\.git$##')"
+      export GITHUB_REPOSITORY
+    fi
     python3 scripts/ci/wait_for_checks.py "$(git rev-parse HEAD)" --extra parity app --timeout 60 \
       || fail "required checks (incl. the iOS parity + app jobs) are not green on $(git rev-parse --short HEAD)"
   fi

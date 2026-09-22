@@ -22,7 +22,7 @@ permissions:
 
 env:
   PROD_API: https://sggs-knowledge-base.onrender.com
-  PROD_WEB: https://sggs-knowledge-base.vercel.app
+  PROD_WEB: https://gurbanisoul.com
   VERCEL_CLI: vercel@59.7.0
 
 jobs:

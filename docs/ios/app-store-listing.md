@@ -117,9 +117,9 @@ the live Knowledge Base pages; the uptime workflow and the `@smoke` specs watch 
 
 | Field | Submit this | Later, once it serves these pages |
 |---|---|---|
-| Support URL | `https://sggs-knowledge-base.vercel.app/support` | `https://gurbanisoul.com/support` |
-| Marketing URL | `https://sggs-knowledge-base.vercel.app` | `https://gurbanisoul.com` |
-| Privacy Policy URL | `https://sggs-knowledge-base.vercel.app/privacy` | `https://gurbanisoul.com/privacy` |
+| Support URL | `https://gurbanisoul.com/support` | live |
+| Marketing URL | `https://gurbanisoul.com` | live — the app landing page |
+| Privacy Policy URL | `https://gurbanisoul.com/privacy` | live |
 
 The privacy page must stay true to the binary: no data collected, no network requests, location
 on-device only, saved verses / settings / Nitnem progress stored locally, reminders as local

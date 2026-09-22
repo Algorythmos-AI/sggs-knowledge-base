@@ -237,6 +237,13 @@ class OldXcodeIsRefused(ArchiveLeavesNoTrace):
         self.assertIn("App Store Connect requires Xcode 26+", run.stderr)
 
 
+class GithubRepoDefault(unittest.TestCase):
+    def test_archive_defaults_github_repository_from_remote(self):
+        code = SCRIPT.read_text()
+        self.assertIn("git remote get-url origin", code,
+                      "testflight_archive.sh must default GITHUB_REPOSITORY from the remote for local runs")
+
+
 class UploadProvenance(unittest.TestCase):
     """Static: an upload must refuse a dirty tree, an off-trunk commit and a red commit."""
 
