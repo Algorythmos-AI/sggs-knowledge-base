@@ -117,7 +117,12 @@ html.js-motion .reveal.in { opacity: 1; transform: none; transition: opacity .6s
 .pill.soon { background: transparent; color: inherit; border: 1px solid currentColor; opacity: .9; cursor: default; font-weight: 600; }
 .mnav.scrolled .pill.soon { color: var(--ink-soft); border-color: var(--line); }
 /* Before scroll the bar floats over the dark hero → white text. */
-.mnav:not(.scrolled) { color: #fff; }
+.mnav:not(.scrolled):not(.mnav--solid) { color: #fff; }
+/* Pages with no dark hero (Learn): the resting bar is ink on paper with a hairline. */
+.mnav--solid { color: var(--ink); border-bottom: 1px solid var(--line); background: var(--paper); }
+.mnav--solid:not(.scrolled) #themeBtn { border-color: var(--line); }
+.mnav--solid:not(.scrolled) .pill.soon { color: var(--ink-soft); border-color: var(--line); }
+.mnav--solid:not(.scrolled) .burger { border-color: var(--line); }
 .mnav.scrolled { background: color-mix(in srgb, var(--paper) 80%, transparent); backdrop-filter: blur(14px) saturate(1.1); border-bottom: 1px solid var(--line); color: var(--ink); }
 @supports not ((backdrop-filter: blur(1px))) {
   .mnav.scrolled { background: var(--paper); }

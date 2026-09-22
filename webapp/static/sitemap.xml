@@ -112,4 +112,76 @@
     <xhtml:link rel="alternate" hreflang="en" href="https://gurbanisoul.com/support"/>
     <xhtml:link rel="alternate" hreflang="x-default" href="https://gurbanisoul.com/support"/>
   </url>
+  <url>
+    <loc>https://gurbanisoul.com/learn</loc>
+    <lastmod>2026-09-22</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
+    <xhtml:link rel="alternate" hreflang="en" href="https://gurbanisoul.com/learn"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://gurbanisoul.com/learn"/>
+  </url>
+  <url>
+    <loc>https://gurbanisoul.com/learn/what-is-a-hukamnama</loc>
+    <lastmod>2026-09-22</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.5</priority>
+    <xhtml:link rel="alternate" hreflang="en" href="https://gurbanisoul.com/learn/what-is-a-hukamnama"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://gurbanisoul.com/learn/what-is-a-hukamnama"/>
+  </url>
+  <url>
+    <loc>https://gurbanisoul.com/learn/how-to-read-nitnem</loc>
+    <lastmod>2026-09-22</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.5</priority>
+    <xhtml:link rel="alternate" hreflang="en" href="https://gurbanisoul.com/learn/how-to-read-nitnem"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://gurbanisoul.com/learn/how-to-read-nitnem"/>
+  </url>
+  <url>
+    <loc>https://gurbanisoul.com/learn/the-31-raags-and-the-watches-of-the-day</loc>
+    <lastmod>2026-09-22</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.5</priority>
+    <xhtml:link rel="alternate" hreflang="en" href="https://gurbanisoul.com/learn/the-31-raags-and-the-watches-of-the-day"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://gurbanisoul.com/learn/the-31-raags-and-the-watches-of-the-day"/>
+  </url>
+  <url>
+    <loc>https://gurbanisoul.com/learn/what-is-an-ang</loc>
+    <lastmod>2026-09-22</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.5</priority>
+    <xhtml:link rel="alternate" hreflang="en" href="https://gurbanisoul.com/learn/what-is-an-ang"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://gurbanisoul.com/learn/what-is-an-ang"/>
+  </url>
+  <url>
+    <loc>https://gurbanisoul.com/learn/how-gurbani-soul-verifies-scripture</loc>
+    <lastmod>2026-09-22</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.5</priority>
+    <xhtml:link rel="alternate" hreflang="en" href="https://gurbanisoul.com/learn/how-gurbani-soul-verifies-scripture"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://gurbanisoul.com/learn/how-gurbani-soul-verifies-scripture"/>
+  </url>
+  <url>
+    <loc>https://gurbanisoul.com/learn/search-by-first-letters</loc>
+    <lastmod>2026-09-22</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.5</priority>
+    <xhtml:link rel="alternate" hreflang="en" href="https://gurbanisoul.com/learn/search-by-first-letters"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://gurbanisoul.com/learn/search-by-first-letters"/>
+  </url>
+  <url>
+    <loc>https://gurbanisoul.com/learn/offline-and-private-by-design</loc>
+    <lastmod>2026-09-22</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.5</priority>
+    <xhtml:link rel="alternate" hreflang="en" href="https://gurbanisoul.com/learn/offline-and-private-by-design"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://gurbanisoul.com/learn/offline-and-private-by-design"/>
+  </url>
+  <url>
+    <loc>https://gurbanisoul.com/learn/widgets-and-live-activity</loc>
+    <lastmod>2026-09-22</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.5</priority>
+    <xhtml:link rel="alternate" hreflang="en" href="https://gurbanisoul.com/learn/widgets-and-live-activity"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://gurbanisoul.com/learn/widgets-and-live-activity"/>
+  </url>
 </urlset>

@@ -721,6 +721,14 @@ class SitemapInvariants(unittest.TestCase):
                 return
         self.fail("robots.txt not found")
 
+    def test_learn_routes_present(self):
+        root = ET.parse(STATIC / "sitemap.xml").getroot()
+        locs = {_norm_url(el.text) for el in root.iter(f"{SITEMAP_NS}loc")}
+        self.assertIn(_norm_url(SITE + "/learn"), locs, "sitemap missing /learn")
+        # every built Learn article route must be in the sitemap
+        for route, _ in _learn_articles():
+            self.assertIn(_norm_url(SITE + route), locs, f"sitemap missing {route}")
+
 
 class RssInvariants(unittest.TestCase):
     def setUp(self):
@@ -732,6 +740,169 @@ class RssInvariants(unittest.TestCase):
         link = root.find("./channel/link")
         self.assertIsNotNone(link, "rss has no <channel><link>")
         self.assertEqual(_norm_url(link.text), _norm_url(SITE))
+
+    def test_rss_item_count_matches_non_draft_articles(self):
+        root = ET.parse(STATIC / "rss.xml").getroot()
+        items = root.findall("./channel/item")
+        self.assertEqual(len(items), _non_draft_article_count(),
+                         "rss item count != number of non-draft Learn articles")
+        for it in items:
+            link = it.find("link")
+            self.assertIsNotNone(link, "rss item has no <link>")
+            self.assertTrue(link.text.startswith(SITE + "/learn/"),
+                            f"rss item link not a /learn/ URL: {link.text}")
+
+
+# ------------------------------------------------------------------------------------------------
+# PR3 — the Learn content section. These read the BUILT webapp/static/learn/** and db/sggs.sqlite
+# (skip cleanly if unbuilt / no DB) plus the tracked Learn source, and enforce that every quoted
+# line is verbatim, declared, cited, labelled, and that the copy stays honest.
+# ------------------------------------------------------------------------------------------------
+LEARN_MDX_DIR = FRONTEND / "src" / "content" / "learn"
+QUOTES_JSON = FRONTEND / "src" / "generated" / "quotes.json"
+DB = ROOT / "db" / "sggs.sqlite"
+
+_VERSE_P = re.compile(r'<p class="verse gm" lang="pa" data-line-id="(\d+)"[^>]*>([^<]*)</p>')
+_FIGURE = re.compile(
+    r'<figure class="verse-fig" data-line-id="(\d+)"[^>]*>.*?'
+    r'<figcaption class="cite"[^>]*>([^<]*)</figcaption>', re.S)
+_LD_JSON = re.compile(r'<script type="application/ld\+json"[^>]*>(.*?)</script>', re.S)
+
+
+def _learn_articles():
+    """(route, html) for every built Learn ARTICLE page (excludes the /learn index)."""
+    base = STATIC / "learn"
+    if not base.exists():
+        return
+    for p in sorted(base.rglob("index.html")):
+        if p.parent.name == "learn":          # the /learn index itself, not an article
+            continue
+        yield "/learn/" + p.parent.name, p.read_text(encoding="utf-8")
+
+
+def _all_learn_html():
+    """html of every built Learn page, index included."""
+    base = STATIC / "learn"
+    if not base.exists():
+        return
+    for p in sorted(base.rglob("index.html")):
+        yield p.read_text(encoding="utf-8")
+
+
+def _non_draft_article_count():
+    n = 0
+    for mdx in LEARN_MDX_DIR.glob("*.mdx"):
+        m = re.search(r"(?ms)^---\s*\n(.*?)\n---", mdx.read_text(encoding="utf-8"))
+        fm = m.group(1) if m else ""
+        if not re.search(r"(?m)^draft:\s*true\s*$", fm):
+            n += 1
+    return n
+
+
+def _iter_ld_objects(node):
+    """Yield every dict in a parsed JSON-LD payload (handles @graph / arrays / nesting)."""
+    if isinstance(node, dict):
+        yield node
+        for v in node.values():
+            yield from _iter_ld_objects(v)
+    elif isinstance(node, list):
+        for v in node:
+            yield from _iter_ld_objects(v)
+
+
+class LearnSection(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        cls.unbuilt = _unbuilt() or not (STATIC / "learn").exists()
+        cls.no_db = not (DB.exists() and DB.read_bytes()[:15] == b"SQLite format 3")
+        cls.conn = None if cls.no_db else sqlite3.connect(f"file:{DB}?mode=ro", uri=True)
+
+    def _need_built(self):
+        if self.unbuilt:
+            self.skipTest("webapp/static/learn not built (cd frontend && npm run build:deploy)")
+
+    def _need_db(self):
+        if self.no_db:
+            self.skipTest("db/sggs.sqlite not present (git lfs pull)")
+
+    def _db_line(self, lid):
+        return self.conn.execute(
+            "SELECT ang, gurmukhi FROM lines WHERE id=?", (lid,)).fetchone()
+
+    def test_quotes_verbatim(self):
+        self._need_built(); self._need_db()
+        quotes = json.loads(QUOTES_JSON.read_text(encoding="utf-8"))["quotes"]
+        seen = 0
+        for route, html in _learn_articles():
+            for m in _VERSE_P.finditer(html):
+                lid, shown = int(m.group(1)), m.group(2).strip()
+                row = self._db_line(lid)
+                self.assertIsNotNone(row, f"{route}: line id {lid} not in DB")
+                self.assertEqual(shown, row[1].strip(),
+                                 f"{route}: rendered verse id {lid} is not verbatim from db")
+                self.assertIn(str(lid), quotes, f"{route}: id {lid} missing from quotes.json")
+                self.assertEqual(quotes[str(lid)]["gurmukhi"].strip(), row[1].strip(),
+                                 f"quotes.json id {lid} gurmukhi != db")
+                seen += 1
+        self.assertGreater(seen, 0, "no rendered verses found in any Learn article")
+
+    def test_quotes_declared(self):
+        self._need_built()
+        quotes = json.loads(QUOTES_JSON.read_text(encoding="utf-8"))["quotes"]
+        for route, html in _learn_articles():
+            for lid in set(re.findall(r'data-line-id="(\d+)"', html)):
+                self.assertIn(lid, quotes, f"{route}: body data-line-id {lid} not in quotes.json")
+
+    def test_explanation_labelled(self):
+        self._need_built()
+        LABEL = "Explanation (interpretation, not scripture)"
+        for route, html in _learn_articles():
+            if 'class="verse gm"' in html:
+                self.assertIn(LABEL, html,
+                              f"{route}: quotes scripture but has no labelled Explanation")
+
+    def test_citation_format(self):
+        self._need_built(); self._need_db()
+        pat = re.compile(r"^Sri Guru Granth Sahib Ji · Ang (\d{1,4})")
+        seen = 0
+        for route, html in _learn_articles():
+            for m in _FIGURE.finditer(html):
+                lid, cite = int(m.group(1)), m.group(2).strip()
+                cm = pat.match(cite)
+                self.assertIsNotNone(cm, f"{route}: bad citation format: {cite!r}")
+                row = self._db_line(lid)
+                self.assertIsNotNone(row, f"{route}: line id {lid} not in DB")
+                self.assertEqual(int(cm.group(1)), row[0],
+                                 f"{route}: citation Ang for id {lid} != db Ang {row[0]}")
+                seen += 1
+        self.assertGreater(seen, 0, "no citations found in any Learn article")
+
+    def test_learn_honest_copy(self):
+        self._need_built()
+        for html in _all_learn_html():
+            stripped = re.sub(r"(?i)\bAI-generated\b", "", html)
+            self.assertNotRegex(stripped, r"\bAI\b", "Learn HTML mentions AI other than 'AI-generated'")
+            self.assertNotRegex(html, r"(?i)>[^<]*\bbeta\b", "Learn HTML says 'beta'")
+            self.assertNotRegex(html, r"(?i)\b(audio|kirtan|android)\b",
+                                "Learn HTML claims audio/kirtan/android")
+
+    def test_article_jsonld_valid(self):
+        self._need_built()
+        for route, html in _learn_articles():
+            blocks = _LD_JSON.findall(html)
+            self.assertTrue(blocks, f"{route}: no application/ld+json block")
+            objs = []
+            for b in blocks:
+                try:
+                    objs.extend(_iter_ld_objects(json.loads(b)))
+                except json.JSONDecodeError as e:
+                    self.fail(f"{route}: ld+json does not parse: {e}")
+            types = {o.get("@type") for o in objs}
+            self.assertIn("BreadcrumbList", types, f"{route}: no BreadcrumbList JSON-LD")
+            article = next((o for o in objs if o.get("@type") == "Article"), None)
+            self.assertIsNotNone(article, f"{route}: no Article JSON-LD")
+            self.assertTrue(article.get("headline"), f"{route}: Article missing headline")
+            self.assertTrue(article.get("datePublished"), f"{route}: Article missing datePublished")
 
 
 class ExternalRequestAllowlist(unittest.TestCase):
