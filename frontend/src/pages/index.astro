@@ -1,45 +1,32 @@
 ---
 import { Picture } from 'astro:assets';
-import { getCollection } from 'astro:content';
 import Marketing from '../layouts/Marketing.astro';
 import MarketingNav from '../components/MarketingNav.astro';
-import RaagArc from '../components/RaagArc.astro';
 import DeviceFrame from '../components/DeviceFrame.astro';
 import Newsletter from '../components/Newsletter.astro';
 import JsonLd from '../components/JsonLd.astro';
 import { SITE_URL, APP_STORE_URL, SUPPORT_EMAIL } from '../site.ts';
-import { LEARN_SLUGS } from '../routes.ts';
 import verse from '../generated/landing-verse.json';
-import raagData from '../generated/landing-raags.json';
 import heroImg from '../assets/landing/harmandir-sahib-sunset.jpg';
 import readerShot from '../assets/app/reader.png';
-import nitnemShot from '../assets/app/nitnem.png';
-import raagClockShot from '../assets/app/raag-clock.png';
-import hukamShot from '../assets/app/hukam.png';
-
-// Three newest Learn articles for the teaser (ties broken by the LEARN_SLUGS order).
-const learnOrder = new Map(LEARN_SLUGS.map((s, i) => [s, i]));
-const learnTeaser = (await getCollection('learn'))
-  .filter((a) => !a.data.draft)
-  .sort((a, b) => {
-    const t = b.data.pubDate.getTime() - a.data.pubDate.getTime();
-    return t !== 0 ? t : (learnOrder.get(a.id) ?? 0) - (learnOrder.get(b.id) ?? 0);
-  })
-  .slice(0, 3);
 
 const desc = "Gurbani Soul is a quiet, exact companion to Sri Guru Granth Sahib Ji for iPhone and iPad — the complete Granth, verbatim and cited by Ang, fully offline, never AI-generated.";
 
-// Six capabilities, shown as a hairline definition list (not boxy cards). Copy is lint-clean.
-const features = [
-  { t: "Read the whole Granth", d: "All 1,430 Angs in a clear Gurmukhi typeface. Turn pages, jump to any Ang, resume where you left off. Every composition opens with its printed heading." },
-  { t: "Search how you remember", d: "By word, by how it sounds in Roman letters, by first letters the way Gurbani is recalled, or by theme across the whole text." },
-  { t: "Nitnem, with gentle reminders", d: "The daily banis by time of day, your place kept in each, and a quiet record of the days you read. Optional reminders you set yourself." },
-  { t: "Hukam & the Raag Clock", d: "Draw a complete Hukam any time. See which raags belong to the current watch of the day, with an optional solar mode." },
-  { t: "Widgets & Live Activity", d: "The current watch, the last Hukam and today's Nitnem on your Home Screen; an optional reading Live Activity that never shows a verse." },
-  { t: "Verbatim by construction", d: "The text is reproduced character-for-character from the source edition and checked against a SHA-256 checksum. Nothing is corrected, normalised, or invented." },
+// The four places the nav leads, shown as a compact overview grid (hairline cards, not boxes).
+const overview = [
+  { href: "/features", eyebrow: "Features", title: "Everything, on your device", body: "The whole Granth, search the way you remember, Nitnem with your place kept, Hukam, widgets and Live Activity." },
+  { href: "/watch", eyebrow: "The watch", title: "The Raag Clock", body: "See which raags belong to the current watch of the day — eight pahars, with an optional solar mode." },
+  { href: "/learn", eyebrow: "Learn", title: "Understanding the Granth", body: "Short, plain explanations — what a Hukamnama is, how to read Nitnem, the raags and the watches of the day." },
+  { href: "/search", eyebrow: "On the web", title: "Knowledge Base", body: "Prefer the browser? The same verified text and study tools live on the web, cited by Ang." },
 ];
 
-const pahars = raagData.pahars as Record<string, { name: string; roman: string }[]>;
+// A short trust strip — the same facts as the app's privacy stance, kept honest and lint-clean.
+const trustFacts = [
+  "Works in Airplane Mode",
+  "No account, no tracking",
+  "Verbatim, cited by Ang",
+  "Data Not Collected",
+];
 
 // --- Structured data (JSON-LD) — emitted via <JsonLd>, which escapes "<". ---
 // One Organization node, referenced by @id from WebSite and SoftwareApplication so search engines
@@ -99,7 +86,7 @@ const softwareApplication = {
 
   <MarketingNav />
 
-  <!-- (b) HERO -->
+  <!-- (b) HERO — unchanged: copy left, floating iPhone right -->
   <section class="hero" id="top">
     <div class="hero-media">
       <Picture src={heroImg} formats={['avif','webp']} widths={[640,960,1280,1600,1920]}
@@ -109,17 +96,22 @@ const softwareApplication = {
       <div class="hero-scrim"></div>
     </div>
     <div class="wrap hero-in">
-      <div class="hero-copy">
-        <p class="eyebrow" style="color:#f4d38a">For iPhone and iPad</p>
-        <h1>Gurbani Soul</h1>
-        <p class="hero-lede">A quiet, exact companion to Sri Guru Granth Sahib Ji. Verbatim, cited by Ang, never invented.</p>
-        <div class="hero-cta">
-          {APP_STORE_URL
-            ? <a class="pill" href={APP_STORE_URL} aria-label="Get Gurbani Soul on the App Store">Download on the App Store</a>
-            : <span class="pill soon" data-app-store="coming-soon">Coming soon to the App Store</span>}
-          <a class="hero-ghost" href="/search">Open the Knowledge Base</a>
+      <div class="hero-grid">
+        <div class="hero-copy">
+          <p class="eyebrow" style="color:#f4d38a">For iPhone and iPad</p>
+          <h1>Gurbani Soul</h1>
+          <p class="hero-lede">A quiet, exact companion to Sri Guru Granth Sahib Ji. Verbatim, cited by Ang, never invented.</p>
+          <div class="hero-cta">
+            {APP_STORE_URL
+              ? <a class="pill" href={APP_STORE_URL} aria-label="Get Gurbani Soul on the App Store">Download on the App Store</a>
+              : <span class="pill soon" data-app-store="coming-soon">Coming soon to the App Store</span>}
+            <a class="hero-ghost" href="/search">Open the Knowledge Base</a>
+          </div>
+          <p class="hero-fine">Fully offline · no account · no tracking</p>
         </div>
-        <p class="hero-fine">Fully offline · no account · no tracking</p>
+        <div class="hero-device" aria-hidden="false">
+          <DeviceFrame src={readerShot} alt="Gurbani Soul on iPhone, open at Ang 1 in Sant Lipi" />
+        </div>
       </div>
     </div>
   </section>
@@ -134,123 +126,22 @@ const softwareApplication = {
     </div>
   </section>
 
-  <!-- (d) FEATURES -->
-  <section class="section" id="features">
-    <div class="wrap feat-grid">
-      <div class="feat-head">
-        <p class="eyebrow">Everything, on your device</p>
-        <h2>Made for reading, not for scrolling</h2>
-        <p class="muted feat-intro">The whole Granth, the daily banis and the study tools — quiet, exact, and entirely on your device. No feeds, no accounts, nothing asking for your attention.</p>
+  <!-- (d) OVERVIEW — the four places the nav leads -->
+  <section class="section">
+    <div class="wrap">
+      <div class="ov-head reveal">
+        <p class="eyebrow">Explore</p>
+        <h2>A quiet place for the whole Granth</h2>
+        <p class="muted ov-intro">Read, search and keep your Nitnem on your device — or explore the same verified text on the web.</p>
       </div>
-      <div class="feat-body">
-        <div class="feat-devices" aria-hidden="false">
-          <DeviceFrame src={readerShot} alt="Reader screen showing Ang 1 in Sant Lipi" label="Reader" />
-          <DeviceFrame src={nitnemShot} alt="Nitnem screen listing the daily banis by time of day" label="Nitnem" />
-        </div>
-        <dl class="feat-list">
-          {features.map((f) => (
-            <div class="feat-row reveal">
-              <dt>{f.t}</dt>
-              <dd>{f.d}</dd>
-            </div>
-          ))}
-        </dl>
-      </div>
-    </div>
-  </section>
-
-  <!-- (e) THE WATCH -->
-  <section class="section band" id="clock">
-    <div class="wrap watch-grid">
-      <div class="watch-arc reveal">
-        <RaagArc />
-      </div>
-      <div class="watch-body reveal">
-        <p class="eyebrow">The Raag Clock</p>
-        <h2>The raags of this watch</h2>
-        <p class="lead" data-raag-now>The dial follows the eight pahars — the watches of the day.</p>
-        <ul class="raags">
-          {Array.from({ length: 8 }, (_, i) => String(i + 1)).map((p) => (
-            <li data-pahar={p} hidden>
-              {pahars[p] && pahars[p].length
-                ? pahars[p].map((r) => (
-                    <span class="raag-chip"><span class="gm" lang="pa">{r.name}</span> <span class="rom">{r.roman}</span></span>
-                  ))
-                : <span class="silence">The deep night is left in silence.</span>}
-            </li>
-          ))}
-        </ul>
-        <p class="muted watch-note">Times follow your device's clock; the app can also follow sunrise and sunset.</p>
-        <div class="watch-device">
-          <DeviceFrame src={raagClockShot} alt="Raag Clock showing the current watch" label="Raag Clock" />
-        </div>
-      </div>
-    </div>
-  </section>
-
-  <!-- (f) PRIVACY -->
-  <section class="section priv-band" id="privacy" data-theme="dark">
-    <div class="wrap priv-grid">
-      <div class="priv-body reveal">
-        <p class="eyebrow">Private by design</p>
-        <h2 class="priv-h">Nothing leaves your device.</h2>
-        <ul class="factrail priv-facts">
-          <li>Works in Airplane Mode</li>
-          <li>No account</li>
-          <li>No analytics</li>
-          <li>No third-party SDKs</li>
-          <li>“Data Not Collected”</li>
-        </ul>
-        <p><a href="/privacy">Read the privacy policy</a></p>
-      </div>
-      <div class="priv-device reveal">
-        <DeviceFrame src={hukamShot} alt="Hukam screen with a complete shabad cited by Ang" label="Hukam" />
-      </div>
-    </div>
-  </section>
-
-  <!-- (g) KNOWLEDGE BASE -->
-  <section class="section" id="knowledge-base">
-    <div class="wrap kb-grid">
-      <div class="kb-copy reveal">
-        <p class="eyebrow">On the web</p>
-        <h2>The same text, in your browser</h2>
-        <p class="muted">Prefer the browser? The same verified text and study tools live on the web.</p>
-        <p><a class="btn ghost" href="/search">Explore the Knowledge Base</a></p>
-      </div>
-      <div class="kb-mock-wrap reveal">
-        <div class="kbmock">
-          <div class="chrome">
-            <span class="dots" aria-hidden="true"><i></i><i></i><i></i></span>
-            <span class="addr">gurbanisoul.com/search</span>
-          </div>
-          <div class="body">
-            <form class="search" action="/search" method="get" role="search" aria-label="Knowledge Base search (preview)">
-              <input type="search" name="q" placeholder="Search the Granth…" aria-label="Search the Granth" />
-              <span class="go" aria-hidden="true">Search</span>
-            </form>
-            <div class="rows" aria-hidden="true"><span class="r"></span><span class="r mid"></span><span class="r short"></span></div>
-          </div>
-        </div>
-      </div>
-    </div>
-  </section>
-
-  <!-- (g2) LEARN TEASER -->
-  <section class="section band" id="learn">
-    <div class="wrap learn-teaser">
-      <div class="lt-head">
-        <p class="eyebrow">Learn</p>
-        <h2>Understanding the Granth</h2>
-        <p class="muted">Short, plain explanations — what a Hukamnama is, how to read Nitnem, the raags and the watches of the day. Verbatim quotes, cited by Ang.</p>
-        <p><a class="btn ghost" href="/learn">Read the Learn section</a></p>
-      </div>
-      <ul class="lt-list">
-        {learnTeaser.map((a) => (
-          <li>
-            <a href={`/learn/${a.id}`}>
-              <h3>{a.data.title}</h3>
-              <p>{a.data.description}</p>
+      <ul class="ov-grid">
+        {overview.map((c) => (
+          <li class="ov-card reveal">
+            <a href={c.href}>
+              <p class="eyebrow">{c.eyebrow}</p>
+              <h3>{c.title}</h3>
+              <p class="ov-body">{c.body}</p>
+              <span class="ov-more" aria-hidden="true">Explore &rarr;</span>
             </a>
           </li>
         ))}
@@ -258,17 +149,22 @@ const softwareApplication = {
     </div>
   </section>
 
-  <!-- (h) SUPPORT -->
-  <section class="section band support" id="support">
-    <div class="wrap">
-      <p class="support-line">Questions or corrections? <a href="/support">Support</a> · {SUPPORT_EMAIL}</p>
+  <!-- (e) PRIVACY TRUST STRIP -->
+  <section class="section priv-band" id="privacy-strip" data-theme="dark">
+    <div class="wrap priv-in reveal">
+      <p class="eyebrow">Private by design</p>
+      <h2 class="priv-h">Nothing leaves your device.</h2>
+      <ul class="factrail priv-facts">
+        {trustFacts.map((f) => <li>{f}</li>)}
+      </ul>
+      <p class="priv-link"><a href="/privacy">Read the privacy policy</a></p>
     </div>
   </section>
 
-  <!-- (h2) LAUNCH NOTICE — env-gated; renders nothing unless PUBLIC_NEWSLETTER_FORM_URL is set -->
+  <!-- (f) LAUNCH NOTICE — env-gated; renders nothing unless PUBLIC_NEWSLETTER_FORM_URL is set -->
   <Newsletter />
 
-  <!-- (i) FOOTER -->
+  <!-- (g) FOOTER -->
   <footer class="foot">
     <div class="wrap foot-in">
       <div>
@@ -276,6 +172,8 @@ const softwareApplication = {
         <div>Built by Algorythmos · Sri Guru Granth Sahib Ji is shown verbatim from the source edition, cited by Ang.</div>
       </div>
       <nav aria-label="Footer" class="foot-nav">
+        <a href="/features">Features</a>
+        <a href="/watch">The watch</a>
         <a href="/search">Knowledge Base</a>
         <a href="/learn">Learn</a>
         <a href="/support">Support</a>
@@ -290,41 +188,42 @@ const softwareApplication = {
   </footer>
 
   <style>
-    /* scroll-spy target offset for the sticky nav */
-    #top, #features, #clock, #privacy, #knowledge-base, #learn, #support { scroll-margin-top: 76px; }
-
-    /* (g2) Learn teaser */
-    .learn-teaser { display: grid; grid-template-columns: 1fr; gap: 40px; align-items: start; }
-    .lt-head h2 { font-size: clamp(26px, 4vw, 40px); margin: 0 0 16px; }
-    .lt-head .muted { max-width: 42ch; }
-    .lt-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 0; }
-    .lt-list li { border-top: 1px solid var(--line); }
-    .lt-list li:last-child { border-bottom: 1px solid var(--line); }
-    .lt-list a { display: block; padding: 20px 0; text-decoration: none; color: inherit; }
-    .lt-list h3 { font-family: var(--serif-display); font-size: 19px; font-weight: 600; color: var(--ink); margin: 0 0 6px; }
-    .lt-list p { margin: 0; color: var(--ink-soft); font-size: 15px; max-width: 62ch; }
-    .lt-list a:hover h3 { text-decoration: underline; text-decoration-color: var(--accent); text-underline-offset: 3px; }
-    @media (min-width: 900px) { .learn-teaser { grid-template-columns: 5fr 6fr; gap: 64px; } }
+    #top { scroll-margin-top: 76px; }
 
     /* (b) Hero */
-    .hero { position: relative; min-height: min(92svh, 820px); display: flex; align-items: flex-end;
+    .hero { position: relative; min-height: min(94svh, 860px); display: flex; align-items: center;
       overflow: clip; margin-top: -66px; }
     .hero-media, .hero-media :global(.hero-pic), .hero-media :global(img) { position: absolute; inset: 0; width: 100%; height: 100%; }
     .hero-media { background: #17110a; }
     .hero-media :global(img) { object-fit: cover; object-position: center 46%; }
     .hero-scrim { position: absolute; inset: 0;
-      background: linear-gradient(180deg, rgba(15,10,5,.42) 0%, rgba(15,10,5,.18) 34%, rgba(15,10,5,.78) 100%); }
-    .hero-in { position: relative; padding: 96px 20px 72px; }
-    .hero-copy { max-width: 62%; color: #fff; }
-    .hero-copy h1 { font-size: clamp(44px, 8vw, 88px); margin: 0 0 16px; color: #fff; line-height: 1.02; }
-    .hero-lede { font-family: var(--serif-display); font-size: clamp(18px, 2.6vw, 25px); line-height: 1.4;
-      max-width: 30ch; margin: 0 0 26px; color: #f3ead9; }
+      background:
+        radial-gradient(120% 90% at 18% 60%, rgba(15,10,5,.62) 0%, rgba(15,10,5,.28) 42%, transparent 72%),
+        linear-gradient(180deg, rgba(15,10,5,.44) 0%, rgba(15,10,5,.20) 34%, rgba(15,10,5,.72) 100%); }
+    .hero-in { position: relative; width: 100%; padding: 120px 20px 96px; }
+    .hero-grid { display: grid; grid-template-columns: 1fr; gap: 40px; align-items: center; }
+    .hero-copy { color: #fff; }
+    .hero-copy h1 { font-size: clamp(44px, 7.5vw, 92px); margin: 0 0 16px; color: #fff; line-height: 1.01; letter-spacing: -.02em; }
+    .hero-lede { font-family: var(--serif-display); font-size: clamp(18px, 2.6vw, 26px); line-height: 1.4;
+      max-width: 32ch; margin: 0 0 28px; color: #f3ead9; }
     .hero-cta { display: flex; flex-wrap: wrap; gap: 14px 20px; align-items: center; }
     .hero-cta .pill.soon { color: #fff; border-color: rgba(255,255,255,.6); }
     .hero-ghost { color: #fff; text-decoration: none; font-weight: 600; font-size: 15.5px;
       border-bottom: 1px solid rgba(255,255,255,.5); padding-bottom: 2px; }
     .hero-fine { margin: 22px 0 0; color: #e6dcc9; font-size: 14px; }
-    @media (max-width: 720px) { .hero-copy { max-width: 100%; } }
+    /* Floating product shot fills the right of the hero on desktop; hidden on small screens
+       (the hero stays light on mobile; screenshots live on /features and /watch). */
+    .hero-device { display: none; }
+    .hero-device :global(.device) { width: min(340px, 90%); box-shadow: 0 40px 90px rgba(0,0,0,.5); }
+    @media (min-width: 980px) {
+      .hero-grid { grid-template-columns: 1.05fr 0.95fr; gap: 56px; }
+      .hero-device { display: flex; justify-content: center; position: relative; }
+      /* soft gold aura behind the phone — accentFill wash, well under the 14% ceiling */
+      .hero-device::before { content: ""; position: absolute; inset: -8% -6%; z-index: 0;
+        background: radial-gradient(60% 55% at 50% 42%, rgba(255,188,13,.13), transparent 70%); }
+      .hero-device :global(.device) { position: relative; z-index: 1; transform: rotate(-3deg); }
+    }
+    @media (min-width: 1200px) { .hero-device :global(.device) { width: 368px; } }
 
     /* (c) Verse */
     .verse-band { border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); background: var(--paper-2); }
@@ -334,66 +233,37 @@ const softwareApplication = {
     .cite { margin: 20px 0 0; color: var(--accent-text); font-weight: 600; font-size: 14px; letter-spacing: .01em; }
     .verse-note { margin: 18px auto 0; max-width: 58ch; color: var(--ink-soft); font-size: 14.5px; }
 
-    /* Shared bands */
-    .band { background: var(--paper-2); border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); }
-
-    /* (d) Features */
-    .feat-grid { display: grid; grid-template-columns: 1fr; gap: 40px; }
-    .feat-head h2 { font-size: clamp(28px, 4.4vw, 44px); margin: 0 0 16px; }
-    .feat-intro { font-size: 16.5px; max-width: 40ch; }
-    .feat-devices { display: flex; gap: 22px; margin: 0 0 36px; }
-    .feat-devices :global(.device-fig:nth-child(2)) { transform: translateY(28px); }
-    .feat-list { margin: 0; display: grid; gap: 0; }
-    .feat-row { padding: 22px 0; border-top: 1px solid var(--line); }
-    .feat-row:last-child { border-bottom: 1px solid var(--line); }
-    .feat-row dt { font-family: var(--serif-display); font-size: 19px; font-weight: 600; color: var(--ink); margin: 0 0 6px; }
-    .feat-row dd { margin: 0; color: var(--ink-soft); font-size: 15.5px; max-width: 62ch; }
-    @media (min-width: 900px) {
-      .feat-grid { grid-template-columns: 4fr 7fr; gap: 64px; align-items: start; }
-      .feat-head { position: sticky; top: 96px; }
+    /* (d) Overview grid */
+    .ov-head { max-width: 46ch; margin: 0 0 clamp(28px, 4vw, 48px); }
+    .ov-head h2 { font-size: clamp(28px, 4.4vw, 44px); margin: 0 0 14px; }
+    .ov-intro { font-size: 16.5px; }
+    .ov-grid { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: 1fr; gap: 0; }
+    .ov-card { border-top: 1px solid var(--line); }
+    .ov-card:last-child { border-bottom: 1px solid var(--line); }
+    .ov-card a { display: flex; flex-direction: column; gap: 8px; padding: 26px 0; text-decoration: none; color: inherit; height: 100%; }
+    .ov-card .eyebrow { margin: 0; }
+    .ov-card h3 { font-size: clamp(20px, 2.6vw, 26px); margin: 0; color: var(--ink); }
+    .ov-card .ov-body { margin: 0; color: var(--ink-soft); font-size: 15.5px; max-width: 52ch; }
+    .ov-card .ov-more { margin-top: auto; padding-top: 6px; color: var(--accent-text); font-weight: 650; font-size: 14.5px; }
+    .ov-card a:hover h3 { text-decoration: underline; text-decoration-color: var(--accent); text-underline-offset: 3px; }
+    @media (min-width: 720px) {
+      .ov-grid { grid-template-columns: 1fr 1fr; column-gap: 48px; }
+      /* Hairline separators between the two columns as well as the rows. */
+      .ov-card a { padding-left: 0; padding-right: 0; }
+    }
+    @media (min-width: 1040px) {
+      .ov-grid { grid-template-columns: repeat(4, 1fr); column-gap: 40px; }
     }
 
-    /* (e) Watch */
-    .watch-grid { display: grid; grid-template-columns: 1fr; gap: 40px; align-items: center; }
-    .watch-arc { display: flex; justify-content: center; }
-    .watch-body h2 { font-size: clamp(26px, 4vw, 40px); margin: 0 0 18px; }
-    .raags { list-style: none; padding: 0; margin: 22px 0 0; }
-    .raags li { display: flex; flex-wrap: wrap; gap: 10px 12px; }
-    /* Only the current watch's raags show; the [hidden] attribute must beat the flex rule above
-       (higher specificity via the attribute selector). JS un-hides the current pahar's <li>. */
-    .raags li[hidden] { display: none; }
-    .raag-chip { display: inline-flex; align-items: baseline; gap: 7px; padding: 7px 13px; border: 1px solid var(--line); border-radius: 999px; font-size: 15px; }
-    .raag-chip .gm { color: var(--ink); font-size: 16px; }
-    .raag-chip .rom { color: var(--ink-soft); font-size: 13px; }
-    .silence { font-family: var(--serif-display); font-size: 18px; color: var(--ink-soft); font-style: italic; }
-    .watch-note { margin: 24px 0 0; font-size: 14.5px; }
-    .watch-device { margin: 32px 0 0; display: none; }
-    @media (min-width: 900px) {
-      .watch-grid { grid-template-columns: 5fr 6fr; gap: 64px; }
-      .watch-device { display: block; }
-    }
-
-    /* (f) Privacy — warm-ink band even in light mode (data-theme="dark" scope) */
+    /* (e) Privacy trust strip — warm-ink band even in light mode (data-theme="dark" scope) */
     .priv-band { background: var(--paper); }
-    .priv-grid { display: grid; grid-template-columns: 1fr; gap: 40px; align-items: center; }
-    .priv-h { font-size: clamp(30px, 5.4vw, 56px); margin: 0 0 24px; color: var(--ink); }
-    .priv-facts { margin: 0 0 24px; }
+    .priv-in { max-width: 62ch; }
+    .priv-h { font-size: clamp(28px, 5vw, 48px); margin: 0 0 22px; color: var(--ink); }
+    .priv-facts { margin: 0 0 22px; }
+    .priv-link { margin: 0; }
     .priv-band a { color: var(--accent-text); }
-    .priv-device { display: flex; justify-content: flex-end; }
-    @media (min-width: 900px) {
-      .priv-grid { grid-template-columns: 7fr 5fr; gap: 56px; }
-    }
 
-    /* (g) Knowledge Base */
-    .kb-grid { display: grid; grid-template-columns: 1fr; gap: 40px; align-items: center; }
-    .kb-copy h2 { font-size: clamp(26px, 4vw, 40px); margin: 0 0 16px; }
-    @media (min-width: 900px) { .kb-grid { grid-template-columns: 5fr 6fr; gap: 64px; } }
-
-    /* (h) Support */
-    .support { text-align: center; }
-    .support-line { margin: 0; font-size: 16px; color: var(--ink-soft); }
-
-    /* (i) Footer */
+    /* (g) Footer */
     .foot-in { padding-top: 44px; padding-bottom: 20px; display: flex; flex-wrap: wrap; gap: 16px 32px; align-items: baseline; justify-content: space-between; }
     .foot-brand { font-family: var(--serif-display); font-size: 18px; color: var(--ink); }
     .foot-nav { display: flex; gap: 18px; flex-wrap: wrap; }

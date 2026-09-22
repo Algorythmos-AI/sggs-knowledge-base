@@ -16,7 +16,7 @@ const { src, alt, label } = Astro.props;
 <figure class="device-fig" style="margin:0">
   <div class="device">
     {src
-      ? <div class="screen"><Image src={src} alt={alt} loading="lazy" widths={[260, 520]} sizes="260px" /></div>
+      ? <div class="screen"><Image src={src} alt={alt} loading="lazy" widths={[300, 600, 840]} sizes="(min-width: 980px) 340px, 260px" /></div>
       : <div class="screen" role="img" aria-label={alt}><span class="ph-onkar gm" aria-hidden="true">ੴ</span></div>}
   </div>
   {label && <figcaption class="muted" style="text-align:center;margin-top:12px;font-size:13.5px">{label}</figcaption>}

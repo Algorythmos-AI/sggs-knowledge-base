@@ -72,28 +72,17 @@ function wireNavScrolled() {
   cleanups.push(() => sentinel.remove());
 }
 
-/** aria-current on the primary nav anchor whose section is in the reading band. */
-function wireScrollSpy() {
-  const anchors = new Map<string, HTMLAnchorElement>();
-  document.querySelectorAll<HTMLAnchorElement>('.mnav-links a[href^="#"]').forEach((a) => {
-    anchors.set(a.getAttribute("href")!.slice(1), a);
+/** aria-current="page" on the primary/mobile nav link whose route matches the current pathname.
+    The server renders this correctly per page; this re-asserts it after each ClientRouter swap. */
+function wireNavActive() {
+  const here = (location.pathname || "/").replace(/\/+$/, "") || "/";
+  document.querySelectorAll<HTMLAnchorElement>(".mnav-links a[href], #mobileMenu a[href]").forEach((a) => {
+    const href = a.getAttribute("href") || "";
+    if (!href.startsWith("/") || href.startsWith("//")) return; // route links only
+    const route = href.replace(/\/+$/, "") || "/";
+    if (route === here) a.setAttribute("aria-current", "page");
+    else a.removeAttribute("aria-current");
   });
-  const sections = [...anchors.keys()]
-    .map((id) => document.getElementById(id))
-    .filter((el): el is HTMLElement => !!el);
-  if (!sections.length) return;
-  const io = new IntersectionObserver(
-    (entries) => {
-      for (const en of entries) {
-        if (!en.isIntersecting) continue;
-        anchors.forEach((a) => a.removeAttribute("aria-current"));
-        anchors.get(en.target.id)?.setAttribute("aria-current", "true");
-      }
-    },
-    { rootMargin: "-40% 0px -55% 0px", threshold: 0 }
-  );
-  sections.forEach((s) => io.observe(s));
-  observers.push(io);
 }
 
 /** Reveal-on-scroll — only when motion is allowed; otherwise content stays visible (CSS default). */
@@ -156,7 +145,7 @@ function init() {
   initTheme();
   wireMobileMenu();
   wireNavScrolled();
-  wireScrollSpy();
+  wireNavActive();
   wireReveal();
   wireRaagClock();
   const nl = wireNewsletter(); // no-op when the env-gated form is absent (this build)
