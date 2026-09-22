@@ -11,10 +11,13 @@
   <key>NSPrivacyAccessedAPITypes</key>
   <array>
     <dict>
+      <!-- CA92.1: the app reads/writes its own UserDefaults. 1C8F.1: the app and its widget
+           extension share UserDefaults(suiteName: "group.org.sggs") for the widget snapshot,
+           the solar clock choice and rounded coords. -->
       <key>NSPrivacyAccessedAPIType</key>
       <string>NSPrivacyAccessedAPICategoryUserDefaults</string>
       <key>NSPrivacyAccessedAPITypeReasons</key>
-      <array><string>CA92.1</string></array>
+      <array><string>CA92.1</string><string>1C8F.1</string></array>
     </dict>
     <dict>
       <!-- LaunchIntegrity.fileFingerprint reads the bundled DB's size + modification date

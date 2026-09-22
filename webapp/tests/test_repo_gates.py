@@ -203,6 +203,18 @@ class PrivacyManifestGate(unittest.TestCase):
         self.assertEqual(self.manifest.get("NSPrivacyTrackingDomains", []), [])
         self.assertEqual(self.manifest.get("NSPrivacyCollectedDataTypes", []), [])
 
+    def test_app_group_userdefaults_reason_declared(self):
+        # The app + widget share UserDefaults(suiteName: "group.org.sggs"); that cross-process use
+        # requires reason 1C8F.1 in addition to CA92.1. Apple's upload validator can flag its absence.
+        uses_suite = bool(violations(r'UserDefaults\(suiteName:'))
+        reasons = set()
+        for e in self.manifest["NSPrivacyAccessedAPITypes"]:
+            if e["NSPrivacyAccessedAPIType"] == "NSPrivacyAccessedAPICategoryUserDefaults":
+                reasons = set(e.get("NSPrivacyAccessedAPITypeReasons", []))
+        if uses_suite:
+            self.assertIn("1C8F.1", reasons,
+                          "app uses a shared UserDefaults suite but PrivacyInfo.xcprivacy omits reason 1C8F.1")
+
     def test_manifest_bundled_in_app_and_widget_targets(self):
         project = (APP / "project.yml").read_text(encoding="utf-8")
         # The app target bundles the whole Resources dir; the widget lists the file explicitly.
@@ -295,6 +307,33 @@ class ListingLint(unittest.TestCase):
                           pasted)
         self.assertEqual(hits, [])
 
+    def test_no_overclaimed_sha_every_launch(self):
+        # F3: the full SHA-256 runs on install/update, not every launch (LaunchIntegrity caches the
+        # fingerprint). Guard the whole listing, incl. review notes, against the overclaim.
+        hits = re.findall(r"(?i)verified (?:by SHA-256 )?(?:every time the app launches|at launch|every launch)",
+                          self.text)
+        self.assertEqual(hits, [], "listing overclaims SHA-256 verification frequency (see LaunchIntegrity)")
+
+    def test_review_notes_use_real_labels(self):
+        # F2/F6: a reviewer follows the review notes verbatim. The row is "About & credits", not "About".
+        notes = _section(self.text, "App Review Information")
+        self.assertNotRegex(notes, r"More → About\b(?! & credits)",
+                            'review notes say "More → About" but the row is "About & credits"')
+        self.assertNotIn("Search tab, type `waheguru` → open a result →\n> tap Hukam", notes,
+                         "review path still routes Hukam through a search result (there is no Hukam control there)")
+
+    def test_siri_phrases_named_in_listing_exist_in_code(self):
+        # F4: every phrase the listing calls a Siri phrase must be a real AppShortcut.
+        intents = (APP / "Sources" / "Intents" / "AppIntents.swift").read_text(encoding="utf-8")
+        shortcut_block = intents[intents.find("AppShortcutsProvider"):] if "AppShortcutsProvider" in intents else intents
+        phrases = set(re.findall(r'phrases:\s*\[(.*?)\]', shortcut_block, re.S))
+        shortcut_text = " ".join(phrases)
+        # "Open Ang" is a Shortcuts action only — it must NOT be sold as a Siri phrase.
+        siri_line = next((l for l in self.description.splitlines() if "Works with Siri" in l), "")
+        if siri_line:
+            self.assertNotRegex(siri_line, r'"Open Ang"(?!\s*action)',
+                                '"Open Ang" is a Shortcuts action, not a Siri phrase')
+
     def test_review_notes_widget_count_matches_code(self):
         widgets = violations(r"struct\s+\w+\s*:\s*Widget\b", dirs=[APP / "Widgets"])
         home_screen = [w for w in widgets if "LiveActivity" not in w]
@@ -316,6 +355,30 @@ class ListingLint(unittest.TestCase):
         pasted = "\n".join([self.promo, self.description])
         stripped = re.sub(r"(?i)never AI-generated|or AI-generated", "", pasted)
         self.assertNotRegex(stripped, r"\bAI\b")
+
+
+class InAppLinksMatchTheListing(unittest.TestCase):
+    """The Privacy/Support URLs shipped inside the app must equal the URLs entered in App Store
+    Connect (the listing's "Submit this" column), so the in-app policy link and the store metadata
+    can never point at different pages."""
+
+    def _app_link(self, name):
+        src = (APP / "Sources" / "Screens" / "PrivacyPolicyScreen.swift").read_text(encoding="utf-8")
+        m = re.search(rf'static let {name} = URL\(string: "([^"]+)"\)', src)
+        self.assertIsNotNone(m, f"AppLinks.{name} not found")
+        return m.group(1)
+
+    def _listing_url(self, label):
+        text = LISTING.read_text(encoding="utf-8")
+        m = re.search(rf'(?m)^\| {re.escape(label)} \| `([^`]+)`', text)
+        self.assertIsNotNone(m, f"listing row {label!r} not found")
+        return m.group(1)
+
+    def test_privacy_url_matches(self):
+        self.assertEqual(self._app_link("privacy"), self._listing_url("Privacy Policy URL"))
+
+    def test_support_url_matches(self):
+        self.assertEqual(self._app_link("support"), self._listing_url("Support URL"))
 
 
 if __name__ == "__main__":

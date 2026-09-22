@@ -271,6 +271,22 @@ final class SGGSUITests: XCTestCase {
             "offline reassurance footer missing")
     }
 
+    /// Privacy Policy is reachable inside the app (Guideline 5.1.1(i)): a row in More opens a
+    /// static, offline policy screen that states the "Data Not Collected" stance.
+    func testPrivacyPolicyReachableFromMore() {
+        let app = launchApp(selectSearch: false)
+        openTab(app, "More", expectingNavBar: "More")
+        let link = app.buttons["privacyPolicyLink"].firstMatch
+        XCTAssertTrue(link.waitForExistence(timeout: 12), "Privacy Policy link missing in More")
+        XCTAssertTrue(app.buttons["supportLink"].firstMatch.exists, "Support link missing in More")
+        link.tap()
+        XCTAssertTrue(app.navigationBars["Privacy Policy"].waitForExistence(timeout: 8), "Privacy Policy screen did not open")
+        XCTAssertTrue(app.descendants(matching: .any)
+            .matching(NSPredicate(format: "label CONTAINS[c] %@", "Data Not Collected")).firstMatch.exists,
+            "Privacy Policy screen does not state the Data Not Collected stance")
+        XCTAssertTrue(app.links["privacyWebLink"].firstMatch.exists, "online policy link missing")
+    }
+
     /// Rehras variant is a setting: switching to Taksal persists and retitles the row.
     func testRehrasVariantPersists() {
         let app = launchApp(selectSearch: false)

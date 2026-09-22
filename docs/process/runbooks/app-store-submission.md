@@ -52,14 +52,26 @@ file that proves it. Audit and plan: 2026-09-20.
 - [ ] Support / Marketing / Privacy URLs = the **"Submit this"** column (they must resolve today).
 - [ ] App Privacy: **Data Not Collected**.
 - [ ] Age rating questionnaire → 4+. Read the live form; answer what it asks.
+- [ ] **New app record / version**: create the App Store version with the string **exactly matching
+      the binary's `MARKETING_VERSION`** (a new app record defaults to 1.0; the build is not
+      selectable until the version string matches). Select the processed build once it leaves
+      "Processing".
+- [ ] **App Information**: Primary category Reference, Secondary Education; Content Rights.
 - [ ] Content rights: **Yes, contains third-party content, and I have the rights** (list from the doc).
 - [ ] Export compliance: answered by `ITSAppUsesNonExemptEncryption = false`.
 - [ ] EU DSA trader status declared and verified (the contact details become public).
 - [ ] Accessibility labels: declare only what H5 proved.
 - [ ] Availability: all territories. Price: free. Agreements: nothing pending under Business.
+- [ ] **Untick "Make this app available on Mac" and "… on Apple Vision Pro"** — both are ON by
+      default. The app is iPhone/iPad only (`TARGETED_DEVICE_FAMILY "1,2"`) and is never tested on
+      those platforms; a broken Mac/visionOS run is a 2.1 rejection on a surface we never shipped.
 - [ ] App Review Information: contact name, **phone**, email; review notes pasted; no sign-in.
-- [ ] Screenshots retaken from the RC (`ios/AppStore/README.md` checklist), 6.9" iPhone + 13" iPad.
+- [ ] Screenshots retaken from the RC (`ios/AppStore/README.md` checklist). Mandatory display sizes
+      today: **iPhone 6.9"** and — because the app supports iPad — **iPad 13"**; 6.5" iPhone is
+      optional. **Confirm the live requirement in the upload UI on the day** (Apple changes it).
 - [ ] Version release: **manual**, phased release **on**.
+- [ ] After approval the version sits at **"Pending Developer Release"** — it is NOT live. Open the
+      version page and press **Release** to start the 7-day phased rollout; record the timestamp.
 
 ## 3. Re-check on submission day
 Apple changes these without notice — read <https://developer.apple.com/news/upcoming-requirements/>:
