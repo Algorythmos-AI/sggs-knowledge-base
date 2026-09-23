@@ -31,6 +31,13 @@ entries prior to v1.1.0 are the project's original prose style and are preserved
   honours the named form, so a Live-Activity tap on the printed Vaar can no longer reopen the
   kirtan one.
 
+- **A composition opens on its own cover** — title, the Ang range it occupies, how many
+  ashtapadis or pauris it runs to, about how long it takes, what it is, and one action that either
+  begins it or returns the reader to the stanza they stopped at.
+- **Long compositions page by their printed rhythm.** Sukhmani Sahib now steps ashtapadi by
+  ashtapadi instead of showing "Part 1 of 3" (its three registry groups are the opening salok, the
+  entire body, and the salok again). Rehras Sahib and Aarti keep part navigation.
+
 ### Data
 - Registry only: 637 new pointer rows in `bani_lines`, one new row in `banis`. **Scripture, corpus
   and every pre-existing table are byte-identical** (`diff_scripture.py`: no column changed;

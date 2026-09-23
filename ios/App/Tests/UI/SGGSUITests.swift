@@ -391,7 +391,7 @@ final class SGGSUITests: XCTestCase {
         // Move the position, then go back: Back must land on the Index, not the Explore hub.
         let pos = app.staticTexts["baniPosition"].firstMatch
         XCTAssertTrue(pos.waitForExistence(timeout: 10), "the reading-position bar is missing")
-        app.buttons["Next part"].firstMatch.tap()
+        app.buttons["Next ashtapadi"].firstMatch.tap()
         app.navigationBars["Sukhmani Sahib"].buttons.element(boundBy: 0).tap()
         XCTAssertTrue(app.navigationBars["Index"].waitForExistence(timeout: 10),
                       "Back from a composition must return to the Index")
@@ -444,19 +444,22 @@ final class SGGSUITests: XCTestCase {
         XCTAssertTrue(row.waitForExistence(timeout: 12))
         row.tap()
         XCTAssertTrue(app.navigationBars["Sukhmani Sahib"].waitForExistence(timeout: 12))
-        app.buttons["Next part"].firstMatch.tap()
-        let pos = app.staticTexts["baniPosition"].firstMatch
-        XCTAssertTrue(pos.waitForExistence(timeout: 8))
-        XCTAssertTrue(waitLabel(pos, hasPrefix: "Part 2"), "expected Part 2, got \(pos.label)")
+        // Sukhmani steps by its printed rhythm (24 ashtapadis), not by the three registry groups.
+        app.buttons["Next ashtapadi"].firstMatch.tap()
+        let stanza = app.staticTexts["baniStanza"].firstMatch
+        XCTAssertTrue(stanza.waitForExistence(timeout: 8))
+        XCTAssertTrue(waitLabel(stanza, hasPrefix: "Ashtapadi 2"), "expected Ashtapadi 2, got \(stanza.label)")
         app.navigationBars.buttons.element(boundBy: 0).tap()          // back (flushes the save)
         XCTAssertTrue(app.buttons["bani_sukhmani"].firstMatch.waitForExistence(timeout: 12))
         app.buttons["bani_sukhmani"].firstMatch.tap()
         XCTAssertTrue(app.navigationBars["Sukhmani Sahib"].waitForExistence(timeout: 12))
-        XCTAssertTrue(app.staticTexts["baniPosition"].firstMatch.waitForExistence(timeout: 8))
-        XCTAssertTrue(waitLabel(app.staticTexts["baniPosition"].firstMatch, hasPrefix: "Part 2"), "position did not resume")
+        XCTAssertTrue(app.staticTexts["baniStanza"].firstMatch.waitForExistence(timeout: 8))
+        XCTAssertTrue(waitLabel(app.staticTexts["baniStanza"].firstMatch, hasPrefix: "Ashtapadi 2"),
+                      "position did not resume")
         app.buttons["baniOptions"].tap()
         app.buttons["Start again"].firstMatch.tap()
-        XCTAssertTrue(waitLabel(app.staticTexts["baniPosition"].firstMatch, hasPrefix: "Part 1"), "Start again should return to the top")
+        XCTAssertTrue(waitLabel(app.staticTexts["baniStanza"].firstMatch, hasPrefix: "Ashtapadi 1"),
+                      "Start again should return to the top")
     }
 
     func testSearchOpensShabad() {

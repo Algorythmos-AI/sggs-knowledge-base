@@ -28,6 +28,13 @@ and "Back to Index", and never consults the time band. Scripture, outline, readi
 saved position are identical — a composition read from the Index completes the same Popular row in
 Nitnem, because both use `BaniSummary.id` (`key` or `key/variant`) as the progress identity.
 
+## Reading steps
+The bottom bar steps by the composition's printed rhythm whenever `BaniOutline` yields more than
+one numbered pauri/ashtapadi (`BaniPager.steps`): Sukhmani Sahib has three registry line-groups —
+the ਗੁਰਦੇਵ ਮਾਤਾ salok, the body, the salok again — so "Part 1 of 3" would have offered a
+2,027-line part. Banis without such an outline (Rehras Sahib, Aarti) keep part navigation, and a
+single-section bani keeps top/end. "Previous" from mid-stanza returns to that stanza's start.
+
 ## The Nitnem day
 A Nitnem day rolls at **03:00** (`NitnemClock.dayKey(now − 3h)`): Kirtan Sohila read at 22:00 is
 still complete at 00:30, and the night band never splits across a calendar midnight. `NitnemClock`
@@ -50,7 +57,9 @@ Tab / nav: `Nitnem`, each bani's `titleEn` (e.g. "Japji Sahib", "Jaap Sahib"), b
 "Amrit Vela". Rows/actions: `bani_<key>`, `Hukam`, `nitnemContinue`, `nitnemDone`, `nitnemNext`,
 `baniBackToNitnem`, `baniOptions` (a Menu holding "Start again", "Contents", "Reading settings"),
 `baniMarkComplete`, `baniPageBar`, `baniPosition` ("Part g of n" / "Line s of n"), `baniStanza`
-("Pauri N of M"), `bandComplete`, `nitnemJourney`, `rehrasVariantPicker`. Explore → Index compositions:
+("Pauri N of M" / "Ashtapadi N of M"), the step buttons "Previous/Next pauri|ashtapadi" (a bani
+with a trustworthy outline of more than one numbered section steps by that rhythm; Rehras and
+Aarti keep "Previous/Next part"), `compositionBegin`, `bandComplete`, `nitnemJourney`, `rehrasVariantPicker`. Explore → Index compositions:
 `composition_<key>` (hero card and "More compositions" row), `compositionNext`, `baniBackToIndex`,
 the section header "MAJOR COMPOSITIONS". Reading settings: `gurmukhiSizeSlider`,
 `readerLeadingPicker`, `readerTonePicker`, `translitToggle`, `englishToggle`. The Jaap reader must
