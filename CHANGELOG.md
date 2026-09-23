@@ -14,13 +14,16 @@ organisation-ready.
   pipeline applies to the source text, and a CI gate (`pipeline/ledger_check.py`) that fails any
   scripture change or new `fix_text` rule without a registered, reviewed entry. It records
   4 editorial rules applied at 11 places (Angs 573, 586, 727, 1354, 1358, 1387, 1398, 1402, 1406,
-  1408, 1409); the 8 not previously itemised are flagged for scholarly review (gate G3).
+  1408, 1409); the 8 not previously itemised were reviewed and approved on 2026-09-24 (gate G3).
 - **Install integrity gate** (`pipeline/db_integrity_gate.py`) — `integrity_check`,
   `foreign_key_check`, FTS5 `integrity-check` against the content table, required tables and the
   60,658-line / 1,430-Ang shape, all before a database may be installed.
 - **Reproducible builds** — one build clock (`SOURCE_DATE_EPOCH`), sorted inserts and
   deterministic tie-breaks; `scripts/data/compare_builds.py` proves two builds identical table by
   table (three full rebuilds with different hash seeds: 56/56 tables identical).
+- **Dataset fingerprints** (`pipeline/sggs_integrity.py`, `audit/dataset-fingerprint.json`) — a
+  content identity for every table, every FTS5 index (via `fts5vocab`), `scripture_sha256` and
+  `t0_sha256`, identical across SQLite versions; CI verifies the committed database against it.
 - **Engineering handbook** (`docs/engineering/`) and delivery tooling under `scripts/` with Make
   targets (`pr-checks`, `release-preflight`, `watch-deploy`, `verify-prod`, `scripture-diff`,
   `ledger-check`).
