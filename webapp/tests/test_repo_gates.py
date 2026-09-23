@@ -396,7 +396,7 @@ STATIC = ROOT / "webapp" / "static"
 LANDING_ASSETS = ROOT / "frontend" / "src" / "assets" / "landing"
 SITE_TS = ROOT / "frontend" / "src" / "site.ts"
 # Built marketing pages (route -> built file) that carry the v2 budgets/eager/alt discipline.
-# /privacy and /support still render in the KB shell until PR C, but their budgets apply already.
+# /privacy and /support render in the marketing shell (LegalPage) since v1.3.5.
 MARKETING_BUILT = {
     "/": STATIC / "index.html",
     "/features": STATIC / "features" / "index.html",
@@ -600,9 +600,9 @@ class LandingPage(unittest.TestCase):
 
     def test_marketing_pages_have_no_kb_shell(self):
         # The marketing pages render in the Gurbani Soul shell, never the Knowledge Base's
-        # (Base.astro) header/toolbar. /privacy and /support join this list in PR C.
+        # (Base.astro) header/toolbar — including the App Store's /privacy and /support.
         self._skip_if_unbuilt()
-        for route in ("/", "/features", "/watch"):
+        for route in ("/", "/features", "/watch", "/privacy", "/support"):
             f = MARKETING_BUILT[route]
             if not f.exists():
                 continue
@@ -652,7 +652,7 @@ COMPONENTS = ROOT / "frontend" / "src" / "components"
 PAGES = ROOT / "frontend" / "src" / "pages"
 INDEX_ASTRO = PAGES / "index.astro"
 # Marketing pages (Marketing.astro shell) whose scoped CSS the brand discipline also governs.
-MARKETING_PAGES = ("index.astro", "features.astro", "watch.astro")
+MARKETING_PAGES = ("index.astro", "features.astro", "watch.astro", "privacy.astro", "support.astro")
 
 
 def _marketing_style_sources():
@@ -1232,7 +1232,7 @@ class JsonLdInvariants(unittest.TestCase):
         self.assertNotIn("aggregateRating", app,
                          "SoftwareApplication must not carry a fabricated aggregateRating")
 
-    def test_support_faqpage_questions_are_visible_h4s(self):
+    def test_support_faqpage_questions_are_visible_headings(self):
         html = self._page_html("/support")
         objs = self._ld_objects(html)
         faq = next((o for o in objs if o.get("@type") == "FAQPage"), None)
@@ -1240,14 +1240,15 @@ class JsonLdInvariants(unittest.TestCase):
         questions = [q.get("name", "") for q in faq.get("mainEntity", [])
                      if q.get("@type") == "Question"]
         self.assertTrue(questions, "FAQPage has no Question entries")
-        # Visible <h4> text on the page (tags stripped, entities normalised for the compare).
-        h4s = [re.sub(r"<[^>]+>", "", m).strip()
-               for m in re.findall(r"<h4[^>]*>(.*?)</h4>", html, re.S)]
+        # Visible question headings (<h3> under the "Frequently asked" <h2> since v1.3.5; <h4> kept
+        # for compatibility) — tags stripped, entities normalised for the compare.
+        h4s = [re.sub(r"<[^>]+>", "", body).strip()
+               for _lvl, body in re.findall(r"<h([34])[^>]*>(.*?)</h\1>", html, re.S)]
         import html as _htmlmod
         h4_norm = {_htmlmod.unescape(t) for t in h4s}
         for q in questions:
             self.assertIn(_htmlmod.unescape(q), h4_norm,
-                          f"FAQPage question not present as a visible <h4>: {q!r}")
+                          f"FAQPage question not present as a visible <h3>/<h4>: {q!r}")
 
 
 class NewsletterPrivacy(unittest.TestCase):

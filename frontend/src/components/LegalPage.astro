@@ -10,7 +10,7 @@
 // "Last updated") → a contents rail (sticky at ≥980px, a horizontal chip row below) beside the
 // <article class="legal" id={id}> → the shared MarketingFooter. landing.ts `wireTocActive()` marks
 // the rail link of the section being read (aria-current). Content moves in VERBATIM — this
-// component only frames it. Not adopted by any page yet (PR C migrates privacy/support).
+// component only frames it. Adopted by /privacy and /support (v1.3.5).
 import MarketingNav from "./MarketingNav.astro";
 import MarketingFooter from "./MarketingFooter.astro";
 
@@ -36,7 +36,7 @@ const { title, eyebrow, lede, id, toc, updated } = Astro.props;
   </div>
 </header>
 
-<div class="wrap legal-grid sec-thin">
+<div class="sec-thin legal-body"><div class="wrap legal-grid">
   {toc.length > 0 && (
     <nav class="legal-toc" aria-label="On this page">
       <p class="legal-toc-h">Contents</p>
@@ -48,7 +48,7 @@ const { title, eyebrow, lede, id, toc, updated } = Astro.props;
   <article class="legal" id={id}>
     <slot />
   </article>
-</div>
+</div></div>
 
 <MarketingFooter />
 

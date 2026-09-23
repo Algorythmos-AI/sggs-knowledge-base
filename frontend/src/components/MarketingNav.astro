@@ -22,10 +22,10 @@ const isCurrent = (href: string) => (href.replace(/\/+$/, "") || "/") === here;
 const links = [
   { href: "/features", label: "Features", prefetch: true },
   { href: "/watch", label: "The watch", prefetch: true },
-  { href: "/privacy", label: "Privacy" },
-  { href: "/search", label: "Knowledge Base" },
-  { href: "/support", label: "Support" },
   { href: "/learn", label: "Learn", prefetch: true },
+  { href: "/support", label: "Support", prefetch: true },
+  { href: "/privacy", label: "Privacy", prefetch: true },
+  { href: "/search", label: "Knowledge Base" },
 ];
 ---
 <header class:list={["mnav", { "mnav--solid": !overHero }]} id="mnav">
