@@ -3,6 +3,42 @@
 The format below (newest first) follows [Keep a Changelog](https://keepachangelog.com);
 entries prior to v1.1.0 are the project's original prose style and are preserved verbatim.
 
+## [1.3.6] — 2026-09-24 — data-integrity hardening, reproducible builds, editorial ledger
+
+No change to the scripture text, the corpus, the database or any user-facing behaviour. This
+release hardens how the data is built, proven and governed, and makes the repository
+organisation-ready.
+
+### Added
+- **Editorial ledger** (`audit/editorial-ledger.jsonl`) — the register of every transform the
+  pipeline applies to the source text, and a CI gate (`pipeline/ledger_check.py`) that fails any
+  scripture change or new `fix_text` rule without a registered, reviewed entry. It records
+  4 editorial rules applied at 11 places (Angs 573, 586, 727, 1354, 1358, 1387, 1398, 1402, 1406,
+  1408, 1409); the 8 not previously itemised are flagged for scholarly review (gate G3).
+- **Install integrity gate** (`pipeline/db_integrity_gate.py`) — `integrity_check`,
+  `foreign_key_check`, FTS5 `integrity-check` against the content table, required tables and the
+  60,658-line / 1,430-Ang shape, all before a database may be installed.
+- **Reproducible builds** — one build clock (`SOURCE_DATE_EPOCH`), sorted inserts and
+  deterministic tie-breaks; `scripts/data/compare_builds.py` proves two builds identical table by
+  table (three full rebuilds with different hash seeds: 56/56 tables identical).
+- **Engineering handbook** (`docs/engineering/`) and delivery tooling under `scripts/` with Make
+  targets (`pr-checks`, `release-preflight`, `watch-deploy`, `verify-prod`, `scripture-diff`,
+  `ledger-check`).
+
+### Changed
+- The rebuild installs the corpus and database atomically (temp file, fsync, verified sha256,
+  `os.replace`), proves the corpus before installing it, and refuses a source PDF whose hash
+  differs from the reconcile attestation.
+- Design documents moved to `docs/design/` and point-in-time reports to `docs/reports/archive/`;
+  process docs corrected to match the real rulesets and Render Blueprint.
+- The version is kept in 7 places (the retired agent-guidance file is no longer one).
+
+### Fixed
+- Translation loading and the trigram index can no longer fail silently during a rebuild.
+- `golden_test.py` fails instead of skipping its corpus checks when the corpus is missing.
+
+### Data
+
 ## [1.3.5] — 2026-09-23 — gurbanisoul.com v2, compositions as one work, widget fixes
 
 ### Added
