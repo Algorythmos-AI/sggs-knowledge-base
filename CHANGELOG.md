@@ -54,6 +54,15 @@ entries prior to v1.1.0 are the project's original prose style and are preserved
   sheet and VoiceOver read "Dukh Sukh", not "Dukh_Sukh"; the Theme Network labels and the raag
   progression legend are fixed the same way. Display only — ids still drive queries and deep links.
 
+### Fixed (web)
+- **Hero text is legible over the artwork** — measured, not eyeballed: the eyebrow read 2.29:1 on
+  phones and the lede 3.84:1 over the lit dome; every text-over-photo block is now at least 4.59:1.
+- **No strip of page colour above the Home and The watch heroes** — the nav height is one shared
+  token instead of a hard-coded offset that was 7px short on desktop.
+- **Gold buttons stay readable in dark mode** — link buttons had been drawn gold on gold.
+- **Website screenshots match the app** — the Constellation shots showed raw theme ids
+  ("Dukh_Sukh") that 1.3.5 fixes in the app; recaptured in light and dark.
+
 ### Data
 - Registry only: 637 new pointer rows in `bani_lines`, one new row in `banis`. **Scripture, corpus
   and every pre-existing table are byte-identical** (`diff_scripture.py`: no column changed;
