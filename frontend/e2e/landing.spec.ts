@@ -24,14 +24,23 @@ test('landing renders the brand, the verse and the CTAs @smoke', async ({ page }
     await expect(page.locator(`nav[aria-label="Primary"] a[href="${href}"]`)).toHaveCount(1);
   }
 
-  // the overview grid links to each sub-page
-  for (const href of ['/features', '/watch', '/learn', '/search']) {
-    await expect(page.locator(`.ov-grid a[href="${href}"]`)).toHaveCount(1);
+  // v2 product story: numbered chapters, at least one photo band, a five-fact proof strip
+  expect(await page.locator('[data-chapter]').count()).toBeGreaterThanOrEqual(6);
+  expect(await page.locator('.photo-band').count()).toBeGreaterThanOrEqual(1);
+  await expect(page.locator('ul.proof > li')).toHaveCount(5);
+  await expect(page.locator('ul.proof')).toContainText('network calls in the app');
+  // the story links on to the sub-pages
+  for (const href of ['/watch', '/learn', '/privacy', '/search']) {
+    expect(await page.locator(`main a[href="${href}"]`).count()).toBeGreaterThanOrEqual(1);
   }
+  // exactly one verse on Home; the download band uses its own coming-soon marker
+  await expect(page.locator('p.verse')).toHaveCount(1);
+  await expect(page.locator('[data-app-store="coming-soon-foot"]')).toHaveCount(1);
 
-  // home is short: no in-page feature/clock sections remain
+  // the Raag Clock story is a static screenshot: no live clock (that lives on /watch)
   await expect(page.locator('#features, #clock')).toHaveCount(0);
   await expect(page.locator('[data-raag-now]')).toHaveCount(0);
+  await expect(page.locator('#story-watch[data-theme="dark"]')).toHaveCount(1);
 
   // visible links to KB, support, privacy (footer works on desktop and mobile)
   for (const href of ['/search', '/support', '/privacy']) {

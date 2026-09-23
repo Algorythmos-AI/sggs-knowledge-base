@@ -554,7 +554,6 @@ class LandingPage(unittest.TestCase):
             self.assertLessEqual(urls(ss.group(1)), urls(hero.group(1)),
                                  "/: preload imagesrcset is not a subset of the hero's AVIF srcset")
 
-    @unittest.expectedFailure  # enforced from PR B (Home v2)
     def test_home_has_rhythm(self):
         # Home v2 rhythm: ≥3 warm-ink (data-theme="dark") sections, ≥1 photo band, and no two dark
         # sections adjacent (the rhythm is enforced, not remembered).

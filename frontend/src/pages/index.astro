@@ -1,33 +1,64 @@
 ---
-import { Picture } from 'astro:assets';
+import { Picture, Image, getImage } from 'astro:assets';
+import { getCollection } from 'astro:content';
 import Marketing from '../layouts/Marketing.astro';
 import MarketingNav from '../components/MarketingNav.astro';
 import MarketingFooter from '../components/MarketingFooter.astro';
 import DeviceFrame from '../components/DeviceFrame.astro';
+import PhotoBand from '../components/PhotoBand.astro';
 import Newsletter from '../components/Newsletter.astro';
 import JsonLd from '../components/JsonLd.astro';
 import { SITE_URL, APP_STORE_URL, SUPPORT_EMAIL } from '../site.ts';
+import { LEARN_SLUGS } from '../routes';
+import { LEARN_COVERS } from '../covers';
 import verse from '../generated/landing-verse.json';
 import heroImg from '../assets/landing/harmandir-sahib-sunset.jpg';
-import readerShot from '../assets/app/reader.png';
+import nightPhoto from '../assets/landing/unsplash-salilkoli-harmandir-sahib-night.jpg';
+import readerLight from '../assets/app/iphone-reader-light.png';
+import readerDark from '../assets/app/iphone-reader-dark.png';
+import ipadReader from '../assets/app/ipad-reader-landscape-light.png';
+import searchRoman from '../assets/app/iphone-search-roman-light.png';
+import searchFirst from '../assets/app/iphone-search-first-letters-light.png';
+import ipadNitnem from '../assets/app/ipad-nitnem-landscape-light.png';
+import baniJapji from '../assets/app/iphone-bani-japji-light.png';
+import clockDark from '../assets/app/iphone-clock-dark.png';
+import wRaagLight from '../assets/app/widget-raagnow-small-light.png';
+import wRaagDark from '../assets/app/widget-raagnow-small-dark.png';
+import wHukam from '../assets/app/widget-hukam-medium-light.png';
+import wNitnem from '../assets/app/widget-nitnem-medium-light.png';
+import laCard from '../assets/app/iphone-live-activity-card.png';
+import themesShot from '../assets/app/iphone-themes-light.png';
+import lineageShot from '../assets/app/iphone-lineage-light.png';
+import insightsShot from '../assets/app/iphone-insights-light.png';
+import constellationShot from '../assets/app/iphone-constellation-light.png';
+import aboutShot from '../assets/app/iphone-about-light.png';
+import indexShot from '../assets/app/iphone-index-light.png';
 
 const desc = "Gurbani Soul is a quiet, exact companion to Sri Guru Granth Sahib Ji for iPhone and iPad — the complete Granth, verbatim and cited by Ang, fully offline, never AI-generated.";
 
-// The four places the nav leads, shown as a compact overview grid (hairline cards, not boxes).
-const overview = [
-  { href: "/features", eyebrow: "Features", title: "Everything, on your device", body: "The whole Granth, search the way you remember, Nitnem with your place kept, Hukam, widgets and Live Activity." },
-  { href: "/watch", eyebrow: "The watch", title: "The Raag Clock", body: "See which raags belong to the current watch of the day — eight pahars, with an optional solar mode." },
-  { href: "/learn", eyebrow: "Learn", title: "Understanding the Granth", body: "Short, plain explanations — what a Hukamnama is, how to read Nitnem, the raags and the watches of the day." },
-  { href: "/search", eyebrow: "On the web", title: "Knowledge Base", body: "Prefer the browser? The same verified text and study tools live on the web, cited by Ang." },
+// The hero artwork is the LCP. Its preload is generated with the SAME options as the rendered
+// <Picture> (src, widths, quality, AVIF) so the browser reuses the preloaded variant instead of
+// fetching a second one (gate: preload imagesrcset ⊆ the hero's AVIF srcset).
+const HERO_WIDTHS = [640, 960, 1280, 1600, 1920];
+const HERO_QUALITY = 62;
+const heroAvif = await getImage({ src: heroImg, format: 'avif', widths: HERO_WIDTHS, quality: HERO_QUALITY });
+
+// Proof strip — the corpus facts (the "0 network calls" claim is scoped to the APP: the website
+// itself runs privacy-scoped analytics on gurbanisoul.com).
+const proof = [
+  { n: "1,430", l: "Angs — the complete Granth" },
+  { n: "60,658", l: "lines, each cited by Ang" },
+  { n: "1,643,385", l: "characters, zero loss" },
+  { n: "0", l: "network calls in the app" },
+  { n: "None", l: "data collected — the App Store label is “Data Not Collected”" },
 ];
 
-// A short trust strip — the same facts as the app's privacy stance, kept honest and lint-clean.
-const trustFacts = [
-  "Works in Airplane Mode",
-  "No account, no tracking",
-  "Verbatim, cited by Ang",
-  "Data Not Collected",
-];
+// Learn cards: the first three curated articles (LEARN_SLUGS order), each with its photo cover.
+const order = new Map(LEARN_SLUGS.map((s, i) => [s, i]));
+const learnTop = (await getCollection('learn'))
+  .filter((a) => !a.data.draft && LEARN_COVERS[a.id])
+  .sort((a, b) => (order.get(a.id) ?? 999) - (order.get(b.id) ?? 999))
+  .slice(0, 3);
 
 // --- Structured data (JSON-LD) — emitted via <JsonLd>, which escapes "<". ---
 // One Organization node, referenced by @id from WebSite and SoftwareApplication so search engines
@@ -73,6 +104,8 @@ const softwareApplication = {
   <JsonLd slot="head" data={organization} />
   <JsonLd slot="head" data={website} />
   <JsonLd slot="head" data={softwareApplication} />
+  <link slot="head" rel="preload" as="image" type="image/avif"
+    imagesrcset={heroAvif.srcSet.attribute} imagesizes="100vw" />
 
   <!-- Forward legacy /?q=… search bookmarks to the Knowledge Base search page (first load; the
        client-router case is handled in landing.ts astro:after-swap). -->
@@ -87,11 +120,11 @@ const softwareApplication = {
 
   <MarketingNav />
 
-  <!-- (b) HERO — unchanged: copy left, floating iPhone right -->
-  <section class="hero" id="top">
+  <!-- 1 · HERO (dark) — the artwork is the LCP (eager + fetchpriority=high + mirrored preload) -->
+  <section class="hero" id="top" data-theme="dark">
     <div class="hero-media">
-      <Picture src={heroImg} formats={['avif','webp']} widths={[640,960,1280,1600,1920]}
-        sizes="100vw" quality={62} loading="eager" fetchpriority="high"
+      <Picture src={heroImg} formats={['avif','webp']} widths={HERO_WIDTHS}
+        sizes="100vw" quality={HERO_QUALITY} loading="eager" fetchpriority="high"
         alt="Sri Harmandir Sahib at sunset — artistic rendering"
         pictureAttributes={{ class: 'hero-pic' }} />
       <div class="hero-scrim"></div>
@@ -110,69 +143,297 @@ const softwareApplication = {
           </div>
           <p class="hero-fine">Fully offline · no account · no tracking</p>
         </div>
-        <div class="hero-device" aria-hidden="false">
-          <DeviceFrame src={readerShot} alt="Gurbani Soul on iPhone, open at Ang 1 in Sant Lipi" />
+        <div class="hero-device">
+          <DeviceFrame src={readerLight} eager alt="Gurbani Soul Reader on iPhone, open at Ang 1 in Sant Lipi" />
         </div>
       </div>
     </div>
   </section>
 
-  <!-- (c) THE VERSE -->
+  <!-- 2 · PROOF STRIP -->
+  <section class="sec-thin surface-paper proof-sec" aria-label="The Granth in numbers">
+    <div class="wrap">
+      <ul class="proof reveal">
+        {proof.map((p) => <li><strong>{p.n}</strong><span>{p.l}</span></li>)}
+      </ul>
+    </div>
+  </section>
+
+  <!-- 3 · THE VERSE (the only Gurmukhi verse on Home — byte-gated against the DB) -->
   <section class="verse-band">
     <div class="wrap verse-in reveal">
       <hr class="gold-rule" aria-hidden="true" />
       <p class="verse gm" lang="pa">{verse.gurmukhi}</p>
       <p class="cite">Sri Guru Granth Sahib Ji · Ang {verse.ang}</p>
-      <p class="verse-note">Shown verbatim from the source edition. The app verifies the bundled scripture against a SHA-256 checksum when it is installed or updated, and refuses to show the text rather than risk showing it altered.</p>
+      <p class="verse-note">Shown verbatim from the source edition.</p>
     </div>
   </section>
 
-  <!-- (d) OVERVIEW — the four places the nav leads -->
-  <section class="section">
-    <div class="wrap">
-      <div class="ov-head reveal">
-        <p class="eyebrow">Explore</p>
-        <h2>A quiet place for the whole Granth</h2>
-        <p class="muted ov-intro">Read, search and keep your Nitnem on your device — or explore the same verified text on the web.</p>
+  <!-- 4 · READER -->
+  <section class="sec surface-paper" id="story-read" data-chapter="read">
+    <div class="wrap story-grid">
+      <div class="story-text reveal">
+        <p class="chapter-no"><span>01</span> Read</p>
+        <h2 class="h-story">The whole Granth, set to be read</h2>
+        <p class="body-lg">All 1,430 Angs in Sant Lipi, on warm paper or in a night scheme that is never pure black. Turn pages, jump to any Ang, pick up where you left off. Every composition opens with its printed heading.</p>
+        <ul class="factrail detail-row">
+          <li>Sant Lipi</li><li>Traditional saroop</li><li>Five accents</li><li>Night scheme</li><li>iPad landscape</li>
+        </ul>
       </div>
-      <ul class="ov-grid">
-        {overview.map((c) => (
-          <li class="ov-card reveal">
-            <a href={c.href}>
-              <p class="eyebrow">{c.eyebrow}</p>
-              <h3>{c.title}</h3>
-              <p class="ov-body">{c.body}</p>
-              <span class="ov-more" aria-hidden="true">Explore &rarr;</span>
+      <div class="story-media reveal" data-delay="1">
+        <div class="stage stage--ipad">
+          <DeviceFrame kind="ipad" src={ipadReader} alt="Reader on iPad in landscape, open at Ang 705 with transliteration under each line" />
+          <div class="overlap media-secondary">
+            <DeviceFrame src={readerDark} sizes="200px" alt="Reader on iPhone in the night scheme, open at Ang 1" />
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 5 · SEARCH -->
+  <section class="sec surface-paper hair-top" id="story-search" data-chapter="search">
+    <div class="wrap story-grid story-grid--6-6 story--flip">
+      <div class="story-text reveal">
+        <p class="chapter-no"><span>02</span> Search</p>
+        <h2 class="h-story">Search the way you remember</h2>
+        <p class="body-lg">A word in Gurmukhi, a word as it sounds in Roman letters, or just the first letters of each word — the way a line comes back to you. Auto mode works out which you meant. Verify checks a line you were sent against the text and tells you plainly.</p>
+        <ul class="factrail detail-row">
+          <li>Auto</li><li>Gurmukhi</li><li>Roman</li><li>First letters</li><li>Theme</li><li>Verify</li>
+        </ul>
+      </div>
+      <div class="story-media reveal" data-delay="1">
+        <div class="pair">
+          <DeviceFrame src={searchRoman} alt="Search on iPhone: the Roman word naam finds matching lines in Auto mode" />
+          <DeviceFrame src={searchFirst} alt="Search on iPhone by first letters, finding a line from Ang 1" />
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 6 · PHOTO DIVIDER (dark scope; no Gurmukhi beside it) -->
+  <PhotoBand src={nightPhoto} position="center 60%"
+    alt="Sri Harmandir Sahib at night, lit gold and reflected in the sarovar">
+    <p class="h-statement">Made for every day, not for scrolling.</p>
+    <p class="pb-sub">No feed. No notifications you did not ask for. The text, and your place in it.</p>
+  </PhotoBand>
+
+  <!-- 7 · NITNEM -->
+  <section class="sec surface-warm" id="story-nitnem" data-chapter="nitnem">
+    <div class="wrap story-grid">
+      <div class="story-text reveal">
+        <p class="chapter-no"><span>03</span> Nitnem</p>
+        <h2 class="h-story">Nitnem, with your place kept</h2>
+        <p class="body-lg">The daily banis by time of day — Japji, Jaap, Savaiye, Chaupai and Anand in the morning, Rehras at dusk, Sohila at night — with Sukhmani, Asa di Vaar and Ardaas alongside. The app remembers where you are in each and keeps a quiet record of the days you read. Reminders are optional, local, and yours to set.</p>
+        <p class="detail">Banis from Sri Guru Granth Sahib Ji come from the same verified corpus, cited by Ang. Dasam Granth and Ardaas text are a separate, labelled, scholar-reviewed layer.</p>
+      </div>
+      <div class="story-media reveal" data-delay="1">
+        <div class="stage stage--ipad">
+          <DeviceFrame kind="ipad" src={ipadNitnem} alt="Nitnem on iPad in landscape: the morning banis with progress rings, and the full list by time of day" />
+          <div class="overlap media-secondary">
+            <DeviceFrame src={baniJapji} sizes="200px" alt="Japji Sahib open in the Nitnem reader on iPhone" />
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 8 · RAAG CLOCK (dark) — a static screenshot only; the live dial lives on /watch -->
+  <section class="sec surface-ink" id="story-watch" data-theme="dark" data-chapter="watch">
+    <div class="wrap story-grid story-grid--7-5 story--flip">
+      <div class="story-text reveal">
+        <p class="chapter-no"><span>04</span> The watch</p>
+        <h2 class="h-story">Eight watches. Thirty-one raags. One face.</h2>
+        <p class="body-lg">The day is divided into eight pahars, and different raags belong to different watches. The Raag Clock shows which belong to this one — by fixed hours, or by your local sunrise and sunset. The deep night is left in silence.</p>
+        <p class="cta-row"><a class="btn ghost" href="/watch" data-astro-prefetch>See the Raag Clock</a></p>
+      </div>
+      <div class="story-media reveal" data-delay="1">
+        <div class="stage wash">
+          <DeviceFrame src={clockDark} alt="Raag Clock on iPhone in the dark scheme: the 2nd pahar of day and the raags sung in this watch" />
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 9 · WIDGETS + LIVE ACTIVITY -->
+  <section class="sec surface-paper" id="story-widgets" data-chapter="widgets">
+    <div class="wrap story-grid story-grid--4-8">
+      <div class="story-text reveal">
+        <p class="chapter-no"><span>05</span> At a glance</p>
+        <h2 class="h-story">On your Home Screen and Lock Screen</h2>
+        <p class="body-lg">Three widgets — the raag of the moment, a Hukam verse with its Ang, today's Nitnem — in sizes from small to large, plus Lock Screen accessories. An optional Live Activity shows your reading progress as a ring. It never shows a verse.</p>
+        <p class="detail">Siri: “Today’s Hukam”, “What raag is it now”. Shortcuts: “Open Ang”. Saved verses appear in Spotlight.</p>
+      </div>
+      <div class="story-media reveal" data-delay="1">
+        <div class="widgets">
+          <div class="wrow">
+            <figure class="widget widget--s"><Image src={wRaagLight} widths={[240, 480]} sizes="(min-width: 980px) 230px, 30vw" loading="lazy" decoding="async" alt="Raag Now widget, small: the raag of the current watch" /></figure>
+            <figure class="widget widget--m"><Image src={wHukam} widths={[500, 1000]} sizes="(min-width: 980px) 500px, 64vw" loading="lazy" decoding="async" alt="Hukam widget, medium: a verse from Ang 13 with its citation" /></figure>
+          </div>
+          <div class="wrow wrow--rev">
+            <figure class="widget widget--m"><Image src={wNitnem} widths={[500, 1000]} sizes="(min-width: 980px) 500px, 64vw" loading="lazy" decoding="async" alt="Nitnem widget, medium: the next bani of the day" /></figure>
+            <figure class="widget widget--s"><Image src={wRaagDark} widths={[240, 480]} sizes="(min-width: 980px) 230px, 30vw" loading="lazy" decoding="async" alt="Raag Now widget, small, in the dark scheme" /></figure>
+          </div>
+          <figure class="la">
+            <div class="la-card"><Image src={laCard} widths={[450, 900]} sizes="(min-width: 980px) 740px, 92vw" loading="lazy" decoding="async" alt="Live Activity on the Lock Screen: reading Japji Sahib, a progress ring at 1%" /></div>
+            <figcaption>Live Activity on the Lock Screen — progress only, never a verse.</figcaption>
+          </figure>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 10 · EXPLORE -->
+  <section class="sec surface-warm" id="story-explore" data-chapter="explore">
+    <div class="wrap">
+      <div class="story-head reveal">
+        <p class="chapter-no"><span>06</span> Explore</p>
+        <h2 class="h-story">Explore the Granth from every side</h2>
+        <p class="body-lg">Themes across the whole text. Lineage — 30 voices, 12th to 17th century. Insights that count and compare. A constellation of verses that share their words.</p>
+      </div>
+      <div class="mosaic mosaic--3 reveal" data-delay="1">
+        <figure class="tile tile--tall">
+          <div class="tile-img"><Image src={constellationShot} widths={[400, 800]} sizes="(min-width: 980px) 380px, 46vw" loading="lazy" decoding="async" alt="Constellation on iPhone: verses on the theme of Naam clustered by the words they share" /></div>
+          <figcaption><strong>Constellation</strong>Verses that share their words, drawn as one sky.</figcaption>
+        </figure>
+        <figure class="tile">
+          <div class="tile-img"><Image src={themesShot} widths={[400, 800]} sizes="(min-width: 980px) 380px, 46vw" loading="lazy" decoding="async" alt="Themes on iPhone: concepts such as Ik Onkar, Hukam and Naam with their verse counts" /></div>
+          <figcaption><strong>Themes</strong>Ideas traced across all 1,430 Angs.</figcaption>
+        </figure>
+        <figure class="tile">
+          <div class="tile-img"><Image src={lineageShot} widths={[400, 800]} sizes="(min-width: 980px) 380px, 46vw" loading="lazy" decoding="async" alt="Lineage on iPhone: the 30 contributors, 12th to 17th century, on a timeline" /></div>
+          <figcaption><strong>Lineage</strong>The Gurus, Bhagats and Bhatts, in time.</figcaption>
+        </figure>
+        <figure class="tile">
+          <div class="tile-img"><Image src={insightsShot} widths={[400, 800]} sizes="(min-width: 980px) 380px, 46vw" loading="lazy" decoding="async" alt="Insights on iPhone: lines contributed to the Granth, by author" /></div>
+          <figcaption><strong>Insights</strong>Counts and comparisons, described plainly.</figcaption>
+        </figure>
+        <figure class="tile">
+          <div class="tile-img"><Image src={indexShot} widths={[400, 800]} sizes="(min-width: 980px) 380px, 46vw" loading="lazy" decoding="async" alt="Index on iPhone: major compositions, the 31 raags, and banis and sections by author" /></div>
+          <figcaption><strong>Index</strong>Compositions, raags and authors — one tap away.</figcaption>
+        </figure>
+      </div>
+    </div>
+  </section>
+
+  <!-- 11 · VERBATIM BY CONSTRUCTION (dark) -->
+  <section class="sec surface-ink" id="story-verbatim" data-theme="dark" data-chapter="verbatim">
+    <div class="wrap story-grid">
+      <div class="story-text reveal">
+        <p class="chapter-no"><span>07</span> Verbatim</p>
+        <h2 class="h-statement">Nothing corrected. Nothing invented.</h2>
+        <p class="body-lg">The text is reproduced character for character from the source edition. Nothing is normalised, modernised or improved.</p>
+        <p class="never">Never AI-generated.</p>
+      </div>
+      <div class="story-media reveal" data-delay="1">
+        <ol class="steps">
+          <li><span class="n" aria-hidden="true">1</span><h3>Reconciled</h3><p>All 1,643,385 characters are proven against the source edition, character for character — zero loss.</p></li>
+          <li><span class="n" aria-hidden="true">2</span><h3>Sealed</h3><p>The bundled text carries a SHA-256 checksum, fixed when the app is built.</p></li>
+          <li><span class="n" aria-hidden="true">3</span><h3>Checked</h3><p>The app checks it when it is installed or updated. If a check fails, the app refuses to show the text rather than risk showing it altered.</p></li>
+        </ol>
+      </div>
+    </div>
+  </section>
+
+  <!-- 12 · PRIVATE BY DESIGN -->
+  <section class="sec surface-paper" id="story-private" data-chapter="private">
+    <div class="wrap story-grid story-grid--7-5">
+      <div class="story-text reveal">
+        <p class="chapter-no"><span>08</span> Private</p>
+        <h2 class="h-statement">Nothing leaves your device.</h2>
+        <p class="body-lg">No account. No network connections — the app works in Airplane Mode. No analytics, no tracking, no third-party code. Its App Store privacy label is ‘Data Not Collected’.</p>
+        <ul class="factrail detail-row">
+          <li>No accounts</li><li>No network</li><li>No tracking</li><li>Data Not Collected</li>
+        </ul>
+        <p class="cta-row"><a class="link-more" href="/privacy">Read the privacy policy</a></p>
+      </div>
+      <div class="story-media reveal" data-delay="1">
+        <div class="stage">
+          <DeviceFrame src={aboutShot} alt="About screen on iPhone: the scripture integrity checks, all passed on the device" />
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 13 · LEARN + KNOWLEDGE BASE BRIDGE -->
+  <section class="sec surface-paper hair-top" id="story-learn">
+    <div class="wrap">
+      <div class="story-head reveal">
+        <p class="eyebrow">Learn</p>
+        <h2 class="h-story">Understand what you are reading</h2>
+        <p class="body-lg">Short, plain explanations. Every quotation is verbatim and cited by its Ang; interpretation is always labelled.</p>
+      </div>
+      <ul class="cards">
+        {learnTop.map((a, i) => (
+          <li class="card reveal" data-delay={String(i)}>
+            <a href={`/learn/${a.id}`}>
+              <div class="cover">
+                <Image src={LEARN_COVERS[a.id].src} width={800} widths={[480, 800]} sizes="(min-width: 760px) 380px, 92vw"
+                  quality={60} loading="lazy" decoding="async" alt={LEARN_COVERS[a.id].alt} />
+              </div>
+              <div class="card-body">
+                <h3>{a.data.title}</h3>
+                <p class="card-desc">{a.data.description}</p>
+                <span class="card-more" aria-hidden="true">Read the article &rarr;</span>
+              </div>
             </a>
           </li>
         ))}
       </ul>
+      <p class="all-link reveal"><a class="link-more" href="/learn" data-astro-prefetch>All articles</a></p>
+
+      <div class="kb-bridge story-grid story-grid--6-6">
+        <div class="story-text reveal">
+          <h3 class="kb-h">Prefer the browser?</h3>
+          <p class="body-lg">The same verified text and study tools live on the web, cited by Ang.</p>
+          <p class="cta-row"><a class="btn ghost" href="/search">Open the Knowledge Base</a></p>
+        </div>
+        <div class="story-media reveal" data-delay="1">
+          <div class="kbmock" aria-hidden="true">
+            <div class="chrome"><span class="dots"><i></i><i></i><i></i></span><span class="addr">gurbanisoul.com/search</span></div>
+            <div class="body">
+              <div class="search"><span class="q">Search by word, sound or first letters</span><span class="go">Search</span></div>
+              <div class="rows"><div class="r"></div><div class="r mid"></div><div class="r short"></div><div class="r"></div><div class="r mid"></div></div>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
   </section>
 
-  <!-- (e) PRIVACY TRUST STRIP -->
-  <section class="section priv-band" id="privacy-strip" data-theme="dark">
-    <div class="wrap priv-in reveal">
-      <p class="eyebrow">Private by design</p>
-      <h2 class="priv-h">Nothing leaves your device.</h2>
-      <ul class="factrail priv-facts">
-        {trustFacts.map((f) => <li>{f}</li>)}
-      </ul>
-      <p class="priv-link"><a href="/privacy">Read the privacy policy</a></p>
+  <!-- 14 · DOWNLOAD BAND (dark) — the artwork again, faint, behind a warm-ink scrim -->
+  <section class="dl-band surface-ink" id="download" data-theme="dark">
+    <div class="dl-art" aria-hidden="true">
+      <Picture src={heroImg} formats={['avif','webp']} widths={HERO_WIDTHS} sizes="100vw"
+        quality={HERO_QUALITY} loading="lazy" decoding="async"
+        alt="Sri Harmandir Sahib at sunset — artistic rendering, shown faintly" />
+    </div>
+    <div class="wrap dl-in reveal">
+      <hr class="gold-rule" aria-hidden="true" />
+      <h2 class="h-statement">Quiet, exact, always with you.</h2>
+      <p class="body-lg dl-body">Sri Guru Granth Sahib Ji on your iPhone and iPad — the complete Granth, verbatim, fully offline.</p>
+      <div class="cta-row dl-cta">
+        {APP_STORE_URL
+          ? <a class="btn" href={APP_STORE_URL}>Download on the App Store</a>
+          : <span class="pill soon dl-soon" data-app-store="coming-soon-foot">Coming soon to the App Store</span>}
+        <a class="btn ghost" href="/features" data-astro-prefetch>See every feature</a>
+      </div>
+      <p class="dl-fine">Free · iPhone and iPad · no account</p>
     </div>
   </section>
 
-  <!-- (f) LAUNCH NOTICE — env-gated; renders nothing unless PUBLIC_NEWSLETTER_FORM_URL is set -->
+  <!-- Launch notice — env-gated; renders nothing unless PUBLIC_NEWSLETTER_FORM_URL is set -->
   <Newsletter />
 
   <MarketingFooter />
 
   <style>
     #top { scroll-margin-top: 76px; }
+    [data-chapter] { scroll-margin-top: 72px; }
 
-    /* (b) Hero */
+    /* 1 · Hero */
     .hero { position: relative; min-height: min(94svh, 860px); display: flex; align-items: center;
-      overflow: clip; margin-top: -66px; }
+      overflow: clip; margin-top: -66px; background: #17110a; }
     .hero-media, .hero-media :global(.hero-pic), .hero-media :global(img) { position: absolute; inset: 0; width: 100%; height: 100%; }
     .hero-media { background: #17110a; }
     .hero-media :global(img) { object-fit: cover; object-position: center 46%; }
@@ -187,60 +448,60 @@ const softwareApplication = {
     .hero-lede { font-family: var(--serif-display); font-size: clamp(18px, 2.6vw, 26px); line-height: 1.4;
       max-width: 32ch; margin: 0 0 28px; color: #f3ead9; }
     .hero-cta { display: flex; flex-wrap: wrap; gap: 14px 20px; align-items: center; }
-    .hero-cta .pill.soon { color: #fff; border-color: rgba(255,255,255,.6); }
-    .hero-ghost { color: #fff; text-decoration: none; font-weight: 600; font-size: 15.5px;
-      border-bottom: 1px solid rgba(255,255,255,.5); padding-bottom: 2px; }
+    .hero-cta .pill.soon { color: #fff; border-color: rgba(255,255,255,.6); min-height: 44px; }
+    .hero-ghost { color: #fff; text-decoration: underline; text-decoration-color: rgba(255,255,255,.5); text-underline-offset: 5px;
+      font-weight: 600; font-size: 15.5px; display: inline-flex; align-items: center; min-height: 44px; }
     .hero-fine { margin: 22px 0 0; color: #e6dcc9; font-size: 14px; }
-    /* Floating product shot fills the right of the hero on desktop; hidden on small screens
-       (the hero stays light on mobile; screenshots live on /features and /watch). */
+    /* The floating Reader phone (desktop only; mobile keeps the hero to the message). */
     .hero-device { display: none; }
-    .hero-device :global(.device) { width: min(340px, 90%); box-shadow: 0 40px 90px rgba(0,0,0,.5); }
+    .hero-device :global(.device) { width: min(340px, 90%); }
     @media (min-width: 980px) {
       .hero-grid { grid-template-columns: 1.05fr 0.95fr; gap: 56px; }
       .hero-device { display: flex; justify-content: center; position: relative; }
-      /* soft gold aura behind the phone — accentFill wash, well under the 14% ceiling */
+      /* soft gold aura behind the phone — accentFill wash, under the 14% ceiling */
       .hero-device::before { content: ""; position: absolute; inset: -8% -6%; z-index: 0;
         background: radial-gradient(60% 55% at 50% 42%, rgba(255,188,13,.13), transparent 70%); }
       .hero-device :global(.device) { position: relative; z-index: 1; transform: rotate(-3deg); }
     }
     @media (min-width: 1200px) { .hero-device :global(.device) { width: 368px; } }
 
-    /* (c) Verse */
-    .verse-band { border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); background: var(--paper-2); }
+    /* 2 · Proof strip */
+    .proof-sec { padding-bottom: 0; }
+
+    /* 3 · Verse */
+    .verse-band { margin-top: var(--sec-thin); border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); background: var(--paper-2); }
     .verse-in { padding: clamp(56px, 8vw, 96px) 20px; text-align: center; display: flex; flex-direction: column; align-items: center; }
     .gold-rule { margin: 0 0 28px; }
     .verse { font-size: clamp(21px, 3.2vw, 31px); line-height: 1.95; color: var(--ink); margin: 0; max-width: 24ch; }
     .cite { margin: 20px 0 0; color: var(--accent-text); font-weight: 600; font-size: 14px; letter-spacing: .01em; }
-    .verse-note { margin: 18px auto 0; max-width: 58ch; color: var(--ink-soft); font-size: 14.5px; }
+    .verse-note { margin: 10px auto 0; max-width: 58ch; color: var(--ink-soft); font-size: 14.5px; }
 
-    /* (d) Overview grid */
-    .ov-head { max-width: 46ch; margin: 0 0 clamp(28px, 4vw, 48px); }
-    .ov-head h2 { font-size: clamp(28px, 4.4vw, 44px); margin: 0 0 14px; }
-    .ov-intro { font-size: 16.5px; }
-    .ov-grid { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: 1fr; gap: 0; }
-    .ov-card { border-top: 1px solid var(--line); }
-    .ov-card:last-child { border-bottom: 1px solid var(--line); }
-    .ov-card a { display: flex; flex-direction: column; gap: 8px; padding: 26px 0; text-decoration: none; color: inherit; height: 100%; }
-    .ov-card .eyebrow { margin: 0; }
-    .ov-card h3 { font-size: clamp(20px, 2.6vw, 26px); margin: 0; color: var(--ink); }
-    .ov-card .ov-body { margin: 0; color: var(--ink-soft); font-size: 15.5px; max-width: 52ch; }
-    .ov-card .ov-more { margin-top: auto; padding-top: 6px; color: var(--accent-text); font-weight: 650; font-size: 14.5px; }
-    .ov-card a:hover h3 { text-decoration: underline; text-decoration-color: var(--accent); text-underline-offset: 3px; }
-    @media (min-width: 720px) {
-      .ov-grid { grid-template-columns: 1fr 1fr; column-gap: 48px; }
-      /* Hairline separators between the two columns as well as the rows. */
-      .ov-card a { padding-left: 0; padding-right: 0; }
-    }
-    @media (min-width: 1040px) {
-      .ov-grid { grid-template-columns: repeat(4, 1fr); column-gap: 40px; }
-    }
+    /* 6 · Photo divider */
+    .pb-sub { margin: 0 auto; max-width: 46ch; color: var(--ink-soft); font-size: clamp(16px, 1.8vw, 19px); line-height: 1.55; }
+    :global(.photo-band) .h-statement { margin-bottom: 14px; }
 
-    /* (e) Privacy trust strip — warm-ink band even in light mode (data-theme="dark" scope) */
-    .priv-band { background: var(--paper); }
-    .priv-in { max-width: 62ch; }
-    .priv-h { font-size: clamp(28px, 5vw, 48px); margin: 0 0 22px; color: var(--ink); }
-    .priv-facts { margin: 0 0 22px; }
-    .priv-link { margin: 0; }
-    .priv-band a { color: var(--accent-text); }
+    /* 11 · Verbatim */
+    .never { margin: 22px 0 0; font-family: var(--serif-display); font-size: clamp(20px, 2.2vw, 24px); font-weight: 600; color: var(--accent-text); }
+
+    /* 12 · Private */
+    #story-private .stage :global(.device) { max-width: 280px; }
+
+    /* 13 · Learn + KB */
+    .all-link { margin: 18px 0 0; }
+    .kb-bridge { margin-top: clamp(48px, 7vw, 88px); padding-top: clamp(40px, 6vw, 72px); border-top: 1px solid var(--line); }
+    .kb-h { font-size: clamp(24px, 3vw, 34px); margin: 0 0 12px; color: var(--ink); }
+
+    /* 14 · Download band */
+    .dl-band { position: relative; overflow: clip; text-align: center; padding: var(--sec) 0; }
+    .dl-art, .dl-art :global(picture), .dl-art :global(img) { position: absolute; inset: 0; width: 100%; height: 100%; }
+    .dl-art :global(img) { object-fit: cover; object-position: center 46%; opacity: .18; }
+    /* warm-ink scrim over the faint artwork: keeps the centred statement ≥4.5:1 over the sun */
+    .dl-art::after { content: ""; position: absolute; inset: 0; background: radial-gradient(70% 80% at 50% 50%, rgba(23,20,18,.6), rgba(23,20,18,.15) 80%); }
+    .dl-in { position: relative; display: flex; flex-direction: column; align-items: center; }
+    .dl-in .h-statement { max-width: 18ch; }
+    .dl-body { margin-left: auto; margin-right: auto; max-width: 48ch; }
+    .dl-cta { justify-content: center; }
+    .dl-soon { color: var(--ink); border-color: var(--line); min-height: 44px; }
+    .dl-fine { margin: 20px 0 0; color: var(--ink-soft); font-size: 14px; }
   </style>
 </Marketing>

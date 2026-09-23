@@ -1,27 +1,60 @@
 ---
+import { Image } from "astro:assets";
 import Marketing from "../layouts/Marketing.astro";
 import MarketingNav from "../components/MarketingNav.astro";
 import MarketingFooter from "../components/MarketingFooter.astro";
 import DeviceFrame from "../components/DeviceFrame.astro";
+import PhotoBand from "../components/PhotoBand.astro";
 import JsonLd from "../components/JsonLd.astro";
 import { SITE_URL } from "../site.ts";
-import readerShot from "../assets/app/reader.png";
-import nitnemShot from "../assets/app/nitnem.png";
-import raagClockShot from "../assets/app/raag-clock.png";
-import hukamShot from "../assets/app/hukam.png";
+import widePhoto from "../assets/landing/unsplash-reubx-harmandir-sahib-wide.jpg";
+import ipadReader from "../assets/app/ipad-reader-landscape-light.png";
+import saroopOff from "../assets/app/iphone-saroop-off-light.png";
+import saroopOn from "../assets/app/iphone-saroop-on-light.png";
+import searchRoman from "../assets/app/iphone-search-roman-light.png";
+import verifyShot from "../assets/app/iphone-verify-verdict-light.png";
+import hukamShot from "../assets/app/iphone-hukam-light.png";
+import ipadNitnem from "../assets/app/ipad-nitnem-landscape-light.png";
+import journeyShot from "../assets/app/iphone-nitnem-journey-light.png";
+import clockDark from "../assets/app/iphone-clock-dark.png";
+import clockSolar from "../assets/app/iphone-clock-solar-dark.png";
+import wRaag from "../assets/app/widget-raagnow-small-light.png";
+import wHukamDark from "../assets/app/widget-hukam-medium-dark.png";
+import wNitnemDark from "../assets/app/widget-nitnem-medium-dark.png";
+import wNitnemSmall from "../assets/app/widget-nitnem-small-light.png";
+import laCard from "../assets/app/iphone-live-activity-card.png";
+import ipadExplore from "../assets/app/ipad-explore-landscape-light.png";
+import themesShot from "../assets/app/iphone-themes-light.png";
+import lineageShot from "../assets/app/iphone-lineage-light.png";
+import insightsShot from "../assets/app/iphone-insights-light.png";
+import constellationDark from "../assets/app/iphone-constellation-dark.png";
+import indexShot from "../assets/app/iphone-index-light.png";
+import displayShot from "../assets/app/iphone-more-display-light.png";
+import accentSoul from "../assets/app/accent-soul.png";
+import accentSaffron from "../assets/app/accent-saffron.png";
+import accentGold from "../assets/app/accent-gold.png";
+import accentIndigo from "../assets/app/accent-indigo.png";
+import accentTeal from "../assets/app/accent-teal.png";
 
 const desc =
-  "Everything Gurbani Soul does on your iPhone and iPad — read the whole Granth, search the way you remember, keep your Nitnem, draw a Hukam, and see the Raag Clock. Verbatim, cited by Ang, fully offline.";
+  "Everything Gurbani Soul does on your iPhone and iPad — read the whole Granth, search the way you remember, keep your Nitnem, open a Hukam, and see the Raag Clock. Verbatim, cited by Ang, fully offline.";
 
-// Six capabilities, shown as a hairline definition list (not boxy cards). Copy is lint-clean.
-// (Moved verbatim from the old landing #features section.)
-const features = [
-  { t: "Read the whole Granth", d: "All 1,430 Angs in a clear Gurmukhi typeface. Turn pages, jump to any Ang, resume where you left off. Every composition opens with its printed heading." },
-  { t: "Search how you remember", d: "By word, by how it sounds in Roman letters, by first letters the way Gurbani is recalled, or by theme across the whole text." },
-  { t: "Nitnem, with gentle reminders", d: "The daily banis by time of day, your place kept in each, and a quiet record of the days you read. Optional reminders you set yourself." },
-  { t: "Hukam & the Raag Clock", d: "Draw a complete Hukam any time. See which raags belong to the current watch of the day, with an optional solar mode." },
-  { t: "Widgets & Live Activity", d: "The current watch, the last Hukam and today's Nitnem on your Home Screen; an optional reading Live Activity that never shows a verse." },
-  { t: "Verbatim by construction", d: "The text is reproduced character-for-character from the source edition and checked against a SHA-256 checksum. Nothing is corrected, normalised, or invented." },
+// At a glance — six rows, each linking to its chapter below (a hairline 3×2 grid).
+const glance = [
+  { id: "reader", t: "Read the whole Granth", d: "All 1,430 Angs in Sant Lipi. Turn pages, jump to any Ang, resume where you left off." },
+  { id: "search", t: "Search how you remember", d: "By word, by sound in Roman letters, by first letters, or by theme — and verify a line you were sent." },
+  { id: "hukam", t: "A complete Hukam", d: "A whole shabad, read verbatim and cited by Ang — whenever you ask for one." },
+  { id: "nitnem", t: "Nitnem, with your place kept", d: "The daily banis by time of day, your place kept in each, and a quiet record of the days you read." },
+  { id: "raag-clock", t: "The Raag Clock", d: "Which raags belong to this watch of the day — by fixed hours or by your local sunrise and sunset." },
+  { id: "widgets", t: "Widgets and Live Activity", d: "The raag of the moment, a Hukam verse and today's Nitnem on your Home Screen and Lock Screen." },
+];
+
+const accents = [
+  { src: accentSoul, name: "Soul" },
+  { src: accentSaffron, name: "Saffron" },
+  { src: accentGold, name: "Gold" },
+  { src: accentIndigo, name: "Indigo" },
+  { src: accentTeal, name: "Teal" },
 ];
 
 const jsonLd = {
@@ -47,22 +80,20 @@ const jsonLd = {
     <div class="wrap">
       <p class="eyebrow">Everything, on your device</p>
       <h1>Made for reading, not for scrolling</h1>
+      <span class="gold-hair" aria-hidden="true"></span>
       <p class="lede">The whole Granth, the daily banis and the study tools — quiet, exact, and entirely
         on your device. No feeds, no accounts, nothing asking for your attention.</p>
     </div>
   </header>
 
-  <!-- Capabilities: staggered device shots + hairline definition list -->
-  <section class="section feat-sec">
-    <div class="wrap feat-grid">
-      <div class="feat-devices reveal" aria-hidden="false">
-        <DeviceFrame src={readerShot} alt="Reader screen showing Ang 1 in Sant Lipi" label="Reader" />
-        <DeviceFrame src={nitnemShot} alt="Nitnem screen listing the daily banis by time of day" label="Nitnem" />
-      </div>
+  <!-- At a glance: six capabilities, each anchoring its chapter -->
+  <section class="sec-thin glance-sec" aria-labelledby="glance-h">
+    <div class="wrap">
+      <h2 id="glance-h" class="glance-h">At a glance</h2>
       <dl class="feat-list">
-        {features.map((f) => (
+        {glance.map((f) => (
           <div class="feat-row reveal">
-            <dt>{f.t}</dt>
+            <dt><a href={`#${f.id}`}>{f.t}</a></dt>
             <dd>{f.d}</dd>
           </div>
         ))}
@@ -70,53 +101,293 @@ const jsonLd = {
     </div>
   </section>
 
-  <!-- Hukam + Raag Clock shots so all four app screens appear across the site -->
-  <section class="section band feat-shots-sec">
+  <!-- 1 · READER — full-width iPad, editorial -->
+  <section class="sec surface-paper hair-top" id="reader" data-chapter="reader">
     <div class="wrap">
-      <div class="shots-head reveal">
-        <p class="eyebrow">On screen</p>
-        <h2>A complete Hukam, and the watch of the day</h2>
-        <p class="muted">Draw a complete Hukam cited by Ang, and glance at the raags of the current watch —
-          both on the same quiet surface as the reader.</p>
+      <div class="story-head reveal">
+        <p class="chapter-no"><span>01</span> Read</p>
+        <h2 class="h-story">The whole Granth, set to be read</h2>
+        <p class="body-lg">All 1,430 Angs in Sant Lipi, on warm paper or in a night scheme that is never pure black. Turn pages, jump to any Ang, pick up where you left off. Every composition opens with its printed heading, and transliteration can sit quietly under each line.</p>
       </div>
-      <div class="feat-shots reveal">
-        <DeviceFrame src={hukamShot} alt="Hukam screen with a complete shabad cited by Ang" label="Hukam" />
-        <DeviceFrame src={raagClockShot} alt="Raag Clock showing the current watch" label="Raag Clock" />
+      <div class="reader-wide reveal" data-delay="1">
+        <DeviceFrame kind="ipad" frame={false} src={ipadReader} sizes="(min-width: 1240px) 1160px, 94vw"
+          alt="Reader on iPad in landscape, open at Ang 705 — Gurmukhi in Sant Lipi with transliteration under each line" />
       </div>
-      <p class="shots-cta reveal"><a class="btn ghost" href="/watch">See the Raag Clock</a></p>
+    </div>
+  </section>
+
+  <!-- Saroop strip — before / after -->
+  <section class="sec surface-warm" id="saroop" data-chapter="saroop">
+    <div class="wrap story-grid story-grid--6-6">
+      <div class="story-text reveal">
+        <p class="eyebrow">Traditional saroop</p>
+        <h2 class="h-story">Two ways to draw the same characters</h2>
+        <p class="body-lg">Traditional saroop draws the doubled subjoined ya as the single tucked form used in the printed Bir; turn it off to see the exact source characters. Only the drawing changes — stored text, search and Copy are always the verbatim characters.</p>
+      </div>
+      <div class="story-media reveal" data-delay="1">
+        <div class="pair pair--shots">
+          <DeviceFrame frame={false} src={saroopOff} label="Saroop off" alt="Reader on iPhone at Ang 1400 with traditional saroop off" />
+          <DeviceFrame frame={false} src={saroopOn} label="Saroop on (default)" alt="Reader on iPhone at Ang 1400 with traditional saroop on" />
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 2 · SEARCH -->
+  <section class="sec surface-paper" id="search" data-chapter="search">
+    <div class="wrap story-grid">
+      <div class="story-text reveal">
+        <p class="chapter-no"><span>02</span> Search</p>
+        <h2 class="h-story">Search the way you remember</h2>
+        <p class="body-lg">A word in Gurmukhi, a word as it sounds in Roman letters, or just the first letters of each word — the way a line comes back to you. Auto mode works out which you meant.</p>
+        <p class="body-lg">Verify checks a line you were sent against the text and tells you plainly whether it is there, and where.</p>
+        <ul class="factrail detail-row">
+          <li>Auto</li><li>Gurmukhi</li><li>Roman</li><li>First letters</li><li>Theme</li><li>Verify</li>
+        </ul>
+      </div>
+      <div class="story-media reveal" data-delay="1">
+        <div class="pair">
+          <DeviceFrame src={searchRoman} alt="Search on iPhone: the Roman word naam finds matching lines in Auto mode" />
+          <DeviceFrame src={verifyShot} alt="Verify on iPhone: a pasted line confirmed verbatim against the text, Ang 1" />
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 3 · HUKAM -->
+  <section class="sec surface-paper hair-top" id="hukam" data-chapter="hukam">
+    <div class="wrap story-grid story-grid--6-6 story--flip">
+      <div class="story-text reveal">
+        <p class="chapter-no"><span>03</span> Hukam</p>
+        <h2 class="h-story">A complete Hukam, whenever you ask</h2>
+        <p class="body-lg">The Hukam opens a whole shabad — never a fragment — read verbatim from the heading to the last line, and cited by its Ang. One tap takes you to that Ang in the Reader.</p>
+      </div>
+      <div class="story-media reveal" data-delay="1">
+        <div class="stage">
+          <DeviceFrame src={hukamShot} alt="Hukam on iPhone: a complete shabad in Raag Dhanasari from Ang 13" />
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 4 · NITNEM -->
+  <section class="sec surface-warm" id="nitnem" data-chapter="nitnem">
+    <div class="wrap story-grid">
+      <div class="story-text reveal">
+        <p class="chapter-no"><span>04</span> Nitnem</p>
+        <h2 class="h-story">Nitnem, with your place kept</h2>
+        <p class="body-lg">The daily banis by time of day — Japji, Jaap, Savaiye, Chaupai and Anand in the morning, Rehras at dusk, Sohila at night — with Sukhmani, Asa di Vaar and Ardaas alongside. The app remembers where you are in each.</p>
+        <p class="body-lg">A reading journey keeps a quiet record of the days you read. Reminders are optional, local, and yours to set.</p>
+        <p class="detail">Banis from Sri Guru Granth Sahib Ji come from the same verified corpus, cited by Ang. Dasam Granth and Ardaas text are a separate, labelled, scholar-reviewed layer.</p>
+      </div>
+      <div class="story-media reveal" data-delay="1">
+        <div class="stage stage--ipad">
+          <DeviceFrame kind="ipad" src={ipadNitnem} alt="Nitnem on iPad in landscape: the morning banis with progress rings, and the full list by time of day" />
+          <div class="overlap media-secondary">
+            <DeviceFrame src={journeyShot} sizes="200px" alt="Nitnem reading journey on iPhone: a calendar of the days you read" />
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 5 · RAAG CLOCK (dark) -->
+  <section class="sec surface-ink" id="raag-clock" data-theme="dark" data-chapter="raag-clock">
+    <div class="wrap story-grid story--flip">
+      <div class="story-text reveal">
+        <p class="chapter-no"><span>05</span> The watch</p>
+        <h2 class="h-story">Eight watches. Thirty-one raags. One face.</h2>
+        <p class="body-lg">The day is divided into eight pahars, and different raags belong to different watches. The Raag Clock shows which belong to this one — by fixed hours, or by your local sunrise and sunset, worked out on the device. The deep night is left in silence.</p>
+        <p class="cta-row"><a class="btn ghost" href="/watch" data-astro-prefetch>More about the watch</a></p>
+      </div>
+      <div class="story-media reveal" data-delay="1">
+        <div class="pair wash">
+          <DeviceFrame src={clockDark} label="Fixed hours" alt="Raag Clock on iPhone, fixed hours: the 2nd pahar of day, 9 am to 12 pm" />
+          <DeviceFrame src={clockSolar} label="Sunrise and sunset" alt="Raag Clock on iPhone, solar mode: the watch computed from local sunrise and sunset" />
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 6 · WIDGETS + LIVE ACTIVITY -->
+  <section class="sec surface-paper" id="widgets" data-chapter="widgets">
+    <div class="wrap story-grid story-grid--4-8">
+      <div class="story-text reveal">
+        <p class="chapter-no"><span>06</span> At a glance</p>
+        <h2 class="h-story">On your Home Screen and Lock Screen</h2>
+        <p class="body-lg">Three widgets — the raag of the moment, a Hukam verse with its Ang, today's Nitnem — in sizes from small to large, plus Lock Screen accessories. An optional Live Activity shows your reading progress as a ring. It never shows a verse.</p>
+      </div>
+      <div class="story-media reveal" data-delay="1">
+        <div class="widgets">
+          <div class="wrow wrow--rev">
+            <figure class="widget widget--m"><Image src={wHukamDark} widths={[500, 1000]} sizes="(min-width: 980px) 500px, 64vw" loading="lazy" decoding="async" alt="Hukam widget, medium, in the dark scheme: a verse from Ang 13 with its citation" /></figure>
+            <figure class="widget widget--s"><Image src={wRaag} widths={[240, 480]} sizes="(min-width: 980px) 230px, 30vw" loading="lazy" decoding="async" alt="Raag Now widget, small: the raag of the current watch" /></figure>
+          </div>
+          <div class="wrow">
+            <figure class="widget widget--s"><Image src={wNitnemSmall} widths={[240, 480]} sizes="(min-width: 980px) 230px, 30vw" loading="lazy" decoding="async" alt="Nitnem widget, small: the next bani of the day" /></figure>
+            <figure class="widget widget--m"><Image src={wNitnemDark} widths={[500, 1000]} sizes="(min-width: 980px) 500px, 64vw" loading="lazy" decoding="async" alt="Nitnem widget, medium, in the dark scheme" /></figure>
+          </div>
+          <figure class="la">
+            <div class="la-card"><Image src={laCard} widths={[450, 900]} sizes="(min-width: 980px) 740px, 92vw" loading="lazy" decoding="async" alt="Live Activity on the Lock Screen: reading Japji Sahib, a progress ring at 1%" /></div>
+            <figcaption>Live Activity on the Lock Screen — progress only, never a verse.</figcaption>
+          </figure>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 7 · EXPLORE -->
+  <section class="sec surface-warm" id="explore" data-chapter="explore">
+    <div class="wrap">
+      <div class="story-grid explore-top">
+        <div class="story-text reveal">
+          <p class="chapter-no"><span>07</span> Explore</p>
+          <h2 class="h-story">Explore the Granth from every side</h2>
+          <p class="body-lg">Themes across the whole text. Lineage — 30 voices, 12th to 17th century. Insights that count and compare. A constellation of verses that share their words.</p>
+          <p class="detail">Also in Explore: an index of raags, sections and authors, the 22 Vaars pauri by pauri, and the Raag Clock. On iPad, all of it at once.</p>
+        </div>
+        <div class="story-media reveal" data-delay="1">
+          <div class="stage stage--ipad">
+            <DeviceFrame kind="ipad" src={ipadExplore}
+              alt="Explore on iPad in landscape: Index, Themes, Lineage, Insights, Constellation, Vaars and the Raag Clock" />
+          </div>
+        </div>
+      </div>
+      <div class="mosaic explore-row reveal" data-delay="1">
+        <figure class="tile">
+          <div class="tile-img"><Image src={themesShot} widths={[300, 600]} sizes="(min-width: 980px) 280px, 46vw" loading="lazy" decoding="async" alt="Themes on iPhone: concepts such as Ik Onkar, Hukam and Naam with their verse counts" /></div>
+          <figcaption><strong>Themes</strong>Ideas traced across every Ang.</figcaption>
+        </figure>
+        <figure class="tile">
+          <div class="tile-img"><Image src={lineageShot} widths={[300, 600]} sizes="(min-width: 980px) 280px, 46vw" loading="lazy" decoding="async" alt="Lineage on iPhone: the 30 contributors on a timeline" /></div>
+          <figcaption><strong>Lineage</strong>30 voices, in time.</figcaption>
+        </figure>
+        <figure class="tile">
+          <div class="tile-img"><Image src={insightsShot} widths={[300, 600]} sizes="(min-width: 980px) 280px, 46vw" loading="lazy" decoding="async" alt="Insights on iPhone: lines contributed to the Granth, by author" /></div>
+          <figcaption><strong>Insights</strong>Counts, described plainly.</figcaption>
+        </figure>
+        <figure class="tile">
+          <div class="tile-img"><Image src={constellationDark} widths={[300, 600]} sizes="(min-width: 980px) 280px, 46vw" loading="lazy" decoding="async" alt="Constellation on iPhone in the dark scheme: verses clustered by shared words" /></div>
+          <figcaption><strong>Constellation</strong>Verses that share their words.</figcaption>
+        </figure>
+      </div>
+    </div>
+  </section>
+
+  <!-- 8 · INDEX, DISPLAY AND SIRI -->
+  <section class="sec surface-paper" id="index-display" data-chapter="index-display">
+    <div class="wrap story-grid">
+      <div class="story-text reveal">
+        <p class="chapter-no"><span>08</span> Index, Display and Siri</p>
+        <h2 class="h-story">Find your way, and make it yours</h2>
+        <p class="body-lg">The Index lists the compositions, the 31 raags, and the banis and sections by author — one tap to any of them. Display sets the Gurmukhi size, transliteration, appearance, accent and traditional saroop.</p>
+        <p class="detail">Siri: “Today’s Hukam”, “What raag is it now”. Shortcuts: “Open Ang”. Saved verses appear in Spotlight.</p>
+      </div>
+      <div class="story-media reveal" data-delay="1">
+        <div class="pair">
+          <DeviceFrame src={indexShot} alt="Index on iPhone: major compositions with quick access by Ang" />
+          <DeviceFrame src={displayShot} alt="Display settings on iPhone: traditional saroop, transliteration, Gurmukhi size, appearance and accent" />
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Photo band (dark scope) — between two light chapters, never beside Gurmukhi text -->
+  <PhotoBand src={widePhoto} position="center 55%"
+    alt="Sri Harmandir Sahib across the sarovar, the causeway and the marble parikrama">
+    <p class="h-statement">Quiet enough to hear.</p>
+    <p class="pb-sub">A place to read, and nothing else.</p>
+  </PhotoBand>
+
+  <!-- Accent strip -->
+  <section class="sec surface-warm" id="accents" data-chapter="accents">
+    <div class="wrap">
+      <div class="story-head reveal">
+        <p class="eyebrow">Display</p>
+        <h2 class="h-story">Five accents. Gold leads.</h2>
+        <p class="body-lg">Soul gold by default, with saffron, gold, indigo and teal to choose from. The Gurmukhi itself always stays in ink.</p>
+      </div>
+      <div class="accent-box reveal" data-delay="1" tabindex="0" role="region" aria-label="The five accents">
+      <ul class="accent-strip">
+        {accents.map((a) => (
+          <li>
+            <figure class="shot">
+              <div class="shot-in"><Image src={a.src} widths={[240, 480]} sizes="(min-width: 980px) 220px, 44vw" loading="lazy" decoding="async" alt={`Reader on iPhone at Ang 1 with the ${a.name} accent`} /></div>
+              <figcaption>{a.name}</figcaption>
+            </figure>
+          </li>
+        ))}
+      </ul>
+      </div>
+    </div>
+  </section>
+
+  <!-- 9 · CLOSING (dark) -->
+  <section class="sec surface-ink closing" id="verbatim" data-theme="dark" data-chapter="verbatim">
+    <div class="wrap closing-in reveal">
+      <span class="gold-hair" aria-hidden="true"></span>
+      <h2 class="h-statement">Nothing corrected. Nothing invented.</h2>
+      <p class="body-lg">The text is reproduced character for character from the source edition and checked against a SHA-256 checksum when the app is installed or updated. Nothing is normalised, modernised or improved. Never AI-generated.</p>
+      <div class="cta-row">
+        <a class="btn" href="/privacy">Read the privacy policy</a>
+        <a class="btn ghost" href="/support">Get support</a>
+      </div>
     </div>
   </section>
 
   <MarketingFooter />
 
   <style>
-    .page-hero { padding: clamp(96px, 12vw, 150px) 0 clamp(8px, 2vw, 24px); }
-    .page-hero h1 { font-size: clamp(32px, 5.4vw, 54px); margin: 0 0 18px; max-width: 18ch; }
-    .page-hero .lede { max-width: 56ch; color: var(--ink-soft); font-size: clamp(17px, 2vw, 20px); }
+    [data-chapter] { scroll-margin-top: 72px; }
+    .page-hero { padding: clamp(96px, 12vw, 150px) 0 clamp(16px, 3vw, 32px); }
+    .page-hero h1 { font-size: clamp(34px, 5.6vw, 60px); margin: 0 0 18px; max-width: 18ch; }
+    .page-hero .gold-hair { margin: 0 0 22px; }
+    .page-hero .lede { max-width: 56ch; color: var(--ink-soft); font-size: clamp(17px, 2vw, 20px); margin: 0; }
 
-    /* Capabilities */
-    .feat-grid { display: grid; grid-template-columns: 1fr; gap: 40px; }
-    .feat-devices { display: flex; gap: 22px; margin: 0 0 4px; justify-content: center; }
-    .feat-devices :global(.device-fig:nth-child(2)) { transform: translateY(28px); }
-    .feat-list { margin: 0; display: grid; gap: 0; }
-    .feat-row { padding: 22px 0; border-top: 1px solid var(--line); }
-    .feat-row:last-child { border-bottom: 1px solid var(--line); }
-    .feat-row dt { font-family: var(--serif-display); font-size: 19px; font-weight: 600; color: var(--ink); margin: 0 0 6px; }
-    .feat-row dd { margin: 0; color: var(--ink-soft); font-size: 15.5px; max-width: 62ch; }
-    @media (min-width: 900px) {
-      .feat-grid { grid-template-columns: 5fr 7fr; gap: 72px; align-items: start; }
-      .feat-devices { position: sticky; top: 96px; justify-content: flex-start; margin-bottom: 0; }
+    /* At a glance — hairline 3×2 grid */
+    .glance-h { font-family: var(--sans); font-size: 12.5px; font-weight: 700; letter-spacing: .14em; color: var(--accent-text); margin: 0 0 14px; }
+    .feat-list { margin: 0; display: grid; grid-template-columns: minmax(0, 1fr); border-top: 1px solid var(--line); }
+    .feat-row { padding: 20px 0; border-bottom: 1px solid var(--line); }
+    .feat-row dt { font-family: var(--serif-display); font-size: 19px; font-weight: 600; margin: 0 0 6px; }
+    .feat-row dt a { color: var(--ink); text-decoration: none; display: inline-flex; min-height: 32px; align-items: center; }
+    .feat-row dt a::after { content: "↓"; margin-left: 8px; color: var(--accent-text); font-family: var(--sans); font-size: 15px; }
+    .feat-row dt a:hover { text-decoration: underline; text-decoration-color: var(--accent); text-underline-offset: 4px; }
+    .feat-row dd { margin: 0; color: var(--ink-soft); font-size: 15.5px; max-width: 46ch; }
+    @media (min-width: 720px) { .feat-list { grid-template-columns: repeat(2, minmax(0, 1fr)); column-gap: 40px; } }
+    @media (min-width: 980px) { .feat-list { grid-template-columns: repeat(3, minmax(0, 1fr)); column-gap: 48px; } .feat-row { padding: 24px 0; } }
+
+    /* Reader — full-width editorial iPad */
+    .reader-wide :global(.shot--ipad) { max-width: 100%; }
+    .explore-top { margin: 0 0 clamp(40px, 6vw, 72px); }
+
+    /* Saroop pair — frame-less shots */
+    .pair--shots > :global(*) { flex-basis: 280px; }
+
+    /* Explore row: four phone tiles (2 on mobile) */
+    .explore-row { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .explore-row .tile-img { aspect-ratio: 9 / 11; }
+    @media (min-width: 980px) { .explore-row { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
+
+    /* Photo band sub-line */
+    .pb-sub { margin: 0 auto; max-width: 46ch; color: var(--ink-soft); font-size: clamp(16px, 1.8vw, 19px); }
+    :global(.photo-band) .h-statement { margin-bottom: 14px; }
+
+    /* Accent strip — 5-up; a snap row inside its own box on small screens */
+    .accent-strip { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: clamp(12px, 2vw, 22px); }
+    .accent-strip :global(.shot-in) { box-shadow: none; aspect-ratio: 900 / 620; }
+    .accent-strip :global(.shot-in img) { height: 100%; object-fit: cover; object-position: top center; }
+    .accent-strip figcaption { text-align: center; margin-top: 10px; font-size: 14px; font-weight: 600; color: var(--ink-soft); }
+    .accent-box:focus-visible { outline: 2px solid var(--accent); outline-offset: 4px; border-radius: 12px; }
+    @media (max-width: 979px) {
+      .accent-box { overflow-x: auto; scroll-snap-type: x mandatory; padding-bottom: 8px; -webkit-overflow-scrolling: touch; }
+      .accent-strip { display: flex; gap: 12px; }
+      .accent-strip li { flex: 0 0 min(62%, 240px); scroll-snap-align: start; }
     }
 
-    /* Hukam + Raag Clock shots */
-    .shots-head { max-width: 52ch; margin: 0 0 clamp(28px, 4vw, 48px); }
-    .shots-head h2 { font-size: clamp(26px, 4vw, 40px); margin: 0 0 14px; }
-    .feat-shots { display: flex; flex-wrap: wrap; gap: 28px 48px; justify-content: center; }
-    .feat-shots :global(.device) { max-width: 240px; }
-    .shots-cta { margin: clamp(32px, 4vw, 48px) 0 0; }
-    @media (min-width: 720px) {
-      .feat-shots { justify-content: flex-start; }
-      .feat-shots :global(.device-fig:nth-child(2)) { transform: translateY(24px); }
-    }
+    /* Closing */
+    .closing-in { text-align: center; display: flex; flex-direction: column; align-items: center; }
+    .closing-in .h-statement { max-width: 18ch; }
+    .closing-in .body-lg { margin-left: auto; margin-right: auto; }
+    .closing-in .cta-row { justify-content: center; }
   </style>
 </Marketing>
