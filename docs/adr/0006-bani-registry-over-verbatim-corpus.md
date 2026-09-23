@@ -29,7 +29,14 @@ and that translations or other text are never blended into it.
 3. **Editorial choices are explicit seed fields**, never inherited silently (e.g. the ਗੁਰਦੇਵ ਮਾਤਾ
    salok around Sukhmani Sahib; Asa Di Vaar in its kirtan interleave; SGPC Rehras as default,
    Taksal as a variant).
-4. **Proof and gates.** Scripture stays byte-identical (baseline guard, reconcile attestation).
+4. **Range-defined variants.** A bani that needs no ShabadOS membership at all may instead be
+   declared by `sggs_line_ranges` — our own line-id ranges, in printed order, one group per range
+   (e.g. Asa Di Vaar *as printed*, Ang 462–475, alongside the kirtan interleave). Because a line id
+   is meaningless on its own, every range carries verbatim **text anchors** (the opening line's
+   prefix, the closing line's exact text, the markers on the line before it). `build_banis.py`
+   re-checks them on every build and `guard_banis.py` re-checks them in CI, so a future corpus
+   rebuild that shifts ids fails loudly instead of silently pointing the bani at other verses.
+5. **Proof and gates.** Scripture stays byte-identical (baseline guard, reconcile attestation).
    The registry has its own guard (`guard_banis.py`: canonical ranges, dense sequences, pointer
    integrity, no English column, no SGGS text inside `extra_lines`), gate tests on a throwaway
    copy, and a golden suite (`contract/golden_banis.ndjson`) pinning every bani's line sequence

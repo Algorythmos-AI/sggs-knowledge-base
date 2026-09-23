@@ -153,6 +153,27 @@
       "description_en": "The Vaar in Raag Asa (Ang 462–475) in its kirtan form, with the chhants from Ang 448–451 between the pauris."
     },
     {
+      "key": "asa_di_vaar",
+      "variant": "printed",
+      "is_default": 0,
+      "shabados_bani_id": null,
+      "sggs_line_ranges": [
+        {
+          "first": 20883,
+          "last": 21519,
+          "first_text_prefix": "\u0a74",
+          "last_text": "\u0a38\u0a41\u0a27\u0a41",
+          "markers_before_last": ["\u0a68\u0a6a", "\u0a67"]
+        }
+      ],
+      "title_gm": "\u0a06\u0a38\u0a3e \u0a26\u0a40 \u0a35\u0a3e\u0a30",
+      "title_en": "Asa Di Vaar (as printed)",
+      "category": "popular",
+      "order": 111,
+      "estimated_minutes": 45,
+      "description_en": "The Vaar in Raag Asa exactly as printed in Sri Guru Granth Sahib Ji, Ang 462\u2013475: twenty-four pauris with their saloks, without the kirtan chhants."
+    },
+    {
       "key": "anand_short",
       "variant": "",
       "is_default": 1,

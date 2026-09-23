@@ -20,6 +20,12 @@ How a bani is built
     source's Manglacharan/Sirlekh line types.
   * Seed-declared `prepend_line_ranges` / `append_line_ranges` add SGGS ranges as
     their own groups (e.g. the ਗੁਰਦੇਵ ਮਾਤਾ salok around Sukhmani Sahib).
+  * A bani with no `shabados_bani_id` is defined ENTIRELY by `sggs_line_ranges`
+    (e.g. Asa Di Vaar as printed). Each range is one group of our own line ids in
+    printed order, and every range carries TEXT ANCHORS (`first_text_prefix`,
+    `last_text`, `markers_before_last`) that are re-checked on every build: if a
+    future corpus rebuild ever shifts ids, the build FAILS loudly instead of
+    silently pointing the bani at different verses.
 
 Usage:
   python3 pipeline/banis/build_banis.py [--db PATH] [--shabados PATH] [--dry-run]
@@ -180,6 +186,34 @@ def resolve_sggs_group(group_rows, by_ang, overrides, unknown, stats, report):
     return ids
 
 
+def check_range_anchors(spec, line_text, line_markers, key, failures):
+    """Verify a seed range still points at the intended verses (ids can shift on a rebuild).
+
+    Anchors are verbatim text from our own corpus, never edited here: the first line must
+    START WITH `first_text_prefix`, the last line must EQUAL `last_text`, and the line before
+    the last must carry `markers_before_last`. Any mismatch is a hard build failure.
+    """
+    lo, hi = spec['first'], spec['last']
+    if lo > hi:
+        failures.append('%s: range %d..%d is inverted' % (key, lo, hi))
+        return
+    missing = [lid for lid in (lo, hi) if lid not in line_text]
+    if missing:
+        failures.append('%s: range line id(s) %r are not in the corpus' % (key, missing))
+        return
+    pref = spec.get('first_text_prefix')
+    if pref and not line_text[lo].startswith(pref):
+        failures.append('%s: line %d no longer starts with %r (found %r)' % (key, lo, pref, line_text[lo][:40]))
+    last = spec.get('last_text')
+    if last is not None and line_text[hi] != last:
+        failures.append('%s: line %d is no longer %r (found %r)' % (key, hi, last, line_text[hi][:40]))
+    want = spec.get('markers_before_last')
+    if want is not None:
+        got = line_markers.get(hi - 1)
+        if got != want:
+            failures.append('%s: line %d markers %r != expected %r' % (key, hi - 1, got, want))
+
+
 def build(args):
     seed = load_seed()
     overrides = load_overrides()
@@ -189,6 +223,8 @@ def build(args):
     con.execute('PRAGMA foreign_keys=ON')
     by_ang = ml.load_corpus_index(con)
     line_meta = {lid: (ang, comp) for lid, ang, comp in con.execute('SELECT id, ang, comp_id FROM lines')}
+    line_text = {lid: g for lid, g in con.execute('SELECT id, gurmukhi FROM lines')}
+    line_markers = {lid: json.loads(m or '[]') for lid, m in con.execute('SELECT id, markers FROM lines')}
 
     unknown = collections.Counter()
     plan = []          # (bani_seed, [(seq, line_group, line_id|None, extra_key|None)], extras)
@@ -197,12 +233,16 @@ def build(args):
     for b in seed['banis']:
         stats = collections.Counter()
         report = []
-        rows = shabados_lines(sha, b['shabados_bani_id'])
+        rows = shabados_lines(sha, b['shabados_bani_id']) if b.get('shabados_bani_id') else []
         entries = []   # (line_group, line_id, extra_slid)
         gno = 0
         for lo, hi in b.get('prepend_line_ranges', []):
             gno += 1
             entries += [(gno, lid, None) for lid in range(lo, hi + 1)]
+        for spec in b.get('sggs_line_ranges', []):
+            check_range_anchors(spec, line_text, line_markers, b['key'], failures)
+            gno += 1
+            entries += [(gno, lid, None) for lid in range(spec['first'], spec['last'] + 1)]
         for lg, grp in _groupby(rows):
             gno += 1
             srcs = {r[6] for r in grp}
@@ -236,6 +276,8 @@ def build(args):
         if report:
             failures.append('%s: %d unmatched SGGS line(s): %s' % (
                 b['key'], len(report), '; '.join('%s@Ang%s %s' % (s, p, u[:40]) for s, p, u in report[:6])))
+        if not entries:
+            failures.append('%s: no lines — needs shabados_bani_id or sggs_line_ranges' % b['key'])
         n_extra = sum(1 for e in entries if e[2])
         angs = sorted({line_meta[e[1]][0] for e in entries if e[1]})
         print('  %-20s %-7s lines=%4d groups=%2d extra=%4d  angs=%s  %s' % (
