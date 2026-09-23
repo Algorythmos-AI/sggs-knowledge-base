@@ -73,10 +73,16 @@ enum RaagNowTimeline {
         }
         let b = sun.map { Pahar.nextBoundary(m, mode: "solar", sunrise: $0.sunrise, sunset: $0.sunset) }
             ?? Pahar.nextBoundary(m, mode: "fixed")
+        // The countdown target is the boundary's WALL-CLOCK minute resolved through Calendar
+        // (like `dates`), never `date + minutes`: that kept the entry's seconds and drifted an
+        // hour across a DST change. It equals the boundary entry's date, so the flip is exact.
+        let target = m + b.minutes
+        let boundary = PaharFormat.date(minuteOfDay: target % 1440, on: date, dayOffset: target / 1440, tz: tz)
+            ?? date.addingTimeInterval(TimeInterval(b.minutes * 60))
         var beads: [Int: Int] = [:]
         for q in 1...8 { beads[q] = snapshot?.paharRaags[q]?.count ?? 0 }
         return RaagNowEntry(date: date, pahar: p, windows: windows, sunrise: sun?.sunrise, sunset: sun?.sunset,
-                            nextPahar: b.nextPahar, boundaryDate: date.addingTimeInterval(TimeInterval(b.minutes * 60)),
+                            nextPahar: b.nextPahar, boundaryDate: boundary,
                             raags: snapshot?.paharRaags[p] ?? [],
                             raagsGurmukhi: snapshot?.paharRaagsGurmukhi?[p] ?? [],
                             beads: beads, hasSnapshot: snapshot != nil, solar: sun != nil)

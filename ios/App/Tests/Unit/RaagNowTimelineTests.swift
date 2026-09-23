@@ -76,6 +76,63 @@ final class RaagNowTimelineTests: XCTestCase {
         XCTAssertEqual(e.pahar, 8)
     }
 
+    /// The countdown `.relative` renders is `boundaryDate − now`, and on device `now` is the
+    /// entry's own date (or just after it). A fixed pahar is 3 h, so from any minute of the day
+    /// the next watch is at most 3 h away — never days — and it lands on a whole wall-clock minute.
+    func testFixedCountdownIsUnderAPaharAndWallClockExact() {
+        let cfg = RaagClockConfig(solar: false)
+        let e = RaagNowTimeline.entry(at: date(2026, 9, 18, 16, 40, tz: utc).addingTimeInterval(23), config: cfg,
+                                      snapshot: nil, tz: utc)
+        XCTAssertEqual(e.boundaryDate, date(2026, 9, 18, 18, 0, tz: utc), "the entry's seconds never leak into the target")
+        let lead = e.boundaryDate.timeIntervalSince(e.date)
+        XCTAssertLessThan(lead, 3 * 3600, "next watch in 1 hr, 19 min — not days")
+        XCTAssertEqual(lead, 80 * 60 - 23)
+
+        let midnight = date(2026, 9, 18, 0, 0, tz: utc)
+        for minute in 0..<1440 {
+            let at = midnight.addingTimeInterval(TimeInterval(minute * 60 + 23))
+            let x = RaagNowTimeline.entry(at: at, config: cfg, snapshot: nil, tz: utc)
+            let s = x.boundaryDate.timeIntervalSince(at)
+            XCTAssertGreaterThan(s, 0, "minute \(minute)")
+            XCTAssertLessThanOrEqual(s, 3 * 3600, "minute \(minute)")
+            XCTAssertEqual(PaharFormat.minutesOfDay(x.boundaryDate, tz: utc) % 180, 0, "minute \(minute)")
+            XCTAssertEqual(x.boundaryDate.timeIntervalSinceReferenceDate.truncatingRemainder(dividingBy: 60), 0)
+        }
+    }
+
+    /// Every entry's countdown target is itself a timeline entry, so the text flips to the
+    /// next watch at the exact instant the boundary entry takes over (fixed and solar).
+    func testEveryCountdownTargetIsATimelineEntry() {
+        let configs = [RaagClockConfig(solar: false), RaagClockConfig(solar: true, lat: -33.87, lon: 151.21)]
+        for cfg in configs {
+            let now = date(2026, 9, 18, 16, 40, tz: sydney).addingTimeInterval(23)
+            let dates = RaagNowTimeline.dates(from: now, config: cfg, tz: sydney)
+            let set = Set(dates)
+            for d in dates {
+                let e = RaagNowTimeline.entry(at: d, config: cfg, snapshot: nil, tz: sydney)
+                XCTAssertGreaterThan(e.boundaryDate, d)
+                if e.boundaryDate < dates.last! {
+                    XCTAssertTrue(set.contains(e.boundaryDate), "\(cfg.solar ? "solar" : "fixed") target \(e.boundaryDate) is not an entry")
+                }
+            }
+        }
+    }
+
+    /// Across a DST change the countdown is real elapsed time to the wall-clock boundary: the
+    /// spring-forward night's 7th watch ends one hour early, the fall-back night's one hour late.
+    func testCountdownAcrossDSTIsRealElapsedTime() {
+        let cfg = RaagClockConfig(solar: false)
+        let spring = RaagNowTimeline.entry(at: date(2026, 10, 4, 1, 0, tz: sydney), config: cfg, snapshot: nil, tz: sydney)
+        XCTAssertEqual(spring.boundaryDate, date(2026, 10, 4, 3, 0, tz: sydney))
+        XCTAssertEqual(spring.boundaryDate.timeIntervalSince(spring.date), 1 * 3600, "02:00 → 03:00 is skipped")
+
+        let fall = RaagNowTimeline.entry(at: date(2027, 4, 4, 1, 0, tz: sydney), config: cfg, snapshot: nil, tz: sydney)
+        let three = date(2027, 4, 4, 3, 0, tz: sydney)
+        XCTAssertEqual(three.timeIntervalSince(date(2027, 4, 4, 0, 0, tz: sydney)), 4 * 3600, "the clock repeats 02:00 that night")
+        XCTAssertEqual(fall.boundaryDate, three)
+        XCTAssertEqual(fall.boundaryDate.timeIntervalSince(fall.date), 3 * 3600)
+    }
+
     func testSolarConfigDrivesPaharAndFallsBackWhenPolar() {
         let kolkata = TimeZone(identifier: "Asia/Kolkata")!
         let amritsar = RaagClockConfig(solar: true, lat: 31.63, lon: 74.87)
