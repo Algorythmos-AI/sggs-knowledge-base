@@ -155,4 +155,8 @@ with os.fdopen(fd, 'w') as f:
 os.replace(tmp, 'MANIFEST.json')
 print(f'installed: variants={n_var}, en={n_en}')
 EOF
+# Content fingerprint of the installed DB (per-table, FTS index, scripture) — CI compares the
+# committed DB against it; commit it together with the DB.
+python3 pipeline/sggs_integrity.py db/sggs.sqlite --out audit/dataset-fingerprint.json
+echo "fingerprint: audit/dataset-fingerprint.json"
 echo "DONE — start the app: cd webapp && python3 serve.py"
