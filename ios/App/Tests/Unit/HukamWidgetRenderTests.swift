@@ -20,10 +20,17 @@ final class HukamWidgetRenderTests: XCTestCase {
     /// Dhanasari M1, "Aarti" (Ang 13) — the composition used for the marketing Hukam shots.
     private let seedCompId = 29
 
+    /// Japji (Ang 1), the Aarti (Ang 13) and the Granth's closing composition (a 4-digit Ang —
+    /// the widest citation) for the truncation gate.
+    private let probeSeeds = [2, 29, 5376]
+
     private let families: [(WidgetFamily, CGSize, String)] = [
         (.systemMedium, CGSize(width: 338, height: 158), "medium"),
         (.systemLarge, CGSize(width: 338, height: 354), "large"),
     ]
+
+    private let typeSizes: [DynamicTypeSize] = [.large, .xxxLarge, .accessibility1, .accessibility2]
+    private let inset: CGFloat = 14
 
     private func makeSource() throws -> SQLiteCandidateSource {
         guard let path = Bundle.main.url(forResource: "sggs-ios", withExtension: "sqlite")?.path
@@ -32,17 +39,28 @@ final class HukamWidgetRenderTests: XCTestCase {
         return try SQLiteCandidateSource(path: path)
     }
 
-    private func render(_ verse: ReaderLine, family: WidgetFamily, size: CGSize, dark: Bool) -> UIImage? {
-        let view = ZStack {
+    private func verse(seed: Int, in source: SQLiteCandidateSource) throws -> ReaderLine {
+        let unit = try source.hukamUnit(seed: seed)
+        return try XCTUnwrap(unit.lines.first(where: { !$0.isHeader }), "hukam unit \(seed) has no verse")
+    }
+
+    private func widget(_ verse: ReaderLine, family: WidgetFamily, size: CGSize, dark: Bool,
+                        typeSize: DynamicTypeSize) -> some View {
+        ZStack {
             PaperGround()
             HukamWidgetBody(gurmukhi: verse.gurmukhi, translit: verse.translit, ang: verse.ang,
                             large: family == .systemLarge)
-                .padding(14)
+                .padding(inset)
         }
         .frame(width: size.width, height: size.height)
         .clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
         .environment(\.colorScheme, dark ? .dark : .light)
-        let r = ImageRenderer(content: view)
+        .environment(\.dynamicTypeSize, typeSize)
+    }
+
+    private func render(_ verse: ReaderLine, family: WidgetFamily, size: CGSize, dark: Bool,
+                        typeSize: DynamicTypeSize = .large) -> UIImage? {
+        let r = ImageRenderer(content: widget(verse, family: family, size: size, dark: dark, typeSize: typeSize))
         r.scale = 3
         return r.uiImage
     }
@@ -52,8 +70,7 @@ final class HukamWidgetRenderTests: XCTestCase {
             ?? FileManager.default.temporaryDirectory.appendingPathComponent("sggs-widget-snapshots")
         try? FileManager.default.createDirectory(at: out, withIntermediateDirectories: true)
         print("SGGS_WIDGET_SNAPSHOT_DIR=\(out.path)")
-        let unit = try makeSource().hukamUnit(seed: seedCompId)
-        let verse = try XCTUnwrap(unit.lines.first(where: { !$0.isHeader }), "hukam unit has no verse")
+        let verse = try verse(seed: seedCompId, in: makeSource())
         for (family, size, name) in families {
             for dark in [false, true] {
                 let img = try XCTUnwrap(render(verse, family: family, size: size, dark: dark),
@@ -62,9 +79,63 @@ final class HukamWidgetRenderTests: XCTestCase {
                 if let png = img.pngData() {
                     try png.write(to: out.appendingPathComponent("hukam-\(name)-\(dark ? "dark" : "light").png"))
                 }
+                // the largest type size the citation gate covers, for visual review
+                if let png = render(verse, family: family, size: size, dark: dark, typeSize: .accessibility2)?.pngData() {
+                    try png.write(to: out.appendingPathComponent("hukam-\(name)-ax2-\(dark ? "dark" : "light").png"))
+                }
             }
         }
     }
+
+    /// The citation must always read in full — "Sri Guru Granth Sahib Ji · Ang N", never
+    /// truncated, never clipped (CLAUDE.md) — in every family, at every type size up to AX2.
+    /// The widget is laid out in a real window; `Citation` reports its text's frame, and the
+    /// gate checks (1) the frame lies inside the widget's content area and (2) the text, laid
+    /// out unconstrained at the width it was given, needs no more height than it got — i.e. no
+    /// line was cut off with an ellipsis.
+    func testCitationIsNeverTruncated() throws {
+        XCTAssertEqual(Citation.text(ang: 13), "Sri Guru Granth Sahib Ji · Ang 13")
+        let source = try makeSource()
+        for seed in probeSeeds {
+            let verse = try verse(seed: seed, in: source)
+            for (family, size, name) in families {
+                for typeSize in typeSizes {
+                    let label = "hukam \(name) seed \(seed) (Ang \(verse.ang)) \(typeSize)"
+                    let probe = Probe()
+                    let host = UIHostingController(rootView:
+                        widget(verse, family: family, size: size, dark: false, typeSize: typeSize)
+                            .onGeometryChange(for: CGRect.self) { $0.frame(in: .global) } action: { probe.root = $0 }
+                            .onPreferenceChange(CitationFrameKey.self) { probe.citation = $0 })
+                    let window = UIWindow(frame: CGRect(x: 0, y: 0, width: 600, height: 800))
+                    window.rootViewController = host
+                    window.isHidden = false
+                    host.view.layoutIfNeeded()
+                    RunLoop.main.run(until: Date().addingTimeInterval(0.05))
+                    window.isHidden = true
+
+                    let cite = probe.citation, root = probe.root
+                    XCTAssertFalse(cite.isNull || root.isNull, "\(label): no citation frame reported")
+                    if cite.isNull || root.isNull { continue }
+                    let content = root.insetBy(dx: inset - 0.5, dy: inset - 0.5)
+                    XCTAssertTrue(content.contains(cite),
+                                  "\(label): citation \(cite) is clipped outside the widget content \(content)")
+                    // measured at the size the widget actually draws (it clamps at xxxLarge)
+                    let needed = UIHostingController(rootView:
+                        Text(Citation.displayText(ang: verse.ang)).font(WidgetType.serif(12))
+                            .environment(\.dynamicTypeSize, min(typeSize, .xxxLarge)))
+                        .sizeThatFits(in: CGSize(width: cite.width + 0.5, height: .greatestFiniteMagnitude))
+                    XCTAssertLessThanOrEqual(needed.height, cite.height + 1,
+                                             "\(label): citation truncated — needs \(needed.height)pt, got \(cite.height)pt at \(cite.width)pt wide")
+                }
+            }
+        }
+    }
+}
+
+/// Collects the frames reported during layout (main thread only).
+private final class Probe: @unchecked Sendable {
+    var root: CGRect = .null
+    var citation: CGRect = .null
 }
 
 /// Mirror of `HukamView.body` (Widgets/SGGSWidgets.swift) for the snapshot-present state.
@@ -99,5 +170,6 @@ private struct HukamWidgetBody: View {
             Citation(ang: ang, action: large ? "Tap to read the shabad" : "Tap to read")
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+        .dynamicTypeSize(...DynamicTypeSize.xxxLarge)
     }
 }
