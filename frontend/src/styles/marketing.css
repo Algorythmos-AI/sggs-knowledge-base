@@ -36,20 +36,21 @@
   --sans: ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
   --gm: "Sant Lipi", "Noto Sans Gurmukhi", "Gurmukhi MN", sans-serif;
   --serif-display: "Source Serif 4", "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif;
-  --maxw: 1160px;
+  --maxw: 1200px;
+  /* v2 rhythm: story sections breathe, strips stay tight. */
+  --sec: clamp(72px, 10vw, 136px);
+  --sec-thin: clamp(40px, 5vw, 64px);
+  /* The one device shadow, everywhere (warm, never pure black). */
+  --shadow-device: 0 40px 90px -40px rgba(20,14,6,.45);
 }
 :root[data-theme="dark"] {
   --paper: #171412; --paper-2: #0E0C0A; --card: #1E1A17;
   --ink: #F3ECDD; --ink-soft: #B9AC95; --line: rgba(255,255,255,.10);
   --accent-fill: #FFBC0D; --accent: #FFBC0D; --accent-text: #FFC72C; --on-accent: #2B1A05;
 }
-@media (prefers-color-scheme: dark) {
-  :root:not([data-theme="light"]) {
-    --paper: #171412; --paper-2: #0E0C0A; --card: #1E1A17;
-    --ink: #F3ECDD; --ink-soft: #B9AC95; --line: rgba(255,255,255,.10);
-    --accent-fill: #FFBC0D; --accent: #FFBC0D; --accent-text: #FFC72C; --on-accent: #2B1A05;
-  }
-}
+/* Light-first (v2): there is deliberately NO OS-appearance (media query) dark override here. The
+   marketing site renders light unless the reader chose otherwise; the resolved choice arrives as
+   html[data-theme] from the pre-paint script in Marketing.astro + scripts/theme.ts. */
 * { box-sizing: border-box; }
 html { -webkit-text-size-adjust: 100%; }
 body {
@@ -166,11 +167,24 @@ html.js-motion .reveal.in { opacity: 1; transform: none; transition: opacity .6s
 }
 
 /* --- Device frame (CSS-only iPhone) ---------------------------------------------------------- */
-.device { position: relative; width: 100%; max-width: 260px; aspect-ratio: 9 / 19.5; border-radius: 44px; background: var(--ink); padding: 10px; box-shadow: 0 30px 60px -30px rgba(20,14,6,.5); }
+.device { position: relative; width: 100%; max-width: 260px; aspect-ratio: 9 / 19.5; border-radius: 44px; background: var(--ink); padding: 10px; box-shadow: var(--shadow-device); }
 .device::before { content: ""; position: absolute; top: 20px; left: 50%; transform: translateX(-50%); width: 84px; height: 24px; border-radius: 999px; background: #000; z-index: 2; }
 .device .screen { position: relative; width: 100%; height: 100%; border-radius: 35px; overflow: hidden; background: var(--paper-2); display: flex; align-items: center; justify-content: center; }
 .device .screen img { width: 100%; height: 100%; object-fit: cover; }
 .device .ph-onkar { font-family: var(--gm); font-size: 44px; color: var(--ink); opacity: .5; }
+/* iPad (landscape 4/3): thinner radius, 12px bezel, no Dynamic Island. */
+.device.device--ipad { max-width: 720px; aspect-ratio: 4 / 3; border-radius: 28px; padding: 12px; }
+.device.device--ipad::before { content: none; }
+.device.device--ipad .screen { border-radius: 16px; }
+/* Frame-less editorial screenshot (saroop/accent pairs, iPad crops on mobile). */
+.shot { margin: 0; }
+.shot .shot-in { border-radius: 18px; overflow: hidden; border: 1px solid var(--line); background: var(--paper-2); box-shadow: var(--shadow-device); }
+.shot .shot-in img { display: block; width: 100%; height: auto; }
+.shot--iphone { max-width: 340px; }
+.shot--ipad { max-width: 720px; }
+.shot .shot-ph { aspect-ratio: 9 / 19.5; display: flex; align-items: center; justify-content: center; }
+.shot--ipad .shot-ph { aspect-ratio: 4 / 3; }
+.device-fig figcaption, .shot figcaption { color: var(--ink-soft); text-align: center; margin-top: 12px; font-size: 13.5px; }
 
 /* --- Fine print / fact rails ----------------------------------------------------------------- */
 .factrail { display: flex; flex-wrap: wrap; gap: 10px 22px; list-style: none; padding: 0; margin: 0; }
@@ -202,3 +216,109 @@ html.js-motion .reveal.in { opacity: 1; transform: none; transition: opacity .6s
 .kbmock .rows .r { height: 12px; border-radius: 6px; background: var(--line); }
 .kbmock .rows .r.short { width: 52%; }
 .kbmock .rows .r.mid { width: 74%; }
+
+
+/* ============================================================================================
+   v2 SYSTEM (PR A — foundations). Additive building blocks for the Apple-style product story;
+   no page adopts the new layouts yet. Brand rules unchanged: gold is a bordered fill or a hairline
+   in light, gold words only via --accent-text, never red, flat type (no shadows on text), Gurmukhi in ink.
+   ============================================================================================ */
+
+/* --- Rhythm ---------------------------------------------------------------------------------- */
+.sec { padding: var(--sec) 0; }
+.sec-thin { padding: var(--sec-thin) 0; }
+
+/* --- Type ------------------------------------------------------------------------------------ */
+.h-story { font-family: var(--serif-display); font-weight: 600; font-size: clamp(30px, 4.6vw, 52px); line-height: 1.08; letter-spacing: -.02em; color: var(--ink); margin: 0 0 18px; }
+.h-statement { font-family: var(--serif-display); font-weight: 600; font-size: clamp(34px, 5.2vw, 60px); line-height: 1.05; letter-spacing: -.02em; color: var(--ink); margin: 0 0 20px; }
+.body-lg { font-size: 17px; line-height: 1.6; color: var(--ink-soft); max-width: 62ch; margin: 0 0 16px; }
+@media (min-width: 980px) { .body-lg { font-size: 18px; } }
+.detail { font-size: 15px; line-height: 1.55; color: var(--ink-soft); margin: 0; }
+.h-story, .h-statement, .proof strong, .chapter-no span { font-variant-numeric: tabular-nums lining-nums; }
+
+/* Chapter numbering — `<p class="chapter-no"><span>01</span> Read</p>`: a Source Serif numeral,
+   a short gold hairline, then the sans label. The one editorial device across the site. */
+.chapter-no { display: flex; align-items: center; gap: 12px; margin: 0 0 16px; color: var(--accent-text); font-family: var(--sans); font-size: 12.5px; font-weight: 700; letter-spacing: .14em; }
+.chapter-no span { font-family: var(--serif-display); font-size: 16px; font-weight: 600; letter-spacing: 0; color: var(--accent-text); display: inline-flex; align-items: center; gap: 12px; }
+.chapter-no span::after { content: ""; display: inline-block; width: 28px; height: 2px; border-radius: 2px; background: var(--accent); }
+
+/* The gold hairline — above eyebrows and under page-hero h1s; the only decoration. */
+.gold-hair { display: block; width: 48px; height: 2px; background: var(--accent); border: 0; border-radius: 2px; margin: 0 0 20px; }
+
+/* --- Surfaces -------------------------------------------------------------------------------- */
+.surface-paper { background: var(--paper); }
+.surface-warm { background: var(--paper-2); }
+/* `.band` was a dead class; it is now a warm surface between two hairlines. */
+.band { background: var(--paper-2); border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); }
+/* Dark-in-dark: a warm-ink band must still read as a band when the whole page is dark, and a
+   warm light surface must not collapse to near-black in page-dark. Never pure black. */
+:root[data-theme="dark"] [data-theme="dark"] { --paper: #0E0C0A; --card: #171412; }
+:root[data-theme="dark"] .surface-warm:not([data-theme]),
+:root[data-theme="dark"] .band:not([data-theme]) { background: #1E1A17; }
+
+/* --- Story grid: text + media chapters -------------------------------------------------------
+   <div class="story-grid [story-grid--6-6|--7-5|--4-8] [story--flip]">
+     <div class="story-text">…</div><div class="story-media">…[.media-secondary]</div></div>
+   ≥980px: 12 columns, text 5 / media 7 by default; --flip puts the media on the left.
+   ≤979px: one column, text FIRST then media (message before picture); secondary media hidden. */
+.story-grid { display: grid; grid-template-columns: minmax(0, 1fr); gap: clamp(32px, 5vw, 56px); align-items: center; }
+.story-grid > .story-text { order: 0; min-width: 0; }
+.story-grid > .story-media { order: 1; min-width: 0; position: relative; }
+@media (max-width: 979px) {
+  .media-secondary { display: none !important; }
+}
+@media (min-width: 980px) {
+  .story-grid { --text: 5; --media: 7; grid-template-columns: repeat(12, minmax(0, 1fr)); column-gap: clamp(32px, 4vw, 64px); }
+  .story-grid--6-6 { --text: 6; --media: 6; }
+  .story-grid--7-5 { --text: 7; --media: 5; }
+  .story-grid--4-8 { --text: 4; --media: 8; }
+  .story-grid > .story-text { grid-column: 1 / span var(--text); grid-row: 1; }
+  .story-grid > .story-media { grid-column: span var(--media) / -1; grid-row: 1; }
+  .story-grid.story--flip > .story-media { grid-column: 1 / span var(--media); }
+  .story-grid.story--flip > .story-text { grid-column: span var(--text) / -1; }
+}
+
+/* --- Proof strip: 5-up serif numerals (2-col ≤979px, 1-col <420px) --------------------------- */
+.proof { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); }
+.proof li { padding: clamp(20px, 3vw, 32px) clamp(12px, 2vw, 24px); display: flex; flex-direction: column; gap: 6px; }
+.proof li + li { border-left: 1px solid var(--line); }
+.proof strong { font-family: var(--serif-display); font-weight: 600; font-size: clamp(36px, 4vw, 56px); line-height: 1; letter-spacing: -.02em; color: var(--ink); }
+.proof span { font-size: 14.5px; line-height: 1.45; color: var(--ink-soft); }
+@media (max-width: 979px) {
+  .proof { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .proof li + li { border-left: 0; }
+  .proof li { border-top: 1px solid var(--line); }
+  .proof li:nth-child(-n+2) { border-top: 0; }
+  .proof li:nth-child(2n) { border-left: 1px solid var(--line); }
+}
+@media (max-width: 419px) {
+  .proof { grid-template-columns: minmax(0, 1fr); }
+  .proof li:nth-child(2n) { border-left: 0; }
+  .proof li:nth-child(2) { border-top: 1px solid var(--line); }
+}
+
+/* --- Mosaic: 2×2 tiles, a .tile--tall spans two rows (2-col on mobile too) ------------------- */
+.mosaic { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); grid-auto-flow: dense; gap: clamp(12px, 2vw, 24px); }
+@media (min-width: 980px) { .mosaic--3 { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+.mosaic .tile { margin: 0; border-radius: 18px; overflow: hidden; border: 1px solid var(--line); background: var(--card); }
+.mosaic .tile--tall { grid-row: span 2; }
+.mosaic .tile img { display: block; width: 100%; height: 100%; object-fit: cover; }
+
+/* --- Photo band (PhotoBand.astro) ------------------------------------------------------------ */
+.photo-band { position: relative; overflow: clip; display: flex; align-items: center; min-height: var(--pb-min, 52svh); background: #17110a; color: var(--ink); }
+.photo-band .pb-media, .photo-band .pb-media picture, .photo-band .pb-media img { position: absolute; inset: 0; width: 100%; height: 100%; }
+.photo-band .pb-media img { object-fit: cover; object-position: var(--pb-pos, center); }
+.photo-band .pb-scrim { position: absolute; inset: 0; background: linear-gradient(180deg, rgba(15,10,5,.50) 0%, rgba(15,10,5,.38) 40%, rgba(15,10,5,.70) 100%); }
+.photo-band .pb-in { position: relative; width: 100%; padding-top: var(--sec-thin); padding-bottom: var(--sec-thin); text-align: center; }
+.photo-band .pb-in .h-statement { max-width: 22ch; margin-left: auto; margin-right: auto; }
+@media (max-width: 979px) { .photo-band { min-height: var(--pb-min-mobile, 40svh); } }
+
+/* --- Micro-interactions (motion-safe only, ≤160ms) ------------------------------------------- */
+@media (prefers-reduced-motion: no-preference) {
+  .card :is(h2, h3) { text-decoration-line: underline; text-decoration-color: transparent; text-decoration-thickness: 1px; text-underline-offset: 4px; transition: text-decoration-color .16s ease; }
+  .card:hover :is(h2, h3), .card:focus-within :is(h2, h3) { text-decoration-color: var(--accent); }
+  .btn { transition: transform .12s ease; }
+  .btn:hover { transform: translateY(-1px); }
+}
+html.js-motion .reveal.in[data-delay="1"] { transition-delay: 80ms; }
+html.js-motion .reveal.in[data-delay="2"] { transition-delay: 160ms; }

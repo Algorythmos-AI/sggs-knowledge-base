@@ -1,23 +1,57 @@
 ---
-// DeviceFrame.astro — a CSS-only iPhone frame (ink bezel, Dynamic-Island pill via ::before).
-// With `src` it renders a screenshot through astro:assets <Image> (lazy). Without one it shows a
+// DeviceFrame.astro — a CSS-only device frame (ink bezel; the iPhone adds a Dynamic-Island pill via
+// ::before). With `src` it renders a screenshot through astro:assets; without one it shows a
 // paper-coloured placeholder screen carrying the alt as its accessible label and a small flat ੴ,
 // so alt/count gates pass before the real screenshots land. Colours/shape live in marketing.css.
-import { Image } from "astro:assets";
+//
+//   kind   "iphone" (default; output identical to v1) | "ipad" (landscape 4/3, radius 28,
+//          12px bezel, no island, max 720px, <Picture> AVIF+WebP 800/1200/1600w)
+//   frame  true (default) = the device bezel; false = a frame-less editorial screenshot
+//          <figure class="shot shot--{kind}"> (18px radius + hairline)
+//   eager  above-the-fold only: loading="eager" (never fetchpriority — the hero artwork owns that)
+//   sizes  override the default `sizes`
+import { Image, Picture } from "astro:assets";
 import type { ImageMetadata } from "astro";
 
 interface Props {
   src?: ImageMetadata;
   alt: string;
   label?: string;
+  kind?: "iphone" | "ipad";
+  frame?: boolean;
+  eager?: boolean;
+  sizes?: string;
 }
-const { src, alt, label } = Astro.props;
+const { src, alt, label, kind = "iphone", frame = true, eager = false, sizes } = Astro.props;
+
+const loading = eager ? "eager" : "lazy";
+const iphoneSizes = sizes ?? "(min-width: 980px) 340px, 260px";
+const ipadSizes = sizes ?? "(min-width: 980px) 720px, 92vw";
 ---
-<figure class="device-fig" style="margin:0">
-  <div class="device">
-    {src
-      ? <div class="screen"><Image src={src} alt={alt} loading="lazy" widths={[300, 600, 840]} sizes="(min-width: 980px) 340px, 260px" /></div>
-      : <div class="screen" role="img" aria-label={alt}><span class="ph-onkar gm" aria-hidden="true">ੴ</span></div>}
-  </div>
-  {label && <figcaption class="muted" style="text-align:center;margin-top:12px;font-size:13.5px">{label}</figcaption>}
-</figure>
+{frame ? (
+  <figure class="device-fig" style="margin:0">
+    <div class:list={["device", { "device--ipad": kind === "ipad" }]}>
+      {src
+        ? <div class="screen">
+            {kind === "ipad"
+              ? <Picture src={src} alt={alt} formats={["avif", "webp"]} widths={[800, 1200, 1600]}
+                  sizes={ipadSizes} quality={60} loading={loading} decoding="async" />
+              : <Image src={src} alt={alt} loading={loading} decoding="async" widths={[300, 600, 840]} sizes={iphoneSizes} />}
+          </div>
+        : <div class="screen" role="img" aria-label={alt}><span class="ph-onkar gm" aria-hidden="true">ੴ</span></div>}
+    </div>
+    {label && <figcaption class="muted" style="text-align:center;margin-top:12px;font-size:13.5px">{label}</figcaption>}
+  </figure>
+) : (
+  <figure class:list={["shot", `shot--${kind}`]}>
+    <div class="shot-in">
+      {src
+        ? (kind === "ipad"
+            ? <Picture src={src} alt={alt} formats={["avif", "webp"]} widths={[800, 1200, 1600]}
+                sizes={ipadSizes} quality={60} loading={loading} decoding="async" />
+            : <Image src={src} alt={alt} loading={loading} decoding="async" widths={[300, 600, 840]} sizes={iphoneSizes} />)
+        : <div class="shot-ph" role="img" aria-label={alt}><span class="ph-onkar gm" aria-hidden="true">ੴ</span></div>}
+    </div>
+    {label && <figcaption>{label}</figcaption>}
+  </figure>
+)}

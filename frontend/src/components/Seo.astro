@@ -12,8 +12,13 @@ export interface Props {
   path: string;          // root-relative, e.g. "/" or "/search"
   ogImage?: string;      // root-relative or absolute; defaults to the path's OG card
   type?: string;         // og:type, default "website"
+  // Browser-chrome colour. "auto" (default, the Knowledge Base) = two media-query metas that
+  // follow the OS appearance. "light" (the light-first marketing shell) = ONE meta pinned to paper,
+  // id="themeColorMeta", which scripts/theme.ts rewrites to follow the PAGE theme on toggle — so a
+  // dark-OS visitor never gets dark browser chrome over a light page.
+  themeColor?: "auto" | "light";
 }
-const { title, description, path, ogImage, type = "website" } = Astro.props;
+const { title, description, path, ogImage, type = "website", themeColor = "auto" } = Astro.props;
 
 const canonical = new URL(path, SITE_URL).href;
 const ogPath = ogImage ?? `/og/${ogForPath(path)}.png`;
@@ -34,8 +39,12 @@ const ogAbsolute = new URL(ogPath, SITE_URL).href;
 <meta name="twitter:description" content={description} />
 <meta name="twitter:image" content={ogAbsolute} />
 
-<meta name="theme-color" content="#FBF7F0" media="(prefers-color-scheme: light)" />
-<meta name="theme-color" content="#171412" media="(prefers-color-scheme: dark)" />
+{themeColor === "light"
+  ? <meta name="theme-color" content="#FBF7F0" id="themeColorMeta" />
+  : <Fragment>
+      <meta name="theme-color" content="#FBF7F0" media="(prefers-color-scheme: light)" />
+      <meta name="theme-color" content="#171412" media="(prefers-color-scheme: dark)" />
+    </Fragment>}
 
 <link rel="manifest" href="/site.webmanifest" />
 <meta name="apple-mobile-web-app-title" content="Gurbani Soul" />

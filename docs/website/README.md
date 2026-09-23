@@ -55,7 +55,9 @@ SEO/social/PWA block is a shared component, **`frontend/src/components/Seo.astro
 
 - `<link rel="canonical">` and `og:url` built from `SITE_URL` + the path (bare apex host);
 - `description`, `og:title/description/type/image/site_name`, `twitter:card=summary_large_image`;
-- `theme-color` per colour scheme, `apple-mobile-web-app-title`, `<link rel="manifest">`, an SVG
+- `theme-color` — the Knowledge Base (`themeColor="auto"`) gets one per OS colour scheme; the
+  light-first marketing shell (`themeColor="light"`) gets a single `#themeColorMeta` that
+  `scripts/theme.ts` keeps in step with the *page* theme; `apple-mobile-web-app-title`, `<link rel="manifest">`, an SVG
   favicon, and — once `APP_STORE_ID` is set — the `apple-itunes-app` Smart App Banner.
 
 `og:image` defaults to the page's OG card (`/og/<slug>.png`, see **OG images** below).
@@ -171,8 +173,9 @@ Vercel Production + Preview envs — see [runbook: newsletter](../process/runboo
 - **Layout:** `frontend/src/layouts/Marketing.astro` (renamed from `Landing.astro` in the PR1
   web-foundations pass) — its own shell, brand tokens as CSS variables in
   `frontend/src/styles/marketing.css` (mirrored, typed, in `frontend/src/theme.ts`, which the
-  `WebThemeMatchesTokens` gate keeps equal to `docs/brand/tokens.json`), the shared pre-paint theme
-  script, `<Seo>`, `<Analytics>`, Sant Lipi + a serif heading stack, a skip link, `lang="pa"` on
+  `WebThemeMatchesTokens` gate keeps equal to `docs/brand/tokens.json`), a **light-first** pre-paint
+  theme script (no stored choice → light, whatever the OS; an explicit choice is shared with the
+  Knowledge Base, which keeps its `system` default), the shared `MarketingFooter`, `<Seo>`, `<Analytics>`, Sant Lipi + a serif heading stack, a skip link, `lang="pa"` on
   Gurmukhi, and `prefers-reduced-motion` respected.
 - **Page:** `frontend/src/pages/index.astro` — hero, the verse band, six feature cards,
   "Private by design", a Knowledge Base card, and the App Store slot.
@@ -193,29 +196,93 @@ Vercel Production + Preview envs — see [runbook: newsletter](../process/runboo
 
 ## Image policy
 
-Photography of Sri Harmandir Sahib is sourced from **Unsplash** under the
-[Unsplash License](https://unsplash.com/license) (commercial use and modification permitted, no
-permission required; attribution appreciated — and we credit anyway).
+The v2 site (2026-09) is **light-first** with warm-ink bands and three kinds of imagery: the
+owner's **original artwork** (the hero), **Unsplash photographs** (photo bands, Learn covers), and
+**real app screenshots**. Everything is self-hosted through `astro:assets` — the CSP is
+`img-src 'self' data:`, so nothing is ever hot-linked from `images.unsplash.com`.
 
-**Selection criteria (respectful imagery):** warm devotional light and architecture only; **no**
-images of the saroop being handled, and **no** identifiable faces (Unsplash carries no model
-releases). Originals live in `frontend/src/assets/landing/` (≤ 2400 w, EXIF stripped).
+### Unsplash photographs — licence facts
+- Used under the [Unsplash License](https://unsplash.com/license): free for commercial and
+  non-commercial use, modification permitted, no permission needed, attribution appreciated but not
+  required — **we credit anyway**, on every marketing page and in `NOTICE.md`.
+- The licence does **not** allow selling unaltered copies or compiling Unsplash photos into a
+  competing service, and it carries **no model or property releases** — which is why faces and
+  identifiable people are excluded below.
+- Keep the photo's Unsplash page URL in the PR description so the licence can be re-checked.
 
-**Rendering & budget:** use `astro:assets` `<Picture formats={['avif','webp']}
-widths={[480,800,1200,1600]} sizes=…>`; the hero is `loading="eager" fetchpriority="high"` with a
-`<link rel="preload">`, everything else lazy; give a dominant-colour background so there is no
-layout shift. Budgets (enforced by the `LandingPage` gate): no served AVIF/WebP variant over
-**340 KB**; built `index.html` ≤ **60 KB**.
+### Respectful selection (owner approves every pick in the preview)
+Briefs: Sri Harmandir Sahib at dawn / reflected at night · Gurdwara marble inlay detail · Nishan
+Sahib against the sky · Punjab wheat or mustard field · gold-leaf / brass texture · a single diya at
+dusk · an empty parikrama. Criteria:
+- devotional light and architecture only; **no** saroop being handled, **no** identifiable faces,
+  **no** crowds, **no** watermarks or text in frame;
+- ≥ 2400 px wide originals, warm palette; treatment is a baked −10 % saturation + warm white balance
+  only — on the page a warm-ink scrim, never a gold tint, grain or duotone;
+- a photo **never** sits beside Gurmukhi (bands carry one serif statement ≤ 22 ch + one sub-line).
 
-**Credits.** Every photographer is credited in the landing footer (`Landing.astro`) and in
-[`NOTICE.md`](../../NOTICE.md) → "Website imagery". Add a credit whenever you add a photo — the
-`LandingPage` lint fails if an image lacks alt text.
+### Where files live
+- **Photographs + artwork:** `frontend/src/assets/landing/` — `unsplash-<handle>-<subject>.jpg`
+  (EXIF stripped, ≤ 2400 w). **Every file here is counted by the credit gate.**
+- **Learn covers:** mapped slug → import in `frontend/src/covers.ts` (`LEARN_COVERS`), not
+  `site.ts` (which every layout imports and the credit gate parses).
+- **App screenshots:** `frontend/src/assets/app/<device>-<screen>[-variant]-<appearance>.png`,
+  recorded in `frontend/src/assets/app/SHOTS.md` (see *Shot pipeline*).
+
+### Credit shape
+One `IMAGE_CREDITS` entry per file in `frontend/src/site.ts` (artwork entry first):
+```ts
+{ who: "Photographer Name", what: "Sri Harmandir Sahib reflected at dawn",
+  url: "https://unsplash.com/@handle", file: "unsplash-handle-harmandir-dawn.jpg", source: "Unsplash" }
+```
+- `url` is the photographer's profile on the **bare host** `https://unsplash.com/@<handle>`
+  (the `ExternalRequestAllowlist` gate allows `unsplash.com`, never `images.unsplash.com`).
+- An entry **without** `url` is original artwork ("Artwork: …, made for Gurbani Soul.").
+- `MarketingFooter.astro` renders the credits from this list on every marketing page:
+  "Photographs: {who} / Unsplash, … (Unsplash License)." appears only when photos exist.
+- Add the same name + profile link to [`NOTICE.md`](../../NOTICE.md) → "Website imagery".
+
+The `LandingPage.test_imagery_is_credited` gate enforces all of it: exactly one credit per file in
+`assets/landing/`, every `who` in the built `index.html` **and** in `NOTICE.md`, an "Artwork"
+credit, and — once any photo has a `url` — "Unsplash" on the page and every `url` matching
+`https://unsplash.com/@<handle>`. `photo-bands.spec.ts` checks each `.photo-band img` has alt text
+and loads lazily, and that the footer names each linked photographer.
+
+### Rendering & budgets
+- Components: `PhotoBand.astro` (full-bleed `<Picture>` AVIF+WebP 640–1600 w, `sizes="100vw"`,
+  q55, lazy, warm-ink scrim, `data-theme="dark"`); `DeviceFrame.astro` (`kind="iphone"|"ipad"`,
+  `frame={false}` for frame-less editorial shots, `eager` for the hero phone only).
+- Home: at most **2** `loading="eager"` images (hero artwork + hero phone) and exactly **one**
+  `fetchpriority="high"` (the artwork, the LCP); any hero preload must reuse the rendered AVIF
+  srcset. Every other page: nothing eager. Everything else lazy + `decoding="async"`.
+- Budgets (gate-enforced): Home / Features / The watch / Privacy / Support HTML ≤ **60 KB** each;
+  each Learn page ≤ **48 KB**; no served AVIF/WebP variant > **340 KB**. Targets: hero ≤ 1920 w AVIF
+  q55–60 ≤ 220 KB · photo bands ≤ 1600 w q55 ≤ 180 KB · iPhone frames WebP ≤ 80 KB · iPad
+  AVIF+WebP ≤ 250 KB (drop to 1400 w rather than raise the gate).
 
 ### Adding a photo
-1. Download the Unsplash original into `frontend/src/assets/landing/`, strip EXIF.
-2. Reference it through `<Picture …>` with real, descriptive `alt` text.
-3. Add the photographer (name + Unsplash profile link) to the footer credits and `NOTICE.md`.
-4. `cd frontend && npm run build && npm run sync`; confirm no variant exceeds the budget.
+1. Download the approved Unsplash original into `frontend/src/assets/landing/` as
+   `unsplash-<handle>-<subject>.jpg`; strip EXIF; resize to ≤ 2400 w.
+2. Add its `IMAGE_CREDITS` entry (`who`, `what`, `url`, `file`, `source: "Unsplash"`) and the
+   photographer to `NOTICE.md`.
+3. Use it through `PhotoBand` / `<Picture>` with an alt that names the place.
+4. `cd frontend && npm run build:deploy` twice (byte-identical), then
+   `python3 -m unittest discover -s webapp/tests` and `npx playwright test photo-bands landing`.
+
+### Shot pipeline (app screenshots)
+Captured from the Simulator, never mocked; every file is recorded in `SHOTS.md` (raw SHA-256,
+device, iOS version, commit, deep link, environment).
+1. Dedicated simulators ("SGGS iPhone 17 Pro", "SGGS iPad Pro 13"), one booted at a time; a Debug
+   build with `-derivedDataPath` in the scratchpad.
+2. The **public** DB swapped into a *throwaway copy* of the built `.app` — never into
+   `ios/Resources`.
+3. `xcrun simctl status_bar … override --time 9:41`, `xcrun simctl ui … appearance light|dark`,
+   `SIMCTL_CHILD_SGGS_CLOCK_NOW=581 SGGS_CLOCK_MODE=fixed SGGS_CLOCK_NO_COORDS=1`.
+4. Deep links (`sggs://ang/1`, `ang/712` on iPad landscape, `search?q=…`, `nitnem`, `bani/japji`,
+   `clock`, `theme/naam`) — and **`sggs://shabad/<compId>` for a deterministic Hukam**, never the
+   random `sggs://hukam`. Widgets come from the snapshot unit tests (`SGGS_WIDGET_SNAPSHOT_DIR`).
+5. Honest state only: a sparse reading-journey grid is fine; fabricated progress never is.
+6. Processing via `frontend/scripts/prep-shots.mjs` (sharp, lanczos3, palette PNG, metadata
+   stripped, idempotent): iPhone → 900 w, iPad landscape → 1600 w, widgets 2×, accent crops 900×420.
 
 ---
 

@@ -3,18 +3,33 @@
 // the Knowledge Base's DOM/API helpers. Self-contained: its own try/catch localStorage of key
 // 'theme' (must NOT import core.ts). Behaviour is identical to the original core.ts block:
 // #themeBtn, glyphs ☀/☾/◐, cycle order system→light→dark, aria-label/title.
+//
+// The theme used when the reader has made NO explicit choice is a per-shell default: the
+// Knowledge Base keeps 'system' (the module default), while the marketing shell calls
+// setDefaultTheme('light') before initTheme() so gurbanisoul.com is light-first regardless of the
+// OS appearance. The stored key is only ever written by an explicit click, never by the default.
 type Theme = 'light' | 'dark' | 'system';
 
+let DEFAULT: Theme = 'system';
+/** Set the theme used when nothing is stored. Call BEFORE initTheme(). */
+export function setDefaultTheme(t: Theme) { DEFAULT = t; }
+
 const readTheme = (): Theme => {
-  try { return (localStorage.getItem('theme') as Theme) ?? 'system'; } catch { return 'system'; }
+  try { return (localStorage.getItem('theme') as Theme) || DEFAULT; } catch { return DEFAULT; }
 };
 const writeTheme = (t: Theme) => { try { localStorage.setItem('theme', t); } catch {} };
 
 const ICON: Record<Theme, string> = { light: '☀', dark: '☾', system: '◐' };
+// Browser-chrome colour for pages that pin a single theme-color meta (the marketing shell's
+// <meta id="themeColorMeta">): it follows the PAGE theme, not the OS.
+const CHROME: Record<'light' | 'dark', string> = { light: '#FBF7F0', dark: '#171412' };
 const resolve = (t: Theme): 'light' | 'dark' =>
   t === 'system' ? (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light') : t;
 export function applyTheme(t: Theme) {
-  document.documentElement.setAttribute('data-theme', resolve(t));
+  const r = resolve(t);
+  document.documentElement.setAttribute('data-theme', r);
+  const meta = document.getElementById('themeColorMeta');
+  if (meta) meta.setAttribute('content', CHROME[r]);
   const b = document.getElementById('themeBtn');
   if (b) { b.textContent = ICON[t]; b.setAttribute('aria-label', `Theme: ${t} — click to change`); b.title = `Theme: ${t}`; }
 }
