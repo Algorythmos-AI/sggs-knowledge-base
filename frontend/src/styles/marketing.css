@@ -25,6 +25,9 @@
 }
 
 :root {
+  /* The marketing nav's exact height. Heroes that sit under the transparent nav pull up by
+     this much, so it must match the nav at every width (see .mnav and the 839px breakpoint). */
+  --mnav-h: 73px;
   /* Soul Gold + warm surfaces (light legs from tokens.json). */
   --paper: #FBF7F0; --paper-2: #FDF6E3; --card: #FFFFFF;
   --ink: #201A12; --ink-soft: #6B5E4B; --line: rgba(43,26,5,.12);
@@ -67,7 +70,9 @@ body {
 .gm { font-family: var(--gm); }
 h1, h2, h3 { font-family: var(--serif-display); font-weight: 600; letter-spacing: -.02em; line-height: 1.12; }
 a { color: var(--accent-text); }
-:root[data-theme="dark"] a { color: var(--accent-text); }
+/* :where() keeps this at its old specificity (so nav/footer link rules still win) while leaving
+   gold-filled .btn links to their own on-accent ink — without it, page-dark painted them gold on gold. */
+:root[data-theme="dark"] a:where(:not(.btn)) { color: var(--accent-text); }
 /* Buttons: gold fill always carries a border in light (brand rule §3.1). */
 .btn {
   display: inline-flex; align-items: center; gap: 8px; font-weight: 650; font-family: var(--sans);
@@ -98,7 +103,7 @@ html.js-motion .reveal.in { opacity: 1; transform: none; transition: opacity .6s
 
 /* --- Sticky nav ------------------------------------------------------------------------------ */
 .mnav {
-  position: sticky; top: 0; z-index: 50;
+  position: sticky; top: 0; z-index: 50; height: var(--mnav-h);
   display: flex; align-items: center; gap: 18px;
   padding: 14px 20px;
   transition: background .2s ease, color .2s ease, border-color .2s ease;
@@ -141,6 +146,7 @@ html.js-motion .reveal.in { opacity: 1; transform: none; transition: opacity .6s
 #mobileMenu .mm-cta { margin-top: 18px; }
 #mobileMenu .mm-close { background: transparent; border: 1px solid var(--line); border-radius: 10px; width: 40px; height: 38px; color: var(--ink); font-size: 20px; cursor: pointer; }
 @media (max-width: 839px) {
+  :root { --mnav-h: 67px; }
   .mnav nav.mnav-links, .mnav .mnav-right .pill, .mnav .mnav-right #themeBtn { display: none; }
   .mnav .burger { display: inline-flex; }
 }

@@ -190,7 +190,7 @@ const jsonLd = {
 
   <style>
     /* 1 · Hero band */
-    .watch-hero { margin-top: -66px; padding: calc(66px + clamp(40px, 7vw, 96px)) 0 clamp(56px, 8vw, 104px); }
+    .watch-hero { margin-top: calc(-1 * var(--mnav-h)); padding: calc(var(--mnav-h) + clamp(40px, 7vw, 96px)) 0 clamp(56px, 8vw, 104px); }
     .watch-hero h1 { font-size: clamp(40px, 6.4vw, 76px); margin: 0 0 20px; color: var(--ink); line-height: 1.02; }
     .watch-hero .lead { color: var(--ink); max-width: 30ch; margin: 0; }
     .watch-hero .stage :global(.device) { max-width: 320px; }
