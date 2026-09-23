@@ -1,5 +1,8 @@
 # -*- coding: utf-8 -*-
-"""Golden-Ang proof of the extraction pipeline. Nothing scales until this passes."""
+"""Golden-Ang proof of the extraction pipeline. Nothing scales until this passes.
+
+Usage: golden_test.py PDF [CORPUS]   (CORPUS defaults to corpus/sggs.jsonl; the
+rebuild passes its staging file so the corpus is proven before it is installed)."""
 import sys, fitz
 sys.path.insert(0, __file__.rsplit('/', 1)[0])
 from sggs_pipeline import fix_text, translit_line, first_letters, page_content, segment_units, detect_header
@@ -97,7 +100,8 @@ check('Ang 1429 contains Mundavani + Thaal', mund, True)
 
 # ---- 9. raag-start pages: header + invocation must be separate, correctly-placed units
 import json, subprocess, os
-CORPUS = os.path.join(os.path.dirname(__file__), '..', 'corpus', 'sggs.jsonl')
+CORPUS = sys.argv[2] if len(sys.argv) > 2 else os.path.join(os.path.dirname(__file__), '..', 'corpus', 'sggs.jsonl')
+check('corpus present for unit checks', os.path.exists(CORPUS), True)   # never skip silently
 if os.path.exists(CORPUS):
     rows = [json.loads(l) for l in open(CORPUS, encoding='utf-8')]
     by_ang = {}
