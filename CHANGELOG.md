@@ -3,6 +3,26 @@
 The format below (newest first) follows [Keep a Changelog](https://keepachangelog.com);
 entries prior to v1.1.0 are the project's original prose style and are preserved verbatim.
 
+## [Unreleased]
+
+### Added
+- **Asa Di Vaar as printed** — a second, non-default `printed` variant of the Vaar in Raag Asa
+  (Sri Guru Granth Sahib Ji · Ang 462–475, 637 lines, twenty-four pauris with their saloks),
+  alongside the existing `kirtan` form that keeps the chhants from Ang 448–451 interleaved. The
+  Nitnem default is unchanged, so every existing reading position and deep link still resolves to
+  the kirtan form.
+- **Range-defined banis in the registry** (ADR-0006 §4) — a bani may be declared by our own line-id
+  ranges instead of a ShabadOS membership list. Every range carries verbatim text anchors that
+  `build_banis.py` and `guard_banis.py` re-check, so a corpus rebuild that shifted ids would fail
+  the build rather than quietly point a bani at different verses.
+
+### Data
+- Registry only: 637 new pointer rows in `bani_lines`, one new row in `banis`. **Scripture, corpus
+  and every pre-existing table are byte-identical** (`diff_scripture.py`: no column changed;
+  `guard_scripture.py`: all 46 tables match the Step-0 baseline).
+
+---
+
 ## [1.3.4] — 2026-09-22 — gurbanisoul.com: a next-level marketing site
 
 The public site becomes a real, **multi-page** marketing property for Gurbani Soul — redesigned,

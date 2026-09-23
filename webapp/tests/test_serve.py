@@ -108,6 +108,17 @@ class BaniEndpoints(unittest.TestCase):
             self.assertNotIn("ang", ln)          # never cited as an Ang
             self.assertIn("extra_id", ln)
 
+    def test_asa_di_vaar_default_is_kirtan_printed_is_the_vaar_as_printed(self):
+        d = serve.api("/api/bani/asa_di_vaar", {})
+        self.assertEqual(d["bani"]["variant"], "kirtan")          # the default must not move
+        self.assertEqual(sorted(d["variants"]), ["kirtan", "printed"])
+        p = serve.api("/api/bani/asa_di_vaar", {"variant": ["printed"]})
+        self.assertEqual([ln["id"] for ln in p["lines"]], list(range(20883, 21520)))
+        self.assertEqual((p["ang_first"], p["ang_last"]), (462, 475))
+        self.assertTrue(all(ln["source"] == "sggs" for ln in p["lines"]))
+        self.assertTrue(p["lines"][0]["gurmukhi"].startswith("ੴ"))
+        self.assertEqual(p["lines"][-1]["gurmukhi"], "ਸੁਧੁ")
+
     def test_unknown_key_is_404_and_bad_input_rejected(self):
         with self.assertRaises(serve.ApiError) as ctx:
             serve.api("/api/bani/no_such_bani", {})

@@ -10,6 +10,11 @@ The Nitnem feature (PR #43, v1.2.0) plus the premium pass (v1.3.0). Architecture
   ship to the App Store only after `ios/Resources/NITNEM-REVIEW.md` records `REVIEWED: true`
   and `NitnemReview.extraTextReviewed` is flipped in the same commit; until then the app labels
   them "under scholarly review".
+- **Variants** share a `key` and differ by `variant` (`UNIQUE(key, variant)`, exactly one default
+  per key): Rehras `sgpc` (default) / `taksal`; Asa Di Vaar `kirtan` (default, the chhants from
+  Ang 448–451 interleaved) / `printed` (the Vaar exactly as printed, Ang 462–475, lines
+  20883…21519 — range-defined with verbatim text anchors, ADR-0006 §4). The API allowlist is
+  `('', 'sgpc', 'taksal', 'kirtan', 'printed')`; progress is keyed `key/variant`.
 - **Numbering** (pauri / ashtapadi / salok / verse) is derived only from `BaniLine.markers`
   (bare Gurmukhi digits) or a Dasam line's trailing `॥N॥`, through `BaniOutline`. A strict
   validity gate returns `[]` rather than ever showing a guessed number. Numbers appear only in

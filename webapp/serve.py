@@ -119,7 +119,7 @@ def _fts_clean(s):
 _ID_MAX = 2**31 - 1
 MAX_CLAIM_CHARS = 600                                # /api/verify?q= — see the route
 _BANI_KEY_RE = re.compile(r'^[a-z0-9_]{1,32}$')     # /api/bani/{key}
-_BANI_VARIANTS = ('', 'sgpc', 'taksal', 'kirtan')   # allowlist; never interpolated
+_BANI_VARIANTS = ('', 'sgpc', 'taksal', 'kirtan', 'printed')   # allowlist; never interpolated
 
 def _int_str(raw, lo, hi):
     """Parse one integer query value defensively: reject absurd digit strings (Python has no
