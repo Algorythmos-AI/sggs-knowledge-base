@@ -3,7 +3,7 @@
 PIPELINE_PY ?= /usr/bin/python3
 PDF ?= ../Siri-Guru-Granth-Sahib-in-Gurmukhi-with-Index.pdf
 
-.PHONY: help doctor ci ledger-check pr-checks release-preflight watch-deploy verify-prod scripture-diff check-versions test-web test-frontend contract verify guard reconcile rebuild ios-db ios-db-check ios-db-repair release testflight appstore-preflight
+.PHONY: help doctor ci fingerprint ledger-check pr-checks release-preflight watch-deploy verify-prod scripture-diff check-versions test-web test-frontend contract verify guard reconcile rebuild ios-db ios-db-check ios-db-repair release testflight appstore-preflight
 help: ## list targets
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | awk 'BEGIN{FS=":.*?## "}{printf "  \033[36m%-16s\033[0m %s\n",$$1,$$2}'
 
@@ -43,6 +43,9 @@ test-banis: ## gate tests for the bani registry on a throwaway copy of the DB
 
 ci: check-versions verify guard ledger-check test-web contract ## run the gates CI runs (no PDF needed)
 	@echo "make ci: PASS"
+
+fingerprint: ## verify db/sggs.sqlite content == audit/dataset-fingerprint.json (per table, FTS index, scripture)
+	python3 pipeline/sggs_integrity.py db/sggs.sqlite --compare audit/dataset-fingerprint.json
 
 ledger-check: ## editorial ledger: fix_text rules == register; scripture diffs vs integration covered by new entries
 	python3 pipeline/ledger_check.py --base $$(git merge-base HEAD origin/integration)

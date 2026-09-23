@@ -50,6 +50,8 @@ jobs:
             git fetch -q --depth=1 origin "$BASE"       # must succeed: never skip the diff silently
             python3 pipeline/ledger_check.py --base "$BASE"
           fi
+      - name: Dataset fingerprint — DB content == audit/dataset-fingerprint.json
+        run: python3 pipeline/sggs_integrity.py db/sggs.sqlite --compare audit/dataset-fingerprint.json
       - name: Structural + regroup invariants (verify_regroup single-DB mode)
         run: python3 pipeline/verify_regroup.py --invariants db/sggs.sqlite
       - name: Guard — pre-existing tables byte-identical to baseline
