@@ -40,6 +40,16 @@ jobs:
           for f in fails: print('::error::'+f)
           sys.exit(1 if fails else 0)
           PY
+      - name: Editorial ledger — code == register; scripture changes only via new entries
+        env:
+          BASE: ${{ github.event.pull_request.base.sha || github.event.before }}
+        run: |
+          if [ -z "$BASE" ] || [ "$BASE" = "0000000000000000000000000000000000000000" ]; then
+            python3 pipeline/ledger_check.py            # new branch: no base to diff against
+          else
+            git fetch -q --depth=1 origin "$BASE"       # must succeed: never skip the diff silently
+            python3 pipeline/ledger_check.py --base "$BASE"
+          fi
       - name: Structural + regroup invariants (verify_regroup single-DB mode)
         run: python3 pipeline/verify_regroup.py --invariants db/sggs.sqlite
       - name: Guard — pre-existing tables byte-identical to baseline
