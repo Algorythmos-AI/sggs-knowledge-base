@@ -11,7 +11,7 @@ iOS has no rollback. The levers, mildest first:
 
 ## Procedure
 1. Reproduce and write the failing test first. Scripture text is never edited to "fix" anything —
-   see the prime directive in `CLAUDE.md`.
+   see the prime directive in `docs/engineering/invariants.md`.
 2. Branch `hotfix/<slug>` **from the release tag's commit on `main`** (not from `integration`, which
    may already hold unreleased work):
    `git worktree add <scratch>/wt-hotfix -b hotfix/<slug> vX.Y.Z`

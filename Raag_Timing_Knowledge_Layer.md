@@ -63,7 +63,7 @@ plus an explicit alias table; anything unresolved hard-fails with zero writes.
 
 **Design notes from the verified text:**
 - `comp_type` is substring-derived and demonstrably unreliable (documented in
-  CLAUDE.md; e.g. ordinary Sireeraag M3 shabads carry `comp_type='ਅਨੰਦੁ'` from
+  the engineering handbook; e.g. ordinary Sireeraag M3 shabads carry `comp_type='ਅਨੰਦੁ'` from
   verse text, and the Ang-74 Pahare composition is mislabeled `ਗੁਣਵੰਤੀ`).
   Derivation therefore trusts only **title-like headings** (containing
   ਮਹਲਾ/ਮਹਲੇ/ਮਃ/ਰਾਗੁ/ਬਾਣੀ/ਕੀ ਵਾਰ, starting with a raag name, or consisting
@@ -111,7 +111,7 @@ compositions.
   the clock; toggleable via the toolbar "timing" switch (`show_timing`,
   default ON, same mechanism as the transliteration toggle). Never inline
   with Gurbani; a fetch failure just means no chip.
-- Full analytics-chart accessibility remains a separately scoped task (per CLAUDE.md).
+- Full analytics-chart accessibility remains a separately scoped task (per docs/engineering/known-issues.md).
 
 ## Runbook
 

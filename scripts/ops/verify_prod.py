@@ -72,8 +72,8 @@ def main():
             check("ios: --version required for --ios", False)
         else:
             import pathlib
-            # scripts/ → sggs-verify-prod/ → skills/ → .claude/ → repo root
-            checker = pathlib.Path(__file__).resolve().parents[4] / "scripts/release/check_release_complete.py"
+            # scripts/ops/verify_prod.py → repo root
+            checker = pathlib.Path(__file__).resolve().parents[2] / "scripts/release/check_release_complete.py"
             rc = subprocess.run([sys.executable, str(checker), a.version, "--api", a.api, "--web", a.web])
             check(f"iOS {a.version} release-complete (web==API==binary)", rc.returncode == 0)
 

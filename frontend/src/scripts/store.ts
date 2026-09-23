@@ -7,7 +7,7 @@ export type Pin = { line_id: number; gm: string; ang: number; comp_id: number; t
 // shared pin affordance — emitted by search/reader/panel renderers; activated by the
 // capture-phase delegate in studytrail.ts (so it never triggers the card's own click).
 // `gm` is the VERBATIM Gurmukhi from the API data model — never read back from the rendered
-// DOM, which the display-only saroop painter rewrites (see saroop.ts / CLAUDE.md).
+// DOM, which the display-only saroop painter rewrites (see saroop.ts / docs/engineering/known-issues.md).
 const escAttr = (s: string) => (s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 export function pinButtonHTML(id: number, ang: number, cid: number, gm: string): string {
   return `<button class="pin-btn" data-id="${id}" data-ang="${ang}" data-cid="${cid}" data-gm="${escAttr(gm)}" type="button" aria-label="Pin to study trail" title="Pin to study trail">📌</button>`;

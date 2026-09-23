@@ -12,5 +12,5 @@
 - [ ] Tests updated/added and green locally (`make ci`).
 - [ ] `python3 scripts/release/check_versions.py` passes (versions unified).
 - [ ] CHANGELOG entry added under the unreleased/next version.
-- [ ] Docs updated (`docs/`, `CLAUDE.md`) if behaviour or invariants changed.
+- [ ] Docs updated (`docs/`, `docs/engineering/`) if behaviour or invariants changed.
 - [ ] Verified on staging (attach a note/screenshot) before the release PR to `main`.

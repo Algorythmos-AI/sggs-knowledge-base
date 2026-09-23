@@ -17,4 +17,4 @@ Human-gated; outward-facing. Do this when ready to re-link Vercel/Render.
    `REPO=Algorythmos-AI/sggs-knowledge-base bash scripts/gh/apply_rulesets.sh`.
 7. **CODEOWNERS:** create team `@Algorythmos-AI/scripture-reviewers` and switch
    `.github/CODEOWNERS` from `@skalaliya` to the team.
-8. Update repo URLs in README/CLAUDE.md if any are absolute.
+8. Update repo URLs in README/docs/engineering if any are absolute.

@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """check_release_complete.py — prove a release is COMPLETE across all three surfaces.
 
-The one-number policy (CLAUDE.md "Versioning convention") says web, API and the
+The one-number policy (docs/engineering/delivery.md "Versioning convention") says web, API and the
 shipped iOS binary must all report the same X.Y.Z from the same released commit.
 This is the release-time, network-touching check that proves it — run as the final
 step of sggs-release, and by sggs-verify-prod --ios.

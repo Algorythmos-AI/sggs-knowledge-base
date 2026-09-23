@@ -33,5 +33,5 @@ standard-library server serves a prebuilt Astro site and a native iOS app.
 | `ios/` | Native SwiftUI app + portable `GurbaniSearchKit` Swift package. |
 | `contract/` | Golden vectors pinning the Swift port to the Python source of truth. |
 
-See also the operational handbook in [`CLAUDE.md`](../CLAUDE.md) and the migrated
+See also the [engineering handbook](engineering/README.md) and the migrated
 audit history under [`docs/reports/`](reports/).

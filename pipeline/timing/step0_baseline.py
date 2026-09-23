@@ -102,7 +102,7 @@ def main():
     # --- 3. write baseline -------------------------------------------------
     baseline = {
         "created": time.strftime("%Y-%m-%dT%H:%M:%S%z"),
-        "db_path": str(db_path.relative_to(ROOT)) if db_path.is_relative_to(ROOT) else str(db_path),
+        "db_path": str(db_path.relative_to(ROOT)) if db_path.is_relative_to(ROOT) else f"<external>/{db_path.name}",  # no machine paths in tracked files
         "db_file_sha256": src_sha,
         "corpus_path": "corpus/sggs.jsonl",
         "corpus_sha256": corpus_sha,

@@ -184,7 +184,7 @@ scholar reviewers (transcribe into an issue the same day).
 
 | Priority | Definition | Response |
 |---|---|---|
-| P0 | Any scripture rendering or text error; integrity failure on a good install; crash on launch | Stop the phase. Fix or root-cause before the next build. Scripture: never edit — flag for human review per CLAUDE.md. |
+| P0 | Any scripture rendering or text error; integrity failure on a good install; crash on launch | Stop the phase. Fix or root-cause before the next build. Scripture: never edit — flag for human review per docs/engineering/invariants.md. |
 | P1 | Crash or hang in normal use; data loss (saved verses, settings); a screen unreachable with VoiceOver | Fix before the next phase. |
 | P2 | Wrong but recoverable behaviour; visual defect on a supported device; performance clearly worse than the simulator budget | Fix before submission if small; otherwise document in "Known". |
 | P3 | Polish, wording, wish list | Backlog with the `enhancement` label. |

@@ -2,7 +2,7 @@
 
 The public web property is one Astro static site (`frontend/`) served on the product domain
 **`gurbanisoul.com`**. It carries two distinct things, deliberately kept separate (see
-[CLAUDE.md → Brand & domains](../../CLAUDE.md)):
+[Brand & domains](../engineering/brand.md)):
 
 - **`/`** — the **Gurbani Soul** landing page: the marketing home for the iOS app.
 - **everything else** (`/search`, `/reader`, `/themes`, `/lineage`, `/insights`, the raag clock,

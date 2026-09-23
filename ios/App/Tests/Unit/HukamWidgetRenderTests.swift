@@ -88,7 +88,7 @@ final class HukamWidgetRenderTests: XCTestCase {
     }
 
     /// The citation must always read in full — "Sri Guru Granth Sahib Ji · Ang N", never
-    /// truncated, never clipped (CLAUDE.md) — in every family, at every type size up to AX2.
+    /// truncated, never clipped (docs/engineering/invariants.md) — in every family, at every type size up to AX2.
     /// The widget is laid out in a real window; `Citation` reports its text's frame, and the
     /// gate checks (1) the frame lies inside the widget's content area and (2) the text, laid
     /// out unconstrained at the width it was given, needs no more height than it got — i.e. no

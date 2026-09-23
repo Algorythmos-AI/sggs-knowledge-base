@@ -1,7 +1,7 @@
 # SGGS Corpus Structural Audit Report
 **File:** `sggs.jsonl` — 60,675 lines, Angs 1–1430  
 **Audit date:** 2026-06-10  
-**Auditor:** automated structural check (Claude, senior audit mode)
+**Auditor:** Automated structural check
 
 ---
 

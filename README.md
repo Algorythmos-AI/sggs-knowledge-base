@@ -7,7 +7,7 @@ One corpus powers two things people can use today:
 - **The Knowledge Base** — the scholarly study website: search, reader, themes, lineage, insights and the raag clock. Live at **[gurbanisoul.com/search](https://gurbanisoul.com/search)** (and fully offline via `serve.py`).
 - **Gurbani Soul** — the native iOS/iPadOS app (SwiftUI): the whole Granth verbatim and offline, Nitnem with gentle reminders, Hukam, the raag clock, widgets and a Live Activity. Its landing page is **[gurbanisoul.com](https://gurbanisoul.com)**. Built by **Algorythmos Pty Ltd**.
 
-The website and the app keep separate names and identities on purpose — see [CLAUDE.md → Brand & domains](CLAUDE.md) and [`docs/website/README.md`](docs/website/README.md).
+The website and the app keep separate names and identities on purpose — see [Brand & domains](docs/engineering/brand.md) and [`docs/website/README.md`](docs/website/README.md).
 
 ![version](https://img.shields.io/badge/version-1.3.5-1a3a6b)
 ![python](https://img.shields.io/badge/python-3.8%2B%20·%20stdlib%20only-3776ab)
