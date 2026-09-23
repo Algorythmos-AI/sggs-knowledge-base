@@ -95,7 +95,10 @@ Expected: zero deviations. Sign: name, build, device, date in the build log.
 4. `sggs://clock/nosuchraag` → note shown, current watch kept.
 
 ### E — Explore hub
-1. Index → each major composition opens at the right Ang.
+1. Index → each major composition opens its OWN reader on the Explore stack (nav title = the
+   composition, tab bar still on Explore); Back returns to the Index and the position is kept.
+   "More compositions" lists the rest of the scripture shelf. Asa Ki Vaar opens the Vaar as
+   printed (Ang 462–475), not the kirtan form the Nitnem list carries.
 2. Themes → 54 tiles; Naam opens; a line tap opens its sheet.
 3. Lineage → timeline filters; open a profile; compare two voices; the radar has a table alternative.
 4. Insights → network, resonance, flow: each renders, and the list/table alternative is present.

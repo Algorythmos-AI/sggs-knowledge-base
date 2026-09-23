@@ -29,13 +29,14 @@ final class ReadingActivityController: ObservableObject {
         #endif
     }
 
-    func start(key: String, titleEn: String, titleGm: String, fraction: Double, sectionLabel: String, now: Date = Date()) {
+    func start(key: String, titleEn: String, titleGm: String, fraction: Double, sectionLabel: String,
+               deepLink: String? = nil, now: Date = Date()) {
         #if canImport(ActivityKit)
         guard isAvailable, activity == nil else { return }
         let percent = ReadingActivityPolicy.wholePercent(fraction)
         let state = NitnemActivityAttributes.ContentState(progress: Double(percent) / 100, sectionLabel: sectionLabel, done: false)
         let content = ActivityContent(state: state, staleDate: ReadingActivityPolicy.staleDate(from: now))
-        let attrs = NitnemActivityAttributes(key: key, titleEn: titleEn, titleGm: titleGm)
+        let attrs = NitnemActivityAttributes(key: key, titleEn: titleEn, titleGm: titleGm, deepLink: deepLink)
         activity = try? Activity.request(attributes: attrs, content: content, pushType: nil)
         lastPercent = percent
         lastUpdate = now

@@ -16,6 +16,28 @@ entries prior to v1.1.0 are the project's original prose style and are preserved
   `build_banis.py` and `guard_banis.py` re-check, so a corpus rebuild that shifted ids would fail
   the build rather than quietly point a bani at different verses.
 
+### Changed (iOS)
+- **The Index's major compositions open their own reader.** Tapping Sukhmani Sahib, Asa Ki Vaar,
+  Anand Sahib, Bavan Akhri, Sidh Gosht or Dakhni Oankaar now pushes that composition's reader onto
+  the Explore stack — cover, contents, saved position, verbatim text cited by Ang — instead of
+  switching to the Ang reader and landing mid-page. Back returns to the Index; the tab bar stays
+  where it was. A card falls back to opening its Ang when a DB profile carries no bani registry.
+- **"More compositions"** — the rest of the scripture shelf (Anand Sahib's six pauris, Salok
+  Mahalla 9, Shabad Hazare, Barah Maha, Lavan) is now reachable from the Index. Banis that contain
+  the separate Sri Dasam Granth / Ardaas layer stay on the Nitnem surface that labels them.
+- **Reading position is one fact.** A composition read from the Index and the same bani read from
+  Nitnem share the saved position and the "read today" seal.
+- `sggs://composition/<key>[?variant=]` opens a composition; `sggs://bani/<key>?variant=` now
+  honours the named form, so a Live-Activity tap on the printed Vaar can no longer reopen the
+  kirtan one.
+
+- **A composition opens on its own cover** — title, the Ang range it occupies, how many
+  ashtapadis or pauris it runs to, about how long it takes, what it is, and one action that either
+  begins it or returns the reader to the stanza they stopped at.
+- **Long compositions page by their printed rhythm.** Sukhmani Sahib now steps ashtapadi by
+  ashtapadi instead of showing "Part 1 of 3" (its three registry groups are the opening salok, the
+  entire body, and the salok again). Rehras Sahib and Aarti keep part navigation.
+
 ### Data
 - Registry only: 637 new pointer rows in `bani_lines`, one new row in `banis`. **Scripture, corpus
   and every pre-existing table are byte-identical** (`diff_scripture.py`: no column changed;
