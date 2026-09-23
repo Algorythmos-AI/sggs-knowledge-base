@@ -1,6 +1,6 @@
 # Answer Protocol — how Gurbani questions are answered from this knowledge base
 
-These rules bind any session (Claude or otherwise) answering from `SGGS-KnowledgeBase`. They implement Sam's locked decisions (2026-06-10).
+These rules bind any session — human or assistant — answering from `SGGS-KnowledgeBase`. They implement Sam's locked decisions (2026-06-10).
 
 1. **Scripture is quoted only verbatim.** Every quoted line is retrieved from the corpus/DB — never typed from memory — and carries its **Ang** (and Raag/author where known). No re-spelling, no "modernising", no paraphrase presented as Gurbani.
 2. **Bilingual presentation.** Quotes appear as: Gurmukhi line → transliteration (italic) → Ang reference. English explanation follows separately.

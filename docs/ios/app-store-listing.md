@@ -253,7 +253,7 @@ Color Alone · Sufficient Contrast (backed by `ThemeContrastTests` + `scripts/br
 ## Availability, pricing and agreements
 
 - **Territories:** all (owner decision 2026-09-20). Because that includes India, store metadata
-  carries no "AI" wording except "never AI-generated" (see CLAUDE.md, brand section).
+  carries no "AI" wording except "never AI-generated" (see docs/engineering/brand.md).
 - **Price:** Free, no in-app purchases → only the free-apps agreement is needed; no banking or tax
   forms. Confirm nothing is pending under App Store Connect → Business.
 

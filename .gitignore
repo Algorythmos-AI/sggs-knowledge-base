@@ -66,4 +66,4 @@ Brand-files/
 ios/AppStore/screenshots/
 
 # Machine-local agent notes (account identifiers, local gotchas) — never committed
-CLAUDE.local.md
+*.local.md

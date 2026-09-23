@@ -4,7 +4,7 @@ import Foundation
 /// `.ratio()` — the LCS-based similarity (`2*M / (len(a)+len(b))`) that `webapp/verify.py`
 /// scoring and the `blob_search` tier depend on. This is NOT Levenshtein.
 ///
-/// Critical fidelity points (see CLAUDE.md / the SME review):
+/// Critical fidelity points (see docs/engineering/invariants.md / the SME review):
 ///  - Elements are compared as Unicode SCALARS (`[UInt32]`), never Swift `Character`
 ///    (grapheme clustering would merge a base + matra and corrupt the match count M).
 ///  - autojunk only fires when `len(b) >= 200` (popularity cutoff `len(b)/100 + 1`); `b` is the

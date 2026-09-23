@@ -57,7 +57,7 @@ struct Mark: View {
 }
 
 /// Gold rule + citation in the serif. Always the full name of the Granth (brand book §1), and
-/// never truncated or clipped (CLAUDE.md): the action sits beside the citation only when both
+/// never truncated or clipped (docs/engineering/invariants.md): the action sits beside the citation only when both
 /// fit whole; otherwise it drops to its own line, and if the citation alone is wider than the
 /// row it wraps rather than truncates. The citation reports its laid-out frame through
 /// `CitationFrameKey` so the render tests can prove that at every family and type size.

@@ -7,7 +7,7 @@ gate; also runnable locally (`make check-versions`).
 Sources of truth checked (all must equal webapp/serve.py:APP_VERSION):
   webapp/serve.py APP_VERSION · MANIFEST.json version · frontend/package.json
   version · ios/App/project.yml MARKETING_VERSION · README.md badge ·
-  MASTER-INDEX.md header · CLAUDE.md build line · CHANGELOG.md top entry.
+  MASTER-INDEX.md header · CHANGELOG.md top entry.
 
 iOS build invariants (independent of the marketing version):
   - ios/App/project.yml CURRENT_PROJECT_VERSION is the floor "1" (each upload
@@ -44,7 +44,6 @@ def main():
         "ios project.yml MARKETING_VERSION": first(r'MARKETING_VERSION:\s*"([^"]+)"', read("ios/App/project.yml"), "project.yml"),
         "README.md badge": first(r"version-([0-9]+\.[0-9]+\.[0-9]+)-", read("README.md"), "README"),
         "MASTER-INDEX.md header": first(r"·\s*v([0-9]+\.[0-9]+\.[0-9]+),\s*built", read("MASTER-INDEX.md"), "MASTER-INDEX"),
-        "CLAUDE.md build line": first(r"APP_VERSION\s*=\s*([0-9]+\.[0-9]+\.[0-9]+)", read("CLAUDE.md"), "CLAUDE.md"),
         "CHANGELOG.md top entry": first(r"##\s*\[([0-9]+\.[0-9]+\.[0-9]+)\]", read("CHANGELOG.md"), "CHANGELOG"),
     }
     # iOS build invariants — booleans, not version-equality (see module docstring).

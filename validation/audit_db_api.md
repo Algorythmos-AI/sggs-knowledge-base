@@ -1,7 +1,7 @@
 # SGGS Knowledge Base — Database & API Audit Report
 
 **Date:** 2026-06-10  
-**Auditor:** Claude Sonnet 4.6 (automated audit agent)  
+**Auditor:** Automated audit tooling  
 **Assets:**
 - Corpus: `/ppt-universe/SGGS-KnowledgeBase/corpus/sggs.jsonl`
 - DB: `/tmp/sggs.db` (copy of `/ppt-universe/SGGS-KnowledgeBase/db/sggs.sqlite`)

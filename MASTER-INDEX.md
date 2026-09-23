@@ -5,7 +5,7 @@
 ## Use it
 
 - **Web app:** double-click **`Start SGGS App.command`** (or `cd webapp && python3 serve.py`) → http://localhost:7777 (see `webapp/README.md`)
-- **Ask Claude:** any Gurbani question in a Cowork session with this folder — answered per `Answer-Protocol.md` (verbatim + Ang + labelled explanation)
+- **Ask a question:** any Gurbani question — answered per `Answer-Protocol.md` (verbatim + Ang + labelled explanation)
 - **Direct SQL:** `db/sggs.sqlite` (SQLite FTS5; open read-only)
 - **Read:** `corpus/by-raag/*.md` (human-readable, by Raag/Bani) · `corpus/sggs.jsonl` (machine-readable)
 

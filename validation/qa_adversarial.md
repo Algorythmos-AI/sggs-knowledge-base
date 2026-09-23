@@ -1,7 +1,7 @@
 # Adversarial QA Report — SGGS Knowledge Base Web App
 **Date:** 2026-06-10  
 **Target:** http://127.0.0.1:7777  
-**Tester:** Adversarial red-team agent (Claude Sonnet 4.6)  
+**Tester:** Automated adversarial test suite  
 **Total attacks:** 25 | **PASS:** 25 | **FAIL:** 0
 
 ---

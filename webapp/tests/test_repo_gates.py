@@ -1,6 +1,6 @@
 """Repository gates — source-level invariants that used to live only in prose.
 
-Each test here encodes a rule the project already relies on (CHANGELOG/CLAUDE.md/readiness
+Each test here encodes a rule the project already relies on (CHANGELOG/engineering handbook/readiness
 reports) so that it is enforced on every PR by the required `python` check instead of by memory.
 Stdlib only, no build, no simulator: these read tracked files and nothing else.
 
@@ -766,8 +766,8 @@ class VersionPolicyDocumented(unittest.TestCase):
 
     SENTENCE = "re-archived at the same version"
 
-    def test_documented_in_release_and_claude(self):
-        for rel in ("docs/process/release.md", "CLAUDE.md"):
+    def test_documented_in_release_and_handbook(self):
+        for rel in ("docs/process/release.md", "docs/engineering/delivery.md"):
             text = (ROOT / rel).read_text(encoding="utf-8")
             self.assertIn(self.SENTENCE, text, f"{rel} no longer states the one-number policy")
 

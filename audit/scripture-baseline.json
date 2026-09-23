@@ -1,6 +1,6 @@
 {
   "created": "2026-09-18T09:32:06+1000",
-  "db_path": "/private/tmp/claude-501/-Users-samkalaliya-ppt-universe-SGGS-KnowledgeBase/29c67aeb-888e-4b60-9376-abd9d2bfc936/scratchpad/pretiming.sqlite",
+  "db_path": "<external>/pretiming.sqlite",
   "db_file_sha256": "dd1f69dceff3ee177d42abfaf2a06505c281635fb0731fe2556663761d886b89",
   "corpus_path": "corpus/sggs.jsonl",
   "corpus_sha256": "7e53169bdc763cbd0a3b36f3eda1d3eb6ec1bc5d0629769659fad1675db0b665",

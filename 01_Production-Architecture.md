@@ -79,7 +79,7 @@ word_freq(word, count)        -- the concordance head
 5. **Browse** — Ang 1–1430 pager, Raag list, author list; any line opens its full shabad in context with Rahao highlighted.
 6. **Theme** — concept index lookup (Naam, Hukam, Haumai, Simran, Seva …).
 
-Every result everywhere shows: **verbatim Gurmukhi · transliteration · Ang · Raag · author**. The UI never paraphrases scripture; the app is retrieval-only — meaning/explanation stays in Claude sessions per the Answer Protocol.
+Every result everywhere shows: **verbatim Gurmukhi · transliteration · Ang · Raag · author**. The UI never paraphrases scripture; the app is retrieval-only — meaning/explanation stays in assistant sessions per the Answer Protocol.
 
 ## 5. Quality gates (unchanged from v1 §6, plus)
 
