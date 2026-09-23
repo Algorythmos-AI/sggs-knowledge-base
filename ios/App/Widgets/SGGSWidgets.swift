@@ -137,6 +137,10 @@ struct HukamView: View {
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+        // The widget canvas is fixed: past xxxLarge the verse, the ੴ and the full citation can't
+        // all fit (the verse ellipsises, the citation is pushed off the edge). The shabad it
+        // opens scales without limit. HukamWidgetRenderTests proves the citation up to AX2.
+        .dynamicTypeSize(...DynamicTypeSize.xxxLarge)
         .widgetURL(URL(string: entry.snapshot.map { "sggs://shabad/\($0.hukamCompId)" } ?? "sggs://ang/1"))
     }
 

@@ -56,24 +56,68 @@ struct Mark: View {
     }
 }
 
-/// Gold rule + citation in the serif. Always the full name of the Granth (brand book §1).
+/// Gold rule + citation in the serif. Always the full name of the Granth (brand book §1), and
+/// never truncated or clipped (CLAUDE.md): the action sits beside the citation only when both
+/// fit whole; otherwise it drops to its own line, and if the citation alone is wider than the
+/// row it wraps rather than truncates. The citation reports its laid-out frame through
+/// `CitationFrameKey` so the render tests can prove that at every family and type size.
 struct Citation: View {
     let ang: Int
     var action: String? = nil
+
+    static func text(ang: Int) -> String { "Sri Guru Granth Sahib Ji · Ang \(String(ang))" }
+    /// What is drawn: `text(ang:)` with no-break spaces before the "·" and after "Ang", so a
+    /// wrap can only fall after the "·" — never "· Ang" leading a line, never "N" alone.
+    static func displayText(ang: Int) -> String { "Sri Guru Granth Sahib Ji\u{00A0}· Ang\u{00A0}\(String(ang))" }
+
     var body: some View {
-        HStack(alignment: .firstTextBaseline, spacing: 8) {
-            RoundedRectangle(cornerRadius: 1).fill(AccentPalette.brandDefault.accentFill)
-                .frame(width: 22, height: 2).alignmentGuide(.firstTextBaseline) { $0[.bottom] - 3 }
-            Text("Sri Guru Granth Sahib Ji · Ang \(String(ang))")
-                .font(WidgetType.serif(12))
-                .foregroundStyle(.primary)
-                .lineLimit(1).minimumScaleFactor(0.8)
-            if let action {
-                Spacer(minLength: 4)
-                Text(action).font(.system(size: 10, weight: .medium))
-                    .foregroundStyle(AccentPalette.brandDefault.accentText)
+        ViewThatFits(in: .horizontal) {
+            HStack(alignment: .firstTextBaseline, spacing: 8) {
+                rule
+                citation.fixedSize()
+                if let action {
+                    Spacer(minLength: 4)
+                    actionLabel(action).fixedSize()
+                }
+            }
+            VStack(alignment: .leading, spacing: 4) {
+                HStack(alignment: .firstTextBaseline, spacing: 8) {
+                    rule
+                    citation.fixedSize(horizontal: false, vertical: true)
+                }
+                if let action { actionLabel(action).padding(.leading, 30) }
             }
         }
+        .layoutPriority(1)
+    }
+
+    private var rule: some View {
+        RoundedRectangle(cornerRadius: 1).fill(AccentPalette.brandDefault.accentFill)
+            .frame(width: 22, height: 2).alignmentGuide(.firstTextBaseline) { $0[.bottom] - 3 }
+    }
+
+    private var citation: some View {
+        Text(Self.displayText(ang: ang))
+            .font(WidgetType.serif(12))
+            .foregroundStyle(.primary)
+            .accessibilityLabel(Self.text(ang: ang))
+            .background(GeometryReader {
+                Color.clear.preference(key: CitationFrameKey.self, value: $0.frame(in: .global))
+            })
+    }
+
+    private func actionLabel(_ action: String) -> some View {
+        Text(action).font(.system(size: 10, weight: .medium))
+            .foregroundStyle(AccentPalette.brandDefault.accentText)
+    }
+}
+
+/// The citation text's laid-out frame (global space). Read only by the render tests.
+struct CitationFrameKey: PreferenceKey {
+    static let defaultValue: CGRect = .null
+    static func reduce(value: inout CGRect, nextValue: () -> CGRect) {
+        let next = nextValue()
+        if !next.isNull { value = next }
     }
 }
 
