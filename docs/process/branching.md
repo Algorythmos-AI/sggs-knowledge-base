@@ -19,7 +19,8 @@ gitGraph
 ## Rules
 - **`integration` is the trunk.** Branch `feature/*` or `fix/*` from it; open a PR
   back into `integration`. Merging to `integration` deploys **staging** (web +
-  Render + TestFlight internal).
+  Render API). TestFlight uploads are **manual** (`make testflight …` or the
+  `ios-testflight` workflow_dispatch) — no merge uploads a build.
 - **`main` is production.** It only ever receives a **release PR from `integration`**
   (or `hotfix/*`). The `version-consistency` gate enforces the source branch.
   Merging to `main` tags `vX.Y.Z`, cuts a GitHub Release, and deploys production.
@@ -36,11 +37,17 @@ gitGraph
 `main` therefore does **not** require linear history (a squash/rebase release would
 rewrite SHAs and make every later release PR conflict).
 
-## Required checks (once the owner is on GitHub Team)
-Applied from `.github/rulesets/` via `scripts/gh/apply_rulesets.sh`:
-- `main`: PR + 1 approval + CODEOWNERS + linear history + `web-ci`, `scripture-integrity`,
-  `version-consistency`, `security` green; tags `v*` protected.
-- `integration`: PR + CODEOWNERS + `web-ci`, `scripture-integrity`, `security` green.
+## Required checks
+Applied from `.github/rulesets/` via `scripts/gh/apply_rulesets.sh` (the JSON files are the
+source of truth — keep this list in step with them):
+- `main`: PR + 1 approval + CODEOWNERS + resolved threads + strict status checks `python`,
+  `frontend`, `integrity`, `versions`, `secrets`, `static-analysis`; no deletion or force-push.
+  **No linear-history rule** (see Merge strategy).
+- `integration`: PR + CODEOWNERS + checks `python`, `frontend`, `integrity`, `secrets`; no
+  deletion or force-push.
+- Tags `v*`: no deletion or force-push.
+- `playwright` and the iOS jobs are not required checks, but `deploy-staging` /
+  `deploy-production` wait for `playwright` on the exact commit before deploying.
 
 ## PR hygiene
 Conventional-commit titles (`fix(data): …`), small diffs, `Closes #NN`, the
