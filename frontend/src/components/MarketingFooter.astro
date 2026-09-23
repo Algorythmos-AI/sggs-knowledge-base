@@ -1,0 +1,113 @@
+---
+// MarketingFooter.astro — the one footer for every Gurbani Soul marketing page (replaces the five
+// hand-copied `<footer class="foot">` blocks). Brand block + four link columns inside a single
+// nav[aria-label="Footer"], then the credits. Credits are DATA-DRIVEN from IMAGE_CREDITS
+// (site.ts): artwork entries (no url) → "Artwork: …"; Unsplash photographs (with url) →
+// "Photographs: {who} / Unsplash … (Unsplash License)", rendered only when such photos exist. The
+// imagery-credit gate reads every `who` from the built HTML, so a new photo cannot ship uncredited.
+import { getCollection } from "astro:content";
+import { SUPPORT_EMAIL, IMAGE_CREDITS } from "../site";
+import { LEARN_SLUGS } from "../routes";
+
+// The first three Learn articles, in the curated LEARN_SLUGS order (drafts excluded).
+const order = new Map(LEARN_SLUGS.map((s, i) => [s, i]));
+const learnTop = (await getCollection("learn"))
+  .filter((a) => !a.data.draft)
+  .sort((a, b) => (order.get(a.id) ?? 999) - (order.get(b.id) ?? 999))
+  .slice(0, 3);
+
+const artwork = IMAGE_CREDITS.filter((c) => !c.url);
+const photos = IMAGE_CREDITS.filter((c) => c.url);
+
+const columns: { title: string; links: { href: string; label: string }[] }[] = [
+  {
+    title: "Product",
+    links: [
+      { href: "/features", label: "Features" },
+      { href: "/watch", label: "The watch" },
+      { href: "/search", label: "Knowledge Base" },
+    ],
+  },
+  {
+    title: "Learn",
+    links: [
+      ...learnTop.map((a) => ({ href: `/learn/${a.id}`, label: a.data.title })),
+      { href: "/learn", label: "All articles" },
+      { href: "/rss.xml", label: "RSS" },
+    ],
+  },
+  {
+    title: "Support",
+    links: [
+      { href: "/support", label: "Support" },
+      { href: `mailto:${SUPPORT_EMAIL}`, label: SUPPORT_EMAIL },
+      { href: "/support#contact", label: "Report a text error" },
+    ],
+  },
+];
+---
+<footer class="foot mfoot">
+  <div class="wrap mfoot-in">
+    <div class="mfoot-brand">
+      <p class="mfoot-name"><span class="gm" aria-hidden="true">ੴ</span> <span>Gurbani Soul</span></p>
+      <p class="mfoot-blurb">Built by Algorythmos · Sri Guru Granth Sahib Ji is shown verbatim from the source edition, cited by Ang.</p>
+    </div>
+    <nav aria-label="Footer" class="mfoot-nav">
+      {columns.map((col) => (
+        <div class="mfoot-col">
+          <h2 class="mfoot-h">{col.title}</h2>
+          <ul>
+            {col.links.map((l) => <li><a href={l.href}>{l.label}</a></li>)}
+          </ul>
+        </div>
+      ))}
+      <div class="mfoot-col">
+        <h2 class="mfoot-h">Legal</h2>
+        <ul>
+          <li><a href="/privacy">Privacy</a></li>
+          <li class="mfoot-sub">Font licences</li>
+          <li><a href="/fonts/OFL.txt">Sant Lipi (SIL OFL)</a></li>
+          <li><a href="/fonts/OFL-SourceSerif4.txt">Source Serif 4 (SIL OFL)</a></li>
+        </ul>
+      </div>
+    </nav>
+  </div>
+  <div class="wrap credits">
+    {artwork.map((c) => (
+      <p>Artwork: {c.what}, made for Gurbani Soul{c.who === "Algorythmos" ? "" : ` by ${c.who}`}.</p>
+    ))}
+    {photos.length > 0 && (
+      <p>Photographs: {photos.map((c, i) => (
+        <Fragment>{i > 0 && ", "}<a href={c.url}>{c.who}</a> / Unsplash</Fragment>
+      ))} (Unsplash License).</p>
+    )}
+    <p>Type: Sant Lipi and Source Serif 4 — SIL Open Font License.</p>
+  </div>
+</footer>
+
+<style>
+  .mfoot { border-top: 1px solid var(--line); color: var(--ink-soft); font-size: 14px; background: var(--paper); }
+  .mfoot-in { padding-top: clamp(44px, 6vw, 64px); padding-bottom: 28px; display: grid; grid-template-columns: minmax(0, 1fr); gap: 36px; }
+  .mfoot-name { margin: 0 0 8px; display: flex; align-items: baseline; gap: 10px; font-family: var(--serif-display); font-size: 19px; font-weight: 600; color: var(--ink); }
+  .mfoot-name .gm { font-size: 22px; line-height: 1; color: var(--ink); }
+  .mfoot-blurb { margin: 0; max-width: 44ch; line-height: 1.55; }
+  .mfoot-nav { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 28px 24px; }
+  .mfoot-h { font-family: var(--sans); font-size: 12.5px; font-weight: 700; letter-spacing: .14em; color: var(--ink); margin: 0 0 12px; }
+  .mfoot-col ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; }
+  .mfoot-col li { line-height: 1.45; }
+  .mfoot-col li.mfoot-sub { margin-top: 10px; font-size: 12.5px; color: var(--ink-soft); }
+  .mfoot-col a { color: var(--accent-text); text-decoration: none; display: inline-block; padding: 6px 0; }
+  .mfoot-col a:hover { text-decoration: underline; text-decoration-color: var(--accent); text-underline-offset: 3px; }
+  .credits { padding-top: 20px; padding-bottom: 40px; display: grid; gap: 4px; border-top: 1px solid var(--line); }
+  .credits p { margin: 0; }
+  @media (min-width: 980px) {
+    .mfoot-in { grid-template-columns: 4fr 8fr; gap: 56px; }
+    .mfoot-nav { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+  }
+  @media (max-width: 979px) {
+    .mfoot-col a { min-height: 44px; display: inline-flex; align-items: center; padding: 0; }
+  }
+  @media (max-width: 419px) {
+    .mfoot-nav { grid-template-columns: minmax(0, 1fr); }
+  }
+</style>

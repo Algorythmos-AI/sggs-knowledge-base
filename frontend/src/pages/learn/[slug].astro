@@ -2,11 +2,12 @@
 import { getCollection, render } from "astro:content";
 import Marketing from "../../layouts/Marketing.astro";
 import MarketingNav from "../../components/MarketingNav.astro";
+import MarketingFooter from "../../components/MarketingFooter.astro";
 import Breadcrumbs from "../../components/Breadcrumbs.astro";
 import JsonLd from "../../components/JsonLd.astro";
 import Verse from "../../components/Verse.astro";
 import Explanation from "../../components/Explanation.astro";
-import { SITE_URL, SUPPORT_EMAIL } from "../../site";
+import { SITE_URL } from "../../site";
 import { LEARN_SLUGS } from "../../routes";
 
 export async function getStaticPaths() {
@@ -79,24 +80,7 @@ const articleJsonLd = {
     </div>
   </article>
 
-  <footer class="foot">
-    <div class="wrap foot-in">
-      <div>
-        <div class="foot-brand">Gurbani Soul</div>
-        <div>Built by Algorythmos · Sri Guru Granth Sahib Ji is shown verbatim from the source edition, cited by Ang.</div>
-      </div>
-      <nav aria-label="Footer" class="foot-nav">
-        <a href="/">Home</a>
-        <a href="/learn">Learn</a>
-        <a href="/search">Knowledge Base</a>
-        <a href="/support">Support</a>
-        <a href="/privacy">Privacy</a>
-      </nav>
-    </div>
-    <div class="wrap credits">
-      <p>Questions or corrections? <a href="/support">Support</a> · {SUPPORT_EMAIL}</p>
-    </div>
-  </footer>
+  <MarketingFooter />
 
   <style>
     .learn-article { padding: clamp(88px, 11vw, 128px) 0 0; }
@@ -116,11 +100,5 @@ const articleJsonLd = {
     .art-nav .back { font-weight: 650; text-decoration: none; }
     .art-nav .prevnext { display: flex; flex-wrap: wrap; gap: 12px 28px; justify-content: space-between; font-size: 15px; }
     .art-nav .prevnext a { text-decoration: none; }
-    .foot { margin-top: 40px; }
-    .foot-in { padding-top: 44px; padding-bottom: 20px; display: flex; flex-wrap: wrap; gap: 16px 32px; align-items: baseline; justify-content: space-between; }
-    .foot-brand { font-family: var(--serif-display); font-size: 18px; color: var(--ink); }
-    .foot-nav { display: flex; gap: 18px; flex-wrap: wrap; }
-    .credits { padding-bottom: 40px; }
-    .credits p { margin: 0; }
   </style>
 </Marketing>

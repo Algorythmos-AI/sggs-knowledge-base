@@ -2,6 +2,7 @@
 import { Picture } from 'astro:assets';
 import Marketing from '../layouts/Marketing.astro';
 import MarketingNav from '../components/MarketingNav.astro';
+import MarketingFooter from '../components/MarketingFooter.astro';
 import DeviceFrame from '../components/DeviceFrame.astro';
 import Newsletter from '../components/Newsletter.astro';
 import JsonLd from '../components/JsonLd.astro';
@@ -164,28 +165,7 @@ const softwareApplication = {
   <!-- (f) LAUNCH NOTICE — env-gated; renders nothing unless PUBLIC_NEWSLETTER_FORM_URL is set -->
   <Newsletter />
 
-  <!-- (g) FOOTER -->
-  <footer class="foot">
-    <div class="wrap foot-in">
-      <div>
-        <div class="foot-brand">Gurbani Soul</div>
-        <div>Built by Algorythmos · Sri Guru Granth Sahib Ji is shown verbatim from the source edition, cited by Ang.</div>
-      </div>
-      <nav aria-label="Footer" class="foot-nav">
-        <a href="/features">Features</a>
-        <a href="/watch">The watch</a>
-        <a href="/search">Knowledge Base</a>
-        <a href="/learn">Learn</a>
-        <a href="/support">Support</a>
-        <a href="/privacy">Privacy</a>
-        <a href="/rss.xml">RSS</a>
-      </nav>
-    </div>
-    <div class="wrap credits">
-      <p>Artwork: an artistic rendering of Sri Harmandir Sahib at sunset, made for Gurbani Soul.</p>
-      <p>Type: Sant Lipi and <a href="/fonts/OFL-SourceSerif4.txt">Source Serif 4</a> — <a href="/fonts/OFL.txt">SIL Open Font License</a>.</p>
-    </div>
-  </footer>
+  <MarketingFooter />
 
   <style>
     #top { scroll-margin-top: 76px; }
@@ -262,12 +242,5 @@ const softwareApplication = {
     .priv-facts { margin: 0 0 22px; }
     .priv-link { margin: 0; }
     .priv-band a { color: var(--accent-text); }
-
-    /* (g) Footer */
-    .foot-in { padding-top: 44px; padding-bottom: 20px; display: flex; flex-wrap: wrap; gap: 16px 32px; align-items: baseline; justify-content: space-between; }
-    .foot-brand { font-family: var(--serif-display); font-size: 18px; color: var(--ink); }
-    .foot-nav { display: flex; gap: 18px; flex-wrap: wrap; }
-    .credits { padding-bottom: 40px; display: grid; gap: 4px; }
-    .credits p { margin: 0; }
   </style>
 </Marketing>

@@ -43,6 +43,39 @@ entries prior to v1.1.0 are the project's original prose style and are preserved
   and every pre-existing table are byte-identical** (`diff_scripture.py`: no column changed;
   `guard_scripture.py`: all 46 tables match the Step-0 baseline).
 
+### gurbanisoul.com v2 — PR A: foundations (web/presentation, tests and docs only)
+Scripture, corpus and DB byte-identical; no page-layout change yet (the story layouts land in PR B).
+- **Light-first marketing site** — with no stored choice every marketing page renders light, even on
+  a dark OS: `Marketing.astro` pre-paint defaults to `light`, `scripts/theme.ts` gains
+  `setDefaultTheme()` (the Knowledge Base keeps `system`), `landing.ts` sets it before `initTheme()`,
+  and the OS-appearance dark block is removed from `marketing.css`. An explicit choice still wins
+  and is shared with the Knowledge Base. The theme cycle on marketing pages is now ☀ → ☾ → ◐.
+- **`theme-color` follows the page** — `Seo.astro` takes `themeColor="auto"|"light"`; the marketing
+  shell emits one `#themeColorMeta` that `applyTheme()` keeps in step (`#FBF7F0` / `#171412`).
+- **One marketing footer** — `MarketingFooter.astro` (brand block + Product · Learn · Support · Legal
+  columns in one `nav[aria-label="Footer"]`, data-driven credits from `IMAGE_CREDITS`) replaces the
+  five hand-copied footers on Home, Features, The watch and the Learn pages. `/support` gains a
+  `#contact` anchor for "Report a text error".
+- **Design system building blocks** in `marketing.css` (additive): `--maxw` 1200, `--sec` /
+  `--sec-thin` rhythm, `.h-story` / `.h-statement` / `.body-lg` / `.detail`, `.chapter-no`,
+  `.gold-hair`, `.surface-paper` / `.surface-warm`, a real `.band` rule, dark-in-dark surfaces,
+  `.story-grid` (12-col, 5/7 · 6/6 · 7/5 · 4/8, `.story--flip`, text-first on mobile), `.proof`,
+  `.mosaic`, `.photo-band`, `--shadow-device`, motion-safe hover + `.reveal[data-delay]`.
+- **Components** — `DeviceFrame` gains `kind="ipad"`, `frame={false}`, `eager`, `sizes` (iPhone
+  output unchanged); new `PhotoBand`, `LegalPage` (sticky contents rail, not yet adopted) and
+  `MarketingFooter`; `landing.ts` adds `wireTocActive()` and a motion-safe ≤12px hero-phone drift.
+- **Imagery credits** — `IMAGE_CREDITS` entries now carry `file` (+ optional `url`, `source`);
+  `frontend/src/covers.ts` (`LEARN_COVERS`) is ready for Learn covers; NOTICE.md credits the artwork.
+- **Gates** — `test_imagery_is_credited` flipped for credited Unsplash photos (one credit per file,
+  every maker on the page and in NOTICE.md, `https://unsplash.com/@` urls);
+  `test_marketing_page_weight_budgets` (60 KB per marketing page, 48 KB per Learn page, 340 KB
+  images); `test_marketing_pages_eager_discipline`; alt text on every marketing page;
+  `test_marketing_pages_have_no_kb_shell`; `test_home_has_rhythm` (expected failure until PR B).
+- **e2e** — new `photo-bands.spec.ts`; `landing.spec` proves the light default under a dark OS;
+  `transitions.spec` makes the dark choice in one click.
+- **Docs** — `docs/website/README.md` image policy rewritten for v2 (Unsplash licence facts,
+  respectful selection, credit shape, file locations, budgets, shot pipeline).
+
 ---
 
 ## [1.3.4] — 2026-09-22 — gurbanisoul.com: a next-level marketing site
