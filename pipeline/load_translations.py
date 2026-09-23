@@ -7,6 +7,8 @@ Usage: python3 load_translations.py <db_path> <pairs.jsonl ...>
 Pair format per line: {"ang": N, "gurmukhi": "...", "en": "..."}
 """
 import sys, json, sqlite3, unicodedata, re, difflib, glob
+sys.path.insert(0, __file__.rsplit('/', 1)[0])
+from build_clock import stamp
 
 DB = sys.argv[1]
 SOURCE_ID = 'ssk-banidb'
@@ -19,7 +21,7 @@ for pat in args:
 
 con = sqlite3.connect(DB)
 cur = con.cursor()
-cur.executescript('''
+cur.executescript(('''
 CREATE TABLE IF NOT EXISTS translations(
   line_id INT, lang TEXT, source TEXT, text TEXT, match_quality TEXT,
   PRIMARY KEY(line_id, lang));
@@ -28,12 +30,12 @@ CREATE TABLE IF NOT EXISTS sources(
 INSERT OR REPLACE INTO sources VALUES(
   'ssk-banidb', 'translation-en',
   'English translation by Dr. Sant Singh Khalsa, sourced via BaniDB (banidb.com)',
-  'Personal, local, non-commercial use with attribution', date('now'));
+  'Personal, local, non-commercial use with attribution', '@BUILD_DATE@');
 INSERT OR REPLACE INTO sources VALUES(
   'ssk-shabados', 'translation-en',
   'English translation by Dr. Sant Singh Khalsa, via the ShabadOS open database (github.com/shabados/database, release 4.8.7)',
-  'Open data with attribution; translation author attribution required', date('now'));
-''')
+  'Open data with attribution; translation author attribution required', '@BUILD_DATE@');
+''').replace('@BUILD_DATE@', stamp('%Y-%m-%d')))   # build clock, not wall clock
 
 MATRAS = 'ਾਿੀੁੂੇੈੋੌ੍ੰਂਃ਼ੱੑੵ'
 def norm(s):

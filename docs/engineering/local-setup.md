@@ -30,6 +30,14 @@ This gates on `reconcile.py` (must be char-exact) and `golden_test.py`, then bui
 
 `pipeline/build_db.py` now stamps `meta.version` from `webapp/serve.py:APP_VERSION` (no longer hardcoded `'1.4.0'`), and the install step re-syncs `MANIFEST.json` `version`/`db_sha256` to the freshly built DB. (Validated 2026-06-19 by a full `rebuild_all.sh` run: reconcile char-exact, golden all-pass, `enrich_v2` applied, vaars=22 / vaar_units=1423, additive-integrity OK; **1,426 units since v1.1.4** — Malar Ki Vaar regained its 28th pauri.)
 
+**Reproducible builds.** The rebuild is deterministic: every date written into the DB and
+`MANIFEST.json` comes from `pipeline/build_clock.py`, pinned by `SOURCE_DATE_EPOCH` (defaults to
+the HEAD commit time), set-ordered inserts are sorted, and neighbour rankings break score ties by
+id. The same commit + PDF + toolchain produces identical content in every table. Prove it with
+`python3 scripts/data/compare_builds.py A.sqlite B.sqlite` (uses the scripture guard's own
+per-table hash; exit 0 only if all tables match). The source PDF must match
+`validation/reconcile-attestation.json` (`SGGS_ALLOW_NEW_PDF=1` for a reviewed new edition).
+
 **Toolchain:** `serve.py` = Python 3 stdlib only. The pipeline needs **PyMuPDF** (`import fitz`); the lite semantic builder also needs **numpy + scipy**. The UI source is in `frontend/` (Astro + Tailwind v4, Node); its build output is synced into `webapp/static/`. `node_modules/`, `dist/`, and `webapp/static.bak/` are git-ignored.
 
 ## Repository map
