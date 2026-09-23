@@ -4,7 +4,10 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / "pipeline"))
 import atomic_install as ai  # noqa: E402
+import build_clock  # noqa: E402
 import db_integrity_gate as gate  # noqa: E402
+sys.path.insert(0, str(ROOT / "scripts" / "data"))
+import compare_builds  # noqa: E402
 
 REAL_DB = ROOT / "db" / "sggs.sqlite"
 
@@ -93,6 +96,37 @@ class IntegrityGate(unittest.TestCase):
         tmp = os.path.join(tempfile.mkdtemp(), "copy.db")
         ai.install(str(REAL_DB), tmp)
         self.assertEqual(gate.check(tmp), [])
+
+
+class BuildClock(unittest.TestCase):
+    def test_source_date_epoch_pins_every_stamp_in_utc(self):
+        old = os.environ.get("SOURCE_DATE_EPOCH")
+        os.environ["SOURCE_DATE_EPOCH"] = "1790167539"   # 2026-09-23T12:45:39Z
+        try:
+            self.assertEqual(build_clock.stamp("%Y-%m-%d %H:%M"), "2026-09-23 12:45")
+            self.assertEqual(build_clock.stamp("%Y-%m-%dT%H:%M:%S%z")[:19], "2026-09-23T12:45:39")
+        finally:
+            if old is None:
+                os.environ.pop("SOURCE_DATE_EPOCH", None)
+            else:
+                os.environ["SOURCE_DATE_EPOCH"] = old
+
+
+class CompareBuilds(unittest.TestCase):
+    def _db(self, rows):
+        p = os.path.join(tempfile.mkdtemp(), "b.db")
+        con = sqlite3.connect(p)
+        con.execute("CREATE TABLE canon_tokens(token TEXT PRIMARY KEY)")
+        con.executemany("INSERT INTO canon_tokens VALUES(?)", [(t,) for t in rows])
+        con.commit(); con.close()
+        return p
+
+    def test_identical_builds(self):
+        self.assertEqual(compare_builds.compare(self._db("abc"), self._db("abc"))[0], [])
+
+    def test_same_set_different_insertion_order_is_a_difference(self):
+        diffs, _ = compare_builds.compare(self._db("abc"), self._db("cba"))
+        self.assertEqual([d[0] for d in diffs], ["canon_tokens"])
 
 
 if __name__ == "__main__":

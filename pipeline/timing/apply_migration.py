@@ -27,7 +27,9 @@ import time
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 import baseline_lib as bl
+from build_clock import stamp
 
 ROOT = Path(__file__).resolve().parents[2]
 HERE = Path(__file__).resolve().parent
@@ -149,7 +151,7 @@ def main():
                 con.execute(
                     "INSERT INTO timing_migrations(name, applied_at, baseline_verified) "
                     "VALUES (?, ?, 1)",
-                    (MIGRATION_NAME, time.strftime("%Y-%m-%dT%H:%M:%S%z")))
+                    (MIGRATION_NAME, stamp("%Y-%m-%dT%H:%M:%S%z")))
             con.execute("COMMIT")
         except Exception as e:
             con.execute("ROLLBACK")

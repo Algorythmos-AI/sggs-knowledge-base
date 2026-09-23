@@ -34,6 +34,10 @@ else:
     sys.exit(f'source PDF sha256 {h.hexdigest()} != attested {want}; refusing to build '
              '(set SGGS_ALLOW_NEW_PDF=1 only for a reviewed new source edition)')
 EOF
+# Reproducible stamps: every date written into the DB/MANIFEST derives from this (build_clock.py).
+# Default = the HEAD commit time, so the same commit + same PDF + same toolchain => same bytes.
+export SOURCE_DATE_EPOCH="${SOURCE_DATE_EPOCH:-$(git log -1 --format=%ct)}"
+echo "SOURCE_DATE_EPOCH=$SOURCE_DATE_EPOCH"
 WORK="$(mktemp -d)"
 trap 'rm -rf "$WORK"' EXIT
 TMPDB="$WORK/sggs.db"
@@ -96,7 +100,7 @@ cur.execute('DROP TABLE IF EXISTS canon_tokens')
 cur.execute('CREATE TABLE canon_tokens(token TEXT PRIMARY KEY)')
 toks = set()
 for (t,) in cur.execute('SELECT translit FROM lines'): toks.update((t or '').split())
-cur.executemany('INSERT OR IGNORE INTO canon_tokens VALUES(?)', [(t,) for t in toks])
+cur.executemany('INSERT OR IGNORE INTO canon_tokens VALUES(?)', [(t,) for t in sorted(toks)])   # sorted: set order is hash-seeded
 con.commit(); con.close()
 print('aux indexes built')
 EOF
@@ -142,7 +146,7 @@ try:
     av = re.search(r"APP_VERSION\s*=\s*'([^']+)'", open('webapp/serve.py').read()).group(1)
 except Exception: pass
 m.update({'version': av or m.get('version'),
-          'built': datetime.date.today().isoformat(), 'variants': n_var,
+          'built': datetime.datetime.fromtimestamp(int(os.environ['SOURCE_DATE_EPOCH']), datetime.timezone.utc).date().isoformat(), 'variants': n_var,
           'translations_en': n_en, 'corpus_sha256': sha('corpus/sggs.jsonl'),
           'db_sha256': sha('db/sggs.sqlite')})
 fd, tmp = tempfile.mkstemp(prefix='.MANIFEST.json.', dir='.')

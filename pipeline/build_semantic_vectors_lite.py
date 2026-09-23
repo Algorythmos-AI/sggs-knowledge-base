@@ -30,6 +30,7 @@ SCRIPTURE SAFETY: read-only over the verbatim corpus; computes only over the sep
 English-translation layer; never edits, reorders, or de-duplicates the scripture text.
 """
 import argparse, re, sqlite3, time, math, sys
+from build_clock import stamp
 import numpy as np
 try:
     from scipy import sparse
@@ -122,9 +123,12 @@ def topk_exact(X, ids, en, k, min_score, cand, block):
                 continue
             # take the strongest `cand` candidates, then refine
             if idxs.size > cand:
-                part = np.argpartition(-scs, cand - 1)[:cand]
-                idxs, scs = idxs[part], scs[part]
-            order = np.argsort(-scs)
+                # keep every score tied with the cand-th best, so the candidate set does
+                # not depend on how argpartition breaks ties at the boundary
+                kth = np.partition(-scs, cand - 1)[cand - 1]
+                keep = -scs <= kth
+                idxs, scs = idxs[keep], scs[keep]
+            order = np.lexsort((idxs, -scs))                   # score desc, ties by column index (stable)
             seen = {en[i]}                                     # skip the seed's own verbatim twins
             cnt = 0
             for o in order:
@@ -155,7 +159,7 @@ def write_neighbors(con, lids, nids, scs, provenance):
     con.execute("CREATE TABLE IF NOT EXISTS analytics_meta (key TEXT PRIMARY KEY, value TEXT)")
     con.execute("INSERT OR REPLACE INTO analytics_meta VALUES ('line_neighbors_source', ?)", (provenance,))
     con.execute("INSERT OR REPLACE INTO analytics_meta VALUES ('line_neighbors_built', ?)",
-                (time.strftime('%Y-%m-%d %H:%M'),))
+                (stamp('%Y-%m-%d %H:%M'),))
 
 
 def main():
