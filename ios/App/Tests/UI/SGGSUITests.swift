@@ -1201,6 +1201,12 @@ final class SGGSUITests: XCTestCase {
         _ = app.navigationBars["Themes"].waitForExistence(timeout: 8)
         shot("themes")
         app.navigationBars.buttons.firstMatch.tap()   // back to the hub
+        let constellation = app.buttons["Constellation"].firstMatch
+        if constellation.waitForExistence(timeout: 8) { constellation.tap() }
+        _ = app.navigationBars["Constellation"].waitForExistence(timeout: 8)
+        _ = app.staticTexts["Naam"].waitForExistence(timeout: 8)   // centre bubble rendered
+        shot("constellation")
+        app.navigationBars.buttons.firstMatch.tap()   // back to the hub
         let lineage = app.buttons["Lineage"].firstMatch
         if lineage.waitForExistence(timeout: 8) { lineage.tap() }
         _ = app.staticTexts["30 voices · 12th–17th century"].waitForExistence(timeout: 8)
