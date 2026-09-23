@@ -106,13 +106,13 @@ struct ThemeNetworkSection: View {
                 }
                 ForEach(asList ? edges : Array(edges.prefix(12))) { e in
                     HStack {
-                        Text("\(e.source.capitalized) + \(e.target.capitalized)").font(.subheadline)
+                        Text("\(ConceptName.display(e.source)) + \(ConceptName.display(e.target))").font(.subheadline)
                         Spacer()
                         Text("PPMI \(e.ppmi, format: .number.precision(.fractionLength(2))) · \(String(e.shabadCount))")
                             .font(.caption).foregroundStyle(.secondary).monospacedDigit()
                     }
                     .accessibilityElement(children: .combine)
-                    .accessibilityLabel("\(e.source) and \(e.target): PPMI \(String(format: "%.2f", e.ppmi)), \(e.shabadCount) shabads")
+                    .accessibilityLabel("\(ConceptName.display(e.source)) and \(ConceptName.display(e.target)): PPMI \(String(format: "%.2f", e.ppmi)), \(e.shabadCount) shabads")
                 }
             }
         }
@@ -166,7 +166,7 @@ private struct NetworkCanvas: View {
                 ctx.fill(Path(ellipseIn: CGRect(x: pt.x - r, y: pt.y - r, width: 2 * r, height: 2 * r)),
                          with: .color(Brand.primary.opacity(0.85)))
                 if degree >= 6 {
-                    ctx.draw(Text(name).font(.system(size: 8)).foregroundStyle(.secondary),
+                    ctx.draw(Text(ConceptName.display(name)).font(.system(size: 8)).foregroundStyle(.secondary),
                              at: CGPoint(x: pt.x, y: pt.y - r - 7))
                 }
             }
@@ -294,7 +294,7 @@ struct ProgressionSection: View {
                     Chart(points(p)) { pt in
                         AreaMark(x: .value("Ang", pt.ang),
                                  y: .value("Verses", pt.count))
-                            .foregroundStyle(by: .value("Theme", pt.concept))
+                            .foregroundStyle(by: .value("Theme", ConceptName.display(pt.concept)))
                             .interpolationMethod(.monotone)
                     }
                     .chartXAxisLabel("Ang")
