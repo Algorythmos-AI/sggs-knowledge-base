@@ -29,7 +29,7 @@ flowchart LR
    sequences. The complete register is `audit/editorial-ledger.jsonl` — **4 rules,
    11 applications**: Angs 573, 586, 727 (itemised from the start) and Angs 1354, 1358,
    1387, 1398, 1402, 1406, 1408, 1409 (same `fix_text` step-4 rules; itemised 2026-09-23,
-   **pending scholarly review, gate G3**). Every decoding transform (timestamps, halant
+   scholarly review completed and approved 2026-09-24, gate G3). Every decoding transform (timestamps, halant
    order, glyph restorations, vowel re-attachment, stray-character strip) is registered too.
 
 Any new transform must be registered in the ledger and reviewed by a human. The English
