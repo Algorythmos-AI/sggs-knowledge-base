@@ -48,6 +48,9 @@ test('privacy policy discloses the website analytics honestly', async ({ page })
   const site = page.locator('#this-website');
   await expect(site).toContainText('Vercel Web Analytics');
   await expect(site).toContainText('no cookies');
+  // Everything the site keeps in the browser, and its optional location use, must stay disclosed.
+  await expect(site).toContainText('local storage');
+  await expect(site.locator('strong', { hasText: 'Location' })).toBeVisible();
 });
 
 test('support FAQ questions are visible headings with a jump list', async ({ page }) => {

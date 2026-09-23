@@ -111,7 +111,10 @@ Scripture, corpus and DB byte-identical; no page-layout change yet (the story la
 - **Privacy policy correction.** It said the website had "no analytics"; the Gurbani Soul pages do
   load Vercel Web Analytics, which sets no cookies. The policy now says so plainly, and "no
   analytics" applies to the app, which remains true. The newsletter provider is disclosed only
-  where its sign-up form appears. Last updated 23 September 2026.
+  where its sign-up form appears. The website section now also lists everything the site keeps in
+  your browser, and discloses the web Raag Clock's optional location use (asked only when you
+  choose solar mode, rounded to about 100 m, kept in the browser, never sent). Home's privacy
+  line now says plainly that the no-analytics promise is the app's. Last updated 23 September 2026.
 - **Support** gains a contact card, a question jump list, and FAQ questions as proper headings
   (the FAQ structured data is unchanged).
 - **Navigation:** Features · The watch · Learn · Support · Privacy · Knowledge Base.
