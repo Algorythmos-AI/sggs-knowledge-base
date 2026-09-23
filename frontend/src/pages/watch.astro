@@ -1,4 +1,5 @@
 ---
+import { Image } from "astro:assets";
 import Marketing from "../layouts/Marketing.astro";
 import MarketingNav from "../components/MarketingNav.astro";
 import MarketingFooter from "../components/MarketingFooter.astro";
@@ -7,12 +8,24 @@ import DeviceFrame from "../components/DeviceFrame.astro";
 import JsonLd from "../components/JsonLd.astro";
 import { SITE_URL } from "../site.ts";
 import raagData from "../generated/landing-raags.json";
-import raagClockShot from "../assets/app/raag-clock.png";
+import { paharLabel, paharRange } from "../scripts/pahar.js";
+import clockDark from "../assets/app/iphone-clock-dark.png";
+import clockSolar from "../assets/app/iphone-clock-solar-dark.png";
+import divergenceShot from "../assets/app/iphone-pahar-divergence-light.png";
+import wRaagLight from "../assets/app/widget-raagnow-small-light.png";
+import wRaagDark from "../assets/app/widget-raagnow-small-dark.png";
 
 const desc =
   "The Raag Clock in Gurbani Soul follows the eight pahars — the watches of the day — and shows which raags belong to the current watch, with an optional solar mode. Times follow your device's clock.";
 
 const pahars = raagData.pahars as Record<string, { name: string; roman: string }[]>;
+
+// The eight-pahar timeline (additive to the gate-locked .watch-grid below): labels and fixed-clock
+// ranges from pahar.js, raag names from the DB-generated landing-raags.json (never typed by hand).
+const timeline = Array.from({ length: 8 }, (_, i) => {
+  const p = i + 1;
+  return { p, label: paharLabel(p), range: paharRange(p), night: p > 4, raags: pahars[String(p)] ?? [] };
+});
 
 const jsonLd = {
   "@context": "https://schema.org",
@@ -31,16 +44,26 @@ const jsonLd = {
 ---
 <Marketing title="The Raag Clock — Gurbani Soul" description={desc} path="/watch">
   <JsonLd slot="head" data={jsonLd} />
-  <MarketingNav overHero={false} />
+  <MarketingNav />
 
-  <header class="page-hero">
-    <div class="wrap">
-      <p class="eyebrow">The Raag Clock</p>
-      <h1>The watch of the day</h1>
+  <!-- 1 · HERO BAND (dark; the nav floats over it) -->
+  <section class="watch-hero surface-ink" data-theme="dark">
+    <div class="wrap story-grid story-grid--6-6">
+      <div class="story-text">
+        <p class="eyebrow">The Raag Clock</p>
+        <h1>The watch of the day</h1>
+        <span class="gold-hair" aria-hidden="true"></span>
+        <p class="lead">Eight pahars. Thirty-one raags. The clock that knows which belong to now.</p>
+      </div>
+      <div class="story-media">
+        <div class="stage wash">
+          <DeviceFrame src={clockDark} alt="Raag Clock on iPhone in the dark scheme: the 2nd pahar of day and the raags sung in this watch" />
+        </div>
+      </div>
     </div>
-  </header>
+  </section>
 
-  <!-- Balanced two columns: prose + CTA on the left, the live dial with its caption on the right -->
+  <!-- 2 · LIVE ARC — prose left, the live dial with its caption right (gate-locked markup) -->
   <section class="section watch-sec">
     <div class="wrap watch-grid">
       <div class="watch-copy reveal">
@@ -50,7 +73,6 @@ const jsonLd = {
           change with it. The deep night, from midnight to the small hours, is left in silence and
           carries no raag.</p>
         <p class="muted">Times follow your device's clock; the app can also follow sunrise and sunset.</p>
-        <p class="watch-cta"><a class="btn" href="/raag-clock">Open the Raag Clock</a></p>
       </div>
 
       <figure class="watch-dial reveal">
@@ -74,17 +96,92 @@ const jsonLd = {
     </div>
   </section>
 
-  <!-- The Raag Clock on iPhone -->
-  <section class="section band watch-shot-sec">
-    <div class="wrap watch-shot-grid">
-      <div class="shot-copy reveal">
-        <p class="eyebrow">On your Home Screen</p>
-        <h2>The watch, at a glance</h2>
-        <p class="muted">The current watch and its raags sit on the same quiet surface as the reader,
-          and on an optional Home Screen widget — never a feed, never a notification you did not ask for.</p>
+  <!-- 3 · EIGHT PAHARS — the whole day as one line (scroll-snap inside its own box on mobile) -->
+  <section class="sec surface-warm" aria-labelledby="pahars-h">
+    <div class="wrap">
+      <div class="story-head reveal">
+        <p class="eyebrow">The whole day</p>
+        <h2 id="pahars-h" class="h-story">Eight watches, from dawn to dawn</h2>
+        <p class="body-lg">By the clock, each pahar is three hours, starting at 6 AM. Four watches of day, four of night — and the seventh, around midnight, carries no raag.</p>
       </div>
-      <div class="shot-device reveal">
-        <DeviceFrame src={raagClockShot} alt="Raag Clock showing the current watch" label="Raag Clock" />
+      <div class="pline-box reveal" data-delay="1" tabindex="0" role="region" aria-label="The eight pahars and their raags">
+        <ol class="pline">
+          {timeline.map((t) => (
+            <li class:list={["pcell", { night: t.night, silent: t.raags.length === 0 }]} data-p={t.p}>
+              <p class="pc-no">{t.p}</p>
+              <p class="pc-label">{t.label}</p>
+              <p class="pc-range">{t.range}</p>
+              {t.raags.length
+                ? <p class="pc-raags">{t.raags.map((r) => <span class="gm" lang="pa">{r.name}</span>)}</p>
+                : <p class="pc-silence">Silence</p>}
+            </li>
+          ))}
+        </ol>
+      </div>
+    </div>
+  </section>
+
+  <!-- 4 · FIXED vs SOLAR -->
+  <section class="sec surface-paper">
+    <div class="wrap story-grid story--flip">
+      <div class="story-text reveal">
+        <p class="eyebrow">Fixed or solar</p>
+        <h2 class="h-story">By the clock, or by the sun</h2>
+        <p class="body-lg"><strong>Fixed</strong> divides the day into eight three-hour watches from 6 AM — the same everywhere, every day.</p>
+        <p class="body-lg"><strong>Solar</strong> follows the older way: four equal watches of daylight and four of night, from your local sunrise and sunset, so the watches stretch and shrink with the season.</p>
+        <p class="detail">Sunrise and sunset are computed on the device with the NOAA solar equations. Location is optional, rounded to about 1 km, and never transmitted.</p>
+      </div>
+      <div class="story-media reveal" data-delay="1">
+        <div class="pair">
+          <DeviceFrame src={clockDark} label="Fixed" alt="Raag Clock on iPhone, fixed hours: the 2nd pahar of day, 9 am to 12 pm" />
+          <DeviceFrame src={clockSolar} label="Solar" alt="Raag Clock on iPhone, solar mode: the watch computed from local sunrise and sunset" />
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 5 · WHERE TRADITIONS DISAGREE (dark, short) -->
+  <section class="sec surface-ink" data-theme="dark">
+    <div class="wrap story-grid story-grid--7-5">
+      <div class="story-text reveal">
+        <p class="eyebrow">Sources</p>
+        <h2 class="h-story">Where traditions disagree</h2>
+        <p class="body-lg">Not every source places a raag in the same watch. Where they differ, every claim is kept with its citation — primary, variant or disputed — so you can see the disagreement rather than a single silent answer.</p>
+        <p class="cta-row"><a class="link-more" href="/divergence">See every disagreement</a></p>
+      </div>
+      <div class="story-media reveal" data-delay="1">
+        <div class="stage">
+          <DeviceFrame src={divergenceShot} alt="Where traditions disagree, on iPhone: raags with primary, variant and disputed watch claims and their sources" />
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 6 · ON YOUR HOME SCREEN -->
+  <section class="sec surface-paper">
+    <div class="wrap story-grid story-grid--6-6">
+      <div class="story-text reveal">
+        <p class="eyebrow">On your Home Screen</p>
+        <h2 class="h-story">The watch, at a glance</h2>
+        <p class="body-lg">The Raag Now widget shows the raag of the current watch on your Home Screen, in light or dark — never a feed, never a notification you did not ask for.</p>
+        <p class="detail">Siri: “What raag is it now”.</p>
+      </div>
+      <div class="story-media reveal" data-delay="1">
+        <div class="wpair">
+          <figure class="widget widget--s"><Image src={wRaagLight} widths={[260, 520]} sizes="(min-width: 980px) 260px, 42vw" loading="lazy" decoding="async" alt="Raag Now widget, small: the raag of the current watch" /></figure>
+          <figure class="widget widget--s"><Image src={wRaagDark} widths={[260, 520]} sizes="(min-width: 980px) 260px, 42vw" loading="lazy" decoding="async" alt="Raag Now widget, small, in the dark scheme" /></figure>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 7 · CTA ROW -->
+  <section class="sec-thin surface-warm hair-top">
+    <div class="wrap cta-band reveal">
+      <h2 class="cta-h">See the watch now</h2>
+      <div class="cta-row">
+        <a class="btn" href="/raag-clock">Open the Raag Clock</a>
+        <a class="btn ghost" href="/learn/the-31-raags-and-the-watches-of-the-day" data-astro-prefetch>The 31 raags and the watches of the day</a>
       </div>
     </div>
   </section>
@@ -92,19 +189,22 @@ const jsonLd = {
   <MarketingFooter />
 
   <style>
-    .page-hero { padding: clamp(96px, 12vw, 150px) 0 clamp(4px, 2vw, 16px); }
-    .page-hero h1 { font-size: clamp(32px, 5.4vw, 54px); margin: 0; }
+    /* 1 · Hero band */
+    .watch-hero { margin-top: -66px; padding: calc(66px + clamp(40px, 7vw, 96px)) 0 clamp(56px, 8vw, 104px); }
+    .watch-hero h1 { font-size: clamp(40px, 6.4vw, 76px); margin: 0 0 20px; color: var(--ink); line-height: 1.02; }
+    .watch-hero .lead { color: var(--ink); max-width: 30ch; margin: 0; }
+    .watch-hero .stage :global(.device) { max-width: 320px; }
+    @media (max-width: 979px) { .watch-hero .stage :global(.device) { max-width: 240px; } }
 
-    /* Two-column body — prose left, dial right */
+    /* 2 · Two-column body — prose left, dial right */
     .watch-grid { display: grid; grid-template-columns: 1fr; gap: clamp(40px, 6vw, 72px); align-items: center; }
     .watch-copy .lead { margin: 0 0 20px; }
     .watch-copy .muted { max-width: 46ch; font-size: 16px; }
     .watch-copy .muted + .muted { margin-top: 14px; }
-    .watch-cta { margin: 28px 0 0; }
 
     /* Dial column — arc centred in its column, caption directly under it (no orphaned elements) */
     .watch-dial { margin: 0; display: flex; flex-direction: column; align-items: center; text-align: center; gap: 20px; }
-    .dial-now { margin: 0; max-width: 30ch; }
+    .dial-now { margin: 0; max-width: 30ch; text-wrap: balance; }
     .watch-arc { display: flex; justify-content: center; }
     .dial-cap { max-width: 34ch; }
     .dial-cap-label { margin: 0 0 12px; }
@@ -121,14 +221,35 @@ const jsonLd = {
       .watch-copy .muted { max-width: 44ch; }
     }
 
-    /* Device shot band */
-    .watch-shot-grid { display: grid; grid-template-columns: 1fr; gap: 40px; align-items: center; }
-    .shot-copy h2 { font-size: clamp(26px, 4vw, 40px); margin: 0 0 14px; }
-    .shot-copy .muted { max-width: 46ch; }
-    .shot-device { display: flex; justify-content: center; }
-    @media (min-width: 900px) {
-      .watch-shot-grid { grid-template-columns: 6fr 5fr; gap: 64px; }
-      .shot-device { justify-content: flex-end; }
-    }
+    /* 3 · Eight-pahar timeline */
+    .pline-box { overflow-x: auto; scroll-snap-type: x mandatory; -webkit-overflow-scrolling: touch; padding: 4px 2px 10px; }
+    .pline-box:focus-visible { outline: 2px solid var(--accent); outline-offset: 4px; border-radius: 12px; }
+    .pline { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(8, minmax(168px, 1fr)); gap: 10px; }
+    .pcell { scroll-snap-align: start; border: 1px solid var(--line); border-radius: 16px; background: var(--card); padding: 16px 16px 18px; display: flex; flex-direction: column; gap: 4px; min-height: 212px; }
+    .pcell.night { background: var(--paper); }
+    .pcell.silent { background: transparent; border-style: dashed; border-color: var(--ink-soft); }
+    .pcell[data-now] { border-color: var(--accent); box-shadow: inset 0 0 0 1px var(--accent); }
+    .pcell p { margin: 0; }
+    .pc-no { font-family: var(--serif-display); font-weight: 600; font-size: 28px; line-height: 1; color: var(--accent-text); font-variant-numeric: tabular-nums lining-nums; }
+    .pc-label { margin-top: 8px !important; font-size: 14px; font-weight: 650; color: var(--ink); }
+    .pc-range { font-size: 13.5px; color: var(--ink-soft); font-variant-numeric: tabular-nums; }
+    .pc-raags { margin-top: 10px !important; display: flex; flex-wrap: wrap; gap: 4px 10px; }
+    .pc-raags .gm { font-size: 16.5px; color: var(--ink); line-height: 1.6; }
+    .pc-silence { margin-top: 10px !important; font-family: var(--serif-display); font-style: italic; color: var(--ink-soft); font-size: 17px; }
+    @media (min-width: 1100px) { .pline-box { overflow: visible; } .pline { grid-template-columns: repeat(8, minmax(0, 1fr)); } .pcell { padding: 14px 12px 16px; } }
+
+    /* 4 · Fixed vs solar */
+    .story-text strong { color: var(--ink); font-weight: 650; }
+
+    /* 6 · Widgets */
+    .wpair { display: flex; gap: clamp(14px, 3vw, 28px); justify-content: center; align-items: flex-start; }
+    .wpair .widget { margin: 0; flex: 0 1 260px; }
+    .wpair .widget:nth-child(2) { margin-top: 40px; }
+    .wpair img { display: block; width: 100%; height: auto; filter: drop-shadow(0 18px 26px rgba(20,14,6,.16)); }
+
+    /* 7 · CTA band */
+    .cta-band { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 18px 32px; }
+    .cta-h { font-size: clamp(24px, 3vw, 34px); margin: 0; color: var(--ink); }
+    .cta-band .cta-row { margin: 0; }
   </style>
 </Marketing>

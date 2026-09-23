@@ -117,7 +117,9 @@ function wireRaagClock() {
   const svg = document.querySelector(".raag-arc");
   const caption = document.querySelector<HTMLElement>("[data-raag-now]");
   const lis = document.querySelectorAll<HTMLElement>("li[data-pahar]");
-  if (!svg && !caption && !lis.length) return;
+  // /watch's eight-pahar timeline cells (data-p, deliberately NOT data-pahar: they are never hidden).
+  const cells = document.querySelectorAll<HTMLElement>(".pcell[data-p]");
+  if (!svg && !caption && !lis.length && !cells.length) return;
 
   const render = () => {
     const p = paharFixed(new Date());
@@ -129,6 +131,10 @@ function wireRaagClock() {
     if (caption) caption.textContent = `It is the ${paharLabel(p)} — ${paharRange(p)}.`;
     lis.forEach((li) => {
       li.hidden = Number(li.dataset.pahar) !== p;
+    });
+    cells.forEach((c) => {
+      if (Number(c.dataset.p) === p) c.setAttribute("data-now", "");
+      else c.removeAttribute("data-now");
     });
   };
   render();
