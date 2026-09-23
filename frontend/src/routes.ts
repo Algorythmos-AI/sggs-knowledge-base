@@ -60,8 +60,8 @@ export const routes: Route[] = [
   { path: "/constellation",lastmod: LASTMOD, changefreq: "monthly", priority: 0.5, og: "knowledge-base" },
   { path: "/raag-clock",   lastmod: LASTMOD, changefreq: "monthly", priority: 0.6, og: "knowledge-base" },
   { path: "/divergence",   lastmod: LASTMOD, changefreq: "monthly", priority: 0.4, og: "knowledge-base" },
-  { path: "/privacy",      lastmod: LASTMOD, changefreq: "yearly",  priority: 0.4, og: "knowledge-base" },
-  { path: "/support",      lastmod: LASTMOD, changefreq: "yearly",  priority: 0.4, og: "knowledge-base" },
+  { path: "/privacy",      lastmod: LASTMOD, changefreq: "yearly",  priority: 0.4, og: "privacy" },
+  { path: "/support",      lastmod: LASTMOD, changefreq: "yearly",  priority: 0.5, og: "support" },
   ...learnRoutes,
 ];
 

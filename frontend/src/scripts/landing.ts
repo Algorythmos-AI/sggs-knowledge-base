@@ -150,31 +150,41 @@ function wireRaagClock() {
 function wireTocActive() {
   const sections = Array.from(document.querySelectorAll<HTMLElement>(".legal section[id]"));
   const links = Array.from(document.querySelectorAll<HTMLAnchorElement>(".legal-toc a[href^='#']"));
-  if (!sections.length || !links.length || typeof IntersectionObserver !== "function") return;
-  const visible = new Set<string>();
+  if (!sections.length || !links.length) return;
   const mark = (id: string) => {
     links.forEach((a) => {
       if (a.getAttribute("href") === `#${id}`) a.setAttribute("aria-current", "true");
       else a.removeAttribute("aria-current");
     });
   };
-  const io = new IntersectionObserver(
-    (entries) => {
-      for (const en of entries) {
-        const id = (en.target as HTMLElement).id;
-        if (en.isIntersecting) visible.add(id);
-        else visible.delete(id);
-      }
-      // The first section (in document order) inside the reading band wins; if none is in the
-      // band (between two long sections) the previous mark is kept.
-      const first = sections.find((s) => visible.has(s.id));
-      if (first) mark(first.id);
-    },
-    { rootMargin: "-92px 0px -55% 0px", threshold: 0 }
-  );
-  sections.forEach((s) => io.observe(s));
-  observers.push(io);
-  cleanups.push(() => links.forEach((a) => a.removeAttribute("aria-current")));
+  // The current section is the LAST one whose top has passed a reading line just below the
+  // sticky nav (140px; a contents link lands its section at scroll-margin 92px, so the clicked
+  // section is always the one marked, even when the next section is short). At the very bottom of the page the last section wins, even if it is too short to
+  // reach the line. Driven by a passive scroll/resize listener, throttled to one rAF per frame.
+  const update = () => {
+    const line = 140;
+    let cur = sections[0];
+    for (const s of sections) if (s.getBoundingClientRect().top <= line) cur = s;
+    const atEnd = window.innerHeight + window.scrollY >= document.documentElement.scrollHeight - 2;
+    if (atEnd && sections[sections.length - 1].getBoundingClientRect().top < window.innerHeight) {
+      cur = sections[sections.length - 1];
+    }
+    mark(cur.id);
+  };
+  let raf = 0;
+  const onScroll = () => {
+    if (raf) return;
+    raf = window.requestAnimationFrame(() => { raf = 0; update(); });
+  };
+  window.addEventListener("scroll", onScroll, { passive: true });
+  window.addEventListener("resize", onScroll, { passive: true });
+  update();
+  cleanups.push(() => {
+    window.removeEventListener("scroll", onScroll);
+    window.removeEventListener("resize", onScroll);
+    if (raf) window.cancelAnimationFrame(raf);
+    links.forEach((a) => a.removeAttribute("aria-current"));
+  });
 }
 
 /** Hero phone drift: the floating hero device lags the scroll by at most 12px (passive listener,
