@@ -30,7 +30,7 @@ Usage:
   python3 pipeline/ml_analytics_builder.py [--db db/sggs.sqlite] [--out /tmp/sggs_a.sqlite]
                                            [--min-support 20] [--neighbors-k 10]
   (build deps: Python stdlib + numpy. The optional --semantic line-level MiniLM upgrade is
-   documented in ML_Analytics_Engine.md and is NOT required for Phase 1.)
+   documented in docs/design/ML_Analytics_Engine.md and is NOT required for Phase 1.)
 """
 import argparse, json, math, os, re, shutil, sqlite3, sys, time
 from build_clock import stamp

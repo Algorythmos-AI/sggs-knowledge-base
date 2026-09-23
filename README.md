@@ -228,7 +228,7 @@ The English layer is **58,039 lines (95.7% of the Granth)**, aligned exact/skele
 4. **Explanation** — LLMs may only *explain*; any quote must pass the verifier (`Answer-Protocol.md`).
 5. **Governance** — mandatory citation, a source registry, `CHANGELOG.md`, and audit reports.
 
-Design docs, in reading order: `00_Build-Plan.md` → `01_Production-Architecture.md` → `02_Sovereign-Architecture-Assessment.md` → `03_Phonetic-Variant-Engine.md` → `Schema_v2_Migration_Report.md`. `MASTER-INDEX.md` is the doc index.
+Design docs (in `docs/design/`), in reading order: `00_Build-Plan.md` → `01_Production-Architecture.md` → `02_Sovereign-Architecture-Assessment.md` → `03_Phonetic-Variant-Engine.md` → `docs/reports/archive/Schema_v2_Migration_Report.md`. `MASTER-INDEX.md` is the doc index; the [engineering handbook](docs/engineering/README.md) is the operating manual.
 
 ---
 
@@ -276,7 +276,7 @@ Every release is gated against a battery of harnesses; nothing ships that regres
 | Structural checksum | `pipeline/enrich_v2.py --report` | 3,159 CLEAN / 527 STRUCTURAL / 2 verified |
 | Runtime self-test | `GET /api/health` | 6 / 6 checks |
 
-Narrative evidence lives in `Validation-Report.md`, `Audit_Report.md`, `Proactive_Hardening_Report_v2.0.6.md`, and `QA_Resolution_Report.md`.
+Narrative evidence lives in [`docs/reports/archive/`](docs/reports/archive/): `Validation-Report.md`, `Audit_Report.md`, `Proactive_Hardening_Report_v2.0.6.md`, and `QA_Resolution_Report.md`.
 
 ---
 

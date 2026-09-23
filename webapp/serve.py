@@ -406,7 +406,7 @@ def do_search(q, mode, limit, offset):
     return out
 
 def variant_search(q, limit, offset):
-    """Precomputed romanization-variant tier (03_Phonetic-Variant-Engine.md).
+    """Precomputed romanization-variant tier (docs/design/03_Phonetic-Variant-Engine.md).
     HYBRID per-token resolution so one stubborn token can't kill the AND:
       1. variant-index hit        -> translit:(a OR b OR c)   (<=3 by freq*score)
       2. trailing-vowel retry     -> same ('naari' ~ canonical 'naar')
@@ -1536,7 +1536,7 @@ class BoundedThreadingHTTPServer(ThreadingHTTPServer):
 if __name__ == '__main__':
     global_fts = None
     if not os.path.exists(DB):
-        sys.exit(f'Database not found: {DB}\nRun the pipeline first (see ../01_Production-Architecture.md).')
+        sys.exit(f'Database not found: {DB}\nRun the pipeline first (see docs/engineering/local-setup.md).')
     # Fail-fast on a Git-LFS *pointer* file (130-byte text stub instead of the ~109 MB DB):
     # os.path.exists() would pass but every /api query would then 500. Catch it at boot with a
     # clear message rather than serving errors. (Real SQLite files start with "SQLite format 3\x00".)

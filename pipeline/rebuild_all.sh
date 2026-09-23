@@ -17,6 +17,23 @@ for d in "$PWD" "${TMPDIR:-/tmp}"; do
   [ "$FREE_KB" -ge "$MIN_FREE_KB" ] || { echo "only $((FREE_KB / 1024)) MiB free on $d — need 5 GiB; aborting before any write" >&2; exit 1; }
 done
 python3 -c "import sys, sqlite3, fitz, numpy, scipy; print('python', sys.version.split()[0], '· sqlite', sqlite3.sqlite_version)"
+# The source of record must be the exact PDF the committed corpus was reconciled
+# against (validation/reconcile-attestation.json). A corrupted or different file is
+# refused; a deliberately new source edition needs SGGS_ALLOW_NEW_PDF=1 and review.
+python3 - "$PDF" <<'EOF'
+import hashlib, json, os, sys
+h = hashlib.sha256()
+with open(sys.argv[1], 'rb') as f:
+    for chunk in iter(lambda: f.read(1 << 20), b''): h.update(chunk)
+want = json.load(open('validation/reconcile-attestation.json'))['pdf_sha256']
+if h.hexdigest() == want:
+    print('source PDF sha256 matches the reconcile attestation')
+elif os.environ.get('SGGS_ALLOW_NEW_PDF') == '1':
+    print(f'WARNING: source PDF differs from the attestation ({h.hexdigest()[:16]}… vs {want[:16]}…) — allowed by SGGS_ALLOW_NEW_PDF=1')
+else:
+    sys.exit(f'source PDF sha256 {h.hexdigest()} != attested {want}; refusing to build '
+             '(set SGGS_ALLOW_NEW_PDF=1 only for a reviewed new source edition)')
+EOF
 # Reproducible stamps: every date written into the DB/MANIFEST derives from this (build_clock.py).
 # Default = the HEAD commit time, so the same commit + same PDF + same toolchain => same bytes.
 export SOURCE_DATE_EPOCH="${SOURCE_DATE_EPOCH:-$(git log -1 --format=%ct)}"
