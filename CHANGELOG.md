@@ -3,7 +3,7 @@
 The format below (newest first) follows [Keep a Changelog](https://keepachangelog.com);
 entries prior to v1.1.0 are the project's original prose style and are preserved verbatim.
 
-## [Unreleased]
+## [1.3.5] — 2026-09-23 — gurbanisoul.com v2, compositions as one work, widget fixes
 
 ### Added
 - **Asa Di Vaar as printed** — a second, non-default `printed` variant of the Vaar in Raag Asa
@@ -37,6 +37,22 @@ entries prior to v1.1.0 are the project's original prose style and are preserved
 - **Long compositions page by their printed rhythm.** Sukhmani Sahib now steps ashtapadi by
   ashtapadi instead of showing "Part 1 of 3" (its three registry groups are the opening salok, the
   entire body, and the salok again). Rehras Sahib and Aarti keep part navigation.
+
+### Fixed (iOS)
+- **Hukam widget citation always reads in full.** The large widget drew "Sri Guru Granth Sahib Ji
+  · An…" because "Tap to read the shabad" shared the citation's row; a 4-digit Ang truncated the
+  medium widget too, and every size truncated at larger text sizes. The action now sits beside the
+  citation only when both fit whole, otherwise drops to its own line, and a citation too wide for
+  one line wraps (keeping "· Ang N" together) instead of truncating. Widget text size is capped at
+  xxxLarge so the verse, ੴ and citation always fit; the shabad it opens still scales without limit.
+- **Raag Now countdown targets the real boundary.** The next-watch time kept the entry's seconds
+  (so the widget could still say "1 min" at the moment of the flip) and was an hour off across a
+  daylight-saving change. It is now the boundary's wall-clock time, resolved through the calendar
+  exactly as the timeline places its entries. The widget snapshot fixture also rendered pinned
+  entries against the real clock, which is what made them read "next watch in 4 days, 18 hrs".
+- **Constellation shows theme names, not raw ids.** Bubbles, the picker, the header, the cluster
+  sheet and VoiceOver read "Dukh Sukh", not "Dukh_Sukh"; the Theme Network labels and the raag
+  progression legend are fixed the same way. Display only — ids still drive queries and deep links.
 
 ### Data
 - Registry only: 637 new pointer rows in `bani_lines`, one new row in `banis`. **Scripture, corpus
@@ -75,6 +91,31 @@ Scripture, corpus and DB byte-identical; no page-layout change yet (the story la
   `transitions.spec` makes the dark choice in one click.
 - **Docs** — `docs/website/README.md` image policy rewritten for v2 (Unsplash licence facts,
   respectful selection, credit shape, file locations, budgets, shot pipeline).
+
+### gurbanisoul.com v2 — PR B: Home, Features and The watch
+- **Home is a 14-section product story** with real rhythm — a dark hero, light stories, a photo
+  band and three warm-ink chapters: a proof strip, the Ang 1 verse, Reader, Search, Nitnem, the
+  Raag Clock, widgets and Live Activity, Explore, verbatim by construction, private by design,
+  Learn with photo covers, and a download band.
+- **`/features`** becomes eight chapters with real app screenshots (iPhone and iPad, light and
+  dark), a traditional-saroop before/after strip and an accent strip.
+- **`/watch`** gains a dark hero, an eight-pahar timeline, fixed vs. solar watches, and where the
+  traditions disagree — the gated live arc is unchanged.
+- The saroop copy makes no pixel-match claim to the printed Bir, in line with the Support FAQ.
+- `test_home_has_rhythm` now passes for real; the four old app screenshots are removed.
+
+### gurbanisoul.com v2 — PR C: Privacy and Support on the Gurbani Soul site
+- **`/privacy` and `/support` move onto the Gurbani Soul site** — page hero, a contents rail
+  (chips on phones) and the shared footer — instead of the Knowledge Base shell. The paths are
+  unchanged, so the App Store URLs and the app's in-app links keep working.
+- **Privacy policy correction.** It said the website had "no analytics"; the Gurbani Soul pages do
+  load Vercel Web Analytics, which sets no cookies. The policy now says so plainly, and "no
+  analytics" applies to the app, which remains true. The newsletter provider is disclosed only
+  where its sign-up form appears. Last updated 23 September 2026.
+- **Support** gains a contact card, a question jump list, and FAQ questions as proper headings
+  (the FAQ structured data is unchanged).
+- **Navigation:** Features · The watch · Learn · Support · Privacy · Knowledge Base.
+- Social preview cards for both pages; privacy and support join the marketing gates.
 
 ---
 
