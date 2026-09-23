@@ -11,6 +11,12 @@ import GurbaniSearchKit
 /// from the verbatim `markers` (see `BaniOutline`); `seq` is the only identity used for scrolling.
 struct BaniReaderScreen: View {
     let key: String
+    /// Ask for ONE registry form regardless of the reader's Nitnem preferences (the Index opens
+    /// e.g. Asa Di Vaar as printed). nil = the preference / registry default, as Nitnem does.
+    var variantOverride: String? = nil
+    /// Nitnem (the daily practice) or Explore (a composition read on its own). Only the closing
+    /// chrome differs — same scripture, same outline, same saved position.
+    var context: BaniReaderContext = .nitnem
 
     @Environment(AppContainer.self) private var container
     @Environment(\.palette) private var palette
@@ -39,7 +45,7 @@ struct BaniReaderScreen: View {
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     private var tone: ReaderTone { ReaderTone(rawValue: toneRaw) ?? .paper }
-    private var variant: String { NitnemPrefs.variant(for: key, rehras: rehrasVariant) }
+    private var variant: String { variantOverride ?? NitnemPrefs.variant(for: key, rehras: rehrasVariant) }
     private var progressId: String { bani.map { $0.summary.id } ?? NitnemPrefs.progressId(key: key, variant: variant) }
     private var pace: AutoScrollPace { AutoScrollPace(rawValue: paceRaw) ?? .steady }
     /// Auto-scroll is offered only with a real scroll view and away from assistive/Reduce-Motion
@@ -187,7 +193,9 @@ struct BaniReaderScreen: View {
     }
 
     /// The registry rows for the current band's focus category, honouring the Rehras variant.
+    /// Empty in the Explore context: a composition read is not part of the day's band.
     private func focusRows() -> [BaniSummary] {
+        guard context == .nitnem else { return [] }
         let band = NitnemSchedule.band(at: NitnemClock.now())
         return registry
             .filter { $0.key == "rehras" ? $0.variant == NitnemPrefs.variant(for: "rehras", rehras: rehrasVariant) : $0.isDefault }
@@ -200,6 +208,12 @@ struct BaniReaderScreen: View {
 
     private var nextBani: BaniSummary? {
         focusRows().sorted { $0.orderNo < $1.orderNo }.first { !isDone($0) }
+    }
+
+    /// The next composition on the Index rail (Explore only) — the one gold action at the end.
+    private var nextComposition: CompositionCatalog.Hero? {
+        guard context == .explore else { return nil }
+        return CompositionCatalog.nextHero(after: key, variant: variantOverride ?? "")
     }
 
     private var bandComplete: Bool {
@@ -364,17 +378,33 @@ struct BaniReaderScreen: View {
                     bandCompleteCard
                 }
                 HStack(spacing: Theme.Space.m) {
-                    if let next = nextBani {
-                        Button {
-                            Haptics.tap()
-                            container.router.nitnemPath = NavigationPath([Route.bani(next.key)])
-                        } label: { Label("Next: \(next.titleEn)", systemImage: "arrow.right") }
-                        .buttonStyle(.prominentPill)
-                        .accessibilityIdentifier("nitnemNext")
+                    switch context {
+                    case .nitnem:
+                        if let next = nextBani {
+                            Button {
+                                Haptics.tap()
+                                container.router.nitnemPath = NavigationPath([Route.bani(next.key)])
+                            } label: { Label("Next: \(next.titleEn)", systemImage: "arrow.right") }
+                            .buttonStyle(.prominentPill)
+                            .accessibilityIdentifier("nitnemNext")
+                        }
+                        Button("Back to Nitnem") { container.router.nitnemPath = NavigationPath() }
+                            .buttonStyle(.bordered)
+                            .accessibilityIdentifier("baniBackToNitnem")
+                    case .explore:
+                        if let next = nextComposition {
+                            Button {
+                                Haptics.tap()
+                                container.router.explorePath.append(
+                                    Route.composition(key: next.key, variant: next.variant))
+                            } label: { Label("Next: \(next.roman)", systemImage: "arrow.right") }
+                            .buttonStyle(.prominentPill)
+                            .accessibilityIdentifier("compositionNext")
+                        }
+                        Button("Back to Index") { popToIndex() }
+                            .buttonStyle(.bordered)
+                            .accessibilityIdentifier("baniBackToIndex")
                     }
-                    Button("Back to Nitnem") { container.router.nitnemPath = NavigationPath() }
-                        .buttonStyle(.bordered)
-                        .accessibilityIdentifier("baniBackToNitnem")
                 }
             } else {
                 Text("End of \(bani.summary.titleEn)").font(.subheadline).foregroundStyle(.secondary)
@@ -467,11 +497,28 @@ struct BaniReaderScreen: View {
         liveStartTask?.cancel()
         guard live.isAvailable, let bani else { return }
         let key = bani.summary.key, en = bani.summary.titleEn, gm = bani.summary.titleGm
+        // Reopen the form the reader is actually showing, in the surface it was opened from —
+        // otherwise a tap on the printed Vaar's activity would land on the kirtan form in Nitnem.
+        let link = activityDeepLink(for: bani.summary)
         liveStartTask = Task { @MainActor in
             try? await Task.sleep(nanoseconds: UInt64(ReadingActivityPolicy.startDelay * 1_000_000_000))
             guard !Task.isCancelled, self.bani != nil else { return }
             guard !(completedNow || container.nitnem.isCompleted(progressId)) else { return }
-            live.start(key: key, titleEn: en, titleGm: gm, fraction: liveFraction, sectionLabel: liveSection)
+            live.start(key: key, titleEn: en, titleGm: gm, fraction: liveFraction,
+                       sectionLabel: liveSection, deepLink: link)
+        }
+    }
+
+    /// The sggs:// target a Live-Activity tap should reopen: the composition inside Explore, or
+    /// the plain bani in Nitnem. Only the registry's own key/variant ever reach the URL.
+    private func activityDeepLink(for summary: BaniSummary) -> String {
+        switch context {
+        case .nitnem:
+            return "sggs://bani/\(summary.key)"
+        case .explore:
+            return summary.variant.isEmpty
+                ? "sggs://composition/\(summary.key)"
+                : "sggs://composition/\(summary.key)?variant=\(summary.variant)"
         }
     }
 
@@ -502,6 +549,15 @@ struct BaniReaderScreen: View {
         showChrome()
         positionId = nil
         DispatchQueue.main.async { MotionGate.run(Motion.gentle) { positionId = seq } }
+    }
+
+    /// Pop this composition off the Explore stack, leaving the Index. Guarded: a deep link can
+    /// put the reader on a stack whose only entry is the reader itself.
+    private func popToIndex() {
+        var path = container.router.explorePath
+        guard !path.isEmpty else { return }
+        path.removeLast()
+        container.router.explorePath = path
     }
 
     private func showChrome() {

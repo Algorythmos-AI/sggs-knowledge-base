@@ -20,7 +20,15 @@ enum Route: Hashable {
     case theme(String)
     /// A bani from the Nitnem registry, by its stable key (variant is a user setting).
     case bani(String)
+    /// The same registry bani read as a standalone composition from Explore → Index. Carries the
+    /// variant explicitly (the Index asks for a specific form, e.g. Asa Di Vaar as printed) and
+    /// reads in the Explore context, so it never offers the Nitnem band's "next" or "Back to Nitnem".
+    case composition(key: String, variant: String)
 }
+
+/// Where a bani reader was opened from. Decides only the closing chrome — the scripture, the
+/// outline and the saved position are identical either way.
+enum BaniReaderContext: Hashable, Sendable { case nitnem, explore }
 
 @MainActor @Observable
 final class Router {
@@ -85,15 +93,27 @@ final class Router {
         nitnemPath = NavigationPath([Route.bani(key)])
     }
 
+    /// Open a registry bani as a standalone composition inside Explore, pushed on top of the
+    /// Index. Never selects the Nitnem tab.
+    func openComposition(key: String, variant: String = "") {
+        guard Router.isValidBaniKey(key), Router.isValidBaniVariant(variant) else { return }
+        selectedTab = .explore
+        explorePath = NavigationPath([Route.index, Route.composition(key: key, variant: variant)])
+    }
+
     /// Same allowlist as the API: lowercase ascii, digits, underscore, 1–32 chars.
     static func isValidBaniKey(_ key: String) -> Bool {
         !key.isEmpty && key.count <= 32 && key.allSatisfy { ("a"..."z").contains($0) || ("0"..."9").contains($0) || $0 == "_" }
     }
 
+    /// Mirrors serve.py `_BANI_VARIANTS`. "" means "whichever row is the registry default".
+    static let baniVariants = ["", "sgpc", "taksal", "kirtan", "printed"]
+    static func isValidBaniVariant(_ v: String) -> Bool { baniVariants.contains(v) }
+
     /// The sggs:// deep-link table (widgets/App Intents/Spotlight route through here):
     ///   sggs://ang/1430[?line=Y] · sggs://theme/naam · sggs://shabad/123[?line=Y] ·
     ///   sggs://search?q=mercy · sggs://clock (optional /<raag-roman>) · sggs://nitnem ·
-    ///   sggs://bani/<key>
+    ///   sggs://bani/<key>[?variant=] · sggs://composition/<key>[?variant=]
     /// `line` lands on that verse (scrolled + highlighted). Out-of-range/malformed values are
     /// ignored (never crash on a hostile URL).
     func handle(_ url: URL, container: AppContainer) {
@@ -102,6 +122,8 @@ final class Router {
         let value = url.pathComponents.dropFirst().first ?? ""     // path only — the query is excluded
         let line: Int? = URLComponents(url: url, resolvingAgainstBaseURL: false)?
             .queryItems?.first(where: { $0.name == "line" })?.value.flatMap(Int.init).flatMap { $0 > 0 ? $0 : nil }
+        let variant: String? = URLComponents(url: url, resolvingAgainstBaseURL: false)?
+            .queryItems?.first(where: { $0.name == "variant" })?.value
         switch host {
         case "ang":
             if let n = Int(value), (1...1430).contains(n) {
@@ -116,7 +138,15 @@ final class Router {
             selectedTab = .nitnem
             nitnemPath = NavigationPath()
         case "bani":
-            openBani(key: value)
+            // A variant is an explicit request for ONE form of a bani (e.g. the Vaar as printed
+            // vs its kirtan interleave), which is a composition read, not the day's Nitnem.
+            if let v = variant, !v.isEmpty {
+                openComposition(key: value, variant: v)
+            } else {
+                openBani(key: value)
+            }
+        case "composition":
+            openComposition(key: value, variant: variant ?? "")
         case "theme":
             if !value.isEmpty {
                 selectedTab = .explore

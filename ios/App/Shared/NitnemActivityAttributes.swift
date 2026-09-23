@@ -16,5 +16,8 @@ struct NitnemActivityAttributes: ActivityAttributes {
     let key: String
     let titleEn: String
     let titleGm: String
+    /// Where a tap should land. Optional on purpose: an activity started by an older build has no
+    /// such field, and an optional decodes to nil instead of throwing. nil = the Nitnem bani.
+    let deepLink: String?
 }
 #endif

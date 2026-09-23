@@ -114,6 +114,8 @@ struct RouteDestination: View {
         case .nitnemJourney: NitnemJourneyScreen()
         case .theme(let name): ThemeResultsScreen(concept: name)
         case .bani(let key): BaniReaderScreen(key: key)
+        case .composition(let key, let variant):
+            BaniReaderScreen(key: key, variantOverride: variant.isEmpty ? nil : variant, context: .explore)
         }
     }
 }

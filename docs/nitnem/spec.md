@@ -20,6 +20,14 @@ The Nitnem feature (PR #43, v1.2.0) plus the premium pass (v1.3.0). Architecture
   validity gate returns `[]` rather than ever showing a guessed number. Numbers appear only in
   the Contents sheet, the position bar caption, and a quiet margin label — never in the verse.
 
+## Reading contexts
+The same `BaniReaderScreen` serves both surfaces and only its closing chrome differs
+(`BaniReaderContext`): **Nitnem** offers the band's next bani, the band-complete card and "Back to
+Nitnem"; **Explore** (a composition opened from the Index) offers the next composition on the rail
+and "Back to Index", and never consults the time band. Scripture, outline, reading settings and the
+saved position are identical — a composition read from the Index completes the same Popular row in
+Nitnem, because both use `BaniSummary.id` (`key` or `key/variant`) as the progress identity.
+
 ## The Nitnem day
 A Nitnem day rolls at **03:00** (`NitnemClock.dayKey(now − 3h)`): Kirtan Sohila read at 22:00 is
 still complete at 00:30, and the night band never splits across a calendar midnight. `NitnemClock`
@@ -42,14 +50,18 @@ Tab / nav: `Nitnem`, each bani's `titleEn` (e.g. "Japji Sahib", "Jaap Sahib"), b
 "Amrit Vela". Rows/actions: `bani_<key>`, `Hukam`, `nitnemContinue`, `nitnemDone`, `nitnemNext`,
 `baniBackToNitnem`, `baniOptions` (a Menu holding "Start again", "Contents", "Reading settings"),
 `baniMarkComplete`, `baniPageBar`, `baniPosition` ("Part g of n" / "Line s of n"), `baniStanza`
-("Pauri N of M"), `bandComplete`, `nitnemJourney`, `rehrasVariantPicker`. Reading settings: `gurmukhiSizeSlider`,
+("Pauri N of M"), `bandComplete`, `nitnemJourney`, `rehrasVariantPicker`. Explore → Index compositions:
+`composition_<key>` (hero card and "More compositions" row), `compositionNext`, `baniBackToIndex`,
+the section header "MAJOR COMPOSITIONS". Reading settings: `gurmukhiSizeSlider`,
 `readerLeadingPicker`, `readerTonePicker`, `translitToggle`, `englishToggle`. The Jaap reader must
 contain the text "Sri Dasam Granth"; the Rehras row label must contain "Taksal" when that variant
 is chosen. Env hooks: `SGGS_CLOCK_NOW`, `SGGS_UITEST`. Wiped prefs: `sggs_rehras_variant`,
 `sggs_reader_tone`, `sggs_reader_leading`, `sggs_gurmukhi_size`, `sggs_focus_mode`, `sggs_translit`.
 
 ## Deep links & intents
-`sggs://nitnem`, `sggs://bani/<key>`, "Read a bani" App Intent. Raag Clock is an Explore card. The Nitnem widget (kind `NitnemNow`) reads the App-Group snapshot + progress file, never the DB.
+`sggs://nitnem`, `sggs://bani/<key>[?variant=]`, `sggs://composition/<key>[?variant=]`,
+"Read a bani" App Intent. A bani link that names a **variant** is an explicit request for one form
+and opens as a composition inside Explore; without one it opens the day's bani in Nitnem. Raag Clock is an Explore card. The Nitnem widget (kind `NitnemNow`) reads the App-Group snapshot + progress file, never the DB.
 
 ## Out of scope until v1.4.0
 Hands-free auto-scroll, gentle reminders, Home-Screen quick actions, Spotlight bani entries,
