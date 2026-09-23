@@ -5,13 +5,23 @@ import AxeBuilder from '@axe-core/playwright';
 // (/features, /watch), the pathname-based nav active state, and that the shared chrome (theme
 // toggle, mobile menu) keeps working off the landing.
 
-test('/features renders the capability list and device shots @smoke', async ({ page }) => {
+test('/features renders the chapters, the at-a-glance list and device shots @smoke', async ({ page }) => {
   const res = await page.goto('/features');
   expect(res?.status()).toBe(200);
   await expect(page.locator('h1')).toBeVisible();
 
-  // the six-capability definition list is present
+  // the six-capability "at a glance" list is present, each row anchoring a chapter on the page
   expect(await page.locator('dl.feat-list .feat-row dt').count()).toBe(6);
+  const anchors = await page.locator('dl.feat-list dt a').evaluateAll((as) => as.map((a) => a.getAttribute('href')));
+  expect(anchors).toHaveLength(6);
+  for (const href of anchors) {
+    await expect(page.locator(`[data-chapter]${href}`)).toHaveCount(1);
+  }
+
+  // the product story: numbered chapters, warm-ink chapters, a photo band
+  expect(await page.locator('[data-chapter]').count()).toBeGreaterThanOrEqual(8);
+  expect(await page.locator('section[data-theme="dark"]:not(.photo-band)').count()).toBeGreaterThanOrEqual(2);
+  expect(await page.locator('.photo-band').count()).toBeGreaterThanOrEqual(1);
 
   // all four app screenshots appear across the page (reader + nitnem + hukam + raag clock)
   for (const alt of ['Reader', 'Nitnem', 'Hukam', 'Raag Clock']) {
@@ -36,8 +46,18 @@ test('/watch renders the live dial, its caption and the raag list @smoke', async
   await expect(page.locator('ul.raags li[data-pahar]:not([hidden])')).toHaveCount(1);
   expect(await page.locator('ul.raags li[data-pahar]').count()).toBe(8);
 
-  // CTA to the Knowledge Base Raag Clock tool
-  await expect(page.locator('a[href="/raag-clock"]')).toBeVisible();
+  // the eight-pahar timeline: every watch, pahar 7 drawn as silence
+  await expect(page.locator('ol.pline > li.pcell')).toHaveCount(8);
+  await expect(page.locator('li.pcell[data-p="7"].silent')).toHaveCount(1);
+  await expect(page.locator('li.pcell[data-now]')).toHaveCount(1);
+
+  // dark hero band + the "where traditions disagree" band, never adjacent
+  expect(await page.locator('main > section[data-theme="dark"]').count()).toBeGreaterThanOrEqual(2);
+  await expect(page.locator('a[href="/divergence"]')).toHaveCount(1);
+
+  // CTA to the Knowledge Base Raag Clock tool (the one gold action) + the Learn article
+  await expect(page.locator('a.btn[href="/raag-clock"]')).toBeVisible();
+  await expect(page.locator('a[href="/learn/the-31-raags-and-the-watches-of-the-day"]').first()).toBeVisible();
 
   await expect(page.locator('link[rel="canonical"]')).toHaveAttribute('href', 'https://gurbanisoul.com/watch');
 });

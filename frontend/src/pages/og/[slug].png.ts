@@ -30,6 +30,8 @@ const TITLES: Record<string, string> = {
   "watch": "The Raag Clock — the watches of the day",
   "knowledge-base": "Sri Guru Granth Sahib Ji — Knowledge Base",
   "learn": "Learn — Sri Guru Granth Sahib Ji",
+  "privacy": "Gurbani Soul — privacy: the app collects nothing",
+  "support": "Gurbani Soul — help and support",
 };
 
 // Per-article OG cards (slug "learn-<articleId>") carry the article's own title in Source Serif 4.

@@ -11,6 +11,12 @@ import GurbaniSearchKit
 /// from the verbatim `markers` (see `BaniOutline`); `seq` is the only identity used for scrolling.
 struct BaniReaderScreen: View {
     let key: String
+    /// Ask for ONE registry form regardless of the reader's Nitnem preferences (the Index opens
+    /// e.g. Asa Di Vaar as printed). nil = the preference / registry default, as Nitnem does.
+    var variantOverride: String? = nil
+    /// Nitnem (the daily practice) or Explore (a composition read on its own). Only the closing
+    /// chrome differs — same scripture, same outline, same saved position.
+    var context: BaniReaderContext = .nitnem
 
     @Environment(AppContainer.self) private var container
     @Environment(\.palette) private var palette
@@ -39,7 +45,7 @@ struct BaniReaderScreen: View {
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     private var tone: ReaderTone { ReaderTone(rawValue: toneRaw) ?? .paper }
-    private var variant: String { NitnemPrefs.variant(for: key, rehras: rehrasVariant) }
+    private var variant: String { variantOverride ?? NitnemPrefs.variant(for: key, rehras: rehrasVariant) }
     private var progressId: String { bani.map { $0.summary.id } ?? NitnemPrefs.progressId(key: key, variant: variant) }
     private var pace: AutoScrollPace { AutoScrollPace(rawValue: paceRaw) ?? .steady }
     /// Auto-scroll is offered only with a real scroll view and away from assistive/Reduce-Motion
@@ -187,7 +193,9 @@ struct BaniReaderScreen: View {
     }
 
     /// The registry rows for the current band's focus category, honouring the Rehras variant.
+    /// Empty in the Explore context: a composition read is not part of the day's band.
     private func focusRows() -> [BaniSummary] {
+        guard context == .nitnem else { return [] }
         let band = NitnemSchedule.band(at: NitnemClock.now())
         return registry
             .filter { $0.key == "rehras" ? $0.variant == NitnemPrefs.variant(for: "rehras", rehras: rehrasVariant) : $0.isDefault }
@@ -200,6 +208,12 @@ struct BaniReaderScreen: View {
 
     private var nextBani: BaniSummary? {
         focusRows().sorted { $0.orderNo < $1.orderNo }.first { !isDone($0) }
+    }
+
+    /// The next composition on the Index rail (Explore only) — the one gold action at the end.
+    private var nextComposition: CompositionCatalog.Hero? {
+        guard context == .explore else { return nil }
+        return CompositionCatalog.nextHero(after: key, variant: variantOverride ?? "")
     }
 
     private var bandComplete: Bool {
@@ -220,7 +234,7 @@ struct BaniReaderScreen: View {
             }
             .frame(height: 0)
             LazyVStack(alignment: .leading, spacing: 18) {
-                header(bani)
+                if context == .explore { cover(bani) } else { header(bani) }
                 ForEach(Array(lines.enumerated()), id: \.element.seq) { index, line in
                     let opensGroup = index > 0 && lines[index - 1].lineGroup != line.lineGroup
                     if let sec = sectionStarting(at: line.seq) {
@@ -320,6 +334,89 @@ struct BaniReaderScreen: View {
         .accessibilityAddTraits(.isHeader)
     }
 
+    /// The composition's opening page: what this work is, where it sits in the Granth, how long a
+    /// read it is, and one gold action that either begins it or returns the reader to where they
+    /// stopped. Everything here is already loaded — no extra query, no stored text.
+    @ViewBuilder
+    private func cover(_ bani: Bani) -> some View {
+        let hero = CompositionCatalog.heroes.first { $0.key == key && $0.variant == (variantOverride ?? "") }
+        VStack(alignment: .leading, spacing: Theme.Space.m) {
+            VStack(alignment: .leading, spacing: Theme.Space.xs) {
+                if let raag = hero?.raag, !raag.isEmpty {
+                    SectionEyebrow(text: raag, symbol: "text.book.closed")
+                }
+                Text(bani.summary.titleEn).font(Brand.heading(.title2))
+                GurmukhiText(verbatim: bani.summary.titleGm, size: 24)
+            }
+            if !coverFacts(bani).isEmpty {
+                Text(coverFacts(bani))
+                    .font(.caption).foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+            if let about = bani.summary.descriptionEn, !about.isEmpty {
+                Text(about)
+                    .font(.footnote).foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+            if bani.summary.hasExtra {
+                Text(NitnemReview.extraLayerLabel)
+                    .font(.caption2).foregroundStyle(.tertiary)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+            HStack(spacing: Theme.Space.m) {
+                Button { beginOrContinue(bani) } label: {
+                    Label(resumeTitle(bani), systemImage: "book")
+                }
+                .buttonStyle(.prominentPill)
+                .accessibilityIdentifier("compositionBegin")
+                if !outline.isEmpty {
+                    Button("Contents") { showContents() }
+                        .buttonStyle(.bordered)
+                }
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(Theme.Space.l)
+        .background {
+            PaperGround(palette: palette, intensity: 0.10)
+                .clipShape(RoundedRectangle(cornerRadius: Theme.Radius.card))
+        }
+        .overlay(RoundedRectangle(cornerRadius: Theme.Radius.card).strokeBorder(Ink.hairline))
+        .padding(.bottom, Theme.Space.s)
+        .accessibilityElement(children: .contain)
+    }
+
+    /// "Sri Guru Granth Sahib Ji · Ang 262–296 · 24 ashtapadis · about 90 min" — every part
+    /// omitted when it is not known, never guessed.
+    private func coverFacts(_ bani: Bani) -> String {
+        var parts: [String] = []
+        if !bani.citationRange.isEmpty { parts.append(bani.citationRange) }
+        let steps = BaniPager.steps(in: outline)
+        if let kind = steps.first?.kind, steps.count > 1 {
+            parts.append("\(steps.count) \(kind.label.lowercased())s")
+        }
+        if let m = bani.summary.estimatedMinutes { parts.append("about \(m) min") }
+        return parts.joined(separator: " · ")
+    }
+
+    /// The gold action names what it will actually do: resume the saved stanza, or begin.
+    private func resumeTitle(_ bani: Bani) -> String {
+        guard let seq = positionId, seq > (bani.lines.first?.seq ?? 1) else { return "Begin reading" }
+        if let sec = BaniOutline.section(at: seq, in: outline), sec.number > 0 {
+            return "Continue from \(sec.kind.label) \(sec.number)"
+        }
+        return "Continue reading"
+    }
+
+    private func beginOrContinue(_ bani: Bani) {
+        let first = bani.lines.first?.seq ?? 1
+        if let seq = positionId, seq > first {
+            jump(toSeq: seq)                    // re-land on the saved stanza
+        } else {
+            jump(toSeq: first)
+        }
+    }
+
     @ViewBuilder
     private func lineView(_ line: BaniLine) -> some View {
         if VerseTypography.rendersAsHeading(line.gurmukhi, flaggedHeader: line.isHeader) {
@@ -364,17 +461,33 @@ struct BaniReaderScreen: View {
                     bandCompleteCard
                 }
                 HStack(spacing: Theme.Space.m) {
-                    if let next = nextBani {
-                        Button {
-                            Haptics.tap()
-                            container.router.nitnemPath = NavigationPath([Route.bani(next.key)])
-                        } label: { Label("Next: \(next.titleEn)", systemImage: "arrow.right") }
-                        .buttonStyle(.prominentPill)
-                        .accessibilityIdentifier("nitnemNext")
+                    switch context {
+                    case .nitnem:
+                        if let next = nextBani {
+                            Button {
+                                Haptics.tap()
+                                container.router.nitnemPath = NavigationPath([Route.bani(next.key)])
+                            } label: { Label("Next: \(next.titleEn)", systemImage: "arrow.right") }
+                            .buttonStyle(.prominentPill)
+                            .accessibilityIdentifier("nitnemNext")
+                        }
+                        Button("Back to Nitnem") { container.router.nitnemPath = NavigationPath() }
+                            .buttonStyle(.bordered)
+                            .accessibilityIdentifier("baniBackToNitnem")
+                    case .explore:
+                        if let next = nextComposition {
+                            Button {
+                                Haptics.tap()
+                                container.router.explorePath.append(
+                                    Route.composition(key: next.key, variant: next.variant))
+                            } label: { Label("Next: \(next.roman)", systemImage: "arrow.right") }
+                            .buttonStyle(.prominentPill)
+                            .accessibilityIdentifier("compositionNext")
+                        }
+                        Button("Back to Index") { popToIndex() }
+                            .buttonStyle(.bordered)
+                            .accessibilityIdentifier("baniBackToIndex")
                     }
-                    Button("Back to Nitnem") { container.router.nitnemPath = NavigationPath() }
-                        .buttonStyle(.bordered)
-                        .accessibilityIdentifier("baniBackToNitnem")
                 }
             } else {
                 Text("End of \(bani.summary.titleEn)").font(.subheadline).foregroundStyle(.secondary)
@@ -409,21 +522,33 @@ struct BaniReaderScreen: View {
         }
     }
 
-    /// Bottom bar: part navigation for multi-part banis, top/end for single-part, with the
-    /// reading position in words and — when there is one — the pauri/ashtapadi caption.
+    /// Bottom bar. A composition with a trustworthy outline steps by its printed rhythm (pauri /
+    /// ashtapadi) — Sukhmani's three registry groups would otherwise offer a 2,027-line "part".
+    /// Otherwise: part navigation for multi-part banis (Rehras, Aarti), top/end for single-part.
+    /// The position reads in words, with the stanza caption underneath when there is one.
     private func bar(lines: [BaniLine], groups: Int) -> some View {
         let seq = positionId ?? (lines.first?.seq ?? 1)
         let group = lines.first(where: { $0.seq == seq })?.lineGroup ?? 1
         let stanza = stanzaCaption(at: seq)
+        let steps = BaniPager.steps(in: outline)
+        let stepName = steps.first?.kind.label.lowercased() ?? "part"
+        let byStep = !steps.isEmpty
         return HStack {
             Button {
-                if groups > 1 { jump(toGroup: group - 1, lines: lines) } else { jump(toSeq: lines.first?.seq) }
-            } label: { Image(systemName: groups > 1 ? "chevron.left" : "arrow.up.to.line").frame(minWidth: 44, minHeight: 44) }
-                .disabled(groups > 1 ? group <= 1 : seq <= 1)
-                .accessibilityLabel(groups > 1 ? "Previous part" : "Top")
+                if byStep { jump(toSeq: BaniPager.neighbour(of: seq, in: steps, direction: -1)) }
+                else if groups > 1 { jump(toGroup: group - 1, lines: lines) }
+                else { jump(toSeq: lines.first?.seq) }
+            } label: {
+                Image(systemName: byStep || groups > 1 ? "chevron.left" : "arrow.up.to.line")
+                    .frame(minWidth: 44, minHeight: 44)
+            }
+                .disabled(byStep ? !BaniPager.canStep(from: seq, in: steps, direction: -1)
+                                 : (groups > 1 ? group <= 1 : seq <= 1))
+                .accessibilityLabel(byStep ? "Previous \(stepName)" : (groups > 1 ? "Previous part" : "Top"))
             Spacer()
             VStack(spacing: 1) {
-                Text(groups > 1 ? "Part \(group) of \(groups)" : "Line \(min(seq, lines.count)) of \(lines.count)")
+                Text(!byStep && groups > 1 ? "Part \(group) of \(groups)"
+                                           : "Line \(min(seq, lines.count)) of \(lines.count)")
                     .font(.subheadline.weight(.medium)).monospacedDigit()
                     .accessibilityIdentifier("baniPosition")
                 if let stanza {
@@ -433,10 +558,16 @@ struct BaniReaderScreen: View {
             }
             Spacer()
             Button {
-                if groups > 1 { jump(toGroup: group + 1, lines: lines) } else { jump(toSeq: Int.max) }
-            } label: { Image(systemName: groups > 1 ? "chevron.right" : "arrow.down.to.line").frame(minWidth: 44, minHeight: 44) }
-                .disabled(groups > 1 && group >= groups)
-                .accessibilityLabel(groups > 1 ? "Next part" : "End")
+                if byStep { jump(toSeq: BaniPager.neighbour(of: seq, in: steps, direction: 1)) }
+                else if groups > 1 { jump(toGroup: group + 1, lines: lines) }
+                else { jump(toSeq: Int.max) }
+            } label: {
+                Image(systemName: byStep || groups > 1 ? "chevron.right" : "arrow.down.to.line")
+                    .frame(minWidth: 44, minHeight: 44)
+            }
+                .disabled(byStep ? !BaniPager.canStep(from: seq, in: steps, direction: 1)
+                                 : (groups > 1 && group >= groups))
+                .accessibilityLabel(byStep ? "Next \(stepName)" : (groups > 1 ? "Next part" : "End"))
         }
         .font(.body.weight(.medium))
         .padding(.horizontal, Theme.Space.m)
@@ -467,11 +598,28 @@ struct BaniReaderScreen: View {
         liveStartTask?.cancel()
         guard live.isAvailable, let bani else { return }
         let key = bani.summary.key, en = bani.summary.titleEn, gm = bani.summary.titleGm
+        // Reopen the form the reader is actually showing, in the surface it was opened from —
+        // otherwise a tap on the printed Vaar's activity would land on the kirtan form in Nitnem.
+        let link = activityDeepLink(for: bani.summary)
         liveStartTask = Task { @MainActor in
             try? await Task.sleep(nanoseconds: UInt64(ReadingActivityPolicy.startDelay * 1_000_000_000))
             guard !Task.isCancelled, self.bani != nil else { return }
             guard !(completedNow || container.nitnem.isCompleted(progressId)) else { return }
-            live.start(key: key, titleEn: en, titleGm: gm, fraction: liveFraction, sectionLabel: liveSection)
+            live.start(key: key, titleEn: en, titleGm: gm, fraction: liveFraction,
+                       sectionLabel: liveSection, deepLink: link)
+        }
+    }
+
+    /// The sggs:// target a Live-Activity tap should reopen: the composition inside Explore, or
+    /// the plain bani in Nitnem. Only the registry's own key/variant ever reach the URL.
+    private func activityDeepLink(for summary: BaniSummary) -> String {
+        switch context {
+        case .nitnem:
+            return "sggs://bani/\(summary.key)"
+        case .explore:
+            return summary.variant.isEmpty
+                ? "sggs://composition/\(summary.key)"
+                : "sggs://composition/\(summary.key)?variant=\(summary.variant)"
         }
     }
 
@@ -502,6 +650,15 @@ struct BaniReaderScreen: View {
         showChrome()
         positionId = nil
         DispatchQueue.main.async { MotionGate.run(Motion.gentle) { positionId = seq } }
+    }
+
+    /// Pop this composition off the Explore stack, leaving the Index. Guarded: a deep link can
+    /// put the reader on a stack whose only entry is the reader itself.
+    private func popToIndex() {
+        var path = container.router.explorePath
+        guard !path.isEmpty else { return }
+        path.removeLast()
+        container.router.explorePath = path
     }
 
     private func showChrome() {

@@ -371,6 +371,72 @@ final class SGGSUITests: XCTestCase {
         XCTAssertTrue(waitLabel(stanza, hasPrefix: "Pauri 5", timeout: 10), "stanza caption did not follow the jump")
     }
 
+    // MARK: Explore → Index → a composition's own reader
+
+    /// Open the Index and push a major composition onto the EXPLORE stack: the reader appears on
+    /// top of the Index (tab bar unchanged, back returns to the Index), and the saved position is
+    /// the same one the Nitnem surface uses.
+    func testIndexOpensCompositionReaderOnTheExploreStack() {
+        let app = launchApp(selectSearch: false)
+        openIndex(app)
+
+        let card = app.buttons["composition_sukhmani"].firstMatch
+        XCTAssertTrue(card.waitForExistence(timeout: 12), "Sukhmani card missing from the Index")
+        card.tap()
+        XCTAssertTrue(app.navigationBars["Sukhmani Sahib"].waitForExistence(timeout: 15),
+                      "the composition did not open its own reader")
+        XCTAssertFalse(app.navigationBars["Ang 262"].exists, "must NOT drop into the Ang reader")
+        XCTAssertTrue(tab(app, "Explore").isSelected, "a composition reads inside Explore")
+
+        // Move the position, then go back: Back must land on the Index, not the Explore hub.
+        let pos = app.staticTexts["baniPosition"].firstMatch
+        XCTAssertTrue(pos.waitForExistence(timeout: 10), "the reading-position bar is missing")
+        app.buttons["Next ashtapadi"].firstMatch.tap()
+        app.navigationBars["Sukhmani Sahib"].buttons.element(boundBy: 0).tap()
+        XCTAssertTrue(app.navigationBars["Index"].waitForExistence(timeout: 10),
+                      "Back from a composition must return to the Index")
+
+        // Reopening resumes where it was left.
+        app.buttons["composition_sukhmani"].firstMatch.tap()
+        XCTAssertTrue(app.navigationBars["Sukhmani Sahib"].waitForExistence(timeout: 15))
+        XCTAssertTrue(app.staticTexts["baniPosition"].firstMatch.waitForExistence(timeout: 8))
+    }
+
+    /// The closing chrome of a composition belongs to Explore: "Back to Index", never the Nitnem
+    /// band's "Back to Nitnem". Uses Lavan (25 lines) so the end is one tap away.
+    func testCompositionEndOffersBackToIndexNotNitnem() {
+        let app = launchApp(selectSearch: false)
+        openIndex(app)
+
+        let row = app.buttons["composition_lavan"].firstMatch
+        for _ in 0..<6 where !(row.exists && row.isHittable) { app.swipeUp() }
+        XCTAssertTrue(row.waitForExistence(timeout: 10), "Lavan missing from More compositions")
+        row.tap()
+        XCTAssertTrue(app.navigationBars["Lavan"].waitForExistence(timeout: 15))
+
+        app.buttons["End"].firstMatch.tap()
+        let markRead = app.buttons["baniMarkComplete"].firstMatch
+        for _ in 0..<8 where !(markRead.exists && markRead.isHittable) { app.swipeUp() }
+        XCTAssertTrue(markRead.waitForExistence(timeout: 10), "end-of-bani action missing")
+        markRead.tap()
+
+        let back = app.buttons["baniBackToIndex"].firstMatch
+        XCTAssertTrue(back.waitForExistence(timeout: 10), "a composition must close back to the Index")
+        XCTAssertFalse(app.buttons["baniBackToNitnem"].exists, "Nitnem chrome must not leak into Explore")
+        XCTAssertFalse(app.buttons["nitnemNext"].exists, "the time band must not drive a composition read")
+        back.tap()
+        XCTAssertTrue(app.navigationBars["Index"].waitForExistence(timeout: 10))
+    }
+
+    /// Explore hub → Index, waiting for each step (the glass tab bar can swallow a first tap).
+    private func openIndex(_ app: XCUIApplication) {
+        openTab(app, "Explore", expectingNavBar: "Explore")
+        let index = app.buttons["Index"].firstMatch
+        XCTAssertTrue(index.waitForExistence(timeout: 10), "Index card missing from Explore")
+        index.tap()
+        XCTAssertTrue(app.navigationBars["Index"].waitForExistence(timeout: 10))
+    }
+
     /// A bani reopens where the reader left it (progress file), and Start again returns to the top.
     func testBaniProgressResumes() {
         let app = launchApp(selectSearch: false)
@@ -378,19 +444,22 @@ final class SGGSUITests: XCTestCase {
         XCTAssertTrue(row.waitForExistence(timeout: 12))
         row.tap()
         XCTAssertTrue(app.navigationBars["Sukhmani Sahib"].waitForExistence(timeout: 12))
-        app.buttons["Next part"].firstMatch.tap()
-        let pos = app.staticTexts["baniPosition"].firstMatch
-        XCTAssertTrue(pos.waitForExistence(timeout: 8))
-        XCTAssertTrue(waitLabel(pos, hasPrefix: "Part 2"), "expected Part 2, got \(pos.label)")
+        // Sukhmani steps by its printed rhythm (24 ashtapadis), not by the three registry groups.
+        app.buttons["Next ashtapadi"].firstMatch.tap()
+        let stanza = app.staticTexts["baniStanza"].firstMatch
+        XCTAssertTrue(stanza.waitForExistence(timeout: 8))
+        XCTAssertTrue(waitLabel(stanza, hasPrefix: "Ashtapadi 2"), "expected Ashtapadi 2, got \(stanza.label)")
         app.navigationBars.buttons.element(boundBy: 0).tap()          // back (flushes the save)
         XCTAssertTrue(app.buttons["bani_sukhmani"].firstMatch.waitForExistence(timeout: 12))
         app.buttons["bani_sukhmani"].firstMatch.tap()
         XCTAssertTrue(app.navigationBars["Sukhmani Sahib"].waitForExistence(timeout: 12))
-        XCTAssertTrue(app.staticTexts["baniPosition"].firstMatch.waitForExistence(timeout: 8))
-        XCTAssertTrue(waitLabel(app.staticTexts["baniPosition"].firstMatch, hasPrefix: "Part 2"), "position did not resume")
+        XCTAssertTrue(app.staticTexts["baniStanza"].firstMatch.waitForExistence(timeout: 8))
+        XCTAssertTrue(waitLabel(app.staticTexts["baniStanza"].firstMatch, hasPrefix: "Ashtapadi 2"),
+                      "position did not resume")
         app.buttons["baniOptions"].tap()
         app.buttons["Start again"].firstMatch.tap()
-        XCTAssertTrue(waitLabel(app.staticTexts["baniPosition"].firstMatch, hasPrefix: "Part 1"), "Start again should return to the top")
+        XCTAssertTrue(waitLabel(app.staticTexts["baniStanza"].firstMatch, hasPrefix: "Ashtapadi 1"),
+                      "Start again should return to the top")
     }
 
     func testSearchOpensShabad() {
@@ -1114,13 +1183,29 @@ final class SGGSUITests: XCTestCase {
         let index = app.buttons["Index"].firstMatch
         if index.waitForExistence(timeout: 8) { index.tap() }
         _ = app.navigationBars["Index"].waitForExistence(timeout: 8)
-        _ = app.staticTexts["MAJOR COMPOSITIONS — QUICK ACCESS"].waitForExistence(timeout: 8)
+        _ = app.staticTexts["MAJOR COMPOSITIONS"].waitForExistence(timeout: 8)
         shot("index")
+        // A major composition opens its own reader on the Explore stack (Index → composition).
+        let composition = app.buttons["composition_sukhmani"].firstMatch
+        if composition.waitForExistence(timeout: 8) {
+            composition.tap()
+            _ = app.navigationBars["Sukhmani Sahib"].waitForExistence(timeout: 15)
+            _ = app.staticTexts["baniPosition"].firstMatch.waitForExistence(timeout: 8)
+            shot("composition_reader")
+            app.navigationBars.buttons.firstMatch.tap()   // back to the Index
+            _ = app.navigationBars["Index"].waitForExistence(timeout: 8)
+        }
         app.navigationBars.buttons.firstMatch.tap()   // back to the hub
         let themes = app.buttons["Themes"].firstMatch
         if themes.waitForExistence(timeout: 8) { themes.tap() }
         _ = app.navigationBars["Themes"].waitForExistence(timeout: 8)
         shot("themes")
+        app.navigationBars.buttons.firstMatch.tap()   // back to the hub
+        let constellation = app.buttons["Constellation"].firstMatch
+        if constellation.waitForExistence(timeout: 8) { constellation.tap() }
+        _ = app.navigationBars["Constellation"].waitForExistence(timeout: 8)
+        _ = app.staticTexts["Naam"].waitForExistence(timeout: 8)   // centre bubble rendered
+        shot("constellation")
         app.navigationBars.buttons.firstMatch.tap()   // back to the hub
         let lineage = app.buttons["Lineage"].firstMatch
         if lineage.waitForExistence(timeout: 8) { lineage.tap() }

@@ -1,16 +1,20 @@
 import { test, expect } from '@playwright/test';
 
-// PR2 adds Astro's <ClientRouter/> to the marketing shell so `/` ↔ `/learn` will feel app-like
-// (the /learn route lands in PR3). Until it exists, this asserts the important guarantees hold:
+// The marketing shell uses Astro's <ClientRouter/> so `/` ↔ `/learn` feel app-like. This asserts
+// the important guarantees hold:
 //  * the marketing → Knowledge Base jump is a real, working navigation, and
 //  * a theme choice made on the landing survives that jump (shared localStorage key 'theme').
 
 test('landing → Knowledge Base is a working navigation and theme persists', async ({ page }, testInfo) => {
   test.skip(testInfo.project.name === 'mobile', 'uses the desktop theme button');
+  // Start from "no stored choice": clear once, then reload (not addInitScript, which would re-run
+  // on the Knowledge Base navigation below and wipe the choice under test).
   await page.goto('/');
-  // Make an explicit dark choice on the landing (system → light → dark).
+  await page.evaluate(() => { try { localStorage.removeItem('theme'); } catch (e) {} });
+  await page.reload();
+  // The marketing site is light-first, so ONE click makes the explicit dark choice (light → dark).
   const btn = page.locator('#themeBtn');
-  await btn.click();
+  await expect(btn).toHaveText('☀');
   await btn.click();
   await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark');
   expect(await page.evaluate(() => localStorage.getItem('theme'))).toBe('dark');

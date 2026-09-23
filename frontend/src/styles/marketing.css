@@ -25,6 +25,9 @@
 }
 
 :root {
+  /* The marketing nav's exact height. Heroes that sit under the transparent nav pull up by
+     this much, so it must match the nav at every width (see .mnav and the 839px breakpoint). */
+  --mnav-h: 73px;
   /* Soul Gold + warm surfaces (light legs from tokens.json). */
   --paper: #FBF7F0; --paper-2: #FDF6E3; --card: #FFFFFF;
   --ink: #201A12; --ink-soft: #6B5E4B; --line: rgba(43,26,5,.12);
@@ -36,20 +39,21 @@
   --sans: ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
   --gm: "Sant Lipi", "Noto Sans Gurmukhi", "Gurmukhi MN", sans-serif;
   --serif-display: "Source Serif 4", "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif;
-  --maxw: 1160px;
+  --maxw: 1200px;
+  /* v2 rhythm: story sections breathe, strips stay tight. */
+  --sec: clamp(72px, 10vw, 136px);
+  --sec-thin: clamp(40px, 5vw, 64px);
+  /* The one device shadow, everywhere (warm, never pure black). */
+  --shadow-device: 0 40px 90px -40px rgba(20,14,6,.45);
 }
 :root[data-theme="dark"] {
   --paper: #171412; --paper-2: #0E0C0A; --card: #1E1A17;
   --ink: #F3ECDD; --ink-soft: #B9AC95; --line: rgba(255,255,255,.10);
   --accent-fill: #FFBC0D; --accent: #FFBC0D; --accent-text: #FFC72C; --on-accent: #2B1A05;
 }
-@media (prefers-color-scheme: dark) {
-  :root:not([data-theme="light"]) {
-    --paper: #171412; --paper-2: #0E0C0A; --card: #1E1A17;
-    --ink: #F3ECDD; --ink-soft: #B9AC95; --line: rgba(255,255,255,.10);
-    --accent-fill: #FFBC0D; --accent: #FFBC0D; --accent-text: #FFC72C; --on-accent: #2B1A05;
-  }
-}
+/* Light-first (v2): there is deliberately NO OS-appearance (media query) dark override here. The
+   marketing site renders light unless the reader chose otherwise; the resolved choice arrives as
+   html[data-theme] from the pre-paint script in Marketing.astro + scripts/theme.ts. */
 * { box-sizing: border-box; }
 html { -webkit-text-size-adjust: 100%; }
 body {
@@ -66,7 +70,9 @@ body {
 .gm { font-family: var(--gm); }
 h1, h2, h3 { font-family: var(--serif-display); font-weight: 600; letter-spacing: -.02em; line-height: 1.12; }
 a { color: var(--accent-text); }
-:root[data-theme="dark"] a { color: var(--accent-text); }
+/* :where() keeps this at its old specificity (so nav/footer link rules still win) while leaving
+   gold-filled .btn links to their own on-accent ink — without it, page-dark painted them gold on gold. */
+:root[data-theme="dark"] a:where(:not(.btn)) { color: var(--accent-text); }
 /* Buttons: gold fill always carries a border in light (brand rule §3.1). */
 .btn {
   display: inline-flex; align-items: center; gap: 8px; font-weight: 650; font-family: var(--sans);
@@ -97,7 +103,7 @@ html.js-motion .reveal.in { opacity: 1; transform: none; transition: opacity .6s
 
 /* --- Sticky nav ------------------------------------------------------------------------------ */
 .mnav {
-  position: sticky; top: 0; z-index: 50;
+  position: sticky; top: 0; z-index: 50; height: var(--mnav-h);
   display: flex; align-items: center; gap: 18px;
   padding: 14px 20px;
   transition: background .2s ease, color .2s ease, border-color .2s ease;
@@ -140,6 +146,7 @@ html.js-motion .reveal.in { opacity: 1; transform: none; transition: opacity .6s
 #mobileMenu .mm-cta { margin-top: 18px; }
 #mobileMenu .mm-close { background: transparent; border: 1px solid var(--line); border-radius: 10px; width: 40px; height: 38px; color: var(--ink); font-size: 20px; cursor: pointer; }
 @media (max-width: 839px) {
+  :root { --mnav-h: 67px; }
   .mnav nav.mnav-links, .mnav .mnav-right .pill, .mnav .mnav-right #themeBtn { display: none; }
   .mnav .burger { display: inline-flex; }
 }
@@ -166,11 +173,29 @@ html.js-motion .reveal.in { opacity: 1; transform: none; transition: opacity .6s
 }
 
 /* --- Device frame (CSS-only iPhone) ---------------------------------------------------------- */
-.device { position: relative; width: 100%; max-width: 260px; aspect-ratio: 9 / 19.5; border-radius: 44px; background: var(--ink); padding: 10px; box-shadow: 0 30px 60px -30px rgba(20,14,6,.5); }
+.device { position: relative; width: 100%; max-width: 260px; aspect-ratio: 9 / 19.5; border-radius: 44px; background: #201A12; padding: 10px; box-shadow: var(--shadow-device); }
+/* The bezel stays warm ink in every theme; on warm-ink surfaces a hairline ring keeps its edge. */
+[data-theme="dark"] .device { box-shadow: var(--shadow-device), 0 0 0 1px rgba(255,255,255,.14); }
 .device::before { content: ""; position: absolute; top: 20px; left: 50%; transform: translateX(-50%); width: 84px; height: 24px; border-radius: 999px; background: #000; z-index: 2; }
 .device .screen { position: relative; width: 100%; height: 100%; border-radius: 35px; overflow: hidden; background: var(--paper-2); display: flex; align-items: center; justify-content: center; }
 .device .screen img { width: 100%; height: 100%; object-fit: cover; }
+/* iPad frames render a <picture>: it must fill the flex screen too, or the img collapses to 0×0. */
+.device .screen > picture { display: block; width: 100%; height: 100%; }
+.device .screen img { display: block; }
 .device .ph-onkar { font-family: var(--gm); font-size: 44px; color: var(--ink); opacity: .5; }
+/* iPad (landscape 4/3): thinner radius, 12px bezel, no Dynamic Island. */
+.device.device--ipad { max-width: 720px; aspect-ratio: 4 / 3; border-radius: 28px; padding: 12px; }
+.device.device--ipad::before { content: none; }
+.device.device--ipad .screen { border-radius: 16px; }
+/* Frame-less editorial screenshot (saroop/accent pairs, iPad crops on mobile). */
+.shot { margin: 0; }
+.shot .shot-in { border-radius: 18px; overflow: hidden; border: 1px solid var(--line); background: var(--paper-2); box-shadow: var(--shadow-device); }
+.shot .shot-in img { display: block; width: 100%; height: auto; }
+.shot--iphone { max-width: 340px; }
+.shot--ipad { max-width: 720px; }
+.shot .shot-ph { aspect-ratio: 9 / 19.5; display: flex; align-items: center; justify-content: center; }
+.shot--ipad .shot-ph { aspect-ratio: 4 / 3; }
+.device-fig figcaption, .shot figcaption { color: var(--ink-soft); text-align: center; margin-top: 12px; font-size: 13.5px; }
 
 /* --- Fine print / fact rails ----------------------------------------------------------------- */
 .factrail { display: flex; flex-wrap: wrap; gap: 10px 22px; list-style: none; padding: 0; margin: 0; }
@@ -202,3 +227,209 @@ html.js-motion .reveal.in { opacity: 1; transform: none; transition: opacity .6s
 .kbmock .rows .r { height: 12px; border-radius: 6px; background: var(--line); }
 .kbmock .rows .r.short { width: 52%; }
 .kbmock .rows .r.mid { width: 74%; }
+
+
+/* ============================================================================================
+   v2 SYSTEM (PR A — foundations). Additive building blocks for the Apple-style product story;
+   no page adopts the new layouts yet. Brand rules unchanged: gold is a bordered fill or a hairline
+   in light, gold words only via --accent-text, never red, flat type (no shadows on text), Gurmukhi in ink.
+   ============================================================================================ */
+
+/* --- Rhythm ---------------------------------------------------------------------------------- */
+.sec { padding: var(--sec) 0; }
+.sec-thin { padding: var(--sec-thin) 0; }
+
+/* --- Type ------------------------------------------------------------------------------------ */
+.h-story { font-family: var(--serif-display); font-weight: 600; font-size: clamp(30px, 4.6vw, 52px); line-height: 1.08; letter-spacing: -.02em; color: var(--ink); margin: 0 0 18px; }
+.h-statement { font-family: var(--serif-display); font-weight: 600; font-size: clamp(34px, 5.2vw, 60px); line-height: 1.05; letter-spacing: -.02em; color: var(--ink); margin: 0 0 20px; }
+.body-lg { font-size: 17px; line-height: 1.6; color: var(--ink-soft); max-width: 62ch; margin: 0 0 16px; }
+@media (min-width: 980px) { .body-lg { font-size: 18px; } }
+.detail { font-size: 15px; line-height: 1.55; color: var(--ink-soft); margin: 0; }
+.h-story, .h-statement, .proof strong, .chapter-no span { font-variant-numeric: tabular-nums lining-nums; }
+
+/* Chapter numbering — `<p class="chapter-no"><span>01</span> Read</p>`: a Source Serif numeral,
+   a short gold hairline, then the sans label. The one editorial device across the site. */
+.chapter-no { display: flex; align-items: center; gap: 12px; margin: 0 0 16px; color: var(--accent-text); font-family: var(--sans); font-size: 12.5px; font-weight: 700; letter-spacing: .14em; }
+.chapter-no span { font-family: var(--serif-display); font-size: 16px; font-weight: 600; letter-spacing: 0; color: var(--accent-text); display: inline-flex; align-items: center; gap: 12px; }
+.chapter-no span::after { content: ""; display: inline-block; width: 28px; height: 2px; border-radius: 2px; background: var(--accent); }
+
+/* The gold hairline — above eyebrows and under page-hero h1s; the only decoration. */
+.gold-hair { display: block; width: 48px; height: 2px; background: var(--accent); border: 0; border-radius: 2px; margin: 0 0 20px; }
+
+/* --- Surfaces -------------------------------------------------------------------------------- */
+.surface-paper { background: var(--paper); }
+.surface-warm { background: var(--paper-2); }
+/* `.band` was a dead class; it is now a warm surface between two hairlines. */
+.band { background: var(--paper-2); border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); }
+/* Dark-in-dark: a warm-ink band must still read as a band when the whole page is dark, and a
+   warm light surface must not collapse to near-black in page-dark. Never pure black. */
+:root[data-theme="dark"] [data-theme="dark"] { --paper: #0E0C0A; --card: #171412; }
+:root[data-theme="dark"] .surface-warm:not([data-theme]),
+:root[data-theme="dark"] .band:not([data-theme]) { background: #1E1A17; }
+
+/* --- Story grid: text + media chapters -------------------------------------------------------
+   <div class="story-grid [story-grid--6-6|--7-5|--4-8] [story--flip]">
+     <div class="story-text">…</div><div class="story-media">…[.media-secondary]</div></div>
+   ≥980px: 12 columns, text 5 / media 7 by default; --flip puts the media on the left.
+   ≤979px: one column, text FIRST then media (message before picture); secondary media hidden. */
+.story-grid { display: grid; grid-template-columns: minmax(0, 1fr); gap: clamp(32px, 5vw, 56px); align-items: center; }
+.story-grid > .story-text { order: 0; min-width: 0; }
+.story-grid > .story-media { order: 1; min-width: 0; position: relative; }
+@media (max-width: 979px) {
+  .media-secondary { display: none !important; }
+}
+@media (min-width: 980px) {
+  .story-grid { --text: 5; --media: 7; grid-template-columns: repeat(12, minmax(0, 1fr)); column-gap: clamp(32px, 4vw, 64px); }
+  .story-grid--6-6 { --text: 6; --media: 6; }
+  .story-grid--7-5 { --text: 7; --media: 5; }
+  .story-grid--4-8 { --text: 4; --media: 8; }
+  .story-grid > .story-text { grid-column: 1 / span var(--text); grid-row: 1; }
+  .story-grid > .story-media { grid-column: span var(--media) / -1; grid-row: 1; }
+  .story-grid.story--flip > .story-media { grid-column: 1 / span var(--media); }
+  .story-grid.story--flip > .story-text { grid-column: span var(--text) / -1; }
+}
+
+/* --- Proof strip: 5-up serif numerals (2-col ≤979px, 1-col <420px) --------------------------- */
+.proof { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: 1fr 1fr 1.45fr .85fr 1.2fr; border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); }
+.proof li { padding: clamp(20px, 3vw, 32px) clamp(12px, 2vw, 24px); display: flex; flex-direction: column; gap: 6px; }
+.proof li + li { border-left: 1px solid var(--line); }
+.proof strong { font-family: var(--serif-display); font-weight: 600; font-size: clamp(32px, 3.4vw, 48px); white-space: nowrap; line-height: 1; letter-spacing: -.02em; color: var(--ink); }
+.proof span { font-size: 14.5px; line-height: 1.45; color: var(--ink-soft); }
+@media (max-width: 979px) {
+  .proof { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .proof li + li { border-left: 0; }
+  .proof li { border-top: 1px solid var(--line); }
+  .proof li:nth-child(-n+2) { border-top: 0; }
+  .proof li:nth-child(2n) { border-left: 1px solid var(--line); }
+}
+@media (max-width: 419px) {
+  .proof { grid-template-columns: minmax(0, 1fr); }
+  .proof li:nth-child(2n) { border-left: 0; }
+  .proof li:nth-child(2) { border-top: 1px solid var(--line); }
+}
+
+/* --- Mosaic: 2×2 tiles, a .tile--tall spans two rows (2-col on mobile too) ------------------- */
+.mosaic { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); grid-auto-flow: dense; gap: clamp(12px, 2vw, 24px); }
+@media (min-width: 980px) { .mosaic--3 { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+.mosaic .tile { margin: 0; border-radius: 18px; overflow: hidden; border: 1px solid var(--line); background: var(--card); }
+.mosaic .tile--tall { grid-row: span 2; }
+.mosaic .tile img { display: block; width: 100%; height: 100%; object-fit: cover; }
+
+/* --- Photo band (PhotoBand.astro) ------------------------------------------------------------ */
+.photo-band { position: relative; overflow: clip; display: flex; align-items: center; min-height: var(--pb-min, 52svh); background: #17110a; color: var(--ink); }
+.photo-band .pb-media, .photo-band .pb-media picture, .photo-band .pb-media img { position: absolute; inset: 0; width: 100%; height: 100%; }
+.photo-band .pb-media img { object-fit: cover; object-position: var(--pb-pos, center); }
+.photo-band .pb-scrim { position: absolute; inset: 0; background: radial-gradient(ellipse 58% 62% at 50% 50%, rgba(15,10,5,.55) 0%, rgba(15,10,5,.28) 60%, rgba(15,10,5,0) 100%), linear-gradient(180deg, rgba(15,10,5,.50) 0%, rgba(15,10,5,.42) 40%, rgba(15,10,5,.70) 100%); }
+.photo-band .pb-in { position: relative; width: 100%; padding-top: var(--sec-thin); padding-bottom: var(--sec-thin); text-align: center; }
+.photo-band .pb-in .h-statement { max-width: 22ch; margin-left: auto; margin-right: auto; }
+@media (max-width: 979px) { .photo-band { min-height: var(--pb-min-mobile, 40svh); } }
+
+/* --- Micro-interactions (motion-safe only, ≤160ms) ------------------------------------------- */
+@media (prefers-reduced-motion: no-preference) {
+  .card :is(h2, h3) { text-decoration-line: underline; text-decoration-color: transparent; text-decoration-thickness: 1px; text-underline-offset: 4px; transition: text-decoration-color .16s ease; }
+  .card:hover :is(h2, h3), .card:focus-within :is(h2, h3) { text-decoration-color: var(--accent); }
+  .btn { transition: transform .12s ease; }
+  .btn:hover { transform: translateY(-1px); }
+}
+html.js-motion .reveal.in[data-delay="1"] { transition-delay: 80ms; }
+html.js-motion .reveal.in[data-delay="2"] { transition-delay: 160ms; }
+
+
+/* ============================================================================================
+   v2 STORY PAGES (PR B — Home, Features, The watch). Shared chapter furniture: warm-ink
+   surfaces, device stages (overlap phone, pairs, gold wash for dark phones), widgets, mosaic
+   tiles, numbered steps, article cards. Same brand rules as above.
+   ============================================================================================ */
+
+/* A warm-ink statement chapter: the section carries data-theme="dark" (tokens) + .surface-ink. */
+.surface-ink { background: var(--paper); color: var(--ink); }
+.hair-top { border-top: 1px solid var(--line); }
+.story-head { max-width: 62ch; margin: 0 0 clamp(32px, 5vw, 56px); }
+.story-head .body-lg { margin-bottom: 0; }
+.cta-row { display: flex; flex-wrap: wrap; gap: 14px 18px; align-items: center; margin: 26px 0 0; }
+.link-more { display: inline-flex; align-items: center; min-height: 44px; font-weight: 650; font-size: 16px; color: var(--accent-text); text-decoration: underline; text-decoration-color: var(--line); text-underline-offset: 5px; text-decoration-thickness: 1px; }
+.link-more:hover { text-decoration-color: var(--accent); }
+.detail-row { margin-top: 22px; }
+.story-text .detail { max-width: 62ch; margin-top: 16px; }
+.btn.ghost { min-height: 44px; }
+
+/* --- Device stage --------------------------------------------------------------------------- */
+.stage { position: relative; display: flex; justify-content: center; }
+/* The figure fills the stage (a flex item with only an aspect-ratio child would shrink to 0). */
+.stage > .device-fig, .stage > .shot { width: 100%; }
+.stage .device { max-width: 300px; margin: 0 auto; }
+.stage .device.device--ipad { max-width: 720px; margin: 0 0 0 auto; }
+.stage--ipad { justify-content: flex-end; }
+/* The overlapping second phone: 200px, offset over the iPad's lower-left corner (≥980px only;
+   .media-secondary hides it on mobile). */
+.stage .overlap { position: absolute; left: -28px; bottom: -48px; width: 200px; z-index: 2; }
+.stage .overlap .device-fig { width: 100%; }
+.stage .overlap .device { max-width: 200px; margin: 0; border-radius: 32px; padding: 7px; }
+.stage .overlap .device .screen { border-radius: 26px; }
+.stage .overlap .device::before { top: 14px; width: 58px; height: 17px; }
+/* A pair of phones, the second dropped 56px (staggered, never overlapping). */
+.pair { display: flex; gap: clamp(14px, 3vw, 32px); justify-content: center; align-items: flex-start; }
+.pair > * { flex: 0 1 300px; min-width: 0; }
+.pair > :nth-child(2) { margin-top: clamp(28px, 5vw, 56px); }
+.pair .device { max-width: 300px; }
+.pair figcaption { color: var(--ink-soft); }
+/* Gold ambient wash behind DARK phones only (accentFill, ≤14%). */
+.wash { position: relative; isolation: isolate; }
+.wash::before { content: ""; position: absolute; inset: -10% -8%; z-index: -1; pointer-events: none;
+  background: radial-gradient(55% 50% at 50% 45%, rgba(255,188,13,.12), transparent 72%); }
+/* Chapters never scroll sideways: decorative washes/overlaps are clipped at the section edge. */
+.sec, .sec-thin, .surface-ink { overflow-x: clip; }
+/* iPad on mobile: a frame-less, full-width editorial crop (no bezel). */
+@media (max-width: 979px) {
+  .device.device--ipad { max-width: 100%; padding: 0; background: transparent; border: 1px solid var(--line); border-radius: 18px; overflow: hidden; }
+  .device.device--ipad .screen { border-radius: 0; }
+  .stage--ipad { justify-content: center; }
+  .pair .device { border-radius: 30px; padding: 7px; }
+  .pair .device .screen { border-radius: 24px; }
+  .pair .device::before { top: 13px; width: 50px; height: 15px; }
+}
+
+/* --- Widgets + Live Activity ------------------------------------------------------------------ */
+.widgets { display: grid; gap: clamp(12px, 2vw, 20px); }
+.widgets .wrow { display: grid; gap: clamp(12px, 2vw, 20px); grid-template-columns: 474fr 1014fr; align-items: start; }
+.widgets .wrow--rev { grid-template-columns: 1014fr 474fr; }
+.widgets figure { margin: 0; }
+.widgets img { display: block; width: 100%; height: auto; }
+.widgets .widget img { filter: drop-shadow(0 18px 26px rgba(20,14,6,.16)); }
+/* Widget renders: some are opaque squares — clip every one to the system widget corner (~6.3% of
+   its height) so none shows a square edge on a warm-ink or page-dark surface. */
+.widget--s img { border-radius: 6.4%; }
+.widget--m img { border-radius: 3% / 6.4%; }
+.widgets .la-card { border-radius: 22px; overflow: hidden; border: 1px solid var(--line); }
+.widgets figcaption { color: var(--ink-soft); font-size: 13.5px; margin-top: 10px; }
+
+/* --- Mosaic tiles with captions (Explore) ------------------------------------------------------ */
+.mosaic .tile { display: flex; flex-direction: column; }
+.mosaic .tile .tile-img { position: relative; aspect-ratio: 1 / 1; overflow: hidden; background: var(--paper-2); }
+.mosaic .tile--tall .tile-img { aspect-ratio: auto; flex: 1 1 auto; min-height: 240px; }
+.mosaic .tile .tile-img img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: top center; }
+.mosaic .tile figcaption { padding: 12px 16px 14px; font-size: 14px; line-height: 1.45; color: var(--ink-soft); border-top: 1px solid var(--line); }
+.mosaic .tile figcaption strong { display: block; color: var(--ink); font-weight: 650; font-size: 15px; }
+
+/* --- Numbered steps (Verbatim chapter) --------------------------------------------------------- */
+.steps { list-style: none; margin: 0; padding: 0; }
+.steps li { display: grid; grid-template-columns: 52px minmax(0, 1fr); column-gap: 18px; padding: clamp(20px, 3vw, 28px) 0; border-top: 1px solid var(--line); }
+.steps li:last-child { border-bottom: 1px solid var(--line); }
+.steps .n { grid-row: span 2; font-family: var(--serif-display); font-weight: 600; font-size: 32px; line-height: 1; color: var(--accent-text); font-variant-numeric: tabular-nums lining-nums; }
+.steps h3 { margin: 0 0 6px; font-size: clamp(20px, 2.2vw, 24px); color: var(--ink); }
+.steps p { margin: 0; color: var(--ink-soft); font-size: 16px; line-height: 1.6; max-width: 56ch; }
+
+/* --- Article cards with photo covers ------------------------------------------------------------ */
+.cards { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: minmax(0, 1fr); gap: clamp(16px, 2.4vw, 28px); }
+@media (min-width: 760px) { .cards { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+.card a { display: flex; flex-direction: column; height: 100%; text-decoration: none; color: inherit; border: 1px solid var(--line); border-radius: 18px; overflow: hidden; background: var(--card); }
+.card .cover { aspect-ratio: 16 / 10; overflow: hidden; background: #17110a; }
+.card .cover img { display: block; width: 100%; height: 100%; object-fit: cover; }
+.card .card-body { padding: 18px 20px 22px; display: flex; flex-direction: column; gap: 8px; flex: 1; }
+.card .card-kicker { margin: 0; font-size: 12.5px; font-weight: 700; letter-spacing: .14em; color: var(--accent-text); }
+.card h3 { margin: 0; font-size: clamp(19px, 2vw, 22px); color: var(--ink); }
+.card .card-desc { margin: 0; font-size: 15px; line-height: 1.55; color: var(--ink-soft); }
+.card .card-more { margin-top: auto; padding-top: 6px; font-size: 14.5px; font-weight: 650; color: var(--accent-text); }
+
+/* KB mock: the decorative query field is a span (no form control, nothing to label). */
+.kbmock .search .q { flex: 1; font-size: 15px; padding: 11px 14px; border-radius: 10px; border: 1px solid var(--line); background: var(--paper); color: var(--ink-soft); }

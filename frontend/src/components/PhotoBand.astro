@@ -1,0 +1,32 @@
+---
+// PhotoBand.astro — a full-bleed photographic divider for the marketing story. A warm-ink scrim
+// sits over a self-hosted <Picture> (CSP img-src 'self'), and the band is a dark scope
+// (data-theme="dark") so the slotted statement reads in warm paper-on-ink. Never place it beside
+// Gurmukhi. Every photo is credited via IMAGE_CREDITS (site.ts) → MarketingFooter + NOTICE.md.
+//   src       an ImageMetadata import from src/assets/landing/
+//   alt       names the place (e.g. "Sri Harmandir Sahib reflected in the sarovar at dawn")
+//   position  CSS object-position for the crop (default "center")
+//   minH      desktop min-height (default 52svh; mobile is 40svh)
+//   id        optional section id
+import { Picture } from "astro:assets";
+import type { ImageMetadata } from "astro";
+
+interface Props {
+  src: ImageMetadata;
+  alt: string;
+  position?: string;
+  minH?: string;
+  id?: string;
+}
+const { src, alt, position = "center", minH = "52svh", id } = Astro.props;
+---
+<section class="photo-band" data-theme="dark" id={id} style={`--pb-pos:${position};--pb-min:${minH}`}>
+  <div class="pb-media">
+    <Picture src={src} alt={alt} formats={["avif", "webp"]} widths={[640, 960, 1280, 1600]}
+      sizes="100vw" quality={55} loading="lazy" decoding="async" />
+  </div>
+  <div class="pb-scrim" aria-hidden="true"></div>
+  <div class="wrap pb-in">
+    <slot />
+  </div>
+</section>

@@ -85,7 +85,7 @@ def main():
         check('lines byte-identical after build', table_hash(con, 'lines') == lines_before)
         h1 = {t: table_hash(con, t) for t in ('banis', 'bani_lines', 'extra_lines')}
         n_banis = con.execute('SELECT count(*) FROM banis').fetchone()[0]
-        check('22 bani variants', n_banis == 22, str(n_banis))
+        check('23 bani variants', n_banis == 23, str(n_banis))
         con.close()
 
         print('constraints')

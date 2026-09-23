@@ -2,11 +2,17 @@
 // runs on first load AND after every view-transition swap (astro:page-load); teardown() releases
 // its observers/timers on astro:before-swap so nothing leaks across navigations. It NEVER imports
 // core.ts (the Knowledge Base's DOM/API layer) — only the self-contained theme + pahar helpers.
-import { initTheme, applyTheme } from "./theme";
+import { initTheme, applyTheme, setDefaultTheme } from "./theme";
 import { paharFixed, paharLabel, paharRange } from "./pahar.js";
 import { wireNewsletter } from "./newsletter";
 
 type Theme = "light" | "dark" | "system";
+
+// gurbanisoul.com is LIGHT-FIRST: with no stored choice the marketing pages render light whatever
+// the OS appearance (the Knowledge Base keeps its 'system' default — it never loads this module).
+// Must run before initTheme(); the pre-paint script in Marketing.astro uses the same default.
+const MARKETING_DEFAULT: Theme = "light";
+setDefaultTheme(MARKETING_DEFAULT);
 
 let observers: IntersectionObserver[] = [];
 let cleanups: Array<() => void> = [];
@@ -111,7 +117,9 @@ function wireRaagClock() {
   const svg = document.querySelector(".raag-arc");
   const caption = document.querySelector<HTMLElement>("[data-raag-now]");
   const lis = document.querySelectorAll<HTMLElement>("li[data-pahar]");
-  if (!svg && !caption && !lis.length) return;
+  // /watch's eight-pahar timeline cells (data-p, deliberately NOT data-pahar: they are never hidden).
+  const cells = document.querySelectorAll<HTMLElement>(".pcell[data-p]");
+  if (!svg && !caption && !lis.length && !cells.length) return;
 
   const render = () => {
     const p = paharFixed(new Date());
@@ -124,12 +132,86 @@ function wireRaagClock() {
     lis.forEach((li) => {
       li.hidden = Number(li.dataset.pahar) !== p;
     });
+    cells.forEach((c) => {
+      if (Number(c.dataset.p) === p) c.setAttribute("data-now", "");
+      else c.removeAttribute("data-now");
+    });
   };
   render();
   tick = window.setInterval(render, 60_000);
   cleanups.push(() => {
     if (tick) window.clearInterval(tick);
     tick = undefined;
+  });
+}
+
+/** Legal pages (LegalPage.astro): mark the contents-rail link of the section being read with
+    aria-current. No-op when the page has no `.legal` article. */
+function wireTocActive() {
+  const sections = Array.from(document.querySelectorAll<HTMLElement>(".legal section[id]"));
+  const links = Array.from(document.querySelectorAll<HTMLAnchorElement>(".legal-toc a[href^='#']"));
+  if (!sections.length || !links.length) return;
+  const mark = (id: string) => {
+    links.forEach((a) => {
+      if (a.getAttribute("href") === `#${id}`) a.setAttribute("aria-current", "true");
+      else a.removeAttribute("aria-current");
+    });
+  };
+  // The current section is the LAST one whose top has passed a reading line just below the
+  // sticky nav (140px; a contents link lands its section at scroll-margin 92px, so the clicked
+  // section is always the one marked, even when the next section is short). At the very bottom of the page the last section wins, even if it is too short to
+  // reach the line. Driven by a passive scroll/resize listener, throttled to one rAF per frame.
+  const update = () => {
+    const line = 140;
+    let cur = sections[0];
+    for (const s of sections) if (s.getBoundingClientRect().top <= line) cur = s;
+    const atEnd = window.innerHeight + window.scrollY >= document.documentElement.scrollHeight - 2;
+    if (atEnd && sections[sections.length - 1].getBoundingClientRect().top < window.innerHeight) {
+      cur = sections[sections.length - 1];
+    }
+    mark(cur.id);
+  };
+  let raf = 0;
+  const onScroll = () => {
+    if (raf) return;
+    raf = window.requestAnimationFrame(() => { raf = 0; update(); });
+  };
+  window.addEventListener("scroll", onScroll, { passive: true });
+  window.addEventListener("resize", onScroll, { passive: true });
+  update();
+  cleanups.push(() => {
+    window.removeEventListener("scroll", onScroll);
+    window.removeEventListener("resize", onScroll);
+    if (raf) window.cancelAnimationFrame(raf);
+    links.forEach((a) => a.removeAttribute("aria-current"));
+  });
+}
+
+/** Hero phone drift: the floating hero device lags the scroll by at most 12px (passive listener,
+    one rAF per frame). Motion-safe only; uses the individual `translate` property so it composes
+    with the device's own rotate() transform. Torn down on astro:before-swap. */
+function wireHeroDrift() {
+  const device = document.querySelector<HTMLElement>(".hero-device .device");
+  const hero = device?.closest<HTMLElement>(".hero") ?? null;
+  if (!device || !hero || !motionOK()) return;
+  const MAX = 12;
+  let frame = 0;
+  const update = () => {
+    frame = 0;
+    const h = hero.offsetHeight || 1;
+    const p = Math.min(Math.max(window.scrollY / h, 0), 1);
+    device.style.translate = `0 ${(p * MAX).toFixed(2)}px`;
+  };
+  const onScroll = () => {
+    if (!frame) frame = requestAnimationFrame(update);
+  };
+  window.addEventListener("scroll", onScroll, { passive: true });
+  update();
+  cleanups.push(() => {
+    window.removeEventListener("scroll", onScroll);
+    if (frame) cancelAnimationFrame(frame);
+    frame = 0;
+    device.style.translate = "";
   });
 }
 
@@ -148,6 +230,8 @@ function init() {
   wireNavActive();
   wireReveal();
   wireRaagClock();
+  wireTocActive();
+  wireHeroDrift();
   const nl = wireNewsletter(); // no-op when the env-gated form is absent (this build)
   if (nl) cleanups.push(nl);
 }
@@ -162,10 +246,10 @@ function forwardLegacyQuery() {
 // Re-assert the resolved theme after a swap (the fresh document starts from the pre-paint value).
 function reapplyTheme() {
   try {
-    const t = (localStorage.getItem("theme") as Theme) || "system";
+    const t = (localStorage.getItem("theme") as Theme) || MARKETING_DEFAULT;
     applyTheme(t);
   } catch {
-    applyTheme("system");
+    applyTheme(MARKETING_DEFAULT);
   }
 }
 

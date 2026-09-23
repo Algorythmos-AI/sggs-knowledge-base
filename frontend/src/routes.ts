@@ -18,7 +18,7 @@ export interface Route {
   og: string;          // OG card slug → /og/<og>.png
 }
 
-const LASTMOD = "2026-09-22";
+const LASTMOD = "2026-09-23";
 
 // Learn article slugs (src/content/learn/<slug>.mdx), newest-first for the index + teaser order.
 // Kept here so the sitemap, the OG cards and the /learn index share one ordered list. Must list
@@ -60,8 +60,8 @@ export const routes: Route[] = [
   { path: "/constellation",lastmod: LASTMOD, changefreq: "monthly", priority: 0.5, og: "knowledge-base" },
   { path: "/raag-clock",   lastmod: LASTMOD, changefreq: "monthly", priority: 0.6, og: "knowledge-base" },
   { path: "/divergence",   lastmod: LASTMOD, changefreq: "monthly", priority: 0.4, og: "knowledge-base" },
-  { path: "/privacy",      lastmod: LASTMOD, changefreq: "yearly",  priority: 0.4, og: "knowledge-base" },
-  { path: "/support",      lastmod: LASTMOD, changefreq: "yearly",  priority: 0.4, og: "knowledge-base" },
+  { path: "/privacy",      lastmod: LASTMOD, changefreq: "yearly",  priority: 0.4, og: "privacy" },
+  { path: "/support",      lastmod: LASTMOD, changefreq: "yearly",  priority: 0.5, og: "support" },
   ...learnRoutes,
 ];
 

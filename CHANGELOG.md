@@ -3,6 +3,134 @@
 The format below (newest first) follows [Keep a Changelog](https://keepachangelog.com);
 entries prior to v1.1.0 are the project's original prose style and are preserved verbatim.
 
+## [1.3.5] — 2026-09-23 — gurbanisoul.com v2, compositions as one work, widget fixes
+
+### Added
+- **Asa Di Vaar as printed** — a second, non-default `printed` variant of the Vaar in Raag Asa
+  (Sri Guru Granth Sahib Ji · Ang 462–475, 637 lines, twenty-four pauris with their saloks),
+  alongside the existing `kirtan` form that keeps the chhants from Ang 448–451 interleaved. The
+  Nitnem default is unchanged, so every existing reading position and deep link still resolves to
+  the kirtan form.
+- **Range-defined banis in the registry** (ADR-0006 §4) — a bani may be declared by our own line-id
+  ranges instead of a ShabadOS membership list. Every range carries verbatim text anchors that
+  `build_banis.py` and `guard_banis.py` re-check, so a corpus rebuild that shifted ids would fail
+  the build rather than quietly point a bani at different verses.
+
+### Changed (iOS)
+- **The Index's major compositions open their own reader.** Tapping Sukhmani Sahib, Asa Ki Vaar,
+  Anand Sahib, Bavan Akhri, Sidh Gosht or Dakhni Oankaar now pushes that composition's reader onto
+  the Explore stack — cover, contents, saved position, verbatim text cited by Ang — instead of
+  switching to the Ang reader and landing mid-page. Back returns to the Index; the tab bar stays
+  where it was. A card falls back to opening its Ang when a DB profile carries no bani registry.
+- **"More compositions"** — the rest of the scripture shelf (Anand Sahib's six pauris, Salok
+  Mahalla 9, Shabad Hazare, Barah Maha, Lavan) is now reachable from the Index. Banis that contain
+  the separate Sri Dasam Granth / Ardaas layer stay on the Nitnem surface that labels them.
+- **Reading position is one fact.** A composition read from the Index and the same bani read from
+  Nitnem share the saved position and the "read today" seal.
+- `sggs://composition/<key>[?variant=]` opens a composition; `sggs://bani/<key>?variant=` now
+  honours the named form, so a Live-Activity tap on the printed Vaar can no longer reopen the
+  kirtan one.
+
+- **A composition opens on its own cover** — title, the Ang range it occupies, how many
+  ashtapadis or pauris it runs to, about how long it takes, what it is, and one action that either
+  begins it or returns the reader to the stanza they stopped at.
+- **Long compositions page by their printed rhythm.** Sukhmani Sahib now steps ashtapadi by
+  ashtapadi instead of showing "Part 1 of 3" (its three registry groups are the opening salok, the
+  entire body, and the salok again). Rehras Sahib and Aarti keep part navigation.
+
+### Fixed (iOS)
+- **Hukam widget citation always reads in full.** The large widget drew "Sri Guru Granth Sahib Ji
+  · An…" because "Tap to read the shabad" shared the citation's row; a 4-digit Ang truncated the
+  medium widget too, and every size truncated at larger text sizes. The action now sits beside the
+  citation only when both fit whole, otherwise drops to its own line, and a citation too wide for
+  one line wraps (keeping "· Ang N" together) instead of truncating. Widget text size is capped at
+  xxxLarge so the verse, ੴ and citation always fit; the shabad it opens still scales without limit.
+- **Raag Now countdown targets the real boundary.** The next-watch time kept the entry's seconds
+  (so the widget could still say "1 min" at the moment of the flip) and was an hour off across a
+  daylight-saving change. It is now the boundary's wall-clock time, resolved through the calendar
+  exactly as the timeline places its entries. The widget snapshot fixture also rendered pinned
+  entries against the real clock, which is what made them read "next watch in 4 days, 18 hrs".
+- **Constellation shows theme names, not raw ids.** Bubbles, the picker, the header, the cluster
+  sheet and VoiceOver read "Dukh Sukh", not "Dukh_Sukh"; the Theme Network labels and the raag
+  progression legend are fixed the same way. Display only — ids still drive queries and deep links.
+
+### Fixed (web)
+- **Hero text is legible over the artwork** — measured, not eyeballed: the eyebrow read 2.29:1 on
+  phones and the lede 3.84:1 over the lit dome; every text-over-photo block is now at least 4.59:1.
+- **No strip of page colour above the Home and The watch heroes** — the nav height is one shared
+  token instead of a hard-coded offset that was 7px short on desktop.
+- **Gold buttons stay readable in dark mode** — link buttons had been drawn gold on gold.
+- **Website screenshots match the app** — the Constellation shots showed raw theme ids
+  ("Dukh_Sukh") that 1.3.5 fixes in the app; recaptured in light and dark.
+
+### Data
+- Registry only: 637 new pointer rows in `bani_lines`, one new row in `banis`. **Scripture, corpus
+  and every pre-existing table are byte-identical** (`diff_scripture.py`: no column changed;
+  `guard_scripture.py`: all 46 tables match the Step-0 baseline).
+
+### gurbanisoul.com v2 — PR A: foundations (web/presentation, tests and docs only)
+Scripture, corpus and DB byte-identical; no page-layout change yet (the story layouts land in PR B).
+- **Light-first marketing site** — with no stored choice every marketing page renders light, even on
+  a dark OS: `Marketing.astro` pre-paint defaults to `light`, `scripts/theme.ts` gains
+  `setDefaultTheme()` (the Knowledge Base keeps `system`), `landing.ts` sets it before `initTheme()`,
+  and the OS-appearance dark block is removed from `marketing.css`. An explicit choice still wins
+  and is shared with the Knowledge Base. The theme cycle on marketing pages is now ☀ → ☾ → ◐.
+- **`theme-color` follows the page** — `Seo.astro` takes `themeColor="auto"|"light"`; the marketing
+  shell emits one `#themeColorMeta` that `applyTheme()` keeps in step (`#FBF7F0` / `#171412`).
+- **One marketing footer** — `MarketingFooter.astro` (brand block + Product · Learn · Support · Legal
+  columns in one `nav[aria-label="Footer"]`, data-driven credits from `IMAGE_CREDITS`) replaces the
+  five hand-copied footers on Home, Features, The watch and the Learn pages. `/support` gains a
+  `#contact` anchor for "Report a text error".
+- **Design system building blocks** in `marketing.css` (additive): `--maxw` 1200, `--sec` /
+  `--sec-thin` rhythm, `.h-story` / `.h-statement` / `.body-lg` / `.detail`, `.chapter-no`,
+  `.gold-hair`, `.surface-paper` / `.surface-warm`, a real `.band` rule, dark-in-dark surfaces,
+  `.story-grid` (12-col, 5/7 · 6/6 · 7/5 · 4/8, `.story--flip`, text-first on mobile), `.proof`,
+  `.mosaic`, `.photo-band`, `--shadow-device`, motion-safe hover + `.reveal[data-delay]`.
+- **Components** — `DeviceFrame` gains `kind="ipad"`, `frame={false}`, `eager`, `sizes` (iPhone
+  output unchanged); new `PhotoBand`, `LegalPage` (sticky contents rail, not yet adopted) and
+  `MarketingFooter`; `landing.ts` adds `wireTocActive()` and a motion-safe ≤12px hero-phone drift.
+- **Imagery credits** — `IMAGE_CREDITS` entries now carry `file` (+ optional `url`, `source`);
+  `frontend/src/covers.ts` (`LEARN_COVERS`) is ready for Learn covers; NOTICE.md credits the artwork.
+- **Gates** — `test_imagery_is_credited` flipped for credited Unsplash photos (one credit per file,
+  every maker on the page and in NOTICE.md, `https://unsplash.com/@` urls);
+  `test_marketing_page_weight_budgets` (60 KB per marketing page, 48 KB per Learn page, 340 KB
+  images); `test_marketing_pages_eager_discipline`; alt text on every marketing page;
+  `test_marketing_pages_have_no_kb_shell`; `test_home_has_rhythm` (expected failure until PR B).
+- **e2e** — new `photo-bands.spec.ts`; `landing.spec` proves the light default under a dark OS;
+  `transitions.spec` makes the dark choice in one click.
+- **Docs** — `docs/website/README.md` image policy rewritten for v2 (Unsplash licence facts,
+  respectful selection, credit shape, file locations, budgets, shot pipeline).
+
+### gurbanisoul.com v2 — PR B: Home, Features and The watch
+- **Home is a 14-section product story** with real rhythm — a dark hero, light stories, a photo
+  band and three warm-ink chapters: a proof strip, the Ang 1 verse, Reader, Search, Nitnem, the
+  Raag Clock, widgets and Live Activity, Explore, verbatim by construction, private by design,
+  Learn with photo covers, and a download band.
+- **`/features`** becomes eight chapters with real app screenshots (iPhone and iPad, light and
+  dark), a traditional-saroop before/after strip and an accent strip.
+- **`/watch`** gains a dark hero, an eight-pahar timeline, fixed vs. solar watches, and where the
+  traditions disagree — the gated live arc is unchanged.
+- The saroop copy makes no pixel-match claim to the printed Bir, in line with the Support FAQ.
+- `test_home_has_rhythm` now passes for real; the four old app screenshots are removed.
+
+### gurbanisoul.com v2 — PR C: Privacy and Support on the Gurbani Soul site
+- **`/privacy` and `/support` move onto the Gurbani Soul site** — page hero, a contents rail
+  (chips on phones) and the shared footer — instead of the Knowledge Base shell. The paths are
+  unchanged, so the App Store URLs and the app's in-app links keep working.
+- **Privacy policy correction.** It said the website had "no analytics"; the Gurbani Soul pages do
+  load Vercel Web Analytics, which sets no cookies. The policy now says so plainly, and "no
+  analytics" applies to the app, which remains true. The newsletter provider is disclosed only
+  where its sign-up form appears. The website section now also lists everything the site keeps in
+  your browser, and discloses the web Raag Clock's optional location use (asked only when you
+  choose solar mode, rounded to about 100 m, kept in the browser, never sent). Home's privacy
+  line now says plainly that the no-analytics promise is the app's. Last updated 23 September 2026.
+- **Support** gains a contact card, a question jump list, and FAQ questions as proper headings
+  (the FAQ structured data is unchanged).
+- **Navigation:** Features · The watch · Learn · Support · Privacy · Knowledge Base.
+- Social preview cards for both pages; privacy and support join the marketing gates.
+
+---
+
 ## [1.3.4] — 2026-09-22 — gurbanisoul.com: a next-level marketing site
 
 The public site becomes a real, **multi-page** marketing property for Gurbani Soul — redesigned,

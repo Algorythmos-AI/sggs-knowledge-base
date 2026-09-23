@@ -1,25 +1,21 @@
 import SwiftUI
 import GurbaniSearchKit
 
-/// Browse the Granth — native parity with the web /browse: a Major-Compositions quick-access
-/// rail, then pill-switched Raags / Banis & Sections / Voices (meta-driven). Tapping anything
-/// jumps the Reader to its first Ang. Stack-less: pushed inside the Explore NavigationStack.
+/// Browse the Granth — native parity with the web /browse: a Major-Compositions rail, then
+/// pill-switched Raags / Banis & Sections / Voices (meta-driven). Stack-less: pushed inside the
+/// Explore NavigationStack.
+///
+/// A major composition opens its OWN reader (`Route.composition`, pushed on this same stack) so
+/// Sukhmani Sahib reads as one work — cover, contents, saved position — instead of dropping the
+/// Ang reader mid-page. Raags, sections and voices still jump the Reader to their first Ang, and
+/// so does a composition when this DB profile carries no bani registry.
 struct IndexScreen: View {
     @Environment(AppContainer.self) private var container
     @Environment(\.palette) private var palette
     @State private var tab = "compositions"
-
-    /// Web parity (`frontend/src/scripts/browse.ts` QUICK_ACCESS): headline compositions that
-    /// live inside larger raag sections, routed straight to their starting Ang. Every Ang was
-    /// verified against the section-header line in the corpus when the web list was built.
-    private static let quickAccess: [(gm: String, roman: String, ang: Int, where_: String)] = [
-        ("ਸੁਖਮਨੀ ਸਾਹਿਬ", "Sukhmani Sahib", 262, "Raag Gauri"),
-        ("ਆਸਾ ਕੀ ਵਾਰ", "Asa Ki Vaar", 462, "Raag Asa"),
-        ("ਅਨੰਦੁ ਸਾਹਿਬ", "Anand Sahib", 917, "Raag Ramkali"),
-        ("ਬਾਵਨ ਅਖਰੀ", "Bavan Akhri", 250, "Raag Gauri"),
-        ("ਸਿਧ ਗੋਸਟਿ", "Sidh Gosht", 938, "Raag Ramkali"),
-        ("ਓਅੰਕਾਰੁ", "Dakhni Oankaar", 929, "Raag Ramkali"),
-    ]
+    /// The bani registry — summary rows only, one query, never any lines. Loaded before the grid
+    /// renders so a tap can't race it; empty when this profile has no registry.
+    @State private var registry: [BaniSummary] = []
 
     /// The raag count comes from the DB's `raags` table (31 in the certified corpus).
     private func tabs(_ meta: CorpusMeta) -> [(id: String, label: String)] {
@@ -59,36 +55,124 @@ struct IndexScreen: View {
             }
         }
         .navigationTitle("Index")
-        .task { await container.loadMeta() }
+        .task {
+            await container.loadMeta()
+            await loadRegistry()
+        }
+        // The reading rings come from `container.nitnem`, which is @Observable — they refresh
+        // themselves when a composition reader writes a position. This only retries the registry
+        // when the DB was not open yet on first appearance (a cold launch straight into Explore).
+        .task(id: container.corpus == nil) { await loadRegistry() }
+    }
+
+    private func loadRegistry() async {
+        guard registry.isEmpty, let corpus = container.corpus, corpus.capabilities.hasBanis else { return }
+        registry = await corpus.banis().banis
     }
 
     // MARK: compositions — the hero rail
 
     private var compositionsGrid: some View {
-        VStack(alignment: .leading, spacing: Theme.Space.s) {
-            Text("MAJOR COMPOSITIONS — QUICK ACCESS")
-                .font(.caption2.weight(.semibold)).foregroundStyle(.secondary)
-                .accessibilityAddTraits(.isHeader)
-            LazyVGrid(columns: columns, spacing: Theme.Space.m) {
-                ForEach(Self.quickAccess, id: \.ang) { c in
-                    Button { container.router.openAng(c.ang) } label: {
-                        Card {
-                            VStack(alignment: .leading, spacing: Theme.Space.xs) {
-                                GurmukhiText(verbatim: c.gm, size: 20)
-                                Text(c.roman)
-                                    .font(.footnote.weight(.medium)).italic()
-                                    .foregroundStyle(palette.accentText)
-                                Text("Ang \(String(c.ang)) · \(c.where_)")
-                                    .font(.caption2).foregroundStyle(.secondary)
+        VStack(alignment: .leading, spacing: Theme.Space.l) {
+            VStack(alignment: .leading, spacing: Theme.Space.s) {
+                Text("MAJOR COMPOSITIONS")
+                    .font(.caption2.weight(.semibold)).foregroundStyle(.secondary)
+                    .accessibilityAddTraits(.isHeader)
+                LazyVGrid(columns: columns, spacing: Theme.Space.m) {
+                    ForEach(CompositionCatalog.heroes) { hero in
+                        heroCard(hero)
+                    }
+                }
+            }
+            let more = CompositionCatalog.more(from: registry)
+            if !more.isEmpty {
+                VStack(alignment: .leading, spacing: Theme.Space.s) {
+                    SectionEyebrow(text: "More compositions", symbol: "text.book.closed")
+                    VStack(spacing: 0) {
+                        ForEach(Array(more.enumerated()), id: \.element.id) { i, b in
+                            NavigationLink(value: Route.composition(key: b.key, variant: b.variant)) {
+                                BaniRow(bani: b, date: Date())
+                            }
+                            .buttonStyle(.plain)
+                            .accessibilityIdentifier("composition_\(b.key)")
+                            if i < more.count - 1 {
+                                Divider().padding(.leading, Theme.Space.l * 2 + 28)
                             }
                         }
                     }
-                    .buttonStyle(.pressableCard)
-                    .accessibilityElement(children: .combine)
-                    .accessibilityLabel("\(c.roman) — open Ang \(c.ang)")
+                    .background(Ink.card, in: RoundedRectangle(cornerRadius: Theme.Radius.card))
+                    .overlay(RoundedRectangle(cornerRadius: Theme.Radius.card).strokeBorder(Ink.hairline))
                 }
             }
         }
+    }
+
+    /// One hero card. Titles and reading facts come from the registry when it resolves, so the
+    /// card and the screen it opens always agree; the curated text is the no-registry fallback.
+    @ViewBuilder
+    private func heroCard(_ hero: CompositionCatalog.Hero) -> some View {
+        let summary = CompositionCatalog.resolve(hero, in: registry)
+        let label = accessibilityLabel(hero, summary)
+        if let summary {
+            NavigationLink(value: Route.composition(key: hero.key, variant: hero.variant)) {
+                heroCardBody(hero, summary)
+            }
+            .buttonStyle(.pressableCard)
+            .accessibilityElement(children: .combine)
+            .accessibilityLabel(label)
+            .accessibilityIdentifier("composition_\(hero.key)")
+        } else {
+            // No registry in this DB profile (or the key is missing): the card still works,
+            // exactly as it always did, by opening the composition's first Ang.
+            Button { container.router.openAng(hero.ang) } label: {
+                heroCardBody(hero, nil)
+            }
+            .buttonStyle(.pressableCard)
+            .accessibilityElement(children: .combine)
+            .accessibilityLabel(label)
+            .accessibilityIdentifier("composition_\(hero.key)")
+        }
+    }
+
+    private func heroCardBody(_ hero: CompositionCatalog.Hero, _ summary: BaniSummary?) -> some View {
+        Card {
+            VStack(alignment: .leading, spacing: Theme.Space.xs) {
+                HStack(alignment: .top) {
+                    GurmukhiText(verbatim: summary?.titleGm ?? hero.gm, size: 20)
+                    Spacer(minLength: Theme.Space.xs)
+                    // The ring appears only once there IS something to show — an empty ring on
+                    // every card would read as a checkbox and clutter a browsing surface.
+                    if let summary {
+                        let done = container.nitnem.isCompleted(summary.id)
+                        let frac = container.nitnem.fraction(for: summary.id, total: summary.nLines)
+                        if done || frac > 0 {
+                            ProgressRing(fraction: frac, done: done).frame(width: 22, height: 22)
+                        }
+                    }
+                }
+                Text(summary?.titleEn ?? hero.roman)
+                    .font(.footnote.weight(.medium)).italic()
+                    .foregroundStyle(palette.accentText)
+                    .fixedSize(horizontal: false, vertical: true)
+                Text(meta(hero, summary))
+                    .font(.caption2).foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+        }
+    }
+
+    private func meta(_ hero: CompositionCatalog.Hero, _ summary: BaniSummary?) -> String {
+        var parts = ["Ang \(String(hero.ang))", hero.raag]
+        if let m = summary?.estimatedMinutes { parts.append("about \(m) min") }
+        return parts.joined(separator: " · ")
+    }
+
+    private func accessibilityLabel(_ hero: CompositionCatalog.Hero, _ summary: BaniSummary?) -> String {
+        guard let summary else { return "\(hero.roman) — open Ang \(hero.ang)" }
+        let pct = Int(container.nitnem.fraction(for: summary.id, total: summary.nLines) * 100)
+        let progress = container.nitnem.isCompleted(summary.id) ? "read today"
+            : (pct > 0 ? "\(pct) percent read" : "not started")
+        return "\(summary.titleEn) — read the composition. \(meta(hero, summary)). \(progress)."
     }
 
     // MARK: raags

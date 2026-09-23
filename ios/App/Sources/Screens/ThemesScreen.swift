@@ -30,10 +30,6 @@ struct ThemesScreen: View {
 
     private let columns = [GridItem(.flexible(), spacing: Theme.Space.m), GridItem(.flexible())]
 
-    private static func titleCase(_ slug: String) -> String {
-        slug.split(separator: "_").map { $0.prefix(1).uppercased() + $0.dropFirst() }.joined(separator: " ")
-    }
-
     var body: some View {
         Group {
             if let meta = container.meta {
@@ -77,7 +73,7 @@ struct ThemesScreen: View {
                     NavigationLink(value: Route.theme(c.concept)) {
                         Card {
                             VStack(alignment: .leading, spacing: Theme.Space.xs) {
-                                Text(Self.titleCase(c.concept))
+                                Text(ConceptName.display(c.concept))
                                     .font(.subheadline.weight(.semibold))
                                     .foregroundStyle(.primary)
                                 if !c.description.isEmpty {
@@ -94,7 +90,7 @@ struct ThemesScreen: View {
                     }
                     .buttonStyle(.pressableCard)
                     .accessibilityElement(children: .combine)
-                    .accessibilityLabel("\(Self.titleCase(c.concept)) — explore \(c.nLines) lines")
+                    .accessibilityLabel("\(ConceptName.display(c.concept)) — explore \(c.nLines) lines")
                 }
             }
         }
@@ -117,7 +113,7 @@ struct ThemeResultsScreen: View {
             }
             .listStyle(.plain)
         }
-        .navigationTitle(concept.capitalized)
+        .navigationTitle(ConceptName.display(concept))
         .navigationBarTitleDisplayMode(.inline)
         .task(id: concept) { await load() }
     }

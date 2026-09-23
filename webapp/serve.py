@@ -27,8 +27,8 @@ PORT = int(os.environ.get('PORT') or os.environ.get('SGGS_PORT') or '7777')
 # doesn't force an 86 MB DB re-commit. /api/meta and /api/health prefer these; the
 # DB meta row is the fallback. Bump on every search-logic release so the UI footer
 # (which reads /api/meta) reflects the running build.
-APP_VERSION = '1.3.4'
-APP_BUILT = '2026-09-22'
+APP_VERSION = '1.3.5'
+APP_BUILT = '2026-09-23'
 
 
 # The exact source commit of the running build, so a deploy can be verified by
@@ -119,7 +119,7 @@ def _fts_clean(s):
 _ID_MAX = 2**31 - 1
 MAX_CLAIM_CHARS = 600                                # /api/verify?q= — see the route
 _BANI_KEY_RE = re.compile(r'^[a-z0-9_]{1,32}$')     # /api/bani/{key}
-_BANI_VARIANTS = ('', 'sgpc', 'taksal', 'kirtan')   # allowlist; never interpolated
+_BANI_VARIANTS = ('', 'sgpc', 'taksal', 'kirtan', 'printed')   # allowlist; never interpolated
 
 def _int_str(raw, lo, hi):
     """Parse one integer query value defensively: reject absurd digit strings (Python has no

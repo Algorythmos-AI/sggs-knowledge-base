@@ -20,6 +20,7 @@ Checks
 Usage: python3 pipeline/banis/guard_banis.py [--db PATH]
 """
 import argparse
+import json
 import re
 import sqlite3
 import sys
@@ -99,6 +100,20 @@ def main():
     check('Sukhmani spans 11579..13616 and contains 11590..13616 contiguously',
           bool(sk) and min(sk) == 11579 and max(sk) == 13616
           and any(sk[i:i + 2027] == list(range(11590, 13617)) for i in range(len(sk))))
+
+    av = ids(con, 'asa_di_vaar', 'printed')
+    check('Asa Di Vaar (printed) == lines 20883..21519', av == list(range(20883, 21520)),
+          '%d lines, %r..%r' % (len(av), av[:1], av[-1:]))
+    if av:
+        # The same verbatim anchors build_banis.py checks: proves the range still opens at the
+        # ੴ/ਵਾਰ ਸਲੋਕਾ ਨਾਲਿ heading and closes on ॥੨੪॥੧॥ ਸੁਧੁ after a rebuild.
+        txt = dict(con.execute('SELECT id, gurmukhi FROM lines WHERE id IN (20883, 21518, 21519)'))
+        mk = dict(con.execute('SELECT id, markers FROM lines WHERE id = 21518'))
+        check('Asa Di Vaar (printed) opens on the ੴ heading', txt.get(20883, '').startswith('ੴ'),
+              repr(txt.get(20883, '')[:40]))
+        check('Asa Di Vaar (printed) closes on ਸੁਧੁ', txt.get(21519) == 'ਸੁਧੁ', repr(txt.get(21519)))
+        check('Asa Di Vaar (printed) last pauri carries ॥੨੪॥੧॥',
+              json.loads(mk.get(21518) or '[]') == ['੨੪', '੧'], repr(mk.get(21518)))
 
     cols = {r[1] for r in con.execute("PRAGMA table_info('extra_lines')")}
     check('extra_lines has no English column', not (cols & {'en', 'english', 'translation', 'text_en'}))

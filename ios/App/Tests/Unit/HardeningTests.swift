@@ -181,6 +181,51 @@ final class HardeningTests: XCTestCase {
         XCTAssertEqual(r.selectedTab, .reader)
     }
 
+    // MARK: compositions (Explore → Index → its own reader)
+
+    /// A composition opens on the EXPLORE stack, under the Index — never by switching to the
+    /// Nitnem tab, and never by replacing the Reader's Ang.
+    @MainActor
+    func testOpenCompositionPushesOnTheExploreStack() {
+        let r = Router()
+        r.openComposition(key: "sukhmani")
+        XCTAssertEqual(r.selectedTab, .explore)
+        XCTAssertEqual(r.explorePath.count, 2, "Index then the composition, so Back lands on the Index")
+        XCTAssertTrue(r.nitnemPath.isEmpty, "the Nitnem stack must not move")
+        XCTAssertFalse(r.navigatedToAngExplicitly, "a composition read is not an Ang navigation")
+    }
+
+    /// A hostile key or an unknown variant must change nothing at all.
+    @MainActor
+    func testMalformedCompositionRequestChangesNothing() {
+        let r = Router()
+        for (k, v) in [("../etc", ""), ("", ""), ("SUKHMANI", ""), ("sukhmani", "bogus"),
+                       ("sukhmani", "x' OR 1=1"), (String(repeating: "a", count: 33), "")] {
+            r.openComposition(key: k, variant: v)
+        }
+        XCTAssertEqual(r.selectedTab, .nitnem, "still the launch tab")
+        XCTAssertTrue(r.explorePath.isEmpty)
+    }
+
+    /// `sggs://bani/<key>` stays the Nitnem entry point, but asking for ONE form of a bani
+    /// (`?variant=`) is a composition read — otherwise a Live-Activity tap on the printed Vaar
+    /// would reopen the kirtan form in Nitnem.
+    @MainActor
+    func testBaniDeepLinkRoutesByVariant() {
+        let c = AppContainer(); let r = Router()
+        r.handle(URL(string: "sggs://bani/sukhmani")!, container: c)
+        XCTAssertEqual(r.selectedTab, .nitnem)
+        XCTAssertEqual(r.nitnemPath.count, 1)
+
+        r.handle(URL(string: "sggs://bani/asa_di_vaar?variant=printed")!, container: c)
+        XCTAssertEqual(r.selectedTab, .explore)
+        XCTAssertEqual(r.explorePath.count, 2)
+
+        let before = r.explorePath.count
+        r.handle(URL(string: "sggs://composition/asa_di_vaar?variant=nope")!, container: c)
+        XCTAssertEqual(r.explorePath.count, before, "an unknown variant must be ignored")
+    }
+
     /// Hostile/malformed deep links must neither navigate nor set the explicit flag.
     @MainActor
     func testMalformedAngLinkChangesNothing() {

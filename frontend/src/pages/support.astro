@@ -2,11 +2,14 @@
 // support.astro — the public Support page for the Gurbani Soul iOS app (org.sggs.app) and this site.
 // Linked from the App Store listing (Support URL). Answers must match the shipped app: the
 // public (Gurmukhi-only) profile has no English layer; location is optional; nothing is sent.
-import Base from '../layouts/Base.astro';
+// Rendered in the marketing shell (LegalPage) since v1.3.5; the path /support is frozen
+// (App Store Connect + the app's AppLinks). The FAQ stays fully visible (no accordion).
+import Marketing from '../layouts/Marketing.astro';
+import LegalPage from '../components/LegalPage.astro';
 import JsonLd from '../components/JsonLd.astro';
 import { SITE_URL } from '../site.ts';
 
-// Single source for the "Frequently asked" block: it renders BOTH the visible <h4>+<p> HTML and the
+// Single source for the "Frequently asked" block: it renders BOTH the visible <h3>+<p> HTML and the
 // FAQPage JSON-LD below, so the two can never diverge (the FAQPage `name`s are exactly these
 // questions — enforced by the JsonLdInvariants gate). Answers may carry the same inline HTML the
 // visible copy uses; JsonLd.astro escapes "<" so the payload is always well-formed.
@@ -39,6 +42,16 @@ const faqs: { q: string; a: string }[] = [
     a: "The app runs on iPad in portrait and landscape. It deliberately runs as a single window." },
 ];
 
+// Stable, readable anchors for each question (jump list + deep links from the app or email).
+const slug = (q: string) => "faq-" + q.toLowerCase().replace(/<[^>]+>/g, "").replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "");
+const toc = [
+  { id: "contact", label: "Contact" },
+  { id: "faq", label: "Frequently asked" },
+  { id: "about-the-text", label: "About the text" },
+  { id: "this-website", label: "This website" },
+];
+const desc = "Help with the Gurbani Soul app for iPhone and iPad: contact, reporting a text error, and answers to common questions.";
+
 // Plain-text answer for JSON-LD (strip the inline HTML tags the visible copy uses).
 const stripTags = (s: string) => s.replace(/<[^>]+>/g, "");
 const faqLd = {
@@ -52,51 +65,60 @@ const faqLd = {
   })),
 };
 ---
-<Base title="Support — Sri Guru Granth Sahib Ji Knowledge Base">
-  <article class="legal" id="v-support">
-    <p class="eyebrow">Support</p>
-    <h2>Help with the Gurbani Soul app and this site</h2>
-    <p class="soft">Gurbani Soul is a fully offline reader, search tool and Nitnem companion for Sri Guru Granth Sahib Ji, all 1,430 Angs. This page answers the common questions; anything else, write to us.</p>
-
-    <section>
-      <h3>Contact</h3>
-      <p>Email <a href="mailto:support@gurbanisoul.com?subject=Gurbani%20Soul%20support">support@gurbanisoul.com</a>. Please include your device model, iOS version, and the app version shown in <em>More → About</em>. We aim to reply within a few days.</p>
+<Marketing title="Support — Gurbani Soul" description={desc} path="/support">
+  <JsonLd slot="head" data={faqLd} />
+  <LegalPage
+    eyebrow="Support"
+    title="Help with the Gurbani Soul app and this site"
+    lede="Gurbani Soul is a fully offline reader, search tool and Nitnem companion for Sri Guru Granth Sahib Ji, all 1,430 Angs. This page answers the common questions; anything else, write to us."
+    id="v-support"
+    toc={toc}
+  >
+    <section id="contact">
+      <h2>Contact</h2>
+      <div class="contact-card">
+        <hr class="gold-hair" aria-hidden="true" />
+        <p>Email <a href="mailto:support@gurbanisoul.com?subject=Gurbani%20Soul%20support">support@gurbanisoul.com</a>. Please include your device model, iOS version, and the app version shown in <em>More → About</em>. We aim to reply within a few days.</p>
+        <p class="contact-cta"><a class="btn" href="mailto:support@gurbanisoul.com?subject=Gurbani%20Soul%20support">Email support</a></p>
+      </div>
       <p><strong>If something in the Gurmukhi looks wrong</strong>, tell us the Ang and the line, and a photo of the printed page if you have one. We never "correct" the text ourselves: the app reproduces the source edition character for character, so every report is checked against the printed Bir by a person before anything changes.</p>
     </section>
 
-    <section>
-      <h3>Frequently asked</h3>
+    <section id="faq">
+      <h2>Frequently asked</h2>
+      <nav class="faq-jump" aria-label="Questions">
+        <ul>
+          {faqs.map((f) => <li><a href={`#${slug(f.q)}`}>{f.q}</a></li>)}
+        </ul>
+      </nav>
       {faqs.map((f) => (
-        <>
-          <h4>{f.q}</h4>
+        <div class="faq-item">
+          <h3 id={slug(f.q)}>{f.q}</h3>
           <p set:html={f.a} />
-        </>
+        </div>
       ))}
     </section>
 
-    <section>
-      <h3>About the text</h3>
+    <section id="about-the-text">
+      <h2>About the text</h2>
       <p>The Gurmukhi is reproduced verbatim from the source edition and cited by Ang throughout. Transliteration is a mechanical reading aid, not the scripture. The Gurmukhi typeface is Sant Lipi, © Shabad OS, used under the SIL Open Font License 1.1 (<a href="/fonts/OFL.txt">licence</a>).</p>
     </section>
 
-    <section>
-      <h3>This website</h3>
+    <section id="this-website">
+      <h2>This website</h2>
       <p>The site offers the same text and search in a browser, plus study tools (themes, lineage, insights, constellation, Raag Clock). It stores your theme and pinned verses in your browser only. See the <a href="/privacy">Privacy Policy</a>.</p>
     </section>
-    <JsonLd data={faqLd} />
-  </article>
-</Base>
+  </LegalPage>
 
-<style>
-  .legal { max-width: 720px; margin: 0 auto; padding: 8px 0 24px; }
-  .legal .eyebrow { font-size: 12px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--accent); margin: 8px 0 6px; }
-  .legal h2 { font-size: 26px; line-height: 1.25; margin: 0 0 10px; }
-  .legal h3 { font-size: 17px; margin: 26px 0 8px; }
-  .legal h4 { font-size: 15px; margin: 18px 0 4px; }
-  .legal p, .legal li { font-size: 15px; line-height: 1.7; }
-  .legal p { margin: 4px 0 8px; }
-  .legal code { font-size: 13px; padding: 1px 6px; border-radius: 6px; background: var(--chip); }
-  .legal a { color: var(--accent); }
-  .legal .soft { color: var(--soft); }
-  .legal section { border-top: 1px solid var(--line); padding-top: 4px; }
-</style>
+  <style>
+    .contact-card { background: var(--card); border: 1px solid var(--line); border-radius: 18px; padding: 22px 24px 20px; margin: 0 0 22px; }
+    .contact-card .gold-hair { margin: 0 0 16px; }
+    .contact-card .contact-cta { margin: 4px 0 0; }
+    :global(.legal) .contact-card a.btn { color: var(--on-accent); text-decoration: none; min-height: 44px; }
+    .faq-jump ul { list-style: none; padding: 0; margin: 0 0 8px; display: grid; gap: 2px; }
+    .faq-jump a { display: inline-block; padding: 6px 0; font-size: 15.5px; }
+    .faq-item { padding: 18px 0 4px; border-top: 1px solid var(--line); scroll-margin-top: 92px; }
+    .faq-item h3 { scroll-margin-top: 92px; margin-top: 0; }
+    :global(.legal code) { font-size: .85em; padding: 1px 6px; border-radius: 6px; background: var(--paper-2); border: 1px solid var(--line); }
+  </style>
+</Marketing>

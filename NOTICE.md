@@ -54,13 +54,20 @@ The pipeline and web app code (everything in `pipeline/` and `webapp/` except da
 
 ## Website imagery (gurbanisoul.com landing)
 
+**Artwork.** The landing hero (`frontend/src/assets/landing/harmandir-sahib-sunset.jpg`) is an
+original artistic rendering of Sri Harmandir Sahib at sunset, made for Gurbani Soul by
+**Algorythmos** (no stock photography; no saroop in frame).
+
 Photographs of Sri Harmandir Sahib on the Gurbani Soul landing page
 (`frontend/src/assets/landing/`) are used under the
 [Unsplash License](https://unsplash.com/license) — commercial use and modification permitted, no
 permission required; attribution appreciated. We credit anyway, in the landing footer and here:
 
-- **Aryan Nikhil** — https://unsplash.com/@aryannikhil
-- **Laurentiu Morariu** — https://unsplash.com/@travelphotographer
+- **Salil** — https://unsplash.com/@salilkoli (Sri Harmandir Sahib at night)
+- **UnKknown Traveller** — https://unsplash.com/@kushlav (by day)
+- **Aryan Nikhil** — https://unsplash.com/@aryannikhil (reflected in the sarovar)
+- **Ravindra Sharma** — https://unsplash.com/@ravindrasharma (golden at night)
+- **Reubx** — https://unsplash.com/@reubx (across the sarovar)
 
 Selection is limited to respectful devotional imagery (no saroop being handled, no identifiable
 faces). Add a credit here and in the footer whenever a photo is added — see

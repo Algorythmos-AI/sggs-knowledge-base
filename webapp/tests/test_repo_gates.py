@@ -394,6 +394,37 @@ class InAppLinksMatchTheListing(unittest.TestCase):
 
 STATIC = ROOT / "webapp" / "static"
 LANDING_ASSETS = ROOT / "frontend" / "src" / "assets" / "landing"
+SITE_TS = ROOT / "frontend" / "src" / "site.ts"
+# Built marketing pages (route -> built file) that carry the v2 budgets/eager/alt discipline.
+# /privacy and /support render in the marketing shell (LegalPage) since v1.3.5.
+MARKETING_BUILT = {
+    "/": STATIC / "index.html",
+    "/features": STATIC / "features" / "index.html",
+    "/watch": STATIC / "watch" / "index.html",
+    "/privacy": STATIC / "privacy" / "index.html",
+    "/support": STATIC / "support" / "index.html",
+}
+LANDING_IMAGE_SUFFIXES = (".jpg", ".jpeg", ".png", ".webp")
+
+
+def _image_credits():
+    """Parse the IMAGE_CREDITS entries from site.ts -> [{"who", "url", "file"}] (url may be None).
+
+    Each entry is a `{ … }` object literal whose fields are plain double-quoted strings."""
+    site = SITE_TS.read_text(encoding="utf-8")
+    m = re.search(r"IMAGE_CREDITS\b[^=]*=\s*\[(.*?)\];", site, re.S)
+    if not m:
+        return []
+    out = []
+    for body in re.findall(r"\{([^{}]*)\}", m.group(1)):
+        field = lambda k: (re.search(rf'\b{k}:\s*"([^"]*)"', body) or [None, None])[1]
+        out.append({"who": field("who"), "url": field("url"), "file": field("file")})
+    return out
+
+
+def _learn_built_pages():
+    learn = STATIC / "learn"
+    return sorted(learn.rglob("index.html")) if learn.exists() else []
 
 
 class LandingPage(unittest.TestCase):
@@ -431,26 +462,45 @@ class LandingPage(unittest.TestCase):
         self.assertNotRegex(self.html, r"(?i)>[^<]*\bbeta\b", "landing says 'beta'")
 
     def test_every_img_has_an_alt_attribute(self):
+        # Every <img> on every built marketing page (Home, Features, The watch, Privacy, Support
+        # and the Learn section) carries an alt attribute; Home must have at least one image.
         self._skip_if_unbuilt()
-        imgs = re.findall(r"<img\b[^>]*>", self.html)
-        self.assertTrue(imgs, "no <img> on the landing")
-        self.assertEqual([t for t in imgs if not re.search(r'\balt=', t)], [],
-                         "an <img> on the landing has no alt attribute")
+        self.assertTrue(re.findall(r"<img\b[^>]*>", self.html), "no <img> on the landing")
+        pages = [(r, f) for r, f in MARKETING_BUILT.items() if f.exists()]
+        pages += [("/" + f.parent.relative_to(STATIC).as_posix(), f) for f in _learn_built_pages()]
+        for route, f in pages:
+            html = f.read_text(encoding="utf-8")
+            missing = [t for t in re.findall(r"<img\b[^>]*>", html) if not re.search(r"\balt=", t)]
+            self.assertEqual(missing, [], f"{route}: an <img> has no alt attribute")
 
     def test_imagery_is_credited(self):
-        # Every image shipped under src/assets/landing must have its maker named in site.ts
-        # (IMAGE_CREDITS.who) and the credit must render on the page. The hero is now an original
-        # artistic rendering (no stock photography), so the page carries an "Artwork" credit and
-        # must NOT mention Unsplash any more.
+        # Every image file shipped under src/assets/landing/ has EXACTLY ONE IMAGE_CREDITS entry
+        # (site.ts) whose `file` names it; every maker (`who`) is credited on the built landing AND
+        # in NOTICE.md. Original artwork (no url) → an "Artwork" credit. Unsplash photographs (url)
+        # → the page names "Unsplash" and each url is the photographer's bare-host profile
+        # https://unsplash.com/@<handle> (never images.unsplash.com — photos are self-hosted).
         self._skip_if_unbuilt()
-        site = (ROOT / "frontend" / "src" / "site.ts").read_text(encoding="utf-8")
-        credits = re.findall(r'who:\s*"([^"]+)"', site)
-        n_assets = len([p for p in LANDING_ASSETS.glob("*") if p.suffix.lower() in (".jpg", ".jpeg", ".png", ".webp")]) if LANDING_ASSETS.exists() else 0
-        self.assertGreaterEqual(len(credits), n_assets, "fewer image credits than landing image assets")
+        credits = _image_credits()
+        self.assertTrue(credits, "IMAGE_CREDITS not found / empty in frontend/src/site.ts")
+        for c in credits:
+            self.assertTrue(c["who"], f"an IMAGE_CREDITS entry has no `who`: {c}")
+            self.assertTrue(c["file"], f"IMAGE_CREDITS entry for {c['who']!r} has no `file`")
+        files = sorted(p.name for p in LANDING_ASSETS.glob("*")
+                       if p.suffix.lower() in LANDING_IMAGE_SUFFIXES) if LANDING_ASSETS.exists() else []
+        for name in files:
+            n = sum(1 for c in credits if c["file"] == name)
+            self.assertEqual(n, 1, f"src/assets/landing/{name}: expected exactly one IMAGE_CREDITS entry, got {n}")
+        notice = (ROOT / "NOTICE.md").read_text(encoding="utf-8")
+        for c in credits:
+            self.assertIn(c["who"], self.html, f"image maker {c['who']!r} not credited on the landing")
+            self.assertIn(c["who"], notice, f"image maker {c['who']!r} not credited in NOTICE.md")
         self.assertIn("Artwork", self.html, "landing does not carry an Artwork credit")
-        self.assertNotIn("Unsplash", self.html, "landing still references Unsplash (photos were removed)")
-        for who in credits:
-            self.assertIn(who, self.html, f"image maker {who!r} not credited on the landing")
+        photos = [c for c in credits if c["url"]]
+        if photos:
+            self.assertIn("Unsplash", self.html, "Unsplash photographs are used but 'Unsplash' is not credited")
+            for c in photos:
+                self.assertRegex(c["url"], r"^https://unsplash\.com/@[A-Za-z0-9_.-]+$",
+                                 f"{c['who']!r}: credit url must be https://unsplash.com/@<handle>")
 
     def test_seo_head_present(self):
         self._skip_if_unbuilt()
@@ -458,12 +508,109 @@ class LandingPage(unittest.TestCase):
         self.assertRegex(self.html, r'property="og:image" content="https://gurbanisoul\.com/')
         self.assertRegex(self.html, r'name="description" content="[^"]{40,}"')
 
-    def test_page_weight_budget(self):
+    def test_marketing_page_weight_budgets(self):
+        # Per-page HTML budgets: Home/Features/The watch/Privacy/Support ≤ 60 KB each; every Learn
+        # page ≤ 48 KB; and no served AVIF/WebP variant over 340 KB.
         self._skip_if_unbuilt()
-        self.assertLessEqual(len(self.index.read_bytes()), 60 * 1024, "index.html over 60 KB")
+        for route, f in MARKETING_BUILT.items():
+            if f.exists():
+                self.assertLessEqual(len(f.read_bytes()), 60 * 1024, f"{route}: HTML over 60 KB")
+        for f in _learn_built_pages():
+            self.assertLessEqual(len(f.read_bytes()), 48 * 1024,
+                                 f"/{f.parent.relative_to(STATIC).as_posix()}: HTML over 48 KB")
         astro = STATIC / "_astro"
         heavy = [f.name for f in astro.glob("*") if f.suffix in (".avif", ".webp") and f.stat().st_size > 340 * 1024]
         self.assertEqual(heavy, [], f"served image variant(s) over 340 KB: {heavy}")
+
+    def test_marketing_pages_eager_discipline(self):
+        # Home: at most 2 eager images (hero artwork + hero phone) and exactly ONE
+        # fetchpriority="high" (the artwork — the LCP). Every other page: nothing eager, nothing
+        # high-priority. Every other <img> is lazy. If Home preloads an image, the preload's
+        # imagesrcset must be a subset of the hero's AVIF srcset (or the browser fetches twice).
+        self._skip_if_unbuilt()
+        for route, f in MARKETING_BUILT.items():
+            if not f.exists():
+                continue
+            html = f.read_text(encoding="utf-8")
+            imgs = re.findall(r"<img\b[^>]*>", html)
+            eager = [t for t in imgs if 'loading="eager"' in t]
+            high = re.findall(r'fetchpriority="high"', html)
+            if route == "/":
+                self.assertLessEqual(len(eager), 2, f"/: {len(eager)} eager images (max 2)")
+                self.assertEqual(len(high), 1, f"/: expected exactly one fetchpriority=high, got {len(high)}")
+            else:
+                self.assertEqual(eager, [], f"{route}: eager image(s) off the home page")
+                self.assertEqual(high, [], f"{route}: fetchpriority=high off the home page")
+            lazy_missing = [t for t in imgs if 'loading="eager"' not in t and 'loading="lazy"' not in t]
+            self.assertEqual(lazy_missing, [], f"{route}: <img> neither eager nor lazy")
+        preload = re.search(r'<link\b[^>]*rel="preload"[^>]*as="image"[^>]*>', self.html)
+        if preload:
+            ss = re.search(r'imagesrcset="([^"]+)"', preload.group(0))
+            self.assertIsNotNone(ss, "/: image preload has no imagesrcset")
+            hero = re.search(r'<source\b[^>]*type="image/avif"[^>]*srcset="([^"]+)"', self.html) or \
+                re.search(r'<source\b[^>]*srcset="([^"]+)"[^>]*type="image/avif"', self.html)
+            self.assertIsNotNone(hero, "/: no AVIF <source> for the hero")
+            urls = lambda v: {part.strip().split(" ")[0] for part in v.split(",") if part.strip()}
+            self.assertLessEqual(urls(ss.group(1)), urls(hero.group(1)),
+                                 "/: preload imagesrcset is not a subset of the hero's AVIF srcset")
+
+    def test_home_has_rhythm(self):
+        # Home v2 rhythm: ≥3 warm-ink (data-theme="dark") sections, ≥1 photo band, and no two dark
+        # sections adjacent (the rhythm is enforced, not remembered).
+        self._skip_if_unbuilt()
+        dark = re.findall(r'<section\b[^>]*data-theme="dark"', self.html)
+        self.assertGreaterEqual(len(dark), 3, f"/: only {len(dark)} data-theme=dark sections")
+        self.assertRegex(self.html, r'class="[^"]*\bphoto-band\b', "/: no .photo-band")
+        from html.parser import HTMLParser
+
+        class Top(HTMLParser):
+            """Collect the direct element children of <main> (a tag stack, tolerant of unclosed tags)."""
+            VOID = {"area", "base", "br", "col", "embed", "hr", "img", "input", "link", "meta",
+                    "source", "track", "wbr"}
+
+            def __init__(self):
+                super().__init__()
+                self.stack, self.kids, self.done = [], [], False
+
+            def _in_main_top(self):
+                return not self.done and self.stack and self.stack[-1] == "main"
+
+            def handle_starttag(self, tag, attrs):
+                if self._in_main_top():
+                    self.kids.append((tag, dict(attrs)))
+                if tag not in self.VOID:
+                    self.stack.append(tag)
+
+            def handle_endtag(self, tag):
+                if tag in self.VOID or tag not in self.stack:
+                    return
+                while self.stack:
+                    top_tag = self.stack.pop()
+                    if top_tag == tag:
+                        break
+                if tag == "main":
+                    self.done = True
+
+        top = Top()
+        top.feed(self.html)
+        kids = [(t, a) for t, a in top.kids if t not in ("script", "style", "template")]
+        flags = [a.get("data-theme") == "dark" for _, a in kids]
+        pairs = [i for i in range(len(flags) - 1) if flags[i] and flags[i + 1]]
+        self.assertEqual(pairs, [], "/: two data-theme=dark sections are adjacent")
+
+    def test_marketing_pages_have_no_kb_shell(self):
+        # The marketing pages render in the Gurbani Soul shell, never the Knowledge Base's
+        # (Base.astro) header/toolbar — including the App Store's /privacy and /support.
+        self._skip_if_unbuilt()
+        for route in ("/", "/features", "/watch", "/privacy", "/support"):
+            f = MARKETING_BUILT[route]
+            if not f.exists():
+                continue
+            html = f.read_text(encoding="utf-8")
+            self.assertNotIn("Sri Guru Granth Sahib Ji — Knowledge Base</h1>", html, f"{route}: KB <h1> present")
+            self.assertNotIn('id="saroopBtn"', html, f"{route}: KB saroop toggle present")
+            self.assertNotIn('id="randomBtn"', html, f"{route}: KB random button present")
+            self.assertIn('id="mnav"', html, f"{route}: marketing nav #mnav missing")
 
     def test_cta_state_is_consistent(self):
         # Exactly one canonical App-Store "coming soon" element (the hero one), and the page never
@@ -505,7 +652,7 @@ COMPONENTS = ROOT / "frontend" / "src" / "components"
 PAGES = ROOT / "frontend" / "src" / "pages"
 INDEX_ASTRO = PAGES / "index.astro"
 # Marketing pages (Marketing.astro shell) whose scoped CSS the brand discipline also governs.
-MARKETING_PAGES = ("index.astro", "features.astro", "watch.astro")
+MARKETING_PAGES = ("index.astro", "features.astro", "watch.astro", "privacy.astro", "support.astro")
 
 
 def _marketing_style_sources():
@@ -1085,7 +1232,7 @@ class JsonLdInvariants(unittest.TestCase):
         self.assertNotIn("aggregateRating", app,
                          "SoftwareApplication must not carry a fabricated aggregateRating")
 
-    def test_support_faqpage_questions_are_visible_h4s(self):
+    def test_support_faqpage_questions_are_visible_headings(self):
         html = self._page_html("/support")
         objs = self._ld_objects(html)
         faq = next((o for o in objs if o.get("@type") == "FAQPage"), None)
@@ -1093,14 +1240,15 @@ class JsonLdInvariants(unittest.TestCase):
         questions = [q.get("name", "") for q in faq.get("mainEntity", [])
                      if q.get("@type") == "Question"]
         self.assertTrue(questions, "FAQPage has no Question entries")
-        # Visible <h4> text on the page (tags stripped, entities normalised for the compare).
-        h4s = [re.sub(r"<[^>]+>", "", m).strip()
-               for m in re.findall(r"<h4[^>]*>(.*?)</h4>", html, re.S)]
+        # Visible question headings (<h3> under the "Frequently asked" <h2> since v1.3.5; <h4> kept
+        # for compatibility) — tags stripped, entities normalised for the compare.
+        h4s = [re.sub(r"<[^>]+>", "", body).strip()
+               for _lvl, body in re.findall(r"<h([34])[^>]*>(.*?)</h\1>", html, re.S)]
         import html as _htmlmod
         h4_norm = {_htmlmod.unescape(t) for t in h4s}
         for q in questions:
             self.assertIn(_htmlmod.unescape(q), h4_norm,
-                          f"FAQPage question not present as a visible <h4>: {q!r}")
+                          f"FAQPage question not present as a visible <h3>/<h4>: {q!r}")
 
 
 class NewsletterPrivacy(unittest.TestCase):

@@ -2,8 +2,9 @@
 import { getCollection } from "astro:content";
 import Marketing from "../../layouts/Marketing.astro";
 import MarketingNav from "../../components/MarketingNav.astro";
+import MarketingFooter from "../../components/MarketingFooter.astro";
 import JsonLd from "../../components/JsonLd.astro";
-import { SITE_URL, SUPPORT_EMAIL } from "../../site";
+import { SITE_URL } from "../../site";
 import { LEARN_SLUGS } from "../../routes";
 
 const desc =
@@ -68,24 +69,7 @@ const jsonLd = {
     </div>
   </section>
 
-  <footer class="foot">
-    <div class="wrap foot-in">
-      <div>
-        <div class="foot-brand">Gurbani Soul</div>
-        <div>Built by Algorythmos · Sri Guru Granth Sahib Ji is shown verbatim from the source edition, cited by Ang.</div>
-      </div>
-      <nav aria-label="Footer" class="foot-nav">
-        <a href="/">Home</a>
-        <a href="/search">Knowledge Base</a>
-        <a href="/support">Support</a>
-        <a href="/privacy">Privacy</a>
-        <a href="/rss.xml">RSS</a>
-      </nav>
-    </div>
-    <div class="wrap credits">
-      <p>Questions or corrections? <a href="/support">Support</a> · {SUPPORT_EMAIL}</p>
-    </div>
-  </footer>
+  <MarketingFooter />
 
   <style>
     .learn-hero { padding: clamp(96px, 12vw, 150px) 0 clamp(24px, 4vw, 44px); }
@@ -105,10 +89,5 @@ const jsonLd = {
       .learn-card a { transition: opacity .12s ease; }
     }
     .learn-card a:hover h2 { text-decoration: underline; text-decoration-color: var(--accent); text-underline-offset: 3px; }
-    .foot-in { padding-top: 44px; padding-bottom: 20px; display: flex; flex-wrap: wrap; gap: 16px 32px; align-items: baseline; justify-content: space-between; }
-    .foot-brand { font-family: var(--serif-display); font-size: 18px; color: var(--ink); }
-    .foot-nav { display: flex; gap: 18px; flex-wrap: wrap; }
-    .credits { padding-bottom: 40px; }
-    .credits p { margin: 0; }
   </style>
 </Marketing>

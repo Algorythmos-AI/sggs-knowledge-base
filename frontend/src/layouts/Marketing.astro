@@ -22,17 +22,22 @@ const { title, description, path = "/", ogImage } = Astro.props;
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <title>{title}</title>
-  <Seo title={title} description={description} path={path} ogImage={ogImage} />
+  <Seo title={title} description={description} path={path} ogImage={ogImage} themeColor="light" />
   <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
-  <!-- Resolve theme before first paint (shared convention with the Knowledge Base). -->
+  <!-- Resolve theme before first paint. The marketing site is LIGHT-FIRST: with no stored choice
+       it renders light whatever the OS appearance (the Knowledge Base's Base.astro keeps 'system').
+       An explicit choice (localStorage 'theme', shared with the KB) always wins. The single
+       theme-color meta follows the resolved page theme (scripts/theme.ts keeps it in step). -->
   <script is:inline>
     (function () {
       try {
-        var t = localStorage.getItem('theme') || 'system';
+        var t = localStorage.getItem('theme') || 'light';
         var d = t === 'system'
           ? (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light')
           : t;
         document.documentElement.setAttribute('data-theme', d);
+        var m = document.getElementById('themeColorMeta');
+        if (m) m.setAttribute('content', d === 'dark' ? '#171412' : '#FBF7F0');
       } catch (e) {}
     })();
   </script>

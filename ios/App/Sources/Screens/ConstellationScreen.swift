@@ -15,11 +15,11 @@ struct ConstellationScreen: View {
         VStack(spacing: 12) {
             Menu {
                 ForEach(concepts) { c in
-                    Button(c.concept.capitalized) { concept = c.concept }
+                    Button(ConceptName.display(c.concept)) { concept = c.concept }
                 }
             } label: {
                 HStack {
-                    Text("Theme: \(concept.capitalized)").font(.headline)
+                    Text("Theme: \(ConceptName.display(concept))").font(.headline)
                     Image(systemName: "chevron.up.chevron.down").font(.caption)
                 }
             }
@@ -86,7 +86,7 @@ private struct ConstellationMap: View {
                 .stroke(Brand.gold.opacity(0.25), lineWidth: 1)
 
                 // centre node
-                bubble(label: center.capitalized, sub: nil, diameter: 84, fill: Brand.primaryFill)
+                bubble(label: ConceptName.display(center), sub: nil, diameter: 84, fill: Brand.primaryFill)
                     .position(c)
                     .accessibilityHidden(true)
 
@@ -94,11 +94,11 @@ private struct ConstellationMap: View {
                 ForEach(Array(clusters.enumerated()), id: \.element.id) { i, cl in
                     let d = 44 + CGFloat((Double(max(cl.n, 0)).squareRoot() / maxN.squareRoot())) * 52
                     Button { onSelect(cl) } label: {
-                        bubble(label: cl.co.capitalized, sub: "\(cl.n)", diameter: d, fill: Brand.gold)
+                        bubble(label: ConceptName.display(cl.co), sub: "\(cl.n)", diameter: d, fill: Brand.gold)
                     }
                     .buttonStyle(.plain)
                     .position(point(i, c, ring))
-                    .accessibilityLabel("\(cl.co), \(cl.n) verses shared with \(center)")
+                    .accessibilityLabel("\(ConceptName.display(cl.co)), \(cl.n) verses shared with \(ConceptName.display(center))")
                 }
             }
         }
@@ -139,7 +139,7 @@ struct ClusterSheet: View {
             }
             .listStyle(.plain)
             .inkPlainList()
-            .navigationTitle("\(center.capitalized) + \(cluster.co.capitalized)")
+            .navigationTitle("\(ConceptName.display(center)) + \(ConceptName.display(cluster.co))")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar { ToolbarItem(placement: .topBarTrailing) { Button("Done") { dismiss() } } }
         }

@@ -1,0 +1,93 @@
+---
+// LegalPage.astro — the marketing-shell body for long-form policy pages (/privacy, /support).
+// Render it INSIDE <Marketing …> (the page owns <title>, SEO and JSON-LD):
+//   <Marketing title=… description=… path="/privacy">
+//     <LegalPage title=… eyebrow=… id="v-privacy" toc={[{ id: "short-version", label: "…" }]}>
+//       <section id="short-version"><h2>…</h2>…</section> …
+//     </LegalPage>
+//   </Marketing>
+// Layout: marketing nav (solid) → page hero (warm surface; eyebrow, h1, gold hairline, lede,
+// "Last updated") → a contents rail (sticky at ≥980px, a horizontal chip row below) beside the
+// <article class="legal" id={id}> → the shared MarketingFooter. landing.ts `wireTocActive()` marks
+// the rail link of the section being read (aria-current). Content moves in VERBATIM — this
+// component only frames it. Adopted by /privacy and /support (v1.3.5).
+import MarketingNav from "./MarketingNav.astro";
+import MarketingFooter from "./MarketingFooter.astro";
+
+interface Props {
+  title: string;
+  eyebrow: string;
+  lede?: string;
+  id: "v-privacy" | "v-support";
+  toc: { id: string; label: string }[];
+  updated?: string;
+}
+const { title, eyebrow, lede, id, toc, updated } = Astro.props;
+---
+<MarketingNav overHero={false} />
+
+<header class="page-hero legal-hero surface-warm">
+  <div class="wrap">
+    <p class="eyebrow">{eyebrow}</p>
+    <h1>{title}</h1>
+    <hr class="gold-hair" aria-hidden="true" />
+    {lede && <p class="body-lg legal-lede">{lede}</p>}
+    {updated && <p class="detail legal-updated">Last updated {updated}</p>}
+  </div>
+</header>
+
+<div class="sec-thin legal-body"><div class="wrap legal-grid">
+  {toc.length > 0 && (
+    <nav class="legal-toc" aria-label="On this page">
+      <p class="legal-toc-h">Contents</p>
+      <ul>
+        {toc.map((t) => <li><a href={`#${t.id}`}>{t.label}</a></li>)}
+      </ul>
+    </nav>
+  )}
+  <article class="legal" id={id}>
+    <slot />
+  </article>
+</div></div>
+
+<MarketingFooter />
+
+<style>
+  .legal-hero { padding: clamp(96px, 12vw, 150px) 0 clamp(36px, 5vw, 56px); border-bottom: 1px solid var(--line); }
+  .legal-hero h1 { font-size: clamp(32px, 5.4vw, 54px); margin: 0 0 20px; max-width: 22ch; color: var(--ink); }
+  .legal-hero .gold-hair { margin: 0 0 22px; }
+  .legal-lede { margin: 0 0 10px; }
+  .legal-updated { margin: 0; }
+
+  .legal-grid { display: grid; grid-template-columns: minmax(0, 1fr); gap: 28px; align-items: start; }
+  .legal-toc-h { font-size: 12.5px; font-weight: 700; letter-spacing: .14em; color: var(--ink); margin: 0 0 10px; }
+  .legal-toc ul { list-style: none; margin: 0; padding: 0; }
+  .legal-toc a { color: var(--ink-soft); text-decoration: none; font-size: 14.5px; }
+  .legal-toc a[aria-current] { color: var(--ink); font-weight: 650; }
+
+  /* Mobile: the rail becomes a horizontal chip row above the article (scrolls inside its own box). */
+  @media (max-width: 979px) {
+    .legal-toc-h { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+    .legal-toc ul { display: flex; gap: 8px; overflow-x: auto; scroll-snap-type: x proximity; padding-bottom: 4px; }
+    .legal-toc li { flex: 0 0 auto; scroll-snap-align: start; }
+    .legal-toc a { display: inline-flex; align-items: center; min-height: 44px; padding: 0 16px; border: 1px solid var(--line); border-radius: 999px; background: var(--card); white-space: nowrap; }
+    .legal-toc a[aria-current] { border-color: var(--accent); }
+  }
+  @media (min-width: 980px) {
+    .legal-grid { grid-template-columns: minmax(0, 3fr) minmax(0, 8fr); column-gap: clamp(40px, 6vw, 96px); }
+    .legal-toc { position: sticky; top: 92px; }
+    .legal-toc ul { display: grid; gap: 2px; border-left: 1px solid var(--line); }
+    .legal-toc a { display: block; padding: 7px 0 7px 16px; margin-left: -1px; border-left: 2px solid transparent; }
+    .legal-toc a[aria-current] { border-left-color: var(--accent); }
+  }
+
+  .legal { max-width: 62ch; font-size: 17px; line-height: 1.65; color: var(--ink); }
+  .legal :global(section) { padding: 28px 0; border-top: 1px solid var(--line); scroll-margin-top: 92px; }
+  .legal :global(section:first-child) { border-top: 0; padding-top: 0; }
+  .legal :global(h2) { font-size: clamp(22px, 3vw, 28px); margin: 0 0 14px; color: var(--ink); }
+  .legal :global(h3) { font-size: clamp(18px, 2.2vw, 21px); margin: 24px 0 8px; color: var(--ink); }
+  .legal :global(p), .legal :global(li) { color: var(--ink); }
+  .legal :global(p) { margin: 0 0 14px; }
+  .legal :global(ul) { margin: 0 0 14px; padding-left: 22px; }
+  .legal :global(a) { color: var(--accent-text); }
+</style>
