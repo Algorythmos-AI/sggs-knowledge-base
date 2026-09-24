@@ -25,7 +25,8 @@ ROOT = os.path.dirname(HERE)
 sys.path.insert(0, os.path.join(ROOT, 'webapp'))
 import serve  # noqa: E402  -- the source of truth for roman_norm
 
-DB = sys.argv[1] if len(sys.argv) > 1 else os.path.join(ROOT, 'db', 'sggs.sqlite')
+_POS = [a for a in sys.argv[1:] if not a.startswith('--')]   # flags (e.g. --suites=) are never the DB
+DB = _POS[0] if _POS else os.path.join(ROOT, 'db', 'sggs.sqlite')
 OUT = os.path.join(ROOT, 'contract')
 os.makedirs(OUT, exist_ok=True)
 
@@ -49,6 +50,23 @@ def write_ndjson(name, records):
 # ---------------------------------------------------------------------------
 # 1. roman_norm vectors — real corpus translit tokens + curated edge cases
 # ---------------------------------------------------------------------------
+# Transport. In-process by default; pipeline/contract_http.py rebinds these three to replay the
+# SAME projections over HTTP against a running service, so the contract is never forked.
+def API(path, qs):
+    return serve.api(path, qs)
+
+
+def SEARCH(q, mode):
+    return serve.do_search(q, mode, 50, 0)
+
+
+def VERIFY(claim, ang):
+    return serve.verify_claim(claim, ang=ang, db_path=DB)
+
+
+HUKAM = True   # hukam_package(seed=) has no HTTP equivalent (/api/random is unseeded)
+
+
 def roman_norm_vectors():
     inputs = []
     # curated examples straight from the docstring + known equivalences
@@ -174,7 +192,7 @@ def verify_vectors():
     ]
     out = []
     for claim, ang in claims:
-        v = serve.verify_claim(claim, ang=ang, db_path=DB)
+        v = VERIFY(claim, ang)
         dd = v.get('distance_details', {})
         out.append({
             'claim': claim, 'ang': ang,
@@ -243,7 +261,7 @@ def search_vectors():
     ]
     out = []
     for q, mode in cases:
-        r = serve.do_search(q, mode, 50, 0)
+        r = SEARCH(q, mode)
         results = r.get('results', [])
         out.append({
             'query': q, 'mode': mode,
@@ -264,7 +282,7 @@ def reader_vectors():
     serve.HAVE_FTS = None
     out = []
     for n in (1, 2, 8, 100, 829, 1430):
-        r = serve.api(f'/api/ang/{n}', {})
+        r = API(f'/api/ang/{n}', {})
         out.append({'kind': 'ang', 'n': n,
                     'line_ids': [l['id'] for l in r['lines']],
                     'continued_from': r['continued_from'],
@@ -274,11 +292,11 @@ def reader_vectors():
                     'ens': [l.get('en') for l in r['lines']]})
     # a shabad payload (attach_translations parity on /api/shabad)
     for cid in (2, 682, 3000):   # comp 1 (Mool Mantar ੴ) folds into Japji comp 2 after the header-run regroup
-        r = serve.api(f'/api/shabad/{cid}', {})
+        r = API(f'/api/shabad/{cid}', {})
         out.append({'kind': 'shabad', 'comp_id': cid,
                     'line_ids': [l['id'] for l in r['lines']],
                     'ens': [l.get('en') for l in r['lines']]})
-    for seed in (1, 5, 100, 400, 405, 1000, 1500):
+    for seed in ((1, 5, 100, 400, 405, 1000, 1500) if HUKAM else ()):
         try:
             h = serve.hukam_package(seed=seed)
             out.append({'kind': 'hukam', 'seed': seed, 'comp_id': h['comp_id'],
@@ -286,23 +304,23 @@ def reader_vectors():
         except Exception as e:
             out.append({'kind': 'hukam', 'seed': seed, 'error': type(e).__name__})
     for lid in (5, 100, 1000, 5000, 50000):
-        r = serve.api('/api/neighbors', {'line_id': [str(lid)], 'limit': ['12']})
+        r = API('/api/neighbors', {'line_id': [str(lid)], 'limit': ['12']})
         out.append({'kind': 'neighbors', 'line_id': lid, 'level': r['level'],
                     'source': r.get('source'),
                     'neighbor_ids': [n.get('id', n.get('comp_id')) for n in r['neighbors']],
                     'scores': [round(n['score'], 6) for n in r['neighbors']],
                     'ens': [n.get('en') for n in r['neighbors']]})
     # analytics (Insight Engine): author/raag lists + theme co-occurrence network
-    av = serve.api('/api/analytics/author', {})['authors']
+    av = API('/api/analytics/author', {})['authors']
     out.append({'kind': 'authors', 'names': [a['author'] for a in av],
                 'n_lines': [a['n_lines'] for a in av], 'mattr': [round(a['mattr_100'], 4) for a in av]})
-    rv2 = serve.api('/api/analytics/raag', {})['raags']
+    rv2 = API('/api/analytics/raag', {})['raags']
     out.append({'kind': 'raags', 'names': [r['raag'] for r in rv2], 'n_lines': [r['n_lines'] for r in rv2]})
-    tn = serve.api('/api/themes/network', {'min_ppmi': ['0.7'], 'limit': ['40']})['edges']
+    tn = API('/api/themes/network', {'min_ppmi': ['0.7'], 'limit': ['40']})['edges']
     out.append({'kind': 'theme_net', 'pairs': [f"{e['source']}~{e['target']}" for e in tn],
                 'ppmi': [round(e['ppmi'], 6) for e in tn]})
     for con in ('naam', 'hukam', 'seva'):
-        r = serve.api('/api/analytics/constellation', {'concept': [con]})
+        r = API('/api/analytics/constellation', {'concept': [con]})
         top = r['clusters'][0]['verses'] if r.get('clusters') else []
         out.append({'kind': 'constellation', 'concept': con, 'total': r['total'],
                     'cluster_cos': [c['co'] for c in r.get('clusters', [])],
@@ -322,7 +340,7 @@ def timing_vectors():
     serve.HAVE_FTS = None
     serve._TIMING_CACHE = None   # never serve a stale cache from a prior DB
     out = []
-    clock = serve.api('/api/timing/clock', {})
+    clock = API('/api/timing/clock', {})
     out.append({'kind': 'clock', 'payload': clock})
     # every raag that actually has claims, by both gurmukhi and roman name,
     # plus a claim-less raag and a nonexistent name (contract includes misses)
@@ -336,15 +354,15 @@ def timing_vectors():
         "(SELECT DISTINCT raag_name FROM raag_timing_claims) ORDER BY seq LIMIT 2")]
     for name in claimed:
         out.append({'kind': 'raag', 'name': name,
-                    'payload': serve.api('/api/timing/raag', {'name': [name]})})
+                    'payload': API('/api/timing/raag', {'name': [name]})})
         rom = romans.get(name)
         if rom:
             out.append({'kind': 'raag', 'name': rom,
-                        'payload': serve.api('/api/timing/raag', {'name': [rom]})})
+                        'payload': API('/api/timing/raag', {'name': [rom]})})
     for name in unclaimed + ['no-such-raag']:
         out.append({'kind': 'raag', 'name': name,
-                    'payload': serve.api('/api/timing/raag', {'name': [name]})})
-    out.append({'kind': 'divergence', 'payload': serve.api('/api/timing/divergence', {})})
+                    'payload': API('/api/timing/raag', {'name': [name]})})
+    out.append({'kind': 'divergence', 'payload': API('/api/timing/divergence', {})})
     # /api/forms over a stratified comp sample: one per structural form, one per
     # genre bucket (first few), partaal=1, ghar extremes, and a mapped-but-bare comp
     cids = []
@@ -364,7 +382,7 @@ def timing_vectors():
     cids = sorted(set(cids)) + [99999999]   # + unmapped id (forms: None case)
     for cid in cids:
         out.append({'kind': 'forms', 'comp_id': cid,
-                    'payload': serve.api('/api/forms', {'comp_id': [str(cid)]})})
+                    'payload': API('/api/forms', {'comp_id': [str(cid)]})})
     return out
 
 
@@ -378,13 +396,13 @@ def bani_vectors():
     serve.DB = DB
     serve.HAVE_FTS = None
     out = []
-    lst = serve.api('/api/banis', {})
+    lst = API('/api/banis', {})
     out.append({'kind': 'list', 'payload': lst})
     if not lst.get('available'):
         return out
     for b in lst['banis']:
         for variant in ({''} | {b['variant']}) if b['is_default'] else {b['variant']}:
-            r = serve.api('/api/bani/' + b['key'], {'variant': [variant]} if variant else {})
+            r = API('/api/bani/' + b['key'], {'variant': [variant]} if variant else {})
             h = hashlib.sha256()
             for ln in r['lines']:
                 h.update(ln['gurmukhi'].encode('utf-8')); h.update(b'\n')
@@ -396,7 +414,7 @@ def bani_vectors():
                                   ln['is_header'], ln['source']] for ln in r['lines']]})
     for key, variant in (('no_such_bani', ''), ('japji', 'taksal')):
         try:
-            serve.api('/api/bani/' + key, {'variant': [variant]} if variant else {})
+            API('/api/bani/' + key, {'variant': [variant]} if variant else {})
             out.append({'kind': 'miss', 'key': key, 'variant': variant, 'status': 200})
         except serve.ApiError as e:
             out.append({'kind': 'miss', 'key': key, 'variant': variant, 'status': e.status})
@@ -422,35 +440,35 @@ def analytics_vectors():
     for raag in picks:
         for bins in (8, 36, 80):
             for top in (2, 7):
-                r = serve.api('/api/analytics/progression',
+                r = API('/api/analytics/progression',
                               {'raag': [raag], 'bins': [str(bins)], 'top': [str(top)]})
                 out.append({'kind': 'progression', 'raag': raag, 'bins_req': bins, 'top_req': top,
                             'payload': r})
     # author profiles (full=1 radar axes + distinctive terms), 5 authors + the list
-    out.append({'kind': 'authors_list', 'payload': serve.api('/api/analytics/author', {})})
+    out.append({'kind': 'authors_list', 'payload': API('/api/analytics/author', {})})
     authors = [r[0] for r in con.execute(
         "SELECT author FROM author_analytics ORDER BY n_lines DESC LIMIT 5")]
     for a in authors:
         out.append({'kind': 'author', 'author': a,
-                    'payload': serve.api('/api/analytics/author', {'author': [a], 'full': ['1']})})
+                    'payload': API('/api/analytics/author', {'author': [a], 'full': ['1']})})
         out.append({'kind': 'author12', 'author': a,
-                    'payload': serve.api('/api/analytics/author', {'author': [a]})})
+                    'payload': API('/api/analytics/author', {'author': [a]})})
     con.close()
     # resonance: web defaults + a tightened variant
-    out.append({'kind': 'resonance', 'payload': serve.api('/api/analytics/resonance', {})})
-    out.append({'kind': 'resonance', 'payload': serve.api(
+    out.append({'kind': 'resonance', 'payload': API('/api/analytics/resonance', {})})
+    out.append({'kind': 'resonance', 'payload': API(
         '/api/analytics/resonance', {'min_lines': ['500'], 'min_lift': ['1.5'], 'min_edges': ['12']})})
     # vaars: list + 3 anatomies (first, a cross-author one, last) + a miss
-    vl = serve.api('/api/analytics/vaars', {})
+    vl = API('/api/analytics/vaars', {})
     out.append({'kind': 'vaars', 'payload': vl})
     ids = [v['vaar_id'] for v in vl['vaars']]
     cross = [v['vaar_id'] for v in vl['vaars'] if v.get('cross_author')]
     for vid in [ids[0], (cross[0] if cross else ids[len(ids)//2]), ids[-1], 999]:
         out.append({'kind': 'vaar', 'id': vid,
-                    'payload': serve.api('/api/analytics/vaar', {'id': [str(vid)]})})
+                    'payload': API('/api/analytics/vaar', {'id': [str(vid)]})})
     # theme network at the web's full-edge render params (min_ppmi 0 → all edges)
     for mp, lim in (('0.7', '40'), ('0', '1500')):
-        r = serve.api('/api/themes/network', {'min_ppmi': [mp], 'limit': [lim]})
+        r = API('/api/themes/network', {'min_ppmi': [mp], 'limit': [lim]})
         out.append({'kind': 'theme_network', 'min_ppmi': mp, 'limit': lim,
                     'pairs': [f"{e['source']}~{e['target']}" for e in r['edges']],
                     'ppmi': [round(e['ppmi'], 6) for e in r['edges']],
