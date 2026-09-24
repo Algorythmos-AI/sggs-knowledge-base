@@ -1,5 +1,5 @@
 """contract/openapi.json: current, complete (every dispatcher route), and structurally valid."""
-import json, re, sys, unittest
+import json, sys, unittest
 from pathlib import Path
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / "pipeline"))
@@ -18,13 +18,10 @@ def _is_real_sqlite(p):
 
 
 def dispatcher_routes():
-    """Route keys handled by webapp/serve.py:api(), read from its source."""
-    src = (ROOT / "webapp" / "serve.py").read_text(encoding="utf-8")
-    body = src[src.index("def api(path, qs):"):]
-    body = body[:re.search(r"\n(?=\S)", body[20:]).start() + 20]   # up to the next top-level statement
-    two = set(re.findall(r"p\[0\] == '(\w+)' and len\(p\) >= 2 and p\[1\] == '(\w+)'", body))
-    one = set(re.findall(r"if p\[0\] == '(\w+)'(?! and len\(p\) >= 2)", body))
-    return {f"{a}/{b}" for a, b in two} | one
+    """Route keys handled by webapp/serve.py:api() — its ROUTES table."""
+    sys.path.insert(0, str(ROOT / "webapp"))
+    import serve
+    return {a if b is None else f"{a}/{b}" for a, b in serve.ROUTES}
 
 
 def spec_routes():
