@@ -2,7 +2,7 @@
 import json, sys, unittest
 from pathlib import Path
 ROOT = Path(__file__).resolve().parents[2]
-sys.path.insert(0, str(ROOT / "pipeline"))
+sys.path.insert(0, str(ROOT / "tools"))
 import gen_openapi as go  # noqa: E402
 
 SPEC = json.loads((ROOT / "contract" / "openapi.json").read_text(encoding="utf-8"))
@@ -55,7 +55,7 @@ class OpenApi(unittest.TestCase):
     @unittest.skipUnless(_is_real_sqlite(REAL_DB), "needs the real db/sggs.sqlite (git lfs pull)")
     def test_spec_is_current(self):
         self.assertEqual((ROOT / "contract" / "openapi.json").read_text(encoding="utf-8"), go.render(),
-                         "contract/openapi.json is stale — run: python3 pipeline/gen_openapi.py")
+                         "contract/openapi.json is stale — run: python3 tools/gen_openapi.py")
 
 
 if __name__ == "__main__":

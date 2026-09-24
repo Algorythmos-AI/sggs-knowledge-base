@@ -113,7 +113,7 @@ jobs:
         with:
           python-version-file: ".python-version"
       - name: Every sampled composition serves its exact lines; headings present; gaps 404
-        run: python3 pipeline/api_superset_check.py --db db/sggs.sqlite --url "$PROD_API" --sample 100
+        run: python3 tools/api_superset_check.py --db db/sggs.sqlite --url "$PROD_API" --sample 100
       - name: Open an incident (API is live but failed verification)
         if: failure()
         env:

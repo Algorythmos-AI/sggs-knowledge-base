@@ -28,21 +28,24 @@ flowchart TB
 
 ```mermaid
 flowchart LR
-    subgraph build[Build time]
+    subgraph data[sggs-data — build time]
       PDF[(Bir PDF)] --> corpus[build_corpus.py<br/>+ sggs_pipeline.py]
       corpus --> jsonl[corpus/sggs.jsonl<br/>verbatim, SHA-pinned]
       jsonl -->|reconcile.py + golden_test.py<br/>GATES| db[build_db.py → SQLite/FTS5]
       db --> enrich[translations · variants · concepts<br/>analytics · vaars · timing]
-      enrich --> sqlite[(db/sggs.sqlite<br/>Git LFS)]
-      sqlite --> contract[gen_golden_vectors.py<br/>→ contract/*.ndjson]
-      sqlite --> iosdb[build_ios_db.py<br/>→ ios/Resources/*.sqlite]
+      enrich --> sqlite[(db/sggs.sqlite<br/>published by commit + sha256)]
     end
-    subgraph run[Run time]
-      sqlite --> serve[webapp/serve.py<br/>read-only, mmap]
+    subgraph platform[this repository]
+      lock[dataset.lock.json] -.->|pins| sqlite
+      sqlite -->|fetch_dataset.py<br/>sha256-verified| serve[webapp/serve.py<br/>read-only, mmap]
+      serve --> contract[tools/gen_golden_vectors.py<br/>→ contract/*.ndjson]
       serve --> static[Astro static MPA]
       static -->|/api/* same-origin| serve
+    end
+    subgraph ios[gurbani-soul-ios]
+      sqlite --> iosdb[build_ios_db.py<br/>→ ios/Resources/*.sqlite]
       iosdb --> app[SwiftUI app<br/>GurbaniSearchKit]
-      contract -.->|byte-parity tests| app
+      contract -.->|vendored; byte-parity tests| app
     end
     classDef gate fill:#7a1f1f,color:#fff;
 ```
@@ -70,10 +73,12 @@ with a host-conditioned rewrite — see [Environments](../process/environments.m
 5. **Knowledge layer** — attributed raag-timing claims (divergence preserved, never adjudicated).
 
 ## Source of truth vs generated
-- **Source of truth:** the PDF; `validation/concepts_*.json`; `pipeline/timing/timing_seed.json`;
-  `pipeline/translations/*.jsonl` (private — fetched from `Algorythmos-AI/sggs-source` by
-  `scripts/data/fetch_translations.sh`, verified against `pipeline/translations.SHA256SUMS`); `webapp/serve.py` + `verify.py` + `romannorm.py` (the behaviour the Swift port mirrors); all `frontend/src/` and `ios/App/Sources/`.
-- **Generated:** `corpus/sggs.jsonl` (committed, SHA-pinned), `db/sggs.sqlite`, `contract/*.ndjson`, `frontend/dist/`, `webapp/static/` (and, in the app repository, `ios/Resources/*.sqlite`).
+- **In sggs-data:** the PDF-derived corpus and database, the timing seed, the concept definitions and
+  the private translation inputs (fetched from `Algorythmos-AI/sggs-source`, checksum-verified).
+- **Here, source of truth:** `webapp/serve.py` + `verify.py` + `romannorm.py` (the behaviour the Swift
+  port mirrors), `frontend/src/`, and `dataset.lock.json` (which database is served).
+- **Here, generated:** `contract/*.ndjson` + `contract/openapi.json`, `frontend/dist/`, `webapp/static/`;
+  `db/sggs.sqlite` is installed from the pin, never committed.
 
 See [microservices roadmap](microservices-roadmap.md) for how the monolith is
 factored for a later service split.

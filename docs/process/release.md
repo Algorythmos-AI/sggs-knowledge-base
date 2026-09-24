@@ -3,14 +3,13 @@
 1. On `integration`, ensure everything is green on staging.
 2. Bump the unified version: `make release VERSION=1.2.0` (runs `bump.py` +
    `check_versions.py`). Fill in the CHANGELOG section it stubs.
-3. If the corpus/DB changed: `make rebuild` → `verify_regroup` → `make reconcile`
-   (updates the attestation) → `make contract`.
+3. If the dataset changed: it was rebuilt, proven and published in sggs-data first; here the
+   release carries the reviewed `dataset.lock.json` bump and the regenerated contract (`make contract`).
 4. Open a **release PR `integration → main`**, labelled `release`. All gates must pass.
-5. Merge. `release` CI tags `vX.Y.Z`, cuts a GitHub Release from the CHANGELOG
-   section with artefacts (`frontend-dist.zip`, `MANIFEST.json`, iOS manifest,
-   `contract.tar.gz`, SBOM), attaches `db_sha256`/`corpus_sha256`, closes the
-   milestone, and back-merges `main → integration`.
-6. Production deploys automatically; `deploy-verify` confirms `/api/meta.version`.
+5. Merge (a merge commit). `deploy-production` deploys the exact commit, verifies it, and only
+   then tags `vX.Y.Z` and cuts a GitHub Release from the CHANGELOG section. The tag names the
+   commit, and that commit's `dataset.lock.json` names the exact database it serves.
+6. Confirm with `make verify-prod` (commit identity, health, Ang 712 heading, web deployment).
 7. **iOS is part of every release.** After `main` is tagged `vX.Y.Z`, the app repository
    ([`Algorythmos-AI/gurbani-soul-ios`](https://github.com/Algorythmos-AI/gurbani-soul-ios)) vendors this release (`make vendor-sync-platform REF=vX.Y.Z`), sets
    `MARKETING_VERSION` to `X.Y.Z`, tags its own `vX.Y.Z` and uploads the App Store binary
