@@ -10,7 +10,7 @@ answered by the tracked ledger, not by memory. Exit 0 only when ALL of these hol
   3. the in-app label is off (NitnemReview.extraTextReviewed = true);
   4. that build was made with an SDK at or above the App Store floor;
   5. scripts/release/check_versions.py passes and the top CHANGELOG entry is VERSION;
-  6. the store-listing lint (webapp/tests/test_repo_gates.py) passes.
+  6. the store-listing lint (ios/tests/test_ios_gates.py) passes.
 
 Prints every failed condition, never just the first. Stdlib only.
 """
@@ -68,8 +68,8 @@ def main(argv=None):
         (ROOT / "ios/App/Sources/Data/NitnemSchedule.swift").read_text(encoding="utf-8"))
 
     checks = [("version strings / CHANGELOG", [sys.executable, "scripts/release/check_versions.py"])]
-    if (ROOT / "webapp/tests/test_repo_gates.py").exists():
-        checks.append(("store-listing lint", [sys.executable, "-m", "unittest", "-q", "webapp.tests.test_repo_gates"]))
+    # The listing lint is part of the iOS gates; it always runs (a missing file is a failure, never a skip).
+    checks.append(("store-listing lint", [sys.executable, "-m", "unittest", "-q", "ios.tests.test_ios_gates"]))
     for title, cmd in checks:
         run = subprocess.run(cmd, cwd=ROOT, capture_output=True, text=True)
         if run.returncode != 0:

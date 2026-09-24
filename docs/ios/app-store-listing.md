@@ -44,7 +44,7 @@ its full name, *Sri Guru Granth Sahib Ji · Ang N* — "Gurbani Soul" names the 
 (Do **not** repeat words already in the Name/Subtitle — Apple indexes those. So `gurbani`,
 `nitnem`, `hukam`, `search` are deliberately omitted here. Every keyword must name something the
 app actually contains: `kirtan` was removed because the app has no audio — `rehras` and `sohila`
-are banis it does contain. `webapp/tests/test_repo_gates.py` lints this section.)
+are banis it does contain. `ios/tests/test_ios_gates.py` lints this section.)
 
 ## Promotional text (170) — trust first (editable any time; NOT indexed for search)
 

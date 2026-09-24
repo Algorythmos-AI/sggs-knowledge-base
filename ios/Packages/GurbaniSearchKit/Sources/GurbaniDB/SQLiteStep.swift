@@ -7,7 +7,7 @@ import CSQLite
 /// and SQLITE_INTERRUPT as "no more rows": the loop ends early and the caller returns a shorter
 /// result with no error — for this app, a silently truncated Ang or shabad. Scripture is shown
 /// complete or not at all, so every step goes through here and anything other than ROW / DONE
-/// throws. A repo gate (webapp/tests/test_repo_gates.py) forbids raw step loops elsewhere.
+/// throws. A repo gate (ios/tests/test_ios_gates.py) forbids raw step loops elsewhere.
 ///
 /// Returns `true` when a row is available, `false` at SQLITE_DONE.
 @inline(__always)
