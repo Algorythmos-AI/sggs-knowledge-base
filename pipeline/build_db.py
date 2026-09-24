@@ -4,15 +4,14 @@ import sys, json, sqlite3, os, collections, re
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from sggs_pipeline import roman_norm, translit_line
 
-def _app_version():
-    """Single-source the DB build version from webapp/serve.py:APP_VERSION so the
-    DB's db_version tracks the release it was built for (no stale hardcode)."""
-    try:
-        p = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'webapp', 'serve.py')
-        m = re.search(r"APP_VERSION\s*=\s*'([^']+)'", open(p, encoding='utf-8').read())
-        return m.group(1) if m else '0.0.0'
-    except Exception:
-        return '0.0.0'
+def _dataset_version():
+    """The DB's version is the DATASET version (repo-root DATASET_VERSION), independent of the
+    app build: the data and the code release separately (see docs/engineering/delivery.md)."""
+    p = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'DATASET_VERSION')
+    v = open(p, encoding='utf-8').read().strip()
+    if not re.fullmatch(r'\d+\.\d+\.\d+', v):
+        raise SystemExit(f'DATASET_VERSION must be X.Y.Z, got {v!r}')
+    return v
 
 JSONL, DB = sys.argv[1], sys.argv[2]
 rows = [json.loads(l) for l in open(JSONL, encoding='utf-8')]
@@ -117,7 +116,7 @@ cur.execute('INSERT INTO meta VALUES(?,?)', ('distinct_words', str(len(wf))))
 cur.execute('INSERT INTO meta VALUES(?,?)', ('edition', 'Siri Guru Granth Sahib in Gurmukhi with Index (user PDF, 1483 pp)'))
 cur.execute('INSERT INTO meta VALUES(?,?)', ('fts5', '1' if HAVE_FTS else '0'))
 import datetime
-cur.execute('INSERT INTO meta VALUES(?,?)', ('version', _app_version()))   # was hardcoded '1.4.0'; now tracks webapp/serve.py:APP_VERSION
+cur.execute('INSERT INTO meta VALUES(?,?)', ('version', _dataset_version()))   # the dataset version, not the app build
 from build_clock import stamp
 cur.execute('INSERT INTO meta VALUES(?,?)', ('built', stamp('%Y-%m-%d')))
 con.commit()

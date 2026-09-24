@@ -5,7 +5,7 @@
 | `web-ci · python` | ruff clean; server + repo-gate + pipeline-safety unit tests; the **golden contract replayed over HTTP** (`pipeline/contract_http.py`); `contract/openapi.json` is current and covers every dispatcher route; `/api/health` all-true; the **shabad-heading regression** (`api_superset_check`); search harnesses; **contract does not drift** | LFS DB |
 | `web-ci · frontend` | Astro builds; `pahar` vectors pass | Node 22 |
 | `scripture-integrity` | MANIFEST↔contract↔attestation hash chain; `verify_regroup --invariants`; `guard_scripture`; timing tests | LFS DB |
-| `version-consistency` | all 7 version strings unified; `main` PRs come from `integration`/`hotfix` | — |
+| `version-consistency` | all 6 app-version strings unified (the dataset has its own `DATASET_VERSION`); `main` PRs come from `integration`/`hotfix` | — |
 | `security` | gitleaks; bandit; semgrep OSS; actionlint; **blocking** `npm audit --audit-level=high` on `frontend/` (job `deps`) | — |
 | `pr-hygiene` | conventional-commit PR title | — |
 | `e2e · playwright` | Ang 712 heading smoke, search → panel heading, axe WCAG on the home page (desktop project) | serve.py + LFS DB |
