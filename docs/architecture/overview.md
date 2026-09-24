@@ -52,7 +52,7 @@ flowchart LR
 ```mermaid
 flowchart LR
     dev[git push main] --> vercel[Vercel<br/>static frontend]
-    vercel -->|/api/* rewrite| render[Render<br/>Docker: serve.py + LFS DB]
+    vercel -->|/api/* rewrite| render[Render<br/>Docker: serve.py + pinned DB]
     ios2[iOS archive] --> tf[TestFlight / App Store]
     classDef n fill:#1a3a6b,color:#fff;
 ```
