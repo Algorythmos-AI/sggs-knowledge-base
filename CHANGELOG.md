@@ -6,6 +6,10 @@ entries prior to v1.1.0 are the project's original prose style and are preserved
 ## [Unreleased]
 
 ### Added
+- **Request ids.** Every API response carries `X-Request-Id` (reusing a valid incoming id or
+  Vercel's `x-vercel-id`, else a random one), and the access log line records it, so one request
+  can be followed from the CDN to the API. A startup line records version, commit, dataset and
+  enabled modules. The log still never contains a query string, IP or user agent.
 - **Data canary** (`tools/data_canary.py`, workflow `data-canary`, `make canary`): every 6 hours
   production is proven to serve exactly the pinned scripture — a random sample of 500 lines and
   12 random Angs (plus Angs 1, 712 and 1430), fetched from the API origin and through the public
