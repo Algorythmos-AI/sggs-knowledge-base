@@ -14,6 +14,7 @@ jobs:
     steps:
       - uses: actions/checkout@v5
       - uses: ./.github/actions/fetch-dataset
+        with: { token: "${{ secrets.SGGS_READ_TOKEN || github.token }}" }
       - uses: actions/setup-python@v6
         with:
           python-version-file: ".python-version"
@@ -56,6 +57,7 @@ jobs:
       - name: Build the production API image
         run: docker build -f webapp/Dockerfile --build-arg RENDER_GIT_COMMIT="$GITHUB_SHA" -t sggs-api:ci .
       - uses: ./.github/actions/fetch-dataset
+        with: { token: "${{ secrets.SGGS_READ_TOKEN || github.token }}" }
       - name: Run it and verify health + baked commit identity
         run: |
           docker run -d -p 7777:7777 -e PORT=7777 --name sggs sggs-api:ci

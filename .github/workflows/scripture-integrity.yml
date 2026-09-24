@@ -22,11 +22,12 @@ jobs:
           python-version-file: ".python-version"
       - name: Dataset pin — the lock and contract/_meta.json name the same object; sggs-data publishes it
         env:
-          GH_TOKEN: ${{ github.token }}
+          GH_TOKEN: ${{ secrets.SGGS_READ_TOKEN || github.token }}
         run: |
           python3 scripts/data/fetch_dataset.py --check-repo
           python3 scripts/data/fetch_dataset.py --check-pin
       - uses: ./.github/actions/fetch-dataset
+        with: { token: "${{ secrets.SGGS_READ_TOKEN || github.token }}" }
       - name: The installed database opens, passes SQLite integrity and matches the corpus invariants
         run: |
           python3 - <<'PY'

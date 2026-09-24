@@ -4,6 +4,13 @@ description: >
   verified by sha256 and size and installed atomically. Verified objects are cached by
   their sha256, so repeated runs download nothing. Use after actions/checkout WITHOUT
   `lfs: true`.
+inputs:
+  token:
+    description: >
+      Token that can read Algorythmos-AI/sggs-data. Defaults to this repo's GITHUB_TOKEN, which is
+      enough while sggs-data is public; callers pass SGGS_READ_TOKEN so a private sggs-data still works.
+    required: false
+    default: ${{ github.token }}
 runs:
   using: composite
   steps:
@@ -21,7 +28,7 @@ runs:
     - name: Install the pinned database (downloads only on a cache miss)
       shell: bash
       env:
-        GH_TOKEN: ${{ github.token }}
+        GH_TOKEN: ${{ inputs.token }}
       run: |
         python3 scripts/data/fetch_dataset.py --cache-dir .dataset-cache
         head -c 16 db/sggs.sqlite | grep -q "SQLite format 3" || {
