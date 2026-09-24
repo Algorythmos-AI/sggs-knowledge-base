@@ -4,18 +4,19 @@
 2. Bump the unified version: `make release VERSION=1.2.0` (runs `bump.py` +
    `check_versions.py`). Fill in the CHANGELOG section it stubs.
 3. If the corpus/DB changed: `make rebuild` → `verify_regroup` → `make reconcile`
-   (updates the attestation) → `make ios-db` → `make contract`.
+   (updates the attestation) → `make contract`.
 4. Open a **release PR `integration → main`**, labelled `release`. All gates must pass.
 5. Merge. `release` CI tags `vX.Y.Z`, cuts a GitHub Release from the CHANGELOG
    section with artefacts (`frontend-dist.zip`, `MANIFEST.json`, iOS manifest,
    `contract.tar.gz`, SBOM), attaches `db_sha256`/`corpus_sha256`, closes the
    milestone, and back-merges `main → integration`.
 6. Production deploys automatically; `deploy-verify` confirms `/api/meta.version`.
-7. **iOS is part of every release.** After `main` is tagged `vX.Y.Z`, archive + upload
-   the App Store binary from that tag: `make testflight TEAM_ID=… BUILD=1 CHANNEL=appstore
-   UPLOAD=1` (the archive script refuses an `appstore` upload whose HEAD is not on `main`
-   and tagged `vX.Y.Z`). Commit the ledger. The release is **complete** only when
-   `scripts/release/check_release_complete.py X.Y.Z` passes.
+7. **iOS is part of every release.** After `main` is tagged `vX.Y.Z`, the app repository
+   ([`Algorythmos-AI/gurbani-soul-ios`](https://github.com/Algorythmos-AI/gurbani-soul-ios)) vendors this release (`make vendor-sync-platform REF=vX.Y.Z`), sets
+   `MARKETING_VERSION` to `X.Y.Z`, tags its own `vX.Y.Z` and uploads the App Store binary
+   (`make testflight TEAM_ID=… BUILD=1 CHANNEL=appstore UPLOAD=1`; the archive refuses an
+   `appstore` upload not built against platform `vX.Y.Z`). It commits its ledger. The release
+   is **complete** only when `scripts/release/check_release_complete.py X.Y.Z` passes.
 
 ## Versioning
 SemVer, **one unified version number across web, API and iOS** — the footer, `/api/meta`,

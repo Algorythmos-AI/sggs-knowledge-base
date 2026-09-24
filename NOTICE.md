@@ -11,7 +11,7 @@ Sri Guru Granth Sahib Ji is sacred scripture. The Gurmukhi text in `corpus/` and
 **Status (2026-09-24):** the translation source files are no longer tracked in this repository. They live in the private `Algorythmos-AI/sggs-source` repository (release `translations-en-v1`) and are restored for a rebuild with `scripts/data/fetch_translations.sh`, which verifies every file against `pipeline/translations.SHA256SUMS`. Earlier commits in this repository's history still contain them, and `db/sggs.sqlite` still carries the `translations` table; both are addressed by keeping this repository private and by the planned repository split.
 
 ### iOS app distribution (TestFlight / App Store)
-TestFlight and App Store builds are *distribution*. The bundled iOS database (`personal` profile) embeds this translation layer, so `pipeline/check_release_license.sh` blocks such a build **until** a written distribution licence is recorded in `ios/Resources/TRANSLATION-LICENSE.md` (fields filled in and `LICENSED: true`). Without that, ship the Gurmukhi-only `public` profile (`pipeline/build_ios_db.py --profile public`). CI checks both directions.
+The app lives in `Algorythmos-AI/gurbani-soul-ios`. TestFlight and App Store builds are *distribution*. The bundled iOS database (`personal` profile) embeds this translation layer, so that repository's `pipeline/check_release_license.sh` blocks such a build **until** a written distribution licence is recorded in its `ios/Resources/TRANSLATION-LICENSE.md` (fields filled in and `LICENSED: true`). Without that, it ships the Gurmukhi-only `public` profile. Its CI checks both directions.
 
 ## Code
 The pipeline and web app code (everything in `pipeline/` and `webapp/` except data files) was built for the repository owner; treat as private unless separately licensed.
@@ -34,7 +34,7 @@ The pipeline and web app code (everything in `pipeline/` and `webapp/` except da
   and labelled by source. It is a separate layer: never mixed into `lines`, never indexed by
   FTS, never cited as an Ang, and it carries **no English translation**. It is **not** covered
   by the character-for-character reconcile proof; it ships in a public build only after the
-  scholar review recorded in `ios/Resources/NITNEM-REVIEW.md` (`REVIEWED: true`).
+  scholar review recorded in `ios/Resources/NITNEM-REVIEW.md` of the app repository (`REVIEWED: true`).
 - **Licence.** The ShabadOS repository publishes its code under the MIT licence and states
   that the contents of its `data` folder are free of known copyright restrictions (public
   domain). Record the exact licence text of the release used before any public wording
@@ -43,7 +43,7 @@ The pipeline and web app code (everything in `pipeline/` and `webapp/` except da
 - Required in-app attribution: "Bani ordering and Sri Dasam Granth / Ardaas text via the
   ShabadOS open database. Sri Guru Granth Sahib Ji text is this project's own verified corpus."
 
-## Bundled in the iOS app (public build)
+## Bundled in the iOS app (public build; paths in `Algorythmos-AI/gurbani-soul-ios`)
 
 - **Sant Lipi** (Gurmukhi typeface) — © Shabad OS, SIL Open Font License 1.1; shipped as
   `ios/App/Resources/OFL.txt`.

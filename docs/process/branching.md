@@ -19,8 +19,8 @@ gitGraph
 ## Rules
 - **`integration` is the trunk.** Branch `feature/*` or `fix/*` from it; open a PR
   back into `integration`. Merging to `integration` deploys **staging** (web +
-  Render API). TestFlight uploads are **manual** (`make testflight …` or the
-  `ios-testflight` workflow_dispatch) — no merge uploads a build.
+  Render API). TestFlight uploads are **manual** and happen in the app
+  repository (gurbani-soul-ios) — no merge here uploads a build.
 - **`main` is production.** It only ever receives a **release PR from `integration`**
   (or `hotfix/*`). The `version-consistency` gate enforces the source branch.
   Merging to `main` tags `vX.Y.Z`, cuts a GitHub Release, and deploys production.

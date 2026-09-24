@@ -9,17 +9,22 @@ step of sggs-release, and by sggs-verify-prod --ios.
 For version X.Y.Z it asserts:
   1. prod API  /api/health.version == X.Y.Z  and .commit == the commit tag vX.Y.Z points at
   2. prod WEB  /api/health.version == X.Y.Z  and .commit == that same commit
-  3. the ledger ios/testflight-builds.json has a channel="appstore" build of X.Y.Z
-     whose source_commit == that same commit (full 40-hex; a tag resolves to it)
+  3. the app's ledger (ios/testflight-builds.json in Algorythmos-AI/gurbani-soul-ios) has a
+     channel="appstore" build of X.Y.Z built against that same commit: its platform_commit
+     (the platform release whose contract the binary vendors) — or, for builds made before the
+     app had its own repository, its source_commit — equals it (full 40-hex).
 
-Exit 0 if complete, 1 otherwise. Usage: check_release_complete.py X.Y.Z [--api URL] [--web URL]
+Exit 0 if complete, 1 otherwise.
+Usage: check_release_complete.py X.Y.Z [--api URL] [--web URL] [--ledger PATH]
 """
-import argparse, json, subprocess, sys, urllib.error, urllib.request
+import argparse, json, os, subprocess, sys, urllib.error, urllib.request
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
 API = "https://sggs-knowledge-base.onrender.com"
 WEB = "https://gurbanisoul.com"
+IOS_REPO = "Algorythmos-AI/gurbani-soul-ios"
+LEDGER_PATH = "ios/testflight-builds.json"
 
 
 def health(base, timeout=90):
@@ -29,6 +34,25 @@ def health(base, timeout=90):
             return json.loads(r.read().decode())
     except (urllib.error.URLError, OSError, ValueError) as e:
         return {"_error": str(e)}
+
+
+def fetch_ledger(path=None):
+    """The app's TestFlight ledger: a local file when given, else main of the iOS repository."""
+    if path:
+        return json.loads(Path(path).read_text(encoding="utf-8"))
+    headers = {"User-Agent": "sggs-release-complete", "Accept": "application/vnd.github.raw",
+               "X-GitHub-Api-Version": "2022-11-28"}
+    tok = os.environ.get("GH_TOKEN") or os.environ.get("GITHUB_TOKEN")
+    if tok:
+        headers["Authorization"] = f"Bearer {tok}"
+    url = f"https://api.github.com/repos/{IOS_REPO}/contents/{LEDGER_PATH}?ref=main"
+    with urllib.request.urlopen(urllib.request.Request(url, headers=headers), timeout=60) as r:
+        return json.loads(r.read().decode())
+
+
+def built_against(row):
+    """The platform commit a ledger row was built against (see the module docstring)."""
+    return row.get("platform_commit") or row.get("source_commit")
 
 
 def tag_commit(version):
@@ -47,6 +71,7 @@ def main(argv=None):
     ap.add_argument("version")
     ap.add_argument("--api", default=API)
     ap.add_argument("--web", default=WEB)
+    ap.add_argument("--ledger", help=f"read the ledger from this file instead of {IOS_REPO}")
     a = ap.parse_args(argv)
     v = a.version
     fails = []
@@ -70,17 +95,18 @@ def main(argv=None):
 
     # Ledger: an appstore upload of this version from the tagged commit.
     try:
-        rows = json.loads((ROOT / "ios/testflight-builds.json").read_text(encoding="utf-8")).get("builds", [])
-    except (FileNotFoundError, json.JSONDecodeError):
+        rows = fetch_ledger(a.ledger).get("builds", [])
+    except (OSError, urllib.error.URLError, json.JSONDecodeError) as e:
+        check("app ledger readable", False, str(e))
         rows = []
     appstore = [r for r in rows if r.get("version") == v and r.get("channel") == "appstore"]
     check(f"ledger has an appstore build of {v}", bool(appstore),
           f"builds: {[r.get('build') for r in appstore] or 'none'}")
     if appstore and commit:
-        from_tag = [r for r in appstore if r.get("source_commit") == commit]
-        check(f"ledger {v} built from tag commit", bool(from_tag),
-              "source_commit matches" if from_tag
-              else f"source_commit(s) {[str(r.get('source_commit'))[:12] for r in appstore]} != {commit[:12]}")
+        from_tag = [r for r in appstore if built_against(r) == commit]
+        check(f"ledger {v} built against the tag commit", bool(from_tag),
+              "platform commit matches" if from_tag
+              else f"built against {[str(built_against(r))[:12] for r in appstore]} != {commit[:12]}")
 
     print()
     if fails:

@@ -103,7 +103,7 @@ The same offline app runs unchanged in the cloud. The browser only ever calls `/
 **Delivery is CI-gated end to end** — no hand deploys. Branch → PR into `integration` → merge auto-deploys **staging** → release PR `integration → main` (merge commit) runs the gated production deploy, verified by the running **commit**, then a `vX.Y.Z` tag. Full topology, DNS and email: [`docs/website/README.md`](docs/website/README.md). Process and runbooks:
 
 - [Environments](docs/process/environments.md) · [Branching](docs/process/branching.md) · [CI gates](docs/process/ci-gates.md) · [Release](docs/process/release.md)
-- Runbooks: [deploy](docs/process/runbooks/deploy.md) · [rollback](docs/process/runbooks/rollback.md) · [rebuild-db](docs/process/runbooks/rebuild-db.md) · [app-store-submission](docs/process/runbooks/app-store-submission.md) · [ios-hotfix](docs/process/runbooks/ios-hotfix.md) · [support-inbox](docs/process/runbooks/support-inbox.md)
+- Runbooks: [deploy](docs/process/runbooks/deploy.md) · [rollback](docs/process/runbooks/rollback.md) · [rebuild-db](docs/process/runbooks/rebuild-db.md) · [support-inbox](docs/process/runbooks/support-inbox.md)
 - Skills that run the loop: `sggs-ship`, `sggs-release`, `sggs-verify-prod`, `sggs-rebuild-db`.
 
 ---
@@ -122,7 +122,7 @@ Five views, all keyboard-friendly, with a labeled transliteration toggle, adjust
 
 ### Gurbani Soul (iOS / iPadOS)
 
-The native SwiftUI app (`ios/`, Swift package `GurbaniSearchKit`) ships the **same verified corpus inside the binary** and makes **no network requests at all** — it works in Airplane Mode, with no account and no tracking (App Store privacy label: *Data Not Collected*). Beyond reader and search it adds **Nitnem** (daily banis by time of day, place kept, optional gentle reminders), **Hukam**, the **Raag Clock** (optional solar mode), **widgets + a Live Activity**, App Intents/Siri and Spotlight. The Gurmukhi engine is pinned to this Python source of truth by golden vectors in `contract/`. Distribution, gates and the store listing: [`docs/ios/`](docs/ios/) and the [app-store-submission runbook](docs/process/runbooks/app-store-submission.md).
+The native SwiftUI app (repository [`Algorythmos-AI/gurbani-soul-ios`](https://github.com/Algorythmos-AI/gurbani-soul-ios), Swift package `GurbaniSearchKit`) ships the **same verified corpus inside the binary** and makes **no network requests at all** — it works in Airplane Mode, with no account and no tracking (App Store privacy label: *Data Not Collected*). Beyond reader and search it adds **Nitnem** (daily banis by time of day, place kept, optional gentle reminders), **Hukam**, the **Raag Clock** (optional solar mode), **widgets + a Live Activity**, App Intents/Siri and Spotlight. The Gurmukhi engine is pinned to this Python source of truth by golden vectors in `contract/`. Distribution, gates, the store listing and its runbooks live in that repository.
 
 ---
 

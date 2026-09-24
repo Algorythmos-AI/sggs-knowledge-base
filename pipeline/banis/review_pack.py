@@ -4,7 +4,7 @@
 review_pack.py — generate the scholar review pack for the Nitnem NON-SGGS text.
 
 Writes one Markdown file per bani that contains `extra_lines` (Sri Dasam Granth /
-Ardaas) into docs/nitnem/review-pack/, listing every line in reading order with its
+Ardaas) into validation/banis/review-pack/, listing every line in reading order with its
 source page, so a Granthi / Gurbani scholar can compare it against a printed SGPC
 Nitnem Gutka. SGGS lines are summarised by Ang range only (they are already proven).
 
@@ -20,7 +20,7 @@ ROOT = Path(__file__).resolve().parents[2]
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument('--db', default=str(ROOT / 'db' / 'sggs.sqlite'))
-    ap.add_argument('--out', default=str(ROOT / 'docs' / 'nitnem' / 'review-pack'))
+    ap.add_argument('--out', default=str(ROOT / 'validation' / 'banis' / 'review-pack'))
     args = ap.parse_args()
     out = Path(args.out)
     out.mkdir(parents=True, exist_ok=True)

@@ -14,7 +14,6 @@ python3 pipeline/timing/step0_baseline.py --db <pretiming-copy> --force --skip-b
 make guard                                    # pre-existing tables byte-identical
 make reconcile                                # refresh validation/reconcile-attestation.json
 make contract                                 # regenerate + assert no unexpected drift
-make ios-db                                   # rebuild both iOS profiles + license gate
 (cd frontend && npm run build:deploy)         # rebuild the served static bundle
 ```
 

@@ -3,8 +3,8 @@
 #
 # Documentation + reproducible recipe for the Latin subset of Source Serif 4 used by the
 # Gurbani Soul marketing site (Brand.heading / navigation + hero lines; see marketing.css).
-# Source: ios/App/Resources/SourceSerif4.ttf (variable, SIL OFL 1.1 —
-# ios/App/Resources/OFL-SourceSerif4.txt, copied to frontend/public/fonts/OFL-SourceSerif4.txt).
+# Source (in the gurbani-soul-ios repository; set IOS=/path/to/gurbani-soul-ios): $IOS/ios/App/Resources/SourceSerif4.ttf (variable, SIL OFL 1.1 —
+# $IOS/ios/App/Resources/OFL-SourceSerif4.txt, copied to frontend/public/fonts/OFL-SourceSerif4.txt).
 #
 # Nothing is installed system-wide: fonttools + brotli run in a throwaway uvx environment.
 # Result must stay <= 130 KB (currently ~29 KB).
@@ -13,7 +13,7 @@ cd "$(dirname "$0")/../.."   # repo root
 
 # 1) Pin the variable axes to the weights/optical size the site uses.
 uvx --from fonttools --with brotli fonttools varLib.instancer \
-  ios/App/Resources/SourceSerif4.ttf wght=400:700 opsz=40 -o /tmp/ss4.ttf
+  "${IOS:?set IOS to a gurbani-soul-ios checkout}/ios/App/Resources/SourceSerif4.ttf" wght=400:700 opsz=40 -o /tmp/ss4.ttf
 
 # 2) Subset to the Latin glyphs the marketing copy needs and flavour as woff2.
 uvx --from fonttools --with brotli pyftsubset /tmp/ss4.ttf \
@@ -23,6 +23,6 @@ uvx --from fonttools --with brotli pyftsubset /tmp/ss4.ttf \
   --output-file=frontend/public/fonts/SourceSerif4-latin.woff2
 
 # 3) Ship the licence alongside the font.
-cp ios/App/Resources/OFL-SourceSerif4.txt frontend/public/fonts/OFL-SourceSerif4.txt
+cp "$IOS/ios/App/Resources/OFL-SourceSerif4.txt" frontend/public/fonts/OFL-SourceSerif4.txt
 
 wc -c frontend/public/fonts/SourceSerif4-latin.woff2

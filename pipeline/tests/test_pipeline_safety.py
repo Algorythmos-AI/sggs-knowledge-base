@@ -129,5 +129,32 @@ class CompareBuilds(unittest.TestCase):
         self.assertEqual([d[0] for d in diffs], ["canon_tokens"])
 
 
+class RebuildWritesOnlyDataPaths(unittest.TestCase):
+    """The rebuild runs in this repository alone: every path it writes must be one this
+    repository owns (a path under another repository's tree fails the fail-hard build)."""
+
+    OWNED = ("corpus/", "db/", "validation/", "audit/", "pipeline/", "MANIFEST.json", "$", "/tmp")
+    FOREIGN = ("docs/nitnem", "ios/", "frontend/", "webapp/", "contract/")
+
+    def test_report_and_output_paths_are_data_owned(self):
+        import re
+        script = (ROOT / "pipeline" / "rebuild_all.sh").read_text(encoding="utf-8")
+        targets = re.findall(r"--(?:report|out|output)[ =](\S+)", script)
+        self.assertTrue(targets, "expected at least one explicit output flag in rebuild_all.sh")
+        for t in targets:
+            with self.subTest(target=t):
+                self.assertTrue(t.strip("\"'").startswith(self.OWNED), f"rebuild writes outside the data repo: {t}")
+
+    def test_rebuild_never_touches_another_repositorys_tree(self):
+        script = (ROOT / "pipeline" / "rebuild_all.sh").read_text(encoding="utf-8")
+        for foreign in self.FOREIGN:
+            with self.subTest(path=foreign):
+                self.assertNotIn(foreign, script)
+
+    def test_banis_report_parent_is_created(self):
+        src = (ROOT / "pipeline" / "banis" / "build_banis.py").read_text(encoding="utf-8")
+        self.assertIn("Path(args.report).parent.mkdir(parents=True, exist_ok=True)", src)
+
+
 if __name__ == "__main__":
     unittest.main()

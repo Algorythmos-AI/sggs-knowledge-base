@@ -13,7 +13,6 @@
 | `deploy-verify` (on Vercel `deployment_status`, previews only) | preview `/api/health` all-true (passes with a notice without the repo-level bypass secret) | — |
 | `release` (manual fallback) | idempotent tag + GitHub Release on `main`; normal releases are cut by `deploy-production` after a verified deploy | — |
 | `uptime` (every 15 min, not a PR check) | production `/api/health` all-true; `/privacy` and `/support` (the App Store URLs) resolve with their content; a failure opens or updates one issue | — |
-| `ios · parity` | iOS DB matches manifest; Swift golden-vector parity; license gate | macOS, pinned DB |
 | `ios · app` | app builds; unit + XCUITests pass | macOS |
 
 The PDF **never enters CI**. `reconcile.py`/`golden_test.py` run locally via

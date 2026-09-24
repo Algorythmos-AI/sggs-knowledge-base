@@ -122,7 +122,7 @@ def shabados_lines(sha, bani_id):
     return out
 
 
-REVIEW = []   # every non-exact placement, for docs/nitnem/review-pack
+REVIEW = []   # every non-exact placement, for validation/banis/sggs-placements.json
 
 
 def resolve_sggs_group(group_rows, by_ang, overrides, unknown, stats, report):
@@ -296,6 +296,7 @@ def build(args):
                 ours[lid] = g
         for r in REVIEW:
             r['ours'] = [ours[lid] for lid in r['line_ids']]
+        Path(args.report).parent.mkdir(parents=True, exist_ok=True)
         Path(args.report).write_text(json.dumps(
             {'_comment': 'Every SGGS placement that was not a byte-exact match; reviewer confirms '
                          'each pair is the same text. Rendered text is ALWAYS ours.',
