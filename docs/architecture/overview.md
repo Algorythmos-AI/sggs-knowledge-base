@@ -71,7 +71,8 @@ with a host-conditioned rewrite — see [Environments](../process/environments.m
 
 ## Source of truth vs generated
 - **Source of truth:** the PDF; `validation/concepts_*.json`; `pipeline/timing/timing_seed.json`;
-  `pipeline/translations/*.jsonl`; `webapp/serve.py` + `verify.py` + `romannorm.py` (the behaviour the Swift port mirrors); all `frontend/src/` and `ios/App/Sources/`.
+  `pipeline/translations/*.jsonl` (private — fetched from `Algorythmos-AI/sggs-source` by
+  `scripts/data/fetch_translations.sh`, verified against `pipeline/translations.SHA256SUMS`); `webapp/serve.py` + `verify.py` + `romannorm.py` (the behaviour the Swift port mirrors); all `frontend/src/` and `ios/App/Sources/`.
 - **Generated:** `corpus/sggs.jsonl` (committed, SHA-pinned), `db/sggs.sqlite`, `contract/*.ndjson`, `frontend/dist/`, `webapp/static/`, `ios/Resources/*.sqlite`.
 
 See [microservices roadmap](microservices-roadmap.md) for how the monolith is
