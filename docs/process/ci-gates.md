@@ -2,14 +2,14 @@
 
 | Workflow · job | Proves | Needs |
 |---|---|---|
-| `web-ci · python` | ruff clean; server + repo-gate + pipeline-safety unit tests; `/api/health` all-true; the **shabad-heading regression** (`api_superset_check`); search harnesses; **contract does not drift** | LFS DB |
+| `web-ci · python` | ruff clean; server + repo-gate + pipeline-safety unit tests; the **golden contract replayed over HTTP** (`pipeline/contract_http.py`); `/api/health` all-true; the **shabad-heading regression** (`api_superset_check`); search harnesses; **contract does not drift** | LFS DB |
 | `web-ci · frontend` | Astro builds; `pahar` vectors pass | Node 22 |
 | `scripture-integrity` | MANIFEST↔contract↔attestation hash chain; `verify_regroup --invariants`; `guard_scripture`; timing tests | LFS DB |
 | `version-consistency` | all 7 version strings unified; `main` PRs come from `integration`/`hotfix` | — |
 | `security` | gitleaks; bandit; semgrep OSS; actionlint; **blocking** `npm audit --audit-level=high` on `frontend/` (job `deps`) | — |
 | `pr-hygiene` | conventional-commit PR title | — |
 | `e2e · playwright` | Ang 712 heading smoke, search → panel heading, axe WCAG on the home page (desktop project) | serve.py + LFS DB |
-| `web-ci · api-image` | Docker image builds; the running container reports the build commit | Docker |
+| `web-ci · api-image` | Docker image builds; the running container reports the build commit **and honours the golden contract over HTTP** | Docker |
 | `deploy-verify` (on Vercel `deployment_status`, previews only) | preview `/api/health` all-true (passes with a notice without the repo-level bypass secret) | — |
 | `release` (manual fallback) | idempotent tag + GitHub Release on `main`; normal releases are cut by `deploy-production` after a verified deploy | — |
 | `uptime` (every 15 min, not a PR check) | production `/api/health` all-true; `/privacy` and `/support` (the App Store URLs) resolve with their content; a failure opens or updates one issue | — |
