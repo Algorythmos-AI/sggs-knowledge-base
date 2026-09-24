@@ -218,6 +218,12 @@ jobs:
           VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
           URL: ${{ needs.deploy-web.outputs.url }}
         run: vercel promote "$URL" --yes --timeout 5m --token="$VERCEL_TOKEN"
+      - name: Purge the CDN cache (proxied API reads are cached up to s-maxage; a new dataset must not be served stale)
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+        # Non-fatal: a failed purge only risks cached reads up to s-maxage old (the data canary would
+        # catch a difference); it must not trigger the web rollback below.
+        run: vercel cache purge --type cdn --yes --token="$VERCEL_TOKEN" || echo "::warning::CDN cache purge failed — cached API reads may be up to s-maxage old"
       - name: Smoke the public production domain
         id: public
         working-directory: frontend
