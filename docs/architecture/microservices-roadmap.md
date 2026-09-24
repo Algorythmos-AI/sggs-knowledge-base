@@ -73,3 +73,12 @@ routes (`/api/search`, `/api/random`, `/api/health`) are never cached. Vercel's 
 not promise that a new deployment clears cached external-rewrite responses, so both deploy workflows
 now purge the CDN cache right after the web goes live (`vercel cache purge --type cdn`, available in
 the pinned CLI), and the data canary checks through the CDN as well as at the origin.
+
+## Performance baseline (measured 2026-09-24, before the split)
+
+`tools/perf_baseline.py` measures a fixed request mix per context against one origin and records
+p50/p95 (`docs/perf/baseline-2026-09.json`, 60 requests per route, 2 in flight, API origin, from
+Sydney): reader p95 568 ms, insights 524, search 453, knowledge 375, verify 365 — p50 about 300 ms
+everywhere, i.e. network round-trip dominates (server-side work is 1–200 ms, see Spike S3). After
+the split, `--compare docs/perf/baseline-2026-09.json` from the same vantage point fails if any
+context's p95 is more than 10 % worse.
