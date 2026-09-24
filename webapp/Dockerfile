@@ -20,6 +20,19 @@ RUN python scripts/data/fetch_dataset.py --lock dataset.lock.json \
 
 # The server, laid out as serve.py expects (webapp/ next to db/).
 COPY webapp/ ./webapp/
+COPY tools/slice_db.py ./tools/slice_db.py
+
+# One image, any service. SGGS_MODULES=all (the default; production today) serves every context
+# from the full database. A single context (e.g. knowledge) cuts its slice at build time —
+# tools/slice_db.py proves every kept table equal to the full database and every kept FTS index
+# whole — and the slice replaces the database at the same path, so nothing else changes.
+# (Render passes a service's environment variables to the build as build arguments.)
+ARG SGGS_MODULES=all
+ENV SGGS_MODULES=${SGGS_MODULES}
+RUN if [ "$SGGS_MODULES" != "all" ]; then \
+      python tools/slice_db.py --db db/sggs.sqlite --modules "$SGGS_MODULES" --out db/slice.sqlite \
+      && mv -f db/slice.sqlite db/sggs.sqlite && chmod 0444 db/sggs.sqlite; \
+    fi
 
 WORKDIR /app/webapp
 
