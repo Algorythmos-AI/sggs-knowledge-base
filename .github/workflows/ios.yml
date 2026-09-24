@@ -28,7 +28,7 @@ jobs:
     runs-on: macos-15
     steps:
       - uses: actions/checkout@v5
-      - uses: ./.github/actions/lfs-db
+      - uses: ./.github/actions/fetch-dataset
       - uses: ./.github/actions/select-xcode   # build + test with the SDK that ships (was the image default, Xcode 16.4)
       - name: Build the bundled (personal-profile) iOS DB from the source (deterministic)
         run: python3 pipeline/build_ios_db.py --profile personal
@@ -63,7 +63,7 @@ jobs:
     runs-on: macos-15
     steps:
       - uses: actions/checkout@v5
-      - uses: ./.github/actions/lfs-db
+      - uses: ./.github/actions/fetch-dataset
       - uses: ./.github/actions/select-xcode   # build + test with the SDK that ships (was the image default, Xcode 16.4)
       - name: Build the bundled (personal-profile) iOS DB
         run: python3 pipeline/build_ios_db.py --profile personal

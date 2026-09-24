@@ -3,7 +3,7 @@
 PIPELINE_PY ?= /usr/bin/python3
 PDF ?= ../Siri-Guru-Granth-Sahib-in-Gurmukhi-with-Index.pdf
 
-.PHONY: help doctor ci test-data test-ios-gates openapi contract-http fingerprint ledger-check pr-checks release-preflight watch-deploy verify-prod scripture-diff check-versions test-web test-frontend contract verify guard reconcile rebuild ios-db ios-db-check ios-db-repair release testflight appstore-preflight
+.PHONY: help doctor dataset dataset-check ci test-data test-ios-gates openapi contract-http fingerprint ledger-check pr-checks release-preflight watch-deploy verify-prod scripture-diff check-versions test-web test-frontend contract verify guard reconcile rebuild ios-db ios-db-check ios-db-repair release testflight appstore-preflight
 help: ## list targets
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | awk 'BEGIN{FS=":.*?## "}{printf "  \033[36m%-16s\033[0m %s\n",$$1,$$2}'
 
@@ -11,9 +11,16 @@ doctor: ## check the local toolchain (the python3 trap, node, git-lfs, pdf)
 	@echo "pipeline python: $(PIPELINE_PY)"; $(PIPELINE_PY) -c "import sys,fitz,numpy,scipy;print('  ok', sys.version.split()[0], '+ PyMuPDF/numpy/scipy')" || echo "  MISSING PyMuPDF/numpy/scipy — pick an interpreter that has them (PIPELINE_PY=...)"
 	@command -v node >/dev/null && echo "node: $$(node -v)" || echo "  node missing"
 	@command -v git-lfs >/dev/null && echo "git-lfs: ok" || echo "  git-lfs missing"
-	@test -f db/sggs.sqlite && head -c 16 db/sggs.sqlite | grep -q "SQLite format 3" && echo "db: real SQLite" || echo "  db/sggs.sqlite missing or an LFS pointer — run: git lfs pull"
+	@test -f db/sggs.sqlite && head -c 16 db/sggs.sqlite | grep -q "SQLite format 3" && echo "db: real SQLite" || echo "  db/sggs.sqlite missing or an LFS pointer — run: make dataset"
 	@test -f "$(PDF)" && echo "pdf: present" || echo "  source PDF not at $(PDF) (needed only for reconcile/rebuild)"
 	@test "$$(uname -s)" != Darwin || python3 pipeline/check_ios_db_pair.py || true
+
+dataset: ## install db/sggs.sqlite from the pinned sggs-data object (dataset.lock.json), sha256-verified
+	python3 scripts/data/fetch_dataset.py --cache-dir .dataset-cache
+
+dataset-check: ## the pin agrees with MANIFEST/contract/tracked pointer, and sggs-data@commit publishes it
+	python3 scripts/data/fetch_dataset.py --check-repo
+	python3 scripts/data/fetch_dataset.py --check-pin
 
 check-versions: ## assert the app version is unified across all 6 locations
 	python3 scripts/release/check_versions.py

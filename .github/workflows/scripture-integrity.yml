@@ -13,10 +13,16 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
-      - uses: ./.github/actions/lfs-db
+      - uses: ./.github/actions/fetch-dataset
       - uses: actions/setup-python@v6
         with:
           python-version-file: ".python-version"
+      - name: Dataset pin — lock == MANIFEST == contract == tracked pointer; sggs-data publishes it
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          python3 scripts/data/fetch_dataset.py --check-repo
+          python3 scripts/data/fetch_dataset.py --check-pin
       - name: MANIFEST + contract + attestation hash chain
         run: |
           python3 - <<'PY'

@@ -3,6 +3,16 @@
 The format below (newest first) follows [Keep a Changelog](https://keepachangelog.com);
 entries prior to v1.1.0 are the project's original prose style and are preserved verbatim.
 
+## [Unreleased]
+
+### Changed
+- **The database is pinned from `Algorythmos-AI/sggs-data`.** `dataset.lock.json` records the data
+  repository's commit and the database's sha256 and size; CI installs it through
+  `scripts/data/fetch_dataset.py` (sha256-verified, atomic, cached by hash) instead of this
+  repository's LFS, and the `integrity` check proves the lock, MANIFEST, contract, dataset version
+  and tracked pointer all name the same object that sggs-data publishes. `make dataset` does the
+  same locally. No change to the database bytes (`cb6775ff…`).
+
 ## [1.3.7] — 2026-09-24 — contract-first API, modular services, private translation sources
 
 No change to the scripture text, the corpus, the database or any user-facing behaviour. The API is

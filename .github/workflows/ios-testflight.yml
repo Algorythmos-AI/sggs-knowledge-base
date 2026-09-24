@@ -63,7 +63,7 @@ jobs:
       - uses: actions/checkout@v5
         with:
           fetch-depth: 0   # the archive script proves HEAD is on origin/integration or origin/main
-      - uses: ./.github/actions/lfs-db
+      - uses: ./.github/actions/fetch-dataset
       - name: Install XcodeGen
         run: brew install xcodegen
       - name: Select Xcode
