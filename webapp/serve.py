@@ -775,576 +775,690 @@ def hukam_package(seed=None):
     for l in lines: l.pop('markers', None)
     return {'comp_id': seed, 'comp_ids': sorted(unit), 'lines': lines}
 
+_FALLTHROUGH = object()   # returned by a handler whose branch did not return (old ladder fell through)
+
+
+def _route_meta(p, qs):
+    global _META_CACHE
+    if _META_CACHE is not None: return _META_CACHE   # built once; ~50ms join avoided per load
+    m = {r['key']: r['value'] for r in db().execute('SELECT * FROM meta')}
+    m['db_version'] = m.get('version')          # honest record of the DB build
+    m['version'] = APP_VERSION or m.get('version')   # footer shows the running code build
+    m['built'] = APP_BUILT or m.get('built')
+    m['commit'] = APP_COMMIT
+    try:
+        m['raags'] = rows_to_list(db().execute('SELECT * FROM raags ORDER BY seq'))
+    except sqlite3.OperationalError:
+        m['raags'] = rows_to_list(db().execute('SELECT * FROM raags ORDER BY first_ang'))
+    m['sections'] = rows_to_list(db().execute('SELECT * FROM sections ORDER BY first_ang'))
+    m['authors'] = rows_to_list(db().execute('SELECT * FROM authors ORDER BY n_lines DESC'))
+    m['concepts'] = rows_to_list(db().execute(
+        'SELECT c.concept, c.description, COUNT(cl.line_id) AS n_lines '
+        'FROM concepts c LEFT JOIN concept_lines cl ON cl.concept = c.concept '
+        'GROUP BY c.concept, c.description ORDER BY c.concept'))
+    try:                                        # raag-timing knowledge layer (additive; absent on older DBs)
+        db().execute('SELECT 1 FROM timing_sources LIMIT 1').fetchone()
+        m['timing_available'] = True
+    except sqlite3.OperationalError:
+        m['timing_available'] = False
+    try:                                        # Nitnem bani registry (additive; migration 002)
+        db().execute('SELECT 1 FROM banis LIMIT 1').fetchone()
+        m['banis_available'] = True
+    except sqlite3.OperationalError:
+        m['banis_available'] = False
+    _META_CACHE = m
+    return m
+    return _FALLTHROUGH
+
+
+def _route_search(p, qs):
+    q = qs.get('q', [''])[0]
+    # clamp both ends: a negative limit is `LIMIT -1` in SQLite = no limit (full-corpus
+    # dump); a negative offset is silently treated as 0. Bound them to a sane window.
+    limit = _int(qs, 'limit', 50, 0, 200)
+    offset = _int(qs, 'offset', 0, 0, 1_000_000)      # corpus has 60,658 lines: lossless
+    out = do_search(q, qs.get('mode', ['auto'])[0], limit, offset)
+    attach_translations(out.get('results'))     # en for EVERY mode (FTS/variant/theme tiers
+    out.setdefault('related_themes', [])         # skipped it); uniform contract for the UI
+    return out
+    return _FALLTHROUGH
+
+
+def _route_ang(p, qs):
+    ang = _int_str(p[1], 1, 1430)
+    rs = rows_to_list(db().execute(f'SELECT {LINE_COLS} FROM lines WHERE ang = ? ORDER BY id', (ang,)).fetchall())
+    continued_from = None
+    if rs and not rs[0]['is_header']:
+        first = db().execute('SELECT min(ang) FROM lines WHERE comp_id = ?',
+                             (rs[0]['comp_id'],)).fetchone()[0]
+        if first and first < ang: continued_from = first
+    def majority(key):
+        c = {}
+        for l in rs:
+            if l[key]: c[l[key]] = c.get(l[key], 0) + 1
+        return max(c, key=c.get) if c else None
+    return {'ang': ang, 'lines': attach_translations(rs), 'continued_from': continued_from,
+            'raag': majority('raag'), 'section': majority('section'),
+            'authors': sorted({l['author'] for l in rs if l['author']})}
+    return _FALLTHROUGH
+
+
+def _route_shabad(p, qs):
+    cid = _int_str(p[1], 0, _ID_MAX)
+    rs = db().execute(f'SELECT {LINE_COLS} FROM lines WHERE comp_id = ? ORDER BY id', (cid,)).fetchall()
+    if not rs:
+        raise ApiError(404, f'no composition with comp_id {cid}')
+    return {'comp_id': cid, 'lines': attach_translations(rows_to_list(rs))}
+    return _FALLTHROUGH
+
+
+def _route_health(p, qs):
+    h = {'version': None, 'checks': {}, 'ok': True}
+    def check(name, cond):
+        h['checks'][name] = bool(cond)
+        if not cond: h['ok'] = False
+    m = {k: v for k, v in db().execute('SELECT * FROM meta')}
+    h['version'] = APP_VERSION or m.get('version')
+    h['db_version'] = m.get('version')
+    h['built'] = APP_BUILT or m.get('built')
+    h['commit'] = APP_COMMIT
+    check('lines_60658', db().execute('SELECT count(*) FROM lines').fetchone()[0] == 60658)
+    check('angs_1430', db().execute('SELECT count(DISTINCT ang) FROM lines').fetchone()[0] == 1430)
+    check('fts5', m.get('fts5') == '1' and bool(
+        db().execute("SELECT rowid FROM fts WHERE fts MATCH 'ਨਾਮੁ' LIMIT 1").fetchone()))
+    mm = db().execute('SELECT gurmukhi FROM lines WHERE ang=1 ORDER BY id LIMIT 1').fetchone()[0]
+    check('mool_mantar', mm.startswith('ੴ ਸਤਿ ਨਾਮੁ ਕਰਤਾ ਪੁਰਖੁ ਨਿਰਭਉ ਨਿਰਵੈਰੁ'))
+    check('ik_onkar_568', db().execute(
+        "SELECT count(*) FROM (SELECT rowid FROM fts WHERE text MATCH 'ੴ')").fetchone()[0] >= 560)
+    v = verify_claim('ਸੋਚੈ ਸੋਚਿ ਨ ਹੋਵਈ ਜੇ ਸੋਚੀ ਲਖ ਵਾਰ', ang=1, db_path=DB)
+    check('verify_engine', v['verdict'].startswith('VERIFIED_EXACT'))
+    try:                                        # Nitnem registry: Japji is exactly our lines 1..385, in order
+        jp = [r[0] for r in db().execute(
+            'SELECT bl.line_id FROM bani_lines bl JOIN banis b USING(bani_id) '
+            "WHERE b.key='japji' ORDER BY bl.seq")]
+        n_extra_en = db().execute(
+            "SELECT count(*) FROM pragma_table_info('extra_lines') WHERE name IN ('en','english','translation')"
+        ).fetchone()[0]
+        check('banis_ok', jp == list(range(1, 386)) and n_extra_en == 0)
+    except sqlite3.OperationalError:
+        pass                                    # registry absent on older DBs: not a failure
+    try:
+        h['translations_en'] = db().execute("SELECT count(*) FROM translations WHERE lang='en'").fetchone()[0]
+    except sqlite3.OperationalError:
+        h['translations_en'] = 0
+    return h
+    return _FALLTHROUGH
+
+
+def _route_random(p, qs):
+    return hukam_package()                  # complete structural unit, not a comp fragment
+    return _FALLTHROUGH
+
+
+def _route_verify(p, qs):
+    q = qs.get('q', [''])[0].strip()
+    if not q: raise ValueError('empty claim')
+    # verify() ORs every token into one FTS query and then runs difflib per candidate, so its
+    # cost grows with the claim: an 18 KB claim measured ~7 s of CPU on one core. A quotation is
+    # a line or two — bound it here (verify.py stays byte-identical to the Swift port).
+    if len(q) > MAX_CLAIM_CHARS: raise ValueError(f'claim too long (max {MAX_CLAIM_CHARS} chars)')
+    ang_q = qs.get('ang', [None])[0]
+    ang_n = _int_str(ang_q, 1, 1430) if ang_q else None
+    return verify_claim(q, ang=ang_n, db_path=DB)
+    return _FALLTHROUGH
+
+
+def _route_word(p, qs):
+    w = _fts_clean(qs.get('w', [''])[0].strip())   # a bare " in MATCH -> OperationalError 500
+    n = db().execute('SELECT n FROM word_freq WHERE word = ?', (w,)).fetchone()
+    rs = db().execute(f"SELECT {LINE_COLS} FROM lines WHERE id IN "
+                      f"(SELECT rowid FROM fts WHERE text MATCH ?) ORDER BY id LIMIT 100",
+                      (f'"{w}"',)).fetchall() if HAVE_FTS else []
+    return {'word': w, 'count': n['n'] if n else 0, 'lines': rows_to_list(rs)}
+    return _FALLTHROUGH
+
+
+def _route_themes_network(p, qs):
+    concept = qs.get('concept', [None])[0]
+    try:
+        min_ppmi = float(qs.get('min_ppmi', ['0'])[0])
+    except (TypeError, ValueError):
+        min_ppmi = 0.0
+    if not math.isfinite(min_ppmi):     # NaN/inf survive max(min()) (compare False) -> clamp explicitly
+        min_ppmi = 0.0
+    min_ppmi = max(0.0, min(1.0, min_ppmi))
+    lim = _int(qs, 'limit', 200, 1, 2000)
+    try:
+        if concept:
+            rows = db().execute(
+                "SELECT source, target, shabad_count, ppmi, jaccard FROM theme_network "
+                "WHERE source=? AND ppmi>=? ORDER BY ppmi DESC, jaccard DESC LIMIT ?",
+                (concept, min_ppmi, lim)).fetchall()
+        else:
+            rows = db().execute(
+                "SELECT source, target, shabad_count, ppmi, jaccard FROM theme_network "
+                "WHERE source < target AND ppmi>=? ORDER BY ppmi DESC LIMIT ?",
+                (min_ppmi, lim)).fetchall()
+        return {'concept': concept, 'edges': rows_to_list(rows), 'metric': 'ppmi+jaccard',
+                'note': 'theme co-occurrence within shabads; PPMI controls base-rate bias'}
+    except sqlite3.OperationalError:
+        return {'edges': [], 'note': 'analytics tables not present in this DB build'}
+    return _FALLTHROUGH
+
+
+def _route_analytics_author(p, qs):
+    author = qs.get('author', [None])[0]
+    try:
+        if not author:
+            rows = db().execute(
+                "SELECT author, n_lines, n_shabads, n_raags, mattr_100, avg_words_line, "
+                "is_reliable FROM author_analytics ORDER BY n_lines DESC").fetchall()
+            return {'authors': rows_to_list(rows)}
+        st = db().execute("SELECT * FROM author_analytics WHERE author=?", (author,)).fetchone()
+        out = dict(st) if st else {}
+        if out.get('top_themes'):
+            try: out['top_themes'] = json.loads(out['top_themes'])
+            except Exception: pass
+        fp_lim = 60 if qs.get('full', [None])[0] else 12   # full=1 -> every concept (for radar axes)
+        fp = db().execute("SELECT concept, n_tagged, entity_rate, corpus_rate, lift FROM theme_fingerprint "
+                          "WHERE entity_type='author' AND entity_id=? ORDER BY lift DESC LIMIT ?", (author, fp_lim)).fetchall()
+        dt = db().execute("SELECT term, z_score, rank FROM author_distinctive_terms "
+                          "WHERE author=? ORDER BY rank LIMIT 12", (author,)).fetchall()
+        return {'author': author, 'stylometry': out, 'theme_fingerprint': rows_to_list(fp),
+                'distinctive_terms': rows_to_list(dt),
+                'note': 'theme emphasis = lift vs corpus baseline; stylometry on the English '
+                        'translation; descriptive only, never a ranking of scripture'}
+    except sqlite3.OperationalError:
+        return {'author': author, 'note': 'analytics tables not present in this DB build'}
+    return _FALLTHROUGH
+
+
+def _route_analytics_raag(p, qs):
+    raag = qs.get('raag', [None])[0]
+    try:
+        if not raag:
+            return {'raags': rows_to_list(db().execute(
+                "SELECT * FROM raag_analytics ORDER BY n_lines DESC").fetchall())}
+        st = db().execute("SELECT * FROM raag_analytics WHERE raag=?", (raag,)).fetchone()
+        out = dict(st) if st else {}
+        if out.get('top_themes'):
+            try: out['top_themes'] = json.loads(out['top_themes'])
+            except Exception: pass
+        fp = db().execute("SELECT concept, lift, n_tagged FROM theme_fingerprint "
+                          "WHERE entity_type='raag' AND entity_id=? ORDER BY lift DESC LIMIT 12", (raag,)).fetchall()
+        return {'raag': raag, 'analytics': out, 'theme_fingerprint': rows_to_list(fp)}
+    except sqlite3.OperationalError:
+        return {'raag': raag, 'note': 'analytics tables not present in this DB build'}
+    return _FALLTHROUGH
+
+
+def _route_analytics_progression(p, qs):   # /api/analytics/progression?raag=X
+    raag = qs.get('raag', [None])[0]
+    bins = _int(qs, 'bins', 36, 8, 80)
+    top = _int(qs, 'top', 7, 2, 10)
+    if not raag:
+        raise ValueError('progression requires a raag')
+    try:
+        ordered = db().execute(
+            "SELECT id, ang FROM lines WHERE raag=? ORDER BY ang, id", (raag,)).fetchall()
+        M = len(ordered)
+        if M == 0:
+            return {'raag': raag, 'concepts': [], 'series': {}, 'bins': 0, 'note': 'no lines in this raag'}
+        bins = min(bins, M)
+        pos = {r['id']: i for i, r in enumerate(ordered)}
+        angs = [r['ang'] for r in ordered]
+        # the raag's most-present concepts (volume → readable bands)
+        concepts = [r[0] for r in db().execute(
+            "SELECT cl.concept, COUNT(*) c FROM concept_lines cl JOIN lines l ON l.id=cl.line_id "
+            "WHERE l.raag=? GROUP BY cl.concept ORDER BY c DESC LIMIT ?", (raag, top)).fetchall()]
+        series = {c: [0] * bins for c in concepts}
+        cset = set(concepts)
+        for lid, concept in db().execute(
+                "SELECT cl.line_id, cl.concept FROM concept_lines cl JOIN lines l ON l.id=cl.line_id "
+                "WHERE l.raag=?", (raag,)):
+            if concept in cset and lid in pos:
+                series[concept][min(bins - 1, pos[lid] * bins // M)] += 1
+        lines_per_bin = [0] * bins
+        for i in range(M):
+            lines_per_bin[min(bins - 1, i * bins // M)] += 1
+        ang_axis = [angs[min(M - 1, int((b + 0.5) * M / bins))] for b in range(bins)]
+        roman = db().execute("SELECT roman FROM raags WHERE name=?", (raag,)).fetchone()
+        return {'raag': raag, 'roman': (roman[0] if roman else ''), 'n_lines': M, 'bins': bins,
+                'concepts': concepts, 'series': series, 'lines_per_bin': lines_per_bin,
+                'ang_axis': ang_axis,
+                'note': 'concept-tag density along the raag in reading order; descriptive only'}
+    except sqlite3.OperationalError:
+        return {'raag': raag, 'concepts': [], 'series': {}, 'note': 'analytics tables not present'}
+    return _FALLTHROUGH
+
+
+def _route_analytics_resonance(p, qs):   # /api/analytics/resonance
+    min_lines = _int(qs, 'min_lines', 250, 1, _ID_MAX)
+    try:
+        min_lift = float(qs.get('min_lift', ['1.0'])[0])
+    except (TypeError, ValueError):
+        min_lift = 1.0
+    if not math.isfinite(min_lift):     # NaN/inf survive max(min()) — same guard as min_ppmi
+        min_lift = 1.0
+    min_lift = max(0.0, min(100.0, min_lift))
+    min_edges = _int(qs, 'min_edges', 8, 1, _ID_MAX)
+    try:
+        nodes = rows_to_list(db().execute(
+            "SELECT name AS author, n_lines, first_ang FROM authors WHERE n_lines >= ? "
+            "ORDER BY n_lines DESC", (min_lines,)).fetchall())
+        names = [n['author'] for n in nodes]
+        if not names:
+            return {'nodes': [], 'edges': [], 'note': 'no voices meet the size threshold'}
+        ph = ','.join('?' * len(names))
+        edges = rows_to_list(db().execute(
+            f"SELECT src_author AS source, dst_author AS target, edges, mean_score, lift "
+            f"FROM author_resonance WHERE src_author <> dst_author AND lift >= ? AND edges >= ? "
+            f"AND src_author IN ({ph}) AND dst_author IN ({ph}) ORDER BY lift DESC",
+            [min_lift, min_edges] + names + names).fetchall())
+        return {'nodes': nodes, 'edges': edges, 'metric': 'lift',
+                'note': 'how often a voice’s lines land semantically nearest another voice’s, '
+                        'relative to corpus share (lift); descriptive, never a ranking of scripture'}
+    except sqlite3.OperationalError:
+        return {'nodes': [], 'edges': [], 'note': 'resonance table not present in this DB build'}
+    return _FALLTHROUGH
+
+
+def _route_analytics_vaars(p, qs):   # /api/analytics/vaars (list)
+    try:
+        rows = rows_to_list(db().execute(
+            "SELECT vaar_id, raag, roman, first_ang, last_ang, n_pauris, n_saloks, "
+            "pauri_author, salok_authors, cross_author, title FROM vaars ORDER BY first_ang"))
+        for r in rows:
+            try: r['salok_authors'] = json.loads(r['salok_authors'] or '[]')
+            except Exception: r['salok_authors'] = []
+        return {'vaars': rows,
+                'note': 'the Vaars — heroic ballads of numbered pauris with flanking saloks; '
+                        'structural metadata only, never a ranking of scripture'}
+    except sqlite3.OperationalError:
+        return {'vaars': [], 'note': 'vaar tables not present in this DB build'}
+    return _FALLTHROUGH
+
+
+def _route_analytics_vaar(p, qs):   # /api/analytics/vaar?id=N (anatomy)
+    try: vid = _int(qs, 'id', 0, 0, _ID_MAX)
+    except ValueError: return {'vaar': None, 'units': []}
+    try:
+        head = db().execute("SELECT * FROM vaars WHERE vaar_id=?", (vid,)).fetchone()
+        if not head:
+            return {'vaar': None, 'units': []}
+        head = dict(head)
+        try: head['salok_authors'] = json.loads(head['salok_authors'] or '[]')
+        except Exception: head['salok_authors'] = []
+        units = rows_to_list(db().execute(
+            "SELECT seq, kind, author, n_lines, pauri_no, first_line_id, ang, theme "
+            "FROM vaar_units WHERE vaar_id=? ORDER BY seq", (vid,)))
+        return {'vaar': head, 'units': units,
+                'note': 'salok + pauri anatomy in reading order; saloks by a different Guru than the '
+                        'pauris are the famous cross-voice editorial structure'}
+    except sqlite3.OperationalError:
+        return {'vaar': None, 'units': []}
+    return _FALLTHROUGH
+
+
+def _route_analytics_constellation(p, qs):   # Concept Constellation
+    # No ?concept= → the dropdown list (every concept + its verse count).
+    # ?concept=X → X's verses grouped into sub-constellations by each verse's co-themes.
+    # Purely read-only over the existing concepts / concept_lines tables; capped (top-k).
+    c = qs.get('concept', [''])[0].strip()
+    au = qs.get('author', [''])[0].strip()       # optional filter: only verses by this author
+    rg = qs.get('raag', [''])[0].strip()          # optional filter: only verses in this raag
+    try:
+        if not c:
+            concepts = rows_to_list(db().execute(
+                "SELECT concept, n FROM ("
+                "  SELECT concept, COUNT(DISTINCT line_id) n FROM concept_lines GROUP BY concept"
+                ") ORDER BY n DESC"))
+            authors = [r[0] for r in db().execute(
+                "SELECT DISTINCT author FROM lines WHERE author IS NOT NULL AND author <> '' ORDER BY author")]
+            raags = rows_to_list(db().execute("SELECT name, roman FROM raags ORDER BY rowid"))
+            return {'concepts': concepts, 'authors': authors, 'raags': raags,
+                    'note': 'corpus-verified theme tags; counts are descriptive only'}
+        # filter the concept's verses by author/raag if requested (parameterized — no injection)
+        where, params = "cl.concept=?", [c]
+        if au:
+            where += " AND l.author=?"; params.append(au)
+        if rg:
+            where += " AND l.raag=?"; params.append(rg)
+        total = db().execute(
+            f"SELECT COUNT(DISTINCT cl.line_id) FROM concept_lines cl JOIN lines l ON l.id=cl.line_id WHERE {where}",
+            params).fetchone()[0]
+        if not total:
+            return {'concept': c, 'author': au, 'raag': rg, 'total': 0, 'clusters': []}
+        MAX_CLUSTERS, PER = 9, 40
+        rows = db().execute(
+            "SELECT co.concept co, l.id, l.ang, l.comp_id, l.gurmukhi "
+            "FROM concept_lines cl JOIN concept_lines co ON co.line_id=cl.line_id AND co.concept<>cl.concept "
+            f"JOIN lines l ON l.id=cl.line_id WHERE {where} ORDER BY co.concept, l.id", params).fetchall()
+        buckets = {}
+        for r in rows:
+            buckets.setdefault(r['co'], []).append(
+                {'id': r['id'], 'ang': r['ang'], 'comp_id': r['comp_id'], 'gurmukhi': r['gurmukhi']})
+        clusters = sorted(({'co': k, 'n': len(v), 'verses': v[:PER]} for k, v in buckets.items()),
+                          key=lambda x: x['n'], reverse=True)[:MAX_CLUSTERS]
+        return {'concept': c, 'author': au, 'raag': rg, 'total': total, 'clusters': clusters,
+                'note': 'verses carrying this theme (optionally filtered by author/raag), grouped by the '
+                        'other theme they most often share; descriptive structure, never a ranking of scripture'}
+    except sqlite3.OperationalError:
+        return {'concepts': [], 'clusters': [], 'note': 'concept tables not present in this DB build'}
+    return _FALLTHROUGH
+
+
+def _route_related(p, qs):   # /api/related?comp_id=N
+    cid = _int(qs, 'comp_id', 0, 0, _ID_MAX)
+    try:
+        rows = db().execute(
+            "SELECT n.neighbor_comp_id AS comp_id, n.rank, n.score, "
+            "(SELECT ang FROM lines WHERE comp_id=n.neighbor_comp_id ORDER BY id LIMIT 1) AS ang, "
+            "(SELECT raag FROM lines WHERE comp_id=n.neighbor_comp_id AND raag IS NOT NULL LIMIT 1) AS raag, "
+            "(SELECT gurmukhi FROM lines WHERE comp_id=n.neighbor_comp_id AND is_header=0 ORDER BY id LIMIT 1) AS first_line "
+            "FROM shabad_neighbors n WHERE n.comp_id=? ORDER BY n.rank", (cid,)).fetchall()
+        return {'comp_id': cid, 'related': rows_to_list(rows),
+                'note': 'shabads with the most similar theme profile (corpus-verified themes)'}
+    except sqlite3.OperationalError:
+        return {'comp_id': cid, 'related': [], 'note': 'analytics tables not present in this DB build'}
+    return _FALLTHROUGH
+
+
+def _route_lines(p, qs):   # /api/lines?ids=1,2,3  (verbatim text by id)
+    raw = qs.get('ids', [''])[0]
+    ids = [int(x) for x in raw.split(',') if x.strip().isdigit() and len(x.strip()) <= 12][:300]
+    rows = []
+    if ids:
+        ph = ','.join('?' * len(ids))
+        rows = rows_to_list(db().execute(
+            f"SELECT id, ang, comp_id, gurmukhi, translit FROM lines WHERE id IN ({ph}) ORDER BY id", ids))
+    return {'lines': rows, 'note': 'verbatim Gurmukhi by line id, cited by Ang'}
+    return _FALLTHROUGH
+
+
+def _route_line_concepts(p, qs):   # /api/line_concepts?ids=1,2,3  (Study Trail)
+    raw = qs.get('ids', [''])[0]
+    ids = [int(x) for x in raw.split(',') if x.strip().isdigit() and len(x.strip()) <= 12][:300]
+    out = {}
+    if ids:
+        ph = ','.join('?' * len(ids))
+        try:
+            for lid, concept in db().execute(
+                    f"SELECT line_id, concept FROM concept_lines WHERE line_id IN ({ph})", ids):
+                out.setdefault(str(lid), []).append(concept)
+        except sqlite3.OperationalError:
+            pass
+    return {'concepts': out, 'note': 'corpus-verified theme tags per line; descriptive only'}
+    return _FALLTHROUGH
+
+
+def _route_neighbors(p, qs):   # /api/neighbors?line_id=N  (Phase 2: semantic)
+    lid = _int(qs, 'line_id', 0, 0, _ID_MAX)
+    lim = _int(qs, 'limit', 10, 1, 50)
+    srow = db().execute("SELECT id, ang, raag, author, comp_id, gurmukhi, translit "
+                        "FROM lines WHERE id=?", (lid,)).fetchone()
+    src_line = attach_translations([dict(srow)])[0] if srow else None   # the queried verse itself
+    try:                                                 # preferred: line-level embedding neighbours
+        rows = db().execute(
+            "SELECT n.neighbor_id AS id, n.score, l.ang, l.raag, l.author, l.comp_id, "
+            "l.gurmukhi, l.translit FROM line_neighbors n JOIN lines l ON l.id = n.neighbor_id "
+            "WHERE n.line_id = ? ORDER BY n.score DESC LIMIT ?", (lid, lim)).fetchall()
+        if rows:
+            src = db().execute(
+                "SELECT value FROM analytics_meta WHERE key='line_neighbors_source'").fetchone()
+            return {'line_id': lid, 'level': 'line', 'source': (src[0] if src else 'unknown'),
+                    'line': src_line, 'neighbors': attach_translations(rows_to_list(rows)),
+                    'note': 'lines whose English meaning is closest by embedding cosine; '
+                            'descriptive, never a ranking of scripture'}
+    except sqlite3.OperationalError:
+        pass
+    try:                                                 # fallback: composition-level theme profile
+        row = db().execute("SELECT comp_id FROM lines WHERE id=?", (lid,)).fetchone()
+        if not row:
+            return {'line_id': lid, 'level': 'none', 'neighbors': []}
+        cid = row[0]
+        rows = db().execute(
+            "SELECT n.neighbor_comp_id AS comp_id, n.rank, n.score, "
+            "(SELECT ang FROM lines WHERE comp_id=n.neighbor_comp_id ORDER BY id LIMIT 1) AS ang, "
+            "(SELECT raag FROM lines WHERE comp_id=n.neighbor_comp_id AND raag IS NOT NULL LIMIT 1) AS raag, "
+            "(SELECT gurmukhi FROM lines WHERE comp_id=n.neighbor_comp_id AND is_header=0 ORDER BY id LIMIT 1) AS gurmukhi "
+            "FROM shabad_neighbors n WHERE n.comp_id=? ORDER BY n.rank LIMIT ?", (cid, lim)).fetchall()
+        return {'line_id': lid, 'level': 'composition', 'source': 'shabad-theme-profile',
+                'line': src_line, 'neighbors': rows_to_list(rows),
+                'note': 'line-level semantic vectors not built yet — showing compositions with the '
+                        'closest theme profile. Run pipeline/build_semantic_vectors.py for line-level results'}
+    except sqlite3.OperationalError:
+        return {'line_id': lid, 'level': 'none', 'line': src_line, 'neighbors': []}
+    return _FALLTHROUGH
+
+
+def _route_timing_clock(p, qs):
+    global _TIMING_CACHE
+    if _TIMING_CACHE is not None: return _TIMING_CACHE
+    try:
+        rows = rows_to_list(db().execute(
+            "SELECT c.raag_name, r.roman, r.first_ang, r.seq, c.claim_type, c.pahar, "
+            "       c.time_start, c.time_end, c.season, c.occasion, c.confidence, c.notes, "
+            "       s.name AS source_name, s.tradition, s.url AS source_url "
+            "FROM raag_timing_claims c "
+            "JOIN timing_sources s ON s.id = c.source_id "
+            "JOIN raags r ON r.name = c.raag_name "
+            "ORDER BY r.seq, c.claim_type, c.pahar").fetchall())
+        out = {'available': True,
+               'pahar_convention': 'pahar 1 = 06:00-09:00 ... pahar 8 = 03:00-06:00 '
+                                   '(fixed-clock rendering, 6 AM anchor); pahar 7 '
+                                   '(00:00-03:00) deliberately has no raags',
+               'claims': {t: [c for c in rows if c['claim_type'] == t]
+                          for t in ('primary', 'variant', 'seasonal', 'ceremonial')},
+               'note': 'attributed scholarly claims with citations; divergence is '
+                       'preserved, never adjudicated'}
+        _TIMING_CACHE = out
+        return out
+    except sqlite3.OperationalError:
+        return {'available': False, 'note': 'timing layer not present in this DB build'}
+    return _FALLTHROUGH
+
+
+def _route_timing_raag(p, qs):   # /api/timing/raag?name=<roman|gurmukhi>
+    name = qs.get('name', [''])[0].strip()
+    if not name:
+        raise ValueError('timing/raag requires ?name=')
+    try:
+        r = db().execute("SELECT name, roman, first_ang FROM raags WHERE name=? OR roman=?",
+                         (name, name.lower())).fetchone()
+        if not r:
+            return {'available': True, 'raag': name, 'claims': [],
+                    'note': 'no such raag'}
+        claims = rows_to_list(db().execute(
+            "SELECT c.claim_type, c.pahar, c.time_start, c.time_end, c.season, "
+            "       c.occasion, c.confidence, c.notes, s.name AS source_name, "
+            "       s.tradition, s.url AS source_url "
+            "FROM raag_timing_claims c JOIN timing_sources s ON s.id = c.source_id "
+            "WHERE c.raag_name = ? ORDER BY c.claim_type, c.pahar", (r['name'],)).fetchall())
+        return {'available': True, 'raag': r['name'], 'roman': r['roman'],
+                'first_ang': r['first_ang'], 'claims': claims}
+    except sqlite3.OperationalError:
+        return {'available': False, 'raag': name, 'claims': []}
+    return _FALLTHROUGH
+
+
+def _route_timing_divergence(p, qs):
+    try:
+        names = [r[0] for r in db().execute(
+            "SELECT raag_name FROM raag_timing_claims "
+            "WHERE claim_type IN ('primary','variant') "
+            "GROUP BY raag_name "
+            # divergence = different SOURCES disagreeing; a same-source
+            # multi-pahar row (e.g. Bilaval extending 1st->2nd) is an
+            # extension, not a dispute
+            "HAVING SUM(claim_type = 'variant') > 0 "
+            "    OR (COUNT(DISTINCT COALESCE(pahar, -1)) > 1 "
+            "        AND COUNT(DISTINCT source_id) > 1) "
+            "ORDER BY MIN((SELECT seq FROM raags WHERE name = raag_name))").fetchall()]
+        out = []
+        for n in names:
+            claims = rows_to_list(db().execute(
+                "SELECT c.claim_type, c.pahar, c.time_start, c.time_end, c.occasion, "
+                "       c.confidence, c.notes, s.name AS source_name, s.tradition, "
+                "       s.url AS source_url "
+                "FROM raag_timing_claims c JOIN timing_sources s ON s.id = c.source_id "
+                "WHERE c.raag_name = ? AND c.claim_type IN ('primary','variant') "
+                "ORDER BY c.claim_type, c.pahar", (n,)).fetchall())
+            r = db().execute("SELECT roman, first_ang, seq FROM raags WHERE name=?",
+                             (n,)).fetchone()
+            out.append({'raag': n, 'roman': r['roman'], 'first_ang': r['first_ang'],
+                        'claims': claims})
+        return {'available': True, 'raags': out,
+                'note': 'raags where traditions disagree on timing; every claim '
+                        'cited — disagreement is preserved scholarship, not error'}
+    except sqlite3.OperationalError:
+        return {'available': False, 'raags': []}
+    return _FALLTHROUGH
+
+
+def _route_banis(p, qs):   # /api/banis — the Nitnem / Gutka registry
+    try:
+        rows = rows_to_list(db().execute(
+            'SELECT key, variant, is_default, title_gm, title_en, category, order_no, '
+            'n_lines, n_groups, has_extra, estimated_minutes, description_en, source_label '
+            'FROM banis ORDER BY order_no, variant'))
+    except sqlite3.OperationalError:
+        return {'available': False, 'banis': []}
+    return {'available': True, 'banis': rows,
+            'note': 'Sri Guru Granth Sahib Ji lines are served from the verbatim corpus and cited by Ang; '
+                    'has_extra=1 banis also contain a separate, labelled non-SGGS layer.'}
+    return _FALLTHROUGH
+
+
+def _route_bani(p, qs):   # /api/bani/{key}?variant=
+    if len(p) < 2:
+        raise ValueError('/api/bani requires a key')
+    key = p[1]
+    if not _BANI_KEY_RE.match(key):
+        raise ValueError('bad bani key')
+    variant = qs.get('variant', [''])[0]
+    if variant not in _BANI_VARIANTS:
+        raise ValueError('bad variant')
+    try:
+        if variant:
+            b = db().execute('SELECT * FROM banis WHERE key=? AND variant=?', (key, variant)).fetchone()
+        else:
+            b = db().execute('SELECT * FROM banis WHERE key=? AND is_default=1', (key,)).fetchone()
+    except sqlite3.OperationalError:
+        return {'available': False}
+    if not b:
+        raise ApiError(404, f'no bani with key {key}')
+    b = dict(b)
+    variants = [r[0] for r in db().execute(
+        'SELECT variant FROM banis WHERE key=? ORDER BY is_default DESC, variant', (key,))]
+    rows = db().execute(
+        f'SELECT bl.seq, bl.line_group, bl.line_id, bl.extra_id, '
+        f'{", ".join("l." + c for c in LINE_COLS.replace(" ", "").split(","))}, l.markers, '
+        f'e.source AS extra_source, e.panna, e.gurmukhi AS extra_gurmukhi, e.translit AS extra_translit, '
+        f'e.is_header AS extra_is_header '
+        f'FROM bani_lines bl LEFT JOIN lines l ON l.id = bl.line_id '
+        f'LEFT JOIN extra_lines e ON e.extra_id = bl.extra_id '
+        f'WHERE bl.bani_id = ? ORDER BY bl.seq', (b['bani_id'],)).fetchall()
+    lines, sggs_rows = [], []
+    for r in rows:
+        r = dict(r)
+        if r['line_id'] is not None:
+            d = {k: r[k] for k in LINE_COLS.replace(' ', '').split(',')}
+            d['markers'] = r['markers']
+            d.update({'seq': r['seq'], 'line_group': r['line_group'], 'source': 'sggs'})
+            sggs_rows.append(d)
+            lines.append(d)
+        else:
+            lines.append({'seq': r['seq'], 'line_group': r['line_group'],
+                          'source': r['extra_source'], 'extra_id': r['extra_id'],
+                          'panna': r['panna'], 'gurmukhi': r['extra_gurmukhi'],
+                          'translit': r['extra_translit'], 'is_header': r['extra_is_header'],
+                          'is_rahao': 0, 'markers': ''})
+    attach_translations(sggs_rows)               # English only ever on SGGS lines
+    b.pop('bani_id', None)
+    angs = sorted({d['ang'] for d in sggs_rows})
+    return {'available': True, 'bani': b, 'variants': variants,
+            'ang_first': angs[0] if angs else None, 'ang_last': angs[-1] if angs else None,
+            'lines': lines,
+            'note': 'source=sggs lines are verbatim Sri Guru Granth Sahib Ji, cited by Ang. '
+                    'source=dasam/ardaas lines are a separate layer (Sri Dasam Granth / Ardaas via ShabadOS), '
+                    'not part of Sri Guru Granth Sahib Ji.'}
+    return _FALLTHROUGH
+
+
+def _route_forms(p, qs):   # /api/forms?comp_id=N
+    cid = _int(qs, 'comp_id', 0, 0, _ID_MAX)
+    if cid <= 0:
+        raise ValueError('forms requires ?comp_id=')
+    try:
+        row = db().execute(
+            "SELECT m.comp_id, m.raag_name, m.first_ang, "
+            "       mm.ghar, mm.partaal, mm.has_rahao, mm.has_rahao_dooja, "
+            "       mm.dhunni, mm.jati, "
+            "       sf.form, sf.pada_count, pg.genre, mm.source_label "
+            "FROM shabd_raag_map m "
+            "LEFT JOIN shabd_musical_markers mm ON mm.comp_id = m.comp_id "
+            "LEFT JOIN shabd_structural_form sf ON sf.comp_id = m.comp_id "
+            "LEFT JOIN shabd_poetic_genre pg ON pg.comp_id = m.comp_id "
+            "WHERE m.comp_id = ?", (cid,)).fetchone()
+        if not row:
+            return {'available': True, 'comp_id': cid, 'forms': None}
+        return {'available': True, 'comp_id': cid, 'forms': dict(row),
+                'note': 'derived only from headings present in the verified text; '
+                        'NULL means the heading states no form — never guessed'}
+    except sqlite3.OperationalError:
+        return {'available': False, 'comp_id': cid, 'forms': None}
+    return _FALLTHROUGH
+
+
+# Route table: (first path segment, second segment or None) -> (handler, bounded context).
+# The context names the service each route moves to in the platform split (reader, search,
+# verify, insights, knowledge). Handler bodies are the former api() branches, verbatim.
+ROUTES = {
+    ('meta', None): (_route_meta, 'reader'),
+    ('search', None): (_route_search, 'search'),
+    ('ang', None): (_route_ang, 'reader'),
+    ('shabad', None): (_route_shabad, 'reader'),
+    ('health', None): (_route_health, 'reader'),
+    ('random', None): (_route_random, 'reader'),
+    ('verify', None): (_route_verify, 'verify'),
+    ('word', None): (_route_word, 'search'),
+    ('themes', 'network'): (_route_themes_network, 'insights'),
+    ('analytics', 'author'): (_route_analytics_author, 'insights'),
+    ('analytics', 'raag'): (_route_analytics_raag, 'insights'),
+    ('analytics', 'progression'): (_route_analytics_progression, 'insights'),
+    ('analytics', 'resonance'): (_route_analytics_resonance, 'insights'),
+    ('analytics', 'vaars'): (_route_analytics_vaars, 'insights'),
+    ('analytics', 'vaar'): (_route_analytics_vaar, 'insights'),
+    ('analytics', 'constellation'): (_route_analytics_constellation, 'insights'),
+    ('related', None): (_route_related, 'insights'),
+    ('lines', None): (_route_lines, 'reader'),
+    ('line_concepts', None): (_route_line_concepts, 'insights'),
+    ('neighbors', None): (_route_neighbors, 'insights'),
+    ('timing', 'clock'): (_route_timing_clock, 'knowledge'),
+    ('timing', 'raag'): (_route_timing_raag, 'knowledge'),
+    ('timing', 'divergence'): (_route_timing_divergence, 'knowledge'),
+    ('banis', None): (_route_banis, 'reader'),
+    ('bani', None): (_route_bani, 'reader'),
+    ('forms', None): (_route_forms, 'knowledge'),
+}
+
+
 def api(path, qs):
     p = [x for x in path.split('/') if x][1:]   # drop 'api'
     if not p:
         raise ValueError('missing endpoint')
     if p[0] in ('ang', 'shabad') and len(p) < 2:
         raise ValueError(f'/api/{p[0]} requires an id')
-    global HAVE_FTS, _META_CACHE                 # ensure FTS detection for EVERY endpoint
+    global HAVE_FTS                              # ensure FTS detection for EVERY endpoint
     if HAVE_FTS is None: HAVE_FTS = have_fts()   # (not just /api/search) — /api/word needs it
-    if p[0] == 'meta':
-        if _META_CACHE is not None: return _META_CACHE   # built once; ~50ms join avoided per load
-        m = {r['key']: r['value'] for r in db().execute('SELECT * FROM meta')}
-        m['db_version'] = m.get('version')          # honest record of the DB build
-        m['version'] = APP_VERSION or m.get('version')   # footer shows the running code build
-        m['built'] = APP_BUILT or m.get('built')
-        m['commit'] = APP_COMMIT
-        try:
-            m['raags'] = rows_to_list(db().execute('SELECT * FROM raags ORDER BY seq'))
-        except sqlite3.OperationalError:
-            m['raags'] = rows_to_list(db().execute('SELECT * FROM raags ORDER BY first_ang'))
-        m['sections'] = rows_to_list(db().execute('SELECT * FROM sections ORDER BY first_ang'))
-        m['authors'] = rows_to_list(db().execute('SELECT * FROM authors ORDER BY n_lines DESC'))
-        m['concepts'] = rows_to_list(db().execute(
-            'SELECT c.concept, c.description, COUNT(cl.line_id) AS n_lines '
-            'FROM concepts c LEFT JOIN concept_lines cl ON cl.concept = c.concept '
-            'GROUP BY c.concept, c.description ORDER BY c.concept'))
-        try:                                        # raag-timing knowledge layer (additive; absent on older DBs)
-            db().execute('SELECT 1 FROM timing_sources LIMIT 1').fetchone()
-            m['timing_available'] = True
-        except sqlite3.OperationalError:
-            m['timing_available'] = False
-        try:                                        # Nitnem bani registry (additive; migration 002)
-            db().execute('SELECT 1 FROM banis LIMIT 1').fetchone()
-            m['banis_available'] = True
-        except sqlite3.OperationalError:
-            m['banis_available'] = False
-        _META_CACHE = m
-        return m
-    if p[0] == 'search':
-        q = qs.get('q', [''])[0]
-        # clamp both ends: a negative limit is `LIMIT -1` in SQLite = no limit (full-corpus
-        # dump); a negative offset is silently treated as 0. Bound them to a sane window.
-        limit = _int(qs, 'limit', 50, 0, 200)
-        offset = _int(qs, 'offset', 0, 0, 1_000_000)      # corpus has 60,658 lines: lossless
-        out = do_search(q, qs.get('mode', ['auto'])[0], limit, offset)
-        attach_translations(out.get('results'))     # en for EVERY mode (FTS/variant/theme tiers
-        out.setdefault('related_themes', [])         # skipped it); uniform contract for the UI
-        return out
-    if p[0] == 'ang':
-        ang = _int_str(p[1], 1, 1430)
-        rs = rows_to_list(db().execute(f'SELECT {LINE_COLS} FROM lines WHERE ang = ? ORDER BY id', (ang,)).fetchall())
-        continued_from = None
-        if rs and not rs[0]['is_header']:
-            first = db().execute('SELECT min(ang) FROM lines WHERE comp_id = ?',
-                                 (rs[0]['comp_id'],)).fetchone()[0]
-            if first and first < ang: continued_from = first
-        def majority(key):
-            c = {}
-            for l in rs:
-                if l[key]: c[l[key]] = c.get(l[key], 0) + 1
-            return max(c, key=c.get) if c else None
-        return {'ang': ang, 'lines': attach_translations(rs), 'continued_from': continued_from,
-                'raag': majority('raag'), 'section': majority('section'),
-                'authors': sorted({l['author'] for l in rs if l['author']})}
-    if p[0] == 'shabad':
-        cid = _int_str(p[1], 0, _ID_MAX)
-        rs = db().execute(f'SELECT {LINE_COLS} FROM lines WHERE comp_id = ? ORDER BY id', (cid,)).fetchall()
-        if not rs:
-            raise ApiError(404, f'no composition with comp_id {cid}')
-        return {'comp_id': cid, 'lines': attach_translations(rows_to_list(rs))}
-    if p[0] == 'health':
-        h = {'version': None, 'checks': {}, 'ok': True}
-        def check(name, cond):
-            h['checks'][name] = bool(cond)
-            if not cond: h['ok'] = False
-        m = {k: v for k, v in db().execute('SELECT * FROM meta')}
-        h['version'] = APP_VERSION or m.get('version')
-        h['db_version'] = m.get('version')
-        h['built'] = APP_BUILT or m.get('built')
-        h['commit'] = APP_COMMIT
-        check('lines_60658', db().execute('SELECT count(*) FROM lines').fetchone()[0] == 60658)
-        check('angs_1430', db().execute('SELECT count(DISTINCT ang) FROM lines').fetchone()[0] == 1430)
-        check('fts5', m.get('fts5') == '1' and bool(
-            db().execute("SELECT rowid FROM fts WHERE fts MATCH 'ਨਾਮੁ' LIMIT 1").fetchone()))
-        mm = db().execute('SELECT gurmukhi FROM lines WHERE ang=1 ORDER BY id LIMIT 1').fetchone()[0]
-        check('mool_mantar', mm.startswith('ੴ ਸਤਿ ਨਾਮੁ ਕਰਤਾ ਪੁਰਖੁ ਨਿਰਭਉ ਨਿਰਵੈਰੁ'))
-        check('ik_onkar_568', db().execute(
-            "SELECT count(*) FROM (SELECT rowid FROM fts WHERE text MATCH 'ੴ')").fetchone()[0] >= 560)
-        v = verify_claim('ਸੋਚੈ ਸੋਚਿ ਨ ਹੋਵਈ ਜੇ ਸੋਚੀ ਲਖ ਵਾਰ', ang=1, db_path=DB)
-        check('verify_engine', v['verdict'].startswith('VERIFIED_EXACT'))
-        try:                                        # Nitnem registry: Japji is exactly our lines 1..385, in order
-            jp = [r[0] for r in db().execute(
-                'SELECT bl.line_id FROM bani_lines bl JOIN banis b USING(bani_id) '
-                "WHERE b.key='japji' ORDER BY bl.seq")]
-            n_extra_en = db().execute(
-                "SELECT count(*) FROM pragma_table_info('extra_lines') WHERE name IN ('en','english','translation')"
-            ).fetchone()[0]
-            check('banis_ok', jp == list(range(1, 386)) and n_extra_en == 0)
-        except sqlite3.OperationalError:
-            pass                                    # registry absent on older DBs: not a failure
-        try:
-            h['translations_en'] = db().execute("SELECT count(*) FROM translations WHERE lang='en'").fetchone()[0]
-        except sqlite3.OperationalError:
-            h['translations_en'] = 0
-        return h
-    if p[0] == 'random':
-        return hukam_package()                  # complete structural unit, not a comp fragment
-    if p[0] == 'verify':
-        q = qs.get('q', [''])[0].strip()
-        if not q: raise ValueError('empty claim')
-        # verify() ORs every token into one FTS query and then runs difflib per candidate, so its
-        # cost grows with the claim: an 18 KB claim measured ~7 s of CPU on one core. A quotation is
-        # a line or two — bound it here (verify.py stays byte-identical to the Swift port).
-        if len(q) > MAX_CLAIM_CHARS: raise ValueError(f'claim too long (max {MAX_CLAIM_CHARS} chars)')
-        ang_q = qs.get('ang', [None])[0]
-        ang_n = _int_str(ang_q, 1, 1430) if ang_q else None
-        return verify_claim(q, ang=ang_n, db_path=DB)
-    if p[0] == 'word':
-        w = _fts_clean(qs.get('w', [''])[0].strip())   # a bare " in MATCH -> OperationalError 500
-        n = db().execute('SELECT n FROM word_freq WHERE word = ?', (w,)).fetchone()
-        rs = db().execute(f"SELECT {LINE_COLS} FROM lines WHERE id IN "
-                          f"(SELECT rowid FROM fts WHERE text MATCH ?) ORDER BY id LIMIT 100",
-                          (f'"{w}"',)).fetchall() if HAVE_FTS else []
-        return {'word': w, 'count': n['n'] if n else 0, 'lines': rows_to_list(rs)}
-    # ---- Insight Engine (v2.1.0): pure cached SELECTs over the offline-precomputed analytics
-    # tables. Additive — these never touch the search path. Each degrades gracefully if the
-    # analytics tables are absent (an older DB build). NEVER a ranking/judgement of scripture.
-    if p[0] == 'themes' and len(p) >= 2 and p[1] == 'network':
-        concept = qs.get('concept', [None])[0]
-        try:
-            min_ppmi = float(qs.get('min_ppmi', ['0'])[0])
-        except (TypeError, ValueError):
-            min_ppmi = 0.0
-        if not math.isfinite(min_ppmi):     # NaN/inf survive max(min()) (compare False) -> clamp explicitly
-            min_ppmi = 0.0
-        min_ppmi = max(0.0, min(1.0, min_ppmi))
-        lim = _int(qs, 'limit', 200, 1, 2000)
-        try:
-            if concept:
-                rows = db().execute(
-                    "SELECT source, target, shabad_count, ppmi, jaccard FROM theme_network "
-                    "WHERE source=? AND ppmi>=? ORDER BY ppmi DESC, jaccard DESC LIMIT ?",
-                    (concept, min_ppmi, lim)).fetchall()
-            else:
-                rows = db().execute(
-                    "SELECT source, target, shabad_count, ppmi, jaccard FROM theme_network "
-                    "WHERE source < target AND ppmi>=? ORDER BY ppmi DESC LIMIT ?",
-                    (min_ppmi, lim)).fetchall()
-            return {'concept': concept, 'edges': rows_to_list(rows), 'metric': 'ppmi+jaccard',
-                    'note': 'theme co-occurrence within shabads; PPMI controls base-rate bias'}
-        except sqlite3.OperationalError:
-            return {'edges': [], 'note': 'analytics tables not present in this DB build'}
-    if p[0] == 'analytics' and len(p) >= 2 and p[1] == 'author':
-        author = qs.get('author', [None])[0]
-        try:
-            if not author:
-                rows = db().execute(
-                    "SELECT author, n_lines, n_shabads, n_raags, mattr_100, avg_words_line, "
-                    "is_reliable FROM author_analytics ORDER BY n_lines DESC").fetchall()
-                return {'authors': rows_to_list(rows)}
-            st = db().execute("SELECT * FROM author_analytics WHERE author=?", (author,)).fetchone()
-            out = dict(st) if st else {}
-            if out.get('top_themes'):
-                try: out['top_themes'] = json.loads(out['top_themes'])
-                except Exception: pass
-            fp_lim = 60 if qs.get('full', [None])[0] else 12   # full=1 -> every concept (for radar axes)
-            fp = db().execute("SELECT concept, n_tagged, entity_rate, corpus_rate, lift FROM theme_fingerprint "
-                              "WHERE entity_type='author' AND entity_id=? ORDER BY lift DESC LIMIT ?", (author, fp_lim)).fetchall()
-            dt = db().execute("SELECT term, z_score, rank FROM author_distinctive_terms "
-                              "WHERE author=? ORDER BY rank LIMIT 12", (author,)).fetchall()
-            return {'author': author, 'stylometry': out, 'theme_fingerprint': rows_to_list(fp),
-                    'distinctive_terms': rows_to_list(dt),
-                    'note': 'theme emphasis = lift vs corpus baseline; stylometry on the English '
-                            'translation; descriptive only, never a ranking of scripture'}
-        except sqlite3.OperationalError:
-            return {'author': author, 'note': 'analytics tables not present in this DB build'}
-    if p[0] == 'analytics' and len(p) >= 2 and p[1] == 'raag':
-        raag = qs.get('raag', [None])[0]
-        try:
-            if not raag:
-                return {'raags': rows_to_list(db().execute(
-                    "SELECT * FROM raag_analytics ORDER BY n_lines DESC").fetchall())}
-            st = db().execute("SELECT * FROM raag_analytics WHERE raag=?", (raag,)).fetchone()
-            out = dict(st) if st else {}
-            if out.get('top_themes'):
-                try: out['top_themes'] = json.loads(out['top_themes'])
-                except Exception: pass
-            fp = db().execute("SELECT concept, lift, n_tagged FROM theme_fingerprint "
-                              "WHERE entity_type='raag' AND entity_id=? ORDER BY lift DESC LIMIT 12", (raag,)).fetchall()
-            return {'raag': raag, 'analytics': out, 'theme_fingerprint': rows_to_list(fp)}
-        except sqlite3.OperationalError:
-            return {'raag': raag, 'note': 'analytics tables not present in this DB build'}
-    if p[0] == 'analytics' and len(p) >= 2 and p[1] == 'progression':  # /api/analytics/progression?raag=X
-        raag = qs.get('raag', [None])[0]
-        bins = _int(qs, 'bins', 36, 8, 80)
-        top = _int(qs, 'top', 7, 2, 10)
-        if not raag:
-            raise ValueError('progression requires a raag')
-        try:
-            ordered = db().execute(
-                "SELECT id, ang FROM lines WHERE raag=? ORDER BY ang, id", (raag,)).fetchall()
-            M = len(ordered)
-            if M == 0:
-                return {'raag': raag, 'concepts': [], 'series': {}, 'bins': 0, 'note': 'no lines in this raag'}
-            bins = min(bins, M)
-            pos = {r['id']: i for i, r in enumerate(ordered)}
-            angs = [r['ang'] for r in ordered]
-            # the raag's most-present concepts (volume → readable bands)
-            concepts = [r[0] for r in db().execute(
-                "SELECT cl.concept, COUNT(*) c FROM concept_lines cl JOIN lines l ON l.id=cl.line_id "
-                "WHERE l.raag=? GROUP BY cl.concept ORDER BY c DESC LIMIT ?", (raag, top)).fetchall()]
-            series = {c: [0] * bins for c in concepts}
-            cset = set(concepts)
-            for lid, concept in db().execute(
-                    "SELECT cl.line_id, cl.concept FROM concept_lines cl JOIN lines l ON l.id=cl.line_id "
-                    "WHERE l.raag=?", (raag,)):
-                if concept in cset and lid in pos:
-                    series[concept][min(bins - 1, pos[lid] * bins // M)] += 1
-            lines_per_bin = [0] * bins
-            for i in range(M):
-                lines_per_bin[min(bins - 1, i * bins // M)] += 1
-            ang_axis = [angs[min(M - 1, int((b + 0.5) * M / bins))] for b in range(bins)]
-            roman = db().execute("SELECT roman FROM raags WHERE name=?", (raag,)).fetchone()
-            return {'raag': raag, 'roman': (roman[0] if roman else ''), 'n_lines': M, 'bins': bins,
-                    'concepts': concepts, 'series': series, 'lines_per_bin': lines_per_bin,
-                    'ang_axis': ang_axis,
-                    'note': 'concept-tag density along the raag in reading order; descriptive only'}
-        except sqlite3.OperationalError:
-            return {'raag': raag, 'concepts': [], 'series': {}, 'note': 'analytics tables not present'}
-    if p[0] == 'analytics' and len(p) >= 2 and p[1] == 'resonance':   # /api/analytics/resonance
-        min_lines = _int(qs, 'min_lines', 250, 1, _ID_MAX)
-        try:
-            min_lift = float(qs.get('min_lift', ['1.0'])[0])
-        except (TypeError, ValueError):
-            min_lift = 1.0
-        if not math.isfinite(min_lift):     # NaN/inf survive max(min()) — same guard as min_ppmi
-            min_lift = 1.0
-        min_lift = max(0.0, min(100.0, min_lift))
-        min_edges = _int(qs, 'min_edges', 8, 1, _ID_MAX)
-        try:
-            nodes = rows_to_list(db().execute(
-                "SELECT name AS author, n_lines, first_ang FROM authors WHERE n_lines >= ? "
-                "ORDER BY n_lines DESC", (min_lines,)).fetchall())
-            names = [n['author'] for n in nodes]
-            if not names:
-                return {'nodes': [], 'edges': [], 'note': 'no voices meet the size threshold'}
-            ph = ','.join('?' * len(names))
-            edges = rows_to_list(db().execute(
-                f"SELECT src_author AS source, dst_author AS target, edges, mean_score, lift "
-                f"FROM author_resonance WHERE src_author <> dst_author AND lift >= ? AND edges >= ? "
-                f"AND src_author IN ({ph}) AND dst_author IN ({ph}) ORDER BY lift DESC",
-                [min_lift, min_edges] + names + names).fetchall())
-            return {'nodes': nodes, 'edges': edges, 'metric': 'lift',
-                    'note': 'how often a voice’s lines land semantically nearest another voice’s, '
-                            'relative to corpus share (lift); descriptive, never a ranking of scripture'}
-        except sqlite3.OperationalError:
-            return {'nodes': [], 'edges': [], 'note': 'resonance table not present in this DB build'}
-    if p[0] == 'analytics' and len(p) >= 2 and p[1] == 'vaars':      # /api/analytics/vaars (list)
-        try:
-            rows = rows_to_list(db().execute(
-                "SELECT vaar_id, raag, roman, first_ang, last_ang, n_pauris, n_saloks, "
-                "pauri_author, salok_authors, cross_author, title FROM vaars ORDER BY first_ang"))
-            for r in rows:
-                try: r['salok_authors'] = json.loads(r['salok_authors'] or '[]')
-                except Exception: r['salok_authors'] = []
-            return {'vaars': rows,
-                    'note': 'the Vaars — heroic ballads of numbered pauris with flanking saloks; '
-                            'structural metadata only, never a ranking of scripture'}
-        except sqlite3.OperationalError:
-            return {'vaars': [], 'note': 'vaar tables not present in this DB build'}
-    if p[0] == 'analytics' and len(p) >= 2 and p[1] == 'vaar':       # /api/analytics/vaar?id=N (anatomy)
-        try: vid = _int(qs, 'id', 0, 0, _ID_MAX)
-        except ValueError: return {'vaar': None, 'units': []}
-        try:
-            head = db().execute("SELECT * FROM vaars WHERE vaar_id=?", (vid,)).fetchone()
-            if not head:
-                return {'vaar': None, 'units': []}
-            head = dict(head)
-            try: head['salok_authors'] = json.loads(head['salok_authors'] or '[]')
-            except Exception: head['salok_authors'] = []
-            units = rows_to_list(db().execute(
-                "SELECT seq, kind, author, n_lines, pauri_no, first_line_id, ang, theme "
-                "FROM vaar_units WHERE vaar_id=? ORDER BY seq", (vid,)))
-            return {'vaar': head, 'units': units,
-                    'note': 'salok + pauri anatomy in reading order; saloks by a different Guru than the '
-                            'pauris are the famous cross-voice editorial structure'}
-        except sqlite3.OperationalError:
-            return {'vaar': None, 'units': []}
-    if p[0] == 'analytics' and len(p) >= 2 and p[1] == 'constellation':   # Concept Constellation
-        # No ?concept= → the dropdown list (every concept + its verse count).
-        # ?concept=X → X's verses grouped into sub-constellations by each verse's co-themes.
-        # Purely read-only over the existing concepts / concept_lines tables; capped (top-k).
-        c = qs.get('concept', [''])[0].strip()
-        au = qs.get('author', [''])[0].strip()       # optional filter: only verses by this author
-        rg = qs.get('raag', [''])[0].strip()          # optional filter: only verses in this raag
-        try:
-            if not c:
-                concepts = rows_to_list(db().execute(
-                    "SELECT concept, n FROM ("
-                    "  SELECT concept, COUNT(DISTINCT line_id) n FROM concept_lines GROUP BY concept"
-                    ") ORDER BY n DESC"))
-                authors = [r[0] for r in db().execute(
-                    "SELECT DISTINCT author FROM lines WHERE author IS NOT NULL AND author <> '' ORDER BY author")]
-                raags = rows_to_list(db().execute("SELECT name, roman FROM raags ORDER BY rowid"))
-                return {'concepts': concepts, 'authors': authors, 'raags': raags,
-                        'note': 'corpus-verified theme tags; counts are descriptive only'}
-            # filter the concept's verses by author/raag if requested (parameterized — no injection)
-            where, params = "cl.concept=?", [c]
-            if au:
-                where += " AND l.author=?"; params.append(au)
-            if rg:
-                where += " AND l.raag=?"; params.append(rg)
-            total = db().execute(
-                f"SELECT COUNT(DISTINCT cl.line_id) FROM concept_lines cl JOIN lines l ON l.id=cl.line_id WHERE {where}",
-                params).fetchone()[0]
-            if not total:
-                return {'concept': c, 'author': au, 'raag': rg, 'total': 0, 'clusters': []}
-            MAX_CLUSTERS, PER = 9, 40
-            rows = db().execute(
-                "SELECT co.concept co, l.id, l.ang, l.comp_id, l.gurmukhi "
-                "FROM concept_lines cl JOIN concept_lines co ON co.line_id=cl.line_id AND co.concept<>cl.concept "
-                f"JOIN lines l ON l.id=cl.line_id WHERE {where} ORDER BY co.concept, l.id", params).fetchall()
-            buckets = {}
-            for r in rows:
-                buckets.setdefault(r['co'], []).append(
-                    {'id': r['id'], 'ang': r['ang'], 'comp_id': r['comp_id'], 'gurmukhi': r['gurmukhi']})
-            clusters = sorted(({'co': k, 'n': len(v), 'verses': v[:PER]} for k, v in buckets.items()),
-                              key=lambda x: x['n'], reverse=True)[:MAX_CLUSTERS]
-            return {'concept': c, 'author': au, 'raag': rg, 'total': total, 'clusters': clusters,
-                    'note': 'verses carrying this theme (optionally filtered by author/raag), grouped by the '
-                            'other theme they most often share; descriptive structure, never a ranking of scripture'}
-        except sqlite3.OperationalError:
-            return {'concepts': [], 'clusters': [], 'note': 'concept tables not present in this DB build'}
-    if p[0] == 'related':                                   # /api/related?comp_id=N
-        cid = _int(qs, 'comp_id', 0, 0, _ID_MAX)
-        try:
-            rows = db().execute(
-                "SELECT n.neighbor_comp_id AS comp_id, n.rank, n.score, "
-                "(SELECT ang FROM lines WHERE comp_id=n.neighbor_comp_id ORDER BY id LIMIT 1) AS ang, "
-                "(SELECT raag FROM lines WHERE comp_id=n.neighbor_comp_id AND raag IS NOT NULL LIMIT 1) AS raag, "
-                "(SELECT gurmukhi FROM lines WHERE comp_id=n.neighbor_comp_id AND is_header=0 ORDER BY id LIMIT 1) AS first_line "
-                "FROM shabad_neighbors n WHERE n.comp_id=? ORDER BY n.rank", (cid,)).fetchall()
-            return {'comp_id': cid, 'related': rows_to_list(rows),
-                    'note': 'shabads with the most similar theme profile (corpus-verified themes)'}
-        except sqlite3.OperationalError:
-            return {'comp_id': cid, 'related': [], 'note': 'analytics tables not present in this DB build'}
-    if p[0] == 'lines':                                      # /api/lines?ids=1,2,3  (verbatim text by id)
-        raw = qs.get('ids', [''])[0]
-        ids = [int(x) for x in raw.split(',') if x.strip().isdigit() and len(x.strip()) <= 12][:300]
-        rows = []
-        if ids:
-            ph = ','.join('?' * len(ids))
-            rows = rows_to_list(db().execute(
-                f"SELECT id, ang, comp_id, gurmukhi, translit FROM lines WHERE id IN ({ph}) ORDER BY id", ids))
-        return {'lines': rows, 'note': 'verbatim Gurmukhi by line id, cited by Ang'}
-    if p[0] == 'line_concepts':                              # /api/line_concepts?ids=1,2,3  (Study Trail)
-        raw = qs.get('ids', [''])[0]
-        ids = [int(x) for x in raw.split(',') if x.strip().isdigit() and len(x.strip()) <= 12][:300]
-        out = {}
-        if ids:
-            ph = ','.join('?' * len(ids))
-            try:
-                for lid, concept in db().execute(
-                        f"SELECT line_id, concept FROM concept_lines WHERE line_id IN ({ph})", ids):
-                    out.setdefault(str(lid), []).append(concept)
-            except sqlite3.OperationalError:
-                pass
-        return {'concepts': out, 'note': 'corpus-verified theme tags per line; descriptive only'}
-    if p[0] == 'neighbors':                                  # /api/neighbors?line_id=N  (Phase 2: semantic)
-        lid = _int(qs, 'line_id', 0, 0, _ID_MAX)
-        lim = _int(qs, 'limit', 10, 1, 50)
-        srow = db().execute("SELECT id, ang, raag, author, comp_id, gurmukhi, translit "
-                            "FROM lines WHERE id=?", (lid,)).fetchone()
-        src_line = attach_translations([dict(srow)])[0] if srow else None   # the queried verse itself
-        try:                                                 # preferred: line-level embedding neighbours
-            rows = db().execute(
-                "SELECT n.neighbor_id AS id, n.score, l.ang, l.raag, l.author, l.comp_id, "
-                "l.gurmukhi, l.translit FROM line_neighbors n JOIN lines l ON l.id = n.neighbor_id "
-                "WHERE n.line_id = ? ORDER BY n.score DESC LIMIT ?", (lid, lim)).fetchall()
-            if rows:
-                src = db().execute(
-                    "SELECT value FROM analytics_meta WHERE key='line_neighbors_source'").fetchone()
-                return {'line_id': lid, 'level': 'line', 'source': (src[0] if src else 'unknown'),
-                        'line': src_line, 'neighbors': attach_translations(rows_to_list(rows)),
-                        'note': 'lines whose English meaning is closest by embedding cosine; '
-                                'descriptive, never a ranking of scripture'}
-        except sqlite3.OperationalError:
-            pass
-        try:                                                 # fallback: composition-level theme profile
-            row = db().execute("SELECT comp_id FROM lines WHERE id=?", (lid,)).fetchone()
-            if not row:
-                return {'line_id': lid, 'level': 'none', 'neighbors': []}
-            cid = row[0]
-            rows = db().execute(
-                "SELECT n.neighbor_comp_id AS comp_id, n.rank, n.score, "
-                "(SELECT ang FROM lines WHERE comp_id=n.neighbor_comp_id ORDER BY id LIMIT 1) AS ang, "
-                "(SELECT raag FROM lines WHERE comp_id=n.neighbor_comp_id AND raag IS NOT NULL LIMIT 1) AS raag, "
-                "(SELECT gurmukhi FROM lines WHERE comp_id=n.neighbor_comp_id AND is_header=0 ORDER BY id LIMIT 1) AS gurmukhi "
-                "FROM shabad_neighbors n WHERE n.comp_id=? ORDER BY n.rank LIMIT ?", (cid, lim)).fetchall()
-            return {'line_id': lid, 'level': 'composition', 'source': 'shabad-theme-profile',
-                    'line': src_line, 'neighbors': rows_to_list(rows),
-                    'note': 'line-level semantic vectors not built yet — showing compositions with the '
-                            'closest theme profile. Run pipeline/build_semantic_vectors.py for line-level results'}
-        except sqlite3.OperationalError:
-            return {'line_id': lid, 'level': 'none', 'line': src_line, 'neighbors': []}
-    # ---- Raag Timing knowledge layer (v2.12.0): attributed CLAIMS with citations,
-    # never facts — divergent traditions coexist as rows. Pure cached SELECTs over
-    # additive tables; degrades to {'available': False} when the layer is absent
-    # (older DB build / iOS-derived DB). Metadata about raags only — never scripture.
-    if p[0] == 'timing' and len(p) >= 2 and p[1] == 'clock':
-        global _TIMING_CACHE
-        if _TIMING_CACHE is not None: return _TIMING_CACHE
-        try:
-            rows = rows_to_list(db().execute(
-                "SELECT c.raag_name, r.roman, r.first_ang, r.seq, c.claim_type, c.pahar, "
-                "       c.time_start, c.time_end, c.season, c.occasion, c.confidence, c.notes, "
-                "       s.name AS source_name, s.tradition, s.url AS source_url "
-                "FROM raag_timing_claims c "
-                "JOIN timing_sources s ON s.id = c.source_id "
-                "JOIN raags r ON r.name = c.raag_name "
-                "ORDER BY r.seq, c.claim_type, c.pahar").fetchall())
-            out = {'available': True,
-                   'pahar_convention': 'pahar 1 = 06:00-09:00 ... pahar 8 = 03:00-06:00 '
-                                       '(fixed-clock rendering, 6 AM anchor); pahar 7 '
-                                       '(00:00-03:00) deliberately has no raags',
-                   'claims': {t: [c for c in rows if c['claim_type'] == t]
-                              for t in ('primary', 'variant', 'seasonal', 'ceremonial')},
-                   'note': 'attributed scholarly claims with citations; divergence is '
-                           'preserved, never adjudicated'}
-            _TIMING_CACHE = out
-            return out
-        except sqlite3.OperationalError:
-            return {'available': False, 'note': 'timing layer not present in this DB build'}
-    if p[0] == 'timing' and len(p) >= 2 and p[1] == 'raag':    # /api/timing/raag?name=<roman|gurmukhi>
-        name = qs.get('name', [''])[0].strip()
-        if not name:
-            raise ValueError('timing/raag requires ?name=')
-        try:
-            r = db().execute("SELECT name, roman, first_ang FROM raags WHERE name=? OR roman=?",
-                             (name, name.lower())).fetchone()
-            if not r:
-                return {'available': True, 'raag': name, 'claims': [],
-                        'note': 'no such raag'}
-            claims = rows_to_list(db().execute(
-                "SELECT c.claim_type, c.pahar, c.time_start, c.time_end, c.season, "
-                "       c.occasion, c.confidence, c.notes, s.name AS source_name, "
-                "       s.tradition, s.url AS source_url "
-                "FROM raag_timing_claims c JOIN timing_sources s ON s.id = c.source_id "
-                "WHERE c.raag_name = ? ORDER BY c.claim_type, c.pahar", (r['name'],)).fetchall())
-            return {'available': True, 'raag': r['name'], 'roman': r['roman'],
-                    'first_ang': r['first_ang'], 'claims': claims}
-        except sqlite3.OperationalError:
-            return {'available': False, 'raag': name, 'claims': []}
-    if p[0] == 'timing' and len(p) >= 2 and p[1] == 'divergence':
-        try:
-            names = [r[0] for r in db().execute(
-                "SELECT raag_name FROM raag_timing_claims "
-                "WHERE claim_type IN ('primary','variant') "
-                "GROUP BY raag_name "
-                # divergence = different SOURCES disagreeing; a same-source
-                # multi-pahar row (e.g. Bilaval extending 1st->2nd) is an
-                # extension, not a dispute
-                "HAVING SUM(claim_type = 'variant') > 0 "
-                "    OR (COUNT(DISTINCT COALESCE(pahar, -1)) > 1 "
-                "        AND COUNT(DISTINCT source_id) > 1) "
-                "ORDER BY MIN((SELECT seq FROM raags WHERE name = raag_name))").fetchall()]
-            out = []
-            for n in names:
-                claims = rows_to_list(db().execute(
-                    "SELECT c.claim_type, c.pahar, c.time_start, c.time_end, c.occasion, "
-                    "       c.confidence, c.notes, s.name AS source_name, s.tradition, "
-                    "       s.url AS source_url "
-                    "FROM raag_timing_claims c JOIN timing_sources s ON s.id = c.source_id "
-                    "WHERE c.raag_name = ? AND c.claim_type IN ('primary','variant') "
-                    "ORDER BY c.claim_type, c.pahar", (n,)).fetchall())
-                r = db().execute("SELECT roman, first_ang, seq FROM raags WHERE name=?",
-                                 (n,)).fetchone()
-                out.append({'raag': n, 'roman': r['roman'], 'first_ang': r['first_ang'],
-                            'claims': claims})
-            return {'available': True, 'raags': out,
-                    'note': 'raags where traditions disagree on timing; every claim '
-                            'cited — disagreement is preserved scholarship, not error'}
-        except sqlite3.OperationalError:
-            return {'available': False, 'raags': []}
-    if p[0] == 'banis':                                        # /api/banis — the Nitnem / Gutka registry
-        try:
-            rows = rows_to_list(db().execute(
-                'SELECT key, variant, is_default, title_gm, title_en, category, order_no, '
-                'n_lines, n_groups, has_extra, estimated_minutes, description_en, source_label '
-                'FROM banis ORDER BY order_no, variant'))
-        except sqlite3.OperationalError:
-            return {'available': False, 'banis': []}
-        return {'available': True, 'banis': rows,
-                'note': 'Sri Guru Granth Sahib Ji lines are served from the verbatim corpus and cited by Ang; '
-                        'has_extra=1 banis also contain a separate, labelled non-SGGS layer.'}
-    if p[0] == 'bani':                                         # /api/bani/{key}?variant=
-        if len(p) < 2:
-            raise ValueError('/api/bani requires a key')
-        key = p[1]
-        if not _BANI_KEY_RE.match(key):
-            raise ValueError('bad bani key')
-        variant = qs.get('variant', [''])[0]
-        if variant not in _BANI_VARIANTS:
-            raise ValueError('bad variant')
-        try:
-            if variant:
-                b = db().execute('SELECT * FROM banis WHERE key=? AND variant=?', (key, variant)).fetchone()
-            else:
-                b = db().execute('SELECT * FROM banis WHERE key=? AND is_default=1', (key,)).fetchone()
-        except sqlite3.OperationalError:
-            return {'available': False}
-        if not b:
-            raise ApiError(404, f'no bani with key {key}')
-        b = dict(b)
-        variants = [r[0] for r in db().execute(
-            'SELECT variant FROM banis WHERE key=? ORDER BY is_default DESC, variant', (key,))]
-        rows = db().execute(
-            f'SELECT bl.seq, bl.line_group, bl.line_id, bl.extra_id, '
-            f'{", ".join("l." + c for c in LINE_COLS.replace(" ", "").split(","))}, l.markers, '
-            f'e.source AS extra_source, e.panna, e.gurmukhi AS extra_gurmukhi, e.translit AS extra_translit, '
-            f'e.is_header AS extra_is_header '
-            f'FROM bani_lines bl LEFT JOIN lines l ON l.id = bl.line_id '
-            f'LEFT JOIN extra_lines e ON e.extra_id = bl.extra_id '
-            f'WHERE bl.bani_id = ? ORDER BY bl.seq', (b['bani_id'],)).fetchall()
-        lines, sggs_rows = [], []
-        for r in rows:
-            r = dict(r)
-            if r['line_id'] is not None:
-                d = {k: r[k] for k in LINE_COLS.replace(' ', '').split(',')}
-                d['markers'] = r['markers']
-                d.update({'seq': r['seq'], 'line_group': r['line_group'], 'source': 'sggs'})
-                sggs_rows.append(d)
-                lines.append(d)
-            else:
-                lines.append({'seq': r['seq'], 'line_group': r['line_group'],
-                              'source': r['extra_source'], 'extra_id': r['extra_id'],
-                              'panna': r['panna'], 'gurmukhi': r['extra_gurmukhi'],
-                              'translit': r['extra_translit'], 'is_header': r['extra_is_header'],
-                              'is_rahao': 0, 'markers': ''})
-        attach_translations(sggs_rows)               # English only ever on SGGS lines
-        b.pop('bani_id', None)
-        angs = sorted({d['ang'] for d in sggs_rows})
-        return {'available': True, 'bani': b, 'variants': variants,
-                'ang_first': angs[0] if angs else None, 'ang_last': angs[-1] if angs else None,
-                'lines': lines,
-                'note': 'source=sggs lines are verbatim Sri Guru Granth Sahib Ji, cited by Ang. '
-                        'source=dasam/ardaas lines are a separate layer (Sri Dasam Granth / Ardaas via ShabadOS), '
-                        'not part of Sri Guru Granth Sahib Ji.'}
-    if p[0] == 'forms':                                        # /api/forms?comp_id=N
-        cid = _int(qs, 'comp_id', 0, 0, _ID_MAX)
-        if cid <= 0:
-            raise ValueError('forms requires ?comp_id=')
-        try:
-            row = db().execute(
-                "SELECT m.comp_id, m.raag_name, m.first_ang, "
-                "       mm.ghar, mm.partaal, mm.has_rahao, mm.has_rahao_dooja, "
-                "       mm.dhunni, mm.jati, "
-                "       sf.form, sf.pada_count, pg.genre, mm.source_label "
-                "FROM shabd_raag_map m "
-                "LEFT JOIN shabd_musical_markers mm ON mm.comp_id = m.comp_id "
-                "LEFT JOIN shabd_structural_form sf ON sf.comp_id = m.comp_id "
-                "LEFT JOIN shabd_poetic_genre pg ON pg.comp_id = m.comp_id "
-                "WHERE m.comp_id = ?", (cid,)).fetchone()
-            if not row:
-                return {'available': True, 'comp_id': cid, 'forms': None}
-            return {'available': True, 'comp_id': cid, 'forms': dict(row),
-                    'note': 'derived only from headings present in the verified text; '
-                            'NULL means the heading states no form — never guessed'}
-        except sqlite3.OperationalError:
-            return {'available': False, 'comp_id': cid, 'forms': None}
-    raise ValueError('unknown endpoint')
+    route = (len(p) >= 2 and ROUTES.get((p[0], p[1]))) or ROUTES.get((p[0], None))
+    if route is None:
+        raise ValueError('unknown endpoint')
+    result = route[0](p, qs)
+    if result is _FALLTHROUGH:       # a branch that did not return: same as the old ladder falling off
+        raise ValueError('unknown endpoint')
+    return result
 
 # Responses that depend only on the immutable DB: safe for the browser and the CDN in front of
 # the API to cache. Everything else (health, meta, random, search, verify) stays no-store.

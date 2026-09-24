@@ -16,6 +16,10 @@ flowchart LR
     verify[Verify] --> timing[Timing] --> analytics[Analytics] --> search[Search] --> reader[Reader]
 ```
 
+**Progress.** 2026-09-24 — `api()` is a route table (`serve.ROUTES`): 26 handlers, each tagged with
+its bounded context (reader, search, verify, insights, knowledge). Behaviour proven identical
+(golden vectors in-process and over HTTP, a differential old-vs-new run, all three harnesses).
+
 ## Step 2 — service split (later)
 Each module becomes a service behind a gateway that keeps the **single `/api/*`
 origin** (so no CORS is introduced), each with a shared read-only DB image. The
