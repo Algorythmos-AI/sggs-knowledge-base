@@ -144,6 +144,46 @@
       "destination": "https://sggs-staging-knowledge.onrender.com/api/v1/timing/:path*"
     },
     {
+      "source": "/api/search/:path*",
+      "has": [
+        {
+          "type": "host",
+          "value": "sggs-staging.vercel.app"
+        }
+      ],
+      "destination": "https://sggs-staging-search.onrender.com/api/search/:path*"
+    },
+    {
+      "source": "/api/v1/search/:path*",
+      "has": [
+        {
+          "type": "host",
+          "value": "sggs-staging.vercel.app"
+        }
+      ],
+      "destination": "https://sggs-staging-search.onrender.com/api/v1/search/:path*"
+    },
+    {
+      "source": "/api/word/:path*",
+      "has": [
+        {
+          "type": "host",
+          "value": "sggs-staging.vercel.app"
+        }
+      ],
+      "destination": "https://sggs-staging-search.onrender.com/api/word/:path*"
+    },
+    {
+      "source": "/api/v1/word/:path*",
+      "has": [
+        {
+          "type": "host",
+          "value": "sggs-staging.vercel.app"
+        }
+      ],
+      "destination": "https://sggs-staging-search.onrender.com/api/v1/word/:path*"
+    },
+    {
       "source": "/api/verify/:path*",
       "has": [
         {
