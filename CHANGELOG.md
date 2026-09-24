@@ -3,22 +3,34 @@
 The format below (newest first) follows [Keep a Changelog](https://keepachangelog.com);
 entries prior to v1.1.0 are the project's original prose style and are preserved verbatim.
 
-## [Unreleased]
+## [1.3.8] — 2026-09-24 — three repositories: data, platform, app
+
+No change to the scripture text, the corpus, the database bytes (`cb6775ff…`), the API's
+behaviour or any user-facing page. The project is now three repositories, each owning one thing,
+joined by pinned, hash-verified artifacts.
 
 ### Changed
-- **The repository is the platform (API + web).** The corpus, database, rebuild pipeline,
-  scripture gates, editorial ledger and their evidence live in `Algorythmos-AI/sggs-data`; the
-  iOS app lives in `Algorythmos-AI/gurbani-soul-ios`. Both carry their history. Here the
-  database is installed from the pin (`make dataset`), the `integrity` check proves the pin
-  against sggs-data, and the contract/OpenAPI generators and search harnesses moved to `tools/`
-  (adversarial inputs to `qa/chaos/`). `check_release_complete.py` reads the app's ledger from
-  its repository and matches the platform commit each binary was built against.
-- **The database is pinned from `Algorythmos-AI/sggs-data`.** `dataset.lock.json` records the data
-  repository's commit and the database's sha256 and size; CI installs it through
-  `scripts/data/fetch_dataset.py` (sha256-verified, atomic, cached by hash) instead of this
-  repository's LFS, and the `integrity` check proves the lock, MANIFEST, contract, dataset version
-  and tracked pointer all name the same object that sggs-data publishes. `make dataset` does the
-  same locally. No change to the database bytes (`cb6775ff…`).
+- **Data → `Algorythmos-AI/sggs-data`.** The corpus, database, rebuild pipeline, scripture gates,
+  editorial ledger and their evidence moved there with their history. This repository pins the
+  database it serves in `dataset.lock.json` (sggs-data commit + sha256 + size) and installs it only
+  through `scripts/data/fetch_dataset.py`: streamed, sha256- and size-verified, atomically
+  installed, cached by hash. CI, the API image build and `make dataset` all use it; the image makes
+  the file read-only.
+- **App → `Algorythmos-AI/gurbani-soul-ios`.** The iOS app moved there with its history. It vendors
+  this repository's golden contract at a pinned platform release and keeps the one-number policy
+  itself (`MARKETING_VERSION` == the vendored platform release; an App Store upload must be built
+  against platform `vX.Y.Z`). Each build records the platform commit it was built against;
+  `scripts/release/check_release_complete.py` reads that ledger from the app repository.
+- **This repository is the platform (API + web).** The `integrity` check now proves the pin: the
+  lock and `contract/_meta.json` name the same object, sggs-data publishes it at the pinned commit,
+  and the installed database passes `quick_check` with 60,658 lines over Angs 1–1430. The contract
+  and OpenAPI generators, the HTTP contract replay and the search harnesses live in `tools/`
+  (adversarial inputs in `qa/chaos/`). `check_versions.py` checks this repository's five strings.
+
+### Fixed
+- The Nitnem placement report was written into the app's docs folder by the data rebuild; it now
+  lives in the data repository (`validation/banis/`), and a test keeps the rebuild inside its own
+  tree.
 
 ## [1.3.7] — 2026-09-24 — contract-first API, modular services, private translation sources
 
