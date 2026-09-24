@@ -11,7 +11,7 @@ Use a dedicated, monitored alias rather than a personal mailbox, and keep all th
 | The message says | Do |
 |---|---|
 | **"A word / line is wrong"** | Thank them; ask for the Ang, the line, and a photo of their printed page. Open an issue with the `scripture-fidelity` template. **Never edit the text.** A person compares the report with the source edition and the printed Bir; most reports are an edition difference, the traditional-saroop rendering, or transliteration (which is a reading aid, not scripture). Only a confirmed, reviewed correction is ever logged, and it follows `sggs-rebuild-db`. |
-| "Scripture integrity check failed" | Ask for the device, iOS version and the screen in More → About → Integrity. Reinstalling fixes a corrupted download. More than one report for the same build → [halt criteria](app-store-submission.md). |
+| "Scripture integrity check failed" | Ask for the device, iOS version and the screen in More → About → Integrity. Reinstalling fixes a corrupted download. More than one report for the same build → halt criteria in the app repository's `app-store-submission` runbook. |
 | Crash / freeze | Ask for device, iOS version, app version (More → About) and what they were doing. If they are willing, the diagnostics the app keeps locally can be shared from About. Check Xcode Organizer for the same signature. |
 | Reminders do not appear | Settings → Notifications → Gurbani Soul must allow alerts; Focus / Sleep can silence them by design. Builds up to 1.3.0 delivered reminders silently — turning the reminder off and on again raises the real permission prompt. |
 | Widgets are empty | Open the app once, open a Hukam, wait a minute; then remove and re-add the widget. |

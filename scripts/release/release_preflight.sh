@@ -37,22 +37,23 @@ else
   ok "v$V not yet tagged — this release will tag it"
 fi
 
-# One-number policy: the iOS ledger must not already hold this version from a different commit
-# (that would mean an App Store binary was archived before this release — a number mismatch).
-LEDGER_SHAS=$(python3 - "$V" <<'PY' 2>/dev/null
+# One-number policy: the app's ledger (gurbani-soul-ios) must not already hold this version built
+# against a different platform commit (an App Store binary archived before this release).
+LEDGER_SHAS=$(gh api "repos/Algorythmos-AI/gurbani-soul-ios/contents/ios/testflight-builds.json?ref=main" \
+  -H "Accept: application/vnd.github.raw" 2>/dev/null | python3 -c '
 import json, sys
 v = sys.argv[1]
 try:
-    rows = json.load(open("ios/testflight-builds.json")).get("builds", [])
+    rows = json.load(sys.stdin).get("builds", [])
 except Exception:
     rows = []
-print(" ".join(sorted({r.get("source_commit","")[:12] for r in rows if r.get("version")==v and r.get("source_commit")})))
-PY
-)
+shas = {(r.get("platform_commit") or r.get("source_commit") or "")[:12] for r in rows if r.get("version") == v}
+print(" ".join(sorted(s for s in shas if s)))
+' "$V")
 if [ -n "$LEDGER_SHAS" ]; then
-  warn "iOS $V already in the ledger from $LEDGER_SHAS — the release-complete check will require it to match the tag commit; if it was a different commit, bump instead"
+  warn "iOS $V already in the app ledger, built against $LEDGER_SHAS — the release-complete check will require it to match the tag commit; if it was a different commit, bump instead"
 else
-  ok "no iOS $V upload yet — release completes when iOS $V (1) is uploaded from tag v$V (check_release_complete.py)"
+  ok "no iOS $V upload yet — release completes when gurbani-soul-ios uploads $V (1) built against tag v$V (check_release_complete.py)"
 fi
 
 OPEN=$(gh pr list --repo "$REPO" --base main --state open --json number --jq 'map(.number)|join(",")')

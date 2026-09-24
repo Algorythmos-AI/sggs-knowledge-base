@@ -30,7 +30,7 @@ flowchart TB
 in **three** places that must stay byte-identical:
 - `webapp/romannorm.py` (query time; re-exported by `serve.py`, imported by `verify.py`),
 - `pipeline/sggs_pipeline.py:roman_norm` (built the `lines.translit_norm` column),
-- `ios/Packages/GurbaniSearchKit/Sources/GurbaniSearchKit/RomanNorm.swift` (the port).
+- `ios/Packages/GurbaniSearchKit/Sources/GurbaniSearchKit/RomanNorm.swift` in `Algorythmos-AI/gurbani-soul-ios` (the port; held to the other two by the vendored `contract/golden_roman_norm.ndjson`).
 
 If the query-time fold ever diverges from the indexed fold, search silently breaks.
 `contract/golden_roman_norm.ndjson` (24,719 vectors) pins all three.

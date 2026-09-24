@@ -19,7 +19,7 @@ standard-library server serves a prebuilt Astro site and a native iOS app.
 | Ship a change | [Branching](process/branching.md) · [Environments](process/environments.md) · [Release](process/release.md) |
 | Rebuild the database | [Runbook: rebuild-db](process/runbooks/rebuild-db.md) |
 | Know what CI checks and why | [CI gates](process/ci-gates.md) |
-| Take the iOS app through TestFlight to the App Store | [Launch plan](ios/testflight-launch-plan.md) · [Test plan](ios/testflight-test-plan.md) · [Listing](ios/app-store-listing.md) |
+| Take the iOS app through TestFlight to the App Store | [`Algorythmos-AI/gurbani-soul-ios`](https://github.com/Algorythmos-AI/gurbani-soul-ios) (`docs/ios/`) |
 | Understand a past decision | [ADRs](adr/) |
 
 ## Repository at a glance
@@ -30,8 +30,7 @@ standard-library server serves a prebuilt Astro site and a native iOS app.
 | `pipeline/` | PDF → corpus → DB + enrichment + analytics + tests. |
 | `webapp/serve.py` | Stdlib HTTP server + JSON API. |
 | `frontend/` | Astro multi-page UI (build output synced into `webapp/static/`). |
-| `ios/` | Native SwiftUI app + portable `GurbaniSearchKit` Swift package. |
-| `contract/` | Golden vectors pinning the Swift port to the Python source of truth. |
+| `contract/` | Golden vectors pinning the Swift port (vendored by the iOS app) to the Python source of truth. |
 
 See also the [engineering handbook](engineering/README.md) and the migrated
 audit history under [`docs/reports/`](reports/).
