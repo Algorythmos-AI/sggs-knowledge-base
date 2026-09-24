@@ -27,6 +27,9 @@ and all shared mutable state; context modules reach it as `core.NAME` and never 
 HTTP contract against `python serve.py`, harnesses).
 2026-09-24 — each context declares the tables it reads (`TABLES`; `serve.CONTEXT_TABLES`), enforced by an
 authorizer-scoped test over every golden suite and OpenAPI sample. Finding: no API route reads `fts_tri`.
+2026-09-24 — `SGGS_MODULES` runs any subset of contexts from one image (default `all` = the monolith);
+`SGGS_DB` selects a database slice; split mode refuses to start on a slice missing a declared table;
+`/healthz` + `/readyz` (the Docker HEALTHCHECK now uses `/readyz`). Phase 2 (modular monolith) complete.
 
 ## Step 2 — service split (later)
 Each module becomes a service behind a gateway that keeps the **single `/api/*`

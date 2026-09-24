@@ -6,7 +6,7 @@ Zero dependencies: Python 3 standard library only.
 
 Run:   python3 serve.py        then open  http://localhost:7777
 """
-import json, os, sys, threading, webbrowser, mimetypes, hashlib, time, types
+import json, os, sqlite3, sys, threading, webbrowser, mimetypes, hashlib, time, types
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from urllib.parse import urlparse, parse_qs
 
@@ -72,6 +72,39 @@ from sggs import search as _search, reader as _reader, verification as _verifica
 CONTEXT_TABLES = {'search': _search.TABLES, 'reader': _reader.TABLES, 'verify': _verification.TABLES,
                   'insights': _insights.TABLES, 'knowledge': _knowledge.TABLES}
 
+
+def parse_modules(raw):
+    """SGGS_MODULES -> the contexts this process serves. 'all' (the default) is the monolith,
+    exactly as before; a comma list (e.g. 'search' or 'insights,knowledge') runs one service of
+    the platform split from the same image. Unknown names are an error, never ignored."""
+    raw = (raw or 'all').strip().lower()
+    if raw == 'all':
+        return frozenset(CONTEXT_TABLES)
+    sel = frozenset(x.strip() for x in raw.split(',') if x.strip())
+    bad = sorted(sel - set(CONTEXT_TABLES))
+    if bad or not sel:
+        raise ValueError(f'SGGS_MODULES: unknown context(s) {bad} — choose from {sorted(CONTEXT_TABLES)} or "all"')
+    return sel
+
+
+ENABLED = parse_modules(os.environ.get('SGGS_MODULES'))
+
+
+def split_mode():
+    return ENABLED != frozenset(CONTEXT_TABLES)
+
+
+def readiness(db_path=None):
+    """Is the database complete for every enabled context? (every declared table present)"""
+    con = sqlite3.connect(f"file:{db_path or core.DB}?mode=ro&immutable=1", uri=True)
+    try:
+        have = {n for (n,) in con.execute("SELECT name FROM sqlite_master WHERE type='table'")}
+    finally:
+        con.close()
+    missing = sorted({t for c in ENABLED for t in CONTEXT_TABLES[c]} - have)
+    return {'ready': not missing, 'contexts': sorted(ENABLED), 'missing_tables': missing,
+            'version': APP_VERSION, 'commit': APP_COMMIT}
+
 class _ServeModule(types.ModuleType):
     """Shared mutable state (DB path, FTS flag, caches) has exactly one home: sggs.core.
     Reading or assigning serve.DB / serve.HAVE_FTS / serve._TIMING_CACHE … goes there, so a test
@@ -135,6 +168,8 @@ def api(path, qs):
     route = (len(p) >= 2 and ROUTES.get((p[0], p[1]))) or ROUTES.get((p[0], None))
     if route is None:
         raise ValueError('unknown endpoint')
+    if route[1] not in ENABLED:      # split mode: this route belongs to another service
+        raise ApiError(404, f'/api/{p[0]} is not served by this service')
     result = route[0](p, qs)
     if result is _FALLTHROUGH:       # a branch that did not return: same as the old ladder falling off
         raise ValueError('unknown endpoint')
@@ -271,6 +306,13 @@ class H(BaseHTTPRequestHandler):
         u = urlparse(self.path)
         if u.path == '/favicon.ico':
             return self._respond(404, b'', 'image/x-icon')
+        if u.path in ('/healthz', '/readyz'):      # liveness / readiness for platform health checks
+            try:
+                body = {'ok': True} if u.path == '/healthz' else readiness()
+            except Exception:
+                body = {'ready': False, 'error': 'database unavailable'}
+            status = 200 if body.get('ok') or body.get('ready') else 503
+            return self._respond(status, json.dumps(body).encode(), 'application/json')
         try:
             if u.path.startswith('/api/'):
                 body = json.dumps(api(u.path, parse_qs(u.query)), ensure_ascii=False).encode()
@@ -338,6 +380,12 @@ if __name__ == '__main__':
         if _f.read(16) != b'SQLite format 3\x00':
             sys.exit(f'Not a valid SQLite file (Git-LFS pointer?): {core.DB}\nRun `git lfs pull` to fetch the real database.')
     core.HAVE_FTS = None
+    if split_mode():                     # a service must never serve with part of its data missing
+        _r = readiness()
+        if not _r['ready']:
+            sys.exit(f"SGGS_MODULES={','.join(_r['contexts'])}: database {core.DB} lacks declared tables "
+                     f"{_r['missing_tables']} — refusing to start")
+        print(f"serving contexts: {', '.join(_r['contexts'])}")
     # Bind 0.0.0.0 so the app is reachable when hosted (e.g. behind a Vercel /api rewrite);
     # the platform's $PORT is honoured via the PORT env at the top of this file.
     srv = BoundedThreadingHTTPServer(('0.0.0.0', PORT), H)
