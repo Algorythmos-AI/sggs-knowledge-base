@@ -56,9 +56,9 @@ class TestLock(unittest.TestCase):
                 with self.assertRaises(SystemExit):
                     fd.load_lock(p)
 
-    def test_check_repo_reports_a_disagreeing_manifest(self):
+    def test_check_repo_reports_a_disagreeing_contract_meta(self):
         problems = fd.check_repo(_lock(sha256="0" * 64))
-        self.assertTrue(any("MANIFEST.json" in p for p in problems), problems)
+        self.assertTrue(any("contract/_meta.json" in p for p in problems), problems)
 
 
 class TestFetch(unittest.TestCase):

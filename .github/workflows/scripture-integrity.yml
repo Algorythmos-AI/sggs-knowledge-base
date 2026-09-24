@@ -1,7 +1,11 @@
 name: scripture-integrity
 # Runs on EVERY PR (not path-filtered): it is a required check, and a required
 # check that is skipped stays "Expected — waiting for status" and blocks the PR
-# forever. The job is cheap and passes trivially when scripture is unchanged.
+# forever. The job is cheap and passes trivially when the pin is unchanged.
+#
+# The scripture database is owned by Algorythmos-AI/sggs-data, whose CI runs the data gates
+# (reconcile attestation, regroup invariants, scripture guard, editorial ledger, fingerprints).
+# Here we prove this repository consumes exactly the object that repository publishes.
 on:
   pull_request:
   push:
@@ -13,56 +17,31 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
-      - uses: ./.github/actions/fetch-dataset
       - uses: actions/setup-python@v6
         with:
           python-version-file: ".python-version"
-      - name: Dataset pin — lock == MANIFEST == contract == tracked pointer; sggs-data publishes it
+      - name: Dataset pin — the lock and contract/_meta.json name the same object; sggs-data publishes it
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
           python3 scripts/data/fetch_dataset.py --check-repo
           python3 scripts/data/fetch_dataset.py --check-pin
-      - name: MANIFEST + contract + attestation hash chain
+      - uses: ./.github/actions/fetch-dataset
+      - name: The installed database opens, passes SQLite integrity and matches the corpus invariants
         run: |
           python3 - <<'PY'
-          import json, hashlib, sys
-          def sha(p):
-              h=hashlib.sha256()
-              with open(p,'rb') as f:
-                  for ch in iter(lambda:f.read(1<<20), b''): h.update(ch)
-              return h.hexdigest()
-          man=json.load(open('MANIFEST.json'))
-          corpus=sha('corpus/sggs.jsonl'); db=sha('db/sggs.sqlite')
-          meta=json.load(open('contract/_meta.json'))
-          att=json.load(open('validation/reconcile-attestation.json'))
-          fails=[]
-          if man['corpus_sha256']!=corpus: fails.append('MANIFEST.corpus_sha256 != corpus file')
-          if man['db_sha256']!=db:         fails.append('MANIFEST.db_sha256 != db file')
-          if meta.get('db_sha256')!=db:    fails.append('contract/_meta.json db_sha256 != db file')
-          if att['corpus_sha256']!=corpus: fails.append('reconcile attestation corpus_sha256 != corpus file (re-run `make reconcile`)')
-          if not att.get('reconciled_char_exact') or not att.get('golden_pass'):
-              fails.append('reconcile attestation does not record a clean reconcile+golden')
-          for f in fails: print('::error::'+f)
-          sys.exit(1 if fails else 0)
+          import sqlite3, sys
+          con = sqlite3.connect("file:db/sggs.sqlite?mode=ro&immutable=1", uri=True)
+          ok = con.execute("PRAGMA quick_check").fetchone()[0] == "ok"
+          lines = con.execute("SELECT COUNT(*) FROM lines").fetchone()[0]
+          angs = con.execute("SELECT COUNT(DISTINCT ang), MIN(ang), MAX(ang) FROM lines").fetchone()
+          fails = []
+          if not ok: fails.append("PRAGMA quick_check failed")
+          if lines != 60658: fails.append(f"lines = {lines}, expected 60658")
+          if tuple(angs) != (1430, 1, 1430): fails.append(f"Angs = {angs}, expected 1430 contiguous")
+          for f in fails:
+              print("::error::" + f)
+          if fails:
+              sys.exit(1)
+          print("database OK: quick_check, 60,658 lines, Angs 1–1430")
           PY
-      - name: Editorial ledger — code == register; scripture changes only via new entries
-        env:
-          BASE: ${{ github.event.pull_request.base.sha || github.event.before }}
-        run: |
-          if [ -z "$BASE" ] || [ "$BASE" = "0000000000000000000000000000000000000000" ]; then
-            python3 pipeline/ledger_check.py            # new branch: no base to diff against
-          else
-            git fetch -q --depth=1 origin "$BASE"       # must succeed: never skip the diff silently
-            python3 pipeline/ledger_check.py --base "$BASE"
-          fi
-      - name: Dataset fingerprint — DB content == audit/dataset-fingerprint.json
-        run: python3 pipeline/sggs_integrity.py db/sggs.sqlite --compare audit/dataset-fingerprint.json
-      - name: Structural + regroup invariants (verify_regroup single-DB mode)
-        run: python3 pipeline/verify_regroup.py --invariants db/sggs.sqlite
-      - name: Guard — pre-existing tables byte-identical to baseline
-        run: python3 pipeline/timing/guard_scripture.py
-      - name: Timing-layer tests
-        run: python3 pipeline/timing/test_timing_layer.py
-      - name: Guard — Nitnem bani registry invariants
-        run: python3 pipeline/banis/guard_banis.py

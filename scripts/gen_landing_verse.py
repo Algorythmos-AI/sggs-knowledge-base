@@ -87,9 +87,9 @@ for lid in sorted(wanted):
         "is_header": bool(is_header), "gurmukhi": gurmukhi,
     }
 
-manifest = json.loads((root / "MANIFEST.json").read_text(encoding="utf-8"))
+lock = json.loads((root / "dataset.lock.json").read_text(encoding="utf-8"))
 out = gen / "quotes.json"
 out.write_text(json.dumps(
-    {"_db_sha256": manifest.get("db_sha256", ""), "quotes": quotes},
+    {"_db_sha256": lock["database"]["sha256"], "quotes": quotes},
     ensure_ascii=False, indent=2, sort_keys=False) + "\n", encoding="utf-8")
 print("wrote", out, f"({len(quotes)} line(s))")

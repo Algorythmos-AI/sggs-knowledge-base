@@ -12,4 +12,4 @@ non-negotiable, and the prime directive overrides everything else.
 | [known-issues.md](known-issues.md) | Background on past releases and items still open |
 
 Related: [CONTRIBUTING](../../CONTRIBUTING.md) · [architecture](../architecture/overview.md) ·
-[ADRs](../adr/) · [process & runbooks](../process/) · [Answer Protocol](../../Answer-Protocol.md).
+[ADRs](../adr/) · [process & runbooks](../process/) · [Answer Protocol](https://github.com/Algorythmos-AI/sggs-data/blob/main/Answer-Protocol.md) (sggs-data).

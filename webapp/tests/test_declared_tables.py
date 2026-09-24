@@ -27,7 +27,7 @@ class DeclaredTables(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         sys.path.insert(0, str(ROOT / "webapp"))
-        sys.path.insert(0, str(ROOT / "pipeline"))
+        sys.path.insert(0, str(ROOT / "tools"))
         argv, sys.argv = sys.argv, sys.argv[:1]
         import serve
         import gen_golden_vectors as g

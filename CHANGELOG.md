@@ -6,6 +6,13 @@ entries prior to v1.1.0 are the project's original prose style and are preserved
 ## [Unreleased]
 
 ### Changed
+- **The repository is the platform (API + web).** The corpus, database, rebuild pipeline,
+  scripture gates, editorial ledger and their evidence live in `Algorythmos-AI/sggs-data`; the
+  iOS app lives in `Algorythmos-AI/gurbani-soul-ios`. Both carry their history. Here the
+  database is installed from the pin (`make dataset`), the `integrity` check proves the pin
+  against sggs-data, and the contract/OpenAPI generators and search harnesses moved to `tools/`
+  (adversarial inputs to `qa/chaos/`). `check_release_complete.py` reads the app's ledger from
+  its repository and matches the platform commit each binary was built against.
 - **The database is pinned from `Algorythmos-AI/sggs-data`.** `dataset.lock.json` records the data
   repository's commit and the database's sha256 and size; CI installs it through
   `scripts/data/fetch_dataset.py` (sha256-verified, atomic, cached by hash) instead of this

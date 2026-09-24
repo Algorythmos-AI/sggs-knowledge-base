@@ -4,7 +4,7 @@
 |---|---|
 | **Ang** | A page of Sri Guru Granth Sahib Ji (1–1430). |
 | **Bir** | A physical volume/edition of the Granth; the source PDF is one Bir. |
-| **comp_id** | The id grouping all `lines` of one composition (heading run + body). See [database-schema](architecture/database-schema.md). |
+| **comp_id** | The id grouping all `lines` of one composition (heading run + body). See [database-schema](https://github.com/Algorythmos-AI/sggs-data/blob/main/docs/architecture/database-schema.md) (sggs-data). |
 | **Rahao** | The refrain/pause line of a shabad (`is_rahao=1`). |
 | **Shabad** | A hymn/composition. |
 | **Salok / Pauri** | A couplet-style verse / a stanza; the two alternating unit kinds of a Vaar. |

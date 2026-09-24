@@ -1,6 +1,6 @@
-db/sggs.sqlite filter=lfs diff=lfs merge=lfs -text
-*.sqlite filter=lfs diff=lfs merge=lfs -text
+# No Git LFS here: the scripture database is fetched from sggs-data by pin (dataset.lock.json).
+*.sqlite binary
 
-# Scripture and contract bytes are never rewritten by git (no EOL conversion, ever).
-corpus/** -text
+# Contract bytes are never rewritten by git (no EOL conversion, ever).
 contract/*.ndjson -text
+contract/*.json -text

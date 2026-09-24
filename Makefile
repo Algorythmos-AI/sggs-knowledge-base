@@ -1,79 +1,49 @@
-# SGGS Knowledge Base — developer entrypoints. `make help` lists targets.
-# PIPELINE_PY is the interpreter that has PyMuPDF/numpy/scipy (see CONTRIBUTING.md).
-PIPELINE_PY ?= /usr/bin/python3
-PDF ?= ../Siri-Guru-Granth-Sahib-in-Gurmukhi-with-Index.pdf
+# SGGS Knowledge Base (platform: API + web) — developer entrypoints. `make help` lists targets.
+# The scripture database is owned by Algorythmos-AI/sggs-data and consumed by pin (dataset.lock.json);
+# data rebuilds, reconcile and the scripture gates live there.
 
-.PHONY: help doctor dataset dataset-check ci test-data openapi contract-http fingerprint ledger-check pr-checks release-preflight watch-deploy verify-prod scripture-diff check-versions test-web test-frontend contract verify guard reconcile rebuild release
+.PHONY: help doctor dataset dataset-check ci openapi contract-http pr-checks release-preflight watch-deploy verify-prod check-versions test-web test-frontend contract harnesses release
 help: ## list targets
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | awk 'BEGIN{FS=":.*?## "}{printf "  \033[36m%-16s\033[0m %s\n",$$1,$$2}'
 
-doctor: ## check the local toolchain (the python3 trap, node, git-lfs, pdf)
-	@echo "pipeline python: $(PIPELINE_PY)"; $(PIPELINE_PY) -c "import sys,fitz,numpy,scipy;print('  ok', sys.version.split()[0], '+ PyMuPDF/numpy/scipy')" || echo "  MISSING PyMuPDF/numpy/scipy — pick an interpreter that has them (PIPELINE_PY=...)"
+doctor: ## check the local toolchain and the installed database
+	@python3 -c "import sys;print('python:', sys.version.split()[0])"
 	@command -v node >/dev/null && echo "node: $$(node -v)" || echo "  node missing"
-	@command -v git-lfs >/dev/null && echo "git-lfs: ok" || echo "  git-lfs missing"
-	@test -f db/sggs.sqlite && head -c 16 db/sggs.sqlite | grep -q "SQLite format 3" && echo "db: real SQLite" || echo "  db/sggs.sqlite missing or an LFS pointer — run: make dataset"
-	@test -f "$(PDF)" && echo "pdf: present" || echo "  source PDF not at $(PDF) (needed only for reconcile/rebuild)"
+	@test -f db/sggs.sqlite && head -c 16 db/sggs.sqlite | grep -q "SQLite format 3" && echo "db: real SQLite" || echo "  db/sggs.sqlite missing — run: make dataset"
+	@python3 scripts/data/fetch_dataset.py --check-repo
 
 dataset: ## install db/sggs.sqlite from the pinned sggs-data object (dataset.lock.json), sha256-verified
 	python3 scripts/data/fetch_dataset.py --cache-dir .dataset-cache
 
-dataset-check: ## the pin agrees with MANIFEST/contract/tracked pointer, and sggs-data@commit publishes it
+dataset-check: ## the pin agrees with contract/_meta.json, and sggs-data@commit publishes it
 	python3 scripts/data/fetch_dataset.py --check-repo
 	python3 scripts/data/fetch_dataset.py --check-pin
 
-check-versions: ## assert the app version is unified across all 6 locations
+check-versions: ## assert the platform version is unified across its 5 locations
 	python3 scripts/release/check_versions.py
 
 test-web: ## platform tests: API, contract, OpenAPI, web gates (webapp/tests)
 	python3 -m unittest discover -s webapp/tests -v
 
-test-data: ## data-integrity tests: install safety, fingerprints, editorial ledger (pipeline/tests)
-	python3 -m unittest discover -s pipeline/tests -v
-
 test-frontend: ## frontend build + pahar vectors
 	cd frontend && npm ci && npm run build && npm run test:pahar
 
 contract: ## regenerate golden vectors and fail if they drift
-	python3 pipeline/gen_golden_vectors.py && git diff --exit-code contract/
+	python3 tools/gen_golden_vectors.py && git diff --exit-code -- 'contract/*.ndjson'
 
-verify: ## structural regroup invariants on the current DB
-	python3 pipeline/verify_regroup.py --invariants db/sggs.sqlite
+harnesses: ## search regression harnesses (roundtrip + casual quotes) → qa/results/
+	python3 tools/roundtrip_harness.py
+	python3 tools/casual_quote_harness.py
 
-guard: ## pre-existing tables byte-identical to the committed baseline (+ bani registry invariants)
-	python3 pipeline/timing/guard_scripture.py
-	python3 pipeline/banis/guard_banis.py
-
-banis: ## (re)build the Nitnem bani registry into db/sggs.sqlite (needs ./database.sqlite from ShabadOS)
-	python3 pipeline/banis/build_banis.py --report validation/banis/sggs-placements.json
-	python3 pipeline/banis/guard_banis.py
-
-test-banis: ## gate tests for the bani registry on a throwaway copy of the DB
-	python3 pipeline/banis/test_banis_layer.py
-
-ci: check-versions verify guard ledger-check test-web test-data contract ## run the gates CI runs (no PDF needed)
+ci: check-versions dataset-check test-web contract ## run the gates CI runs
 	@echo "make ci: PASS"
 
 openapi: ## regenerate contract/openapi.json (26 routes; schemas inferred from real responses) — test-web fails if stale
-	python3 pipeline/gen_openapi.py
+	python3 tools/gen_openapi.py
 
 contract-http: ## replay the golden contract over HTTP against a running API: make contract-http BASE=http://127.0.0.1:7777
 	@test -n "$(BASE)" || { echo "usage: make contract-http BASE=<api origin>"; exit 2; }
-	python3 pipeline/contract_http.py --base "$(BASE)"
-
-fingerprint: ## verify db/sggs.sqlite content == audit/dataset-fingerprint.json (per table, FTS index, scripture)
-	python3 pipeline/sggs_integrity.py db/sggs.sqlite --compare audit/dataset-fingerprint.json
-
-ledger-check: ## editorial ledger: fix_text rules == register; scripture diffs vs integration covered by new entries
-	python3 pipeline/ledger_check.py --base $$(git merge-base HEAD origin/integration)
-
-reconcile: ## prove corpus == PDF char-for-char and write the attestation (needs PDF)
-	$(PIPELINE_PY) pipeline/reconcile.py "$(PDF)" corpus/sggs.jsonl
-	$(PIPELINE_PY) pipeline/golden_test.py "$(PDF)" >/dev/null && echo "golden PASS"
-	$(PIPELINE_PY) scripts/release/write_attestation.py "$(PDF)"
-
-rebuild: ## full deterministic rebuild from the PDF (needs PIPELINE_PY with PyMuPDF/scipy)
-	rm -rf corpus/by-raag/*
-	PATH=$$(dirname $(PIPELINE_PY)):$$PATH bash pipeline/rebuild_all.sh "$(PDF)"
+	python3 tools/contract_http.py --base "$(BASE)"
 
 release: ## bump the unified version everywhere: make release VERSION=1.2.0
 	@test -n "$(VERSION)" || (echo "usage: make release VERSION=X.Y.Z"; exit 1)
@@ -90,6 +60,3 @@ watch-deploy: ## follow the production deploy gate by gate (SHA defaults to orig
 	bash scripts/release/watch_deploy.sh $(SHA)
 verify-prod: ## prove what production serves: make verify-prod [ARGS="--commit <sha> --version X.Y.Z"]
 	python3 scripts/ops/verify_prod.py $(ARGS)
-scripture-diff: ## byte-level scripture diff vs a previous DB: make scripture-diff PRE=<old.sqlite>
-	@test -n "$(PRE)" || { echo "usage: make scripture-diff PRE=<old.sqlite> [ARGS=\"--allow <cols>\"]"; exit 2; }
-	python3 scripts/data/diff_scripture.py "$(PRE)" db/sggs.sqlite $(ARGS)

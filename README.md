@@ -51,7 +51,7 @@ Most digital Gurbani lives behind an API you can't audit, mixed with translation
 This project takes the opposite stance — **sovereign and verifiable**:
 
 - **Sovereign** — it runs entirely on your machine. No cloud, no API keys, no installs. Python 3 standard library only. It works offline, forever.
-- **Verifiable** — the corpus is reconciled character-for-character against the source edition, checksummed in `MANIFEST.json`, and every claimed quote can be machine-checked against the canonical text via `/api/verify`.
+- **Verifiable** — the corpus is reconciled character-for-character against the source edition, checksummed and pinned by hash (`dataset.lock.json` → [`sggs-data`](https://github.com/Algorythmos-AI/sggs-data)), and every claimed quote can be machine-checked against the canonical text via `/api/verify`.
 - **Honest about layers** — scripture, transliteration, and translation are stored and labeled separately. A translation is never returned as scripture.
 
 The result is a corpus you can trust as a study base, a citation source, and a guardrail for any tool (LLM or otherwise) that needs to quote Gurbani without getting it wrong.
@@ -103,8 +103,8 @@ The same offline app runs unchanged in the cloud. The browser only ever calls `/
 **Delivery is CI-gated end to end** — no hand deploys. Branch → PR into `integration` → merge auto-deploys **staging** → release PR `integration → main` (merge commit) runs the gated production deploy, verified by the running **commit**, then a `vX.Y.Z` tag. Full topology, DNS and email: [`docs/website/README.md`](docs/website/README.md). Process and runbooks:
 
 - [Environments](docs/process/environments.md) · [Branching](docs/process/branching.md) · [CI gates](docs/process/ci-gates.md) · [Release](docs/process/release.md)
-- Runbooks: [deploy](docs/process/runbooks/deploy.md) · [rollback](docs/process/runbooks/rollback.md) · [rebuild-db](docs/process/runbooks/rebuild-db.md) · [support-inbox](docs/process/runbooks/support-inbox.md)
-- Skills that run the loop: `sggs-ship`, `sggs-release`, `sggs-verify-prod`, `sggs-rebuild-db`.
+- Runbooks: [deploy](docs/process/runbooks/deploy.md) · [rollback](docs/process/runbooks/rollback.md) · [support-inbox](docs/process/runbooks/support-inbox.md)
+- Skills that run the loop: `sggs-ship`, `sggs-release`, `sggs-verify-prod`. Data rebuilds happen in [`sggs-data`](https://github.com/Algorythmos-AI/sggs-data).
 
 ---
 
@@ -130,7 +130,7 @@ The native SwiftUI app (repository [`Algorythmos-AI/gurbani-soul-ios`](https://g
 
 | | |
 |---|---|
-| **Corpus** | 60,658 lines · all 1,430 Angs · char-for-char reconciled with the source edition (1,643,385 chars, zero loss / dup / reorder — `pipeline/reconcile.py`) |
+| **Corpus** | 60,658 lines · all 1,430 Angs · char-for-char reconciled with the source edition (1,643,385 chars, zero loss / dup / reorder — proven in [`sggs-data`](https://github.com/Algorythmos-AI/sggs-data)) |
 | **Metadata** | Raag (31, canonical order) · author (Gurus, Bhagats, per-Bhatt Swaiyye attribution, Vaar-correct pauris) · bani / section · composition · ਰਹਾਉ · Ang · stanza index · pada total · source category |
 | **Search** | Gurmukhi FTS (BM25-ranked) · spelling-tolerant Roman (*waheguru* → ਵਾਹਿਗੁਰੂ) · first-letter (ਧ ਧ ਰ ਗ / *dh dh r g*) · 79,666-entry phonetic-variant index · 53 corpus-verified themes · word concordance |
 | **Verify engine** | `/api/verify` — any claimed quote → VERIFIED_EXACT / VERIFIED / VERIFIED_PARTIAL / PROBABLE / AMBIGUOUS / NOT_FOUND, with Ang cross-check + confidence |
@@ -208,11 +208,11 @@ Each verdict carries a **confidence**, the matched line's **Ang / Raag / author 
 
 ## Data fidelity & provenance
 
-Trust here is not a claim — it is a chain you can re-run:
+Trust here is not a claim — it is a chain you can re-run. The corpus and database are built and proven in [`Algorythmos-AI/sggs-data`](https://github.com/Algorythmos-AI/sggs-data); this repository consumes the exact published object, pinned by sha256 in `dataset.lock.json` and re-verified on every CI run and every image build:
 
-- **Char-exact reconciliation** — `pipeline/reconcile.py` compares the DB's line stream against the source edition character-for-character: **1,643,385 chars, zero loss / duplication / reordering**.
-- **Checksums** — `MANIFEST.json` records `corpus_sha256` and `db_sha256` (`f0a64f78…`) for the exact build.
-- **Structural double-confirmation** — `pipeline/enrich_v2.py` cross-checks each shabad's terminal Ank against the padas actually indexed: **3,159 CLEAN / 527 STRUCTURAL / 2 verified-structural** (comp_type-aware, because SGGS uses four distinct numbering regimes).
+- **Char-exact reconciliation** — the data repository's `pipeline/reconcile.py` compares the line stream against the source edition character-for-character: **1,643,385 chars, zero loss / duplication / reordering**.
+- **Checksums and fingerprints** — the data repository records `corpus_sha256`, `db_sha256` and per-table content fingerprints; here `dataset.lock.json` pins the database's sha256 and `scripts/data/fetch_dataset.py` refuses any other bytes.
+- **Structural double-confirmation** — each shabad's terminal Ank is cross-checked against the padas actually indexed: **3,159 CLEAN / 527 STRUCTURAL / 2 verified-structural** (comp_type-aware, because SGGS uses four distinct numbering regimes).
 - **Independent second source** — the ShabadOS corpus matched ours at **97.26% character-exact** line-for-line, an external check on the extraction.
 - **Canonical anchors** — ੴ appears exactly **568** times; the Mool Mantar and Ang count are health-checked at every startup.
 
@@ -222,10 +222,10 @@ The English layer is **58,039 lines (95.7% of the Granth)**, aligned exact/skele
 
 ## Architecture (the 5 layers)
 
-1. **Canonical data** — SQLite + FTS5 (`db/sggs.sqlite`), versioned builds, `MANIFEST.json` checksums.
+1. **Canonical data** — SQLite + FTS5, built and versioned in [`sggs-data`](https://github.com/Algorythmos-AI/sggs-data), pinned here by `dataset.lock.json`.
 2. **Search** — BM25 + a unified cross-script query cascade + theme expansion (`webapp/serve.py`).
 3. **Verification** — a rule-engine cascade with confidence (`webapp/verify.py`).
-4. **Explanation** — LLMs may only *explain*; any quote must pass the verifier (`Answer-Protocol.md`).
+4. **Explanation** — LLMs may only *explain*; any quote must pass the verifier (the Answer Protocol, in [`sggs-data`](https://github.com/Algorythmos-AI/sggs-data)).
 5. **Governance** — mandatory citation, a source registry, `CHANGELOG.md`, and audit reports.
 
 Design docs (in `docs/design/`), in reading order: `00_Build-Plan.md` → `01_Production-Architecture.md` → `02_Sovereign-Architecture-Assessment.md` → `03_Phonetic-Variant-Engine.md` → `docs/reports/archive/Schema_v2_Migration_Report.md`. `MASTER-INDEX.md` is the doc index; the [engineering handbook](docs/engineering/README.md) is the operating manual.
@@ -237,26 +237,18 @@ Design docs (in `docs/design/`), in reading order: `00_Build-Plan.md` → `01_Pr
 ```
 sggs-knowledge-base/
 ├── webapp/
-│   ├── serve.py            # zero-dependency stdlib HTTP server + the search cascade
+│   ├── serve.py            # zero-dependency stdlib HTTP server (composition root + route table)
+│   ├── sggs/               # the bounded contexts: core, reader, search, verification, insights, knowledge
 │   ├── verify.py           # the quotation-verification engine
-│   └── static/index.html   # the entire UI (single file: HTML + CSS + vanilla JS)
-├── db/sggs.sqlite          # the canonical corpus (SQLite + FTS5; Git-LFS tracked)
-├── pipeline/               # the full rebuild chain (see below)
-│   ├── build_corpus.py     #   PDF → JSONL (extraction + Gurmukhi normalization)
-│   ├── reconcile.py        #   char-exact equality vs. the source edition
-│   ├── golden_test.py      #   49 canonical structural checks
-│   ├── build_db.py         #   JSONL → SQLite + FTS5
-│   ├── build_variants.py   #   the 79,666-entry phonetic-variant index
-│   ├── enrich_v2.py        #   structural columns + the pada checksum
-│   ├── load_translations.py#   the labeled English layer
-│   ├── reconcile / golden / roundtrip / chaos / casual_quote harnesses
-│   └── rebuild_all.sh      #   runs the whole chain end-to-end
-├── validation/             # QA artifacts: chaos attacks, harness logs, audit notes
-├── MANIFEST.json           # version + checksums + provenance
+│   └── static/             # the built web UI
+├── frontend/               # Astro source for the web UI (build → webapp/static/)
+├── contract/               # golden vectors + OpenAPI: the API's behaviour, pinned
+├── tools/                  # golden-vector + OpenAPI generators, HTTP contract replay, search harnesses
+├── qa/chaos/               # adversarial search inputs for tools/chaos_harness.py
+├── dataset.lock.json       # the sggs-data commit + database sha256 this platform serves
+├── scripts/                # CI, release, ops and dataset-fetch tooling
 ├── CHANGELOG.md            # every release, with before/after metrics
-├── Answer-Protocol.md      # the rules for explaining over this corpus
-├── NOTICE.md               # licensing of the English layer (read this)
-└── *_Report.md             # Audit / Hardening / Validation / Schema-migration reports
+└── NOTICE.md               # licensing of the English layer (read this)
 ```
 
 ---
@@ -267,13 +259,13 @@ Every release is gated against a battery of harnesses; nothing ships that regres
 
 | Check | Tool | Result |
 |-------|------|--------|
-| Source reconciliation | `pipeline/reconcile.py` | char-exact, 1,643,385 chars, 0 divergence |
-| Canonical structure | `pipeline/golden_test.py` | 49 checks pass |
-| Round-trip (exact) | `pipeline/roundtrip_harness.py` | **99.3% pass@1 / 100% pass@3** |
-| Round-trip (casual typing) | `pipeline/roundtrip_harness.py --perturb` | **98.4% / 99.7%** |
-| Casual fragment-quote | `pipeline/casual_quote_harness.py` | **~98% pass@1 / ~100% pass@3** |
-| Adversarial "chaos" suite | `pipeline/chaos_harness.py` | **175 / 200** |
-| Structural checksum | `pipeline/enrich_v2.py --report` | 3,159 CLEAN / 527 STRUCTURAL / 2 verified |
+| Source reconciliation | sggs-data `pipeline/reconcile.py` | char-exact, 1,643,385 chars, 0 divergence |
+| Canonical structure | sggs-data `pipeline/golden_test.py` | 49 checks pass |
+| Round-trip (exact) | `tools/roundtrip_harness.py` | **99.3% pass@1 / 100% pass@3** |
+| Round-trip (casual typing) | `tools/roundtrip_harness.py --perturb` | **98.4% / 99.7%** |
+| Casual fragment-quote | `tools/casual_quote_harness.py` | **~98% pass@1 / ~100% pass@3** |
+| Adversarial "chaos" suite | `tools/chaos_harness.py` | **175 / 200** |
+| Golden contract over HTTP | `tools/contract_http.py` | 266 records, every environment |
 | Runtime self-test | `GET /api/health` | 6 / 6 checks |
 
 Narrative evidence lives in [`docs/reports/archive/`](docs/reports/archive/): `Validation-Report.md`, `Audit_Report.md`, `Proactive_Hardening_Report_v2.0.6.md`, and `QA_Resolution_Report.md`.
@@ -282,41 +274,23 @@ Narrative evidence lives in [`docs/reports/archive/`](docs/reports/archive/): `V
 
 ## Rebuild from source
 
-The source PDF is **not** included in this repository. With your own copy of the edition:
+The corpus and database are rebuilt from the source edition in [`Algorythmos-AI/sggs-data`](https://github.com/Algorythmos-AI/sggs-data) (reconcile, golden checks, deterministic double build, editorial ledger). This repository takes a new dataset only as a reviewed bump of `dataset.lock.json` to a published sggs-data commit; `make dataset` installs it, sha256-verified.
 
-```bash
-# 1) Extract + normalize, then prove it
-python3 pipeline/build_corpus.py <the-source-pdf> corpus/sggs.jsonl
-python3 pipeline/reconcile.py   <the-source-pdf> corpus/sggs.jsonl   # must print RECONCILED
-python3 pipeline/golden_test.py <the-source-pdf>                     # 49 checks
-
-# 2) Build the DB + indexes (SQLite can't build on some mounts — build in /tmp, then copy)
-python3 pipeline/build_db.py       corpus/sggs.jsonl /tmp/sggs.db
-python3 pipeline/build_variants.py /tmp/sggs.db                      # phonetic-variant index
-python3 pipeline/enrich_v2.py      /tmp/sggs.db --apply              # structural columns + checksum
-bash scripts/data/fetch_translations.sh                             # private inputs (see NOTICE.md)
-python3 pipeline/load_translations.py /tmp/sggs.db "pipeline/translations/en_*.jsonl"
-cp /tmp/sggs.db db/sggs.sqlite
-
-# …or run the whole chain:
-bash pipeline/rebuild_all.sh <the-source-pdf>
-```
-
-> The phonetic fold (`roman_norm`) is duplicated in `webapp/serve.py` and `pipeline/sggs_pipeline.py` and **must stay in sync** — changing it requires rebuilding the `translit_norm` / `norm_blob` columns and the FTS indexes.
+> The phonetic fold (`roman_norm`) exists in `webapp/romannorm.py` (query time) and in sggs-data's `pipeline/sggs_pipeline.py` (index time) and **must stay byte-identical** — the 24,719-vector `contract/golden_roman_norm.ndjson` proves it on every CI run.
 
 ---
 
 ## Versioning
 
-Current release: **v1.3.7** (`MANIFEST.json`). The running build is stamped in the footer and at `/api/health`. Every change — search-logic, data, or UI — is recorded in `CHANGELOG.md` with its before/after metrics and whether the DB changed. Search-only patches never re-commit the DB; the `db_sha256` in `MANIFEST.json` always matches the shipped `db/sggs.sqlite`.
+Current release: **v1.3.7**. The running build is stamped in the footer and at `/api/health`. Every change — search-logic, data, or UI — is recorded in `CHANGELOG.md` with its before/after metrics and whether the DB changed. The dataset versions separately (sggs-data `data-vX.Y.Z`); `dataset.lock.json` names the exact database every build serves.
 
 ---
 
 ## Governance — how an AI may use this corpus
 
-`Answer-Protocol.md` is binding for any assistant built on this corpus:
+The Answer Protocol (in [`sggs-data`](https://github.com/Algorythmos-AI/sggs-data)) is binding for any assistant built on this corpus:
 
-1. **Never quote Gurbani from memory.** Retrieve from `db/sggs.sqlite` or the `serve.py` API.
+1. **Never quote Gurbani from memory.** Retrieve from the pinned database or the API.
 2. **Machine-verify every quote** (`/api/verify`) before presenting it.
 3. **Always cite the Ang.**
 4. **Label interpretation as interpretation** — translation and explanation are clearly separated from verbatim scripture.

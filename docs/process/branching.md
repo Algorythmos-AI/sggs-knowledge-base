@@ -51,4 +51,4 @@ source of truth — keep this list in step with them):
 
 ## PR hygiene
 Conventional-commit titles (`fix(data): …`), small diffs, `Closes #NN`, the
-scripture-safety checklist in the PR template completed for any corpus/db change.
+scripture-safety checklist in the PR template completed for any search, verify, display or dataset-pin change.
