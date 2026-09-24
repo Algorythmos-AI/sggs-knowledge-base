@@ -18,6 +18,8 @@ cd webapp && python3 serve.py        # stdlib only; no pip install needed
 # → http://localhost:7777   (override port with SGGS_PORT)
 ```
 
+Run one service of the platform split from the same code with `SGGS_MODULES=search` (or any comma list of `reader,search,verify,insights,knowledge`; default `all`) and point it at its own database slice with `SGGS_DB=/path/slice.sqlite`. In split mode the server refuses to start unless the database holds every table the enabled contexts declare. `/healthz` (liveness) and `/readyz` (200 only when every declared table is present) are the platform health checks.
+
 The server needs `db/sggs.sqlite` to exist. That DB is **~104 MiB (109 MB) and tracked via Git LFS** — run `git lfs pull` after cloning or the app won't start.
 
 ## Rebuild from the PDF

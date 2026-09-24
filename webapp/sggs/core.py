@@ -7,7 +7,8 @@ import os, sqlite3, sys, threading
 WEBAPP_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 if WEBAPP_DIR not in sys.path:
     sys.path.insert(0, WEBAPP_DIR)   # romannorm.py, verify.py live beside serve.py
-DB = os.path.join(WEBAPP_DIR, '..', 'db', 'sggs.sqlite')
+# SGGS_DB points a service at its own database slice (platform split); default: the full DB.
+DB = os.environ.get('SGGS_DB') or os.path.join(WEBAPP_DIR, '..', 'db', 'sggs.sqlite')
 APP_VERSION = APP_BUILT = APP_COMMIT = None   # set by serve.py (the composition root)
 STATE = ('DB', 'HAVE_FTS', '_META_CACHE', '_TIMING_CACHE', '_TERM2CONCEPT', '_concept_lock')   # proxied by serve: serve.DB = ... writes here
 

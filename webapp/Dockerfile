@@ -36,6 +36,6 @@ EXPOSE 7777
 # Lightweight liveness probe — /api/meta is cached and instant (unlike /api/health, which runs a
 # full integrity + verification pass). Requires a shell for $PORT expansion.
 HEALTHCHECK --interval=30s --timeout=5s --start-period=15s --retries=3 \
-  CMD python -c "import os,urllib.request as u; u.urlopen(f\"http://127.0.0.1:{os.environ.get('PORT','7777')}/api/meta\").read()" || exit 1
+  CMD python -c "import os,urllib.request as u; u.urlopen(f\"http://127.0.0.1:{os.environ.get('PORT','7777')}/readyz\").read()" || exit 1
 
 CMD ["python", "serve.py"]
