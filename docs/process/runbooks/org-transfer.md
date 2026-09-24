@@ -14,7 +14,7 @@ Human-gated; outward-facing. Do this when ready to re-link Vercel/Render.
 5. **Org hardening:** require 2FA; restrict repo creation; Actions → allowed actions
    + read-only default token; enable Dependabot alerts org-wide.
 6. **Upgrade the org to GitHub Team** (prerequisite for private-repo rulesets), then
-   `REPO=Algorythmos-AI/sggs-knowledge-base bash scripts/gh/apply_rulesets.sh`.
+   `REPO=Algorythmos-AI/sggs-platform bash scripts/gh/apply_rulesets.sh`.
 7. **CODEOWNERS:** create team `@Algorythmos-AI/scripture-reviewers` and switch
    `.github/CODEOWNERS` from `@skalaliya` to the team.
 8. Update repo URLs in README/docs/engineering if any are absolute.

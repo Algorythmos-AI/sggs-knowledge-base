@@ -4,7 +4,7 @@
 # then print a compact summary + merge state. Exit 0 if no check failed, 1 otherwise. Read-only.
 set -uo pipefail
 PR="${1:?usage: wait_pr_checks.sh <pr-number> [repo]}"
-REPO="${2:-Algorythmos-AI/sggs-knowledge-base}"
+REPO="${2:-Algorythmos-AI/sggs-platform}"
 settled=0
 for _ in $(seq 1 120); do            # ~30 min cap
   head=$(gh pr view "$PR" --repo "$REPO" --json headRefOid --jq .headRefOid 2>/dev/null)
