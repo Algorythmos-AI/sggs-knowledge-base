@@ -235,7 +235,7 @@ Design docs (in `docs/design/`), in reading order: `00_Build-Plan.md` → `01_Pr
 ## Repository layout
 
 ```
-sggs-knowledge-base/
+sggs-platform/
 ├── webapp/
 │   ├── serve.py            # zero-dependency stdlib HTTP server (composition root + route table)
 │   ├── sggs/               # the bounded contexts: core, reader, search, verification, insights, knowledge

@@ -64,7 +64,7 @@ Vercel Deployment Protection, so it needs a **repo-level** secret (not the `prod
 environment one):
 
 ```bash
-gh secret set VERCEL_AUTOMATION_BYPASS_SECRET --repo Algorythmos-AI/sggs-knowledge-base
+gh secret set VERCEL_AUTOMATION_BYPASS_SECRET --repo Algorythmos-AI/sggs-platform
 ```
 Without it the check posts a notice and passes. (Previews proxy `/api` to production, so this
 is a light smoke, not a gate.)
