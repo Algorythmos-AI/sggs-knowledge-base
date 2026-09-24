@@ -51,3 +51,5 @@ Brand-files/
 /db/
 # Search-harness output (tools/*_harness.py)
 qa/results/
+# Service database slices (make slices)
+build/
