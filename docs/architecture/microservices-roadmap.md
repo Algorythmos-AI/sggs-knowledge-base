@@ -92,3 +92,8 @@ fails if `vercel.json` drifts. Staging routes contexts one at a time — first `
 (`/api/timing/*`, `/api/forms`, and their `/api/v1` twins) — and the `deploy-staging` verify job
 proves each routed context answers through the real gateway with its own `X-Service`. Production
 still sends everything to the single API.
+
+**`dataset_stats` is not needed.** The plan proposed a precomputed table so the reader slice could
+answer `/api/meta`'s cross-context counts. Measured on staging, the reader service's `/api/meta` is
+identical to the single API's (all 17 fields): its declared tables already cover everything `/meta`
+reports, which the authorizer test also enforces.

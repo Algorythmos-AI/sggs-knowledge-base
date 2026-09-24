@@ -162,3 +162,9 @@ jobs:
           }
           python3 tools/gen_gateway.py --probes staging | while read -r ctx path; do probe "$path" "$ctx" || exit 1; done
           probe /api/meta all || true   # the single API still answers unrouted paths ('all' until reader is routed)
+      - uses: ./.github/actions/fetch-dataset
+        with: { token: "${{ secrets.SGGS_READ_TOKEN || github.token }}" }
+      - name: The whole golden contract holds through the gateway, however the routes are split
+        env:
+          VERCEL_AUTOMATION_BYPASS_SECRET: ${{ secrets.VERCEL_AUTOMATION_BYPASS_SECRET }}
+        run: python3 tools/contract_http.py --base "$STG_WEB"
