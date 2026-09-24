@@ -8,6 +8,8 @@ Sri Guru Granth Sahib Ji is sacred scripture. The Gurmukhi text in `corpus/` and
 ## English translation layer
 `translations` table: **English translation by Dr. Sant Singh Khalsa.** Full layer (58,039 lines) sourced from the **ShabadOS open database** (github.com/shabados/database, release 4.8.7 — the 151MB `database.sqlite` is gitignored, re-download to rebuild); earlier partial layer via the **BaniDB/GurbaniNow** public APIs. Translation used with attribution for personal, local, non-commercial study. **Do not redistribute publicly or commercially.** If this repository is ever made public, remove `pipeline/translations/`, the `translations` table from `db/sggs.sqlite`, and this layer's UI display first.
 
+**Status (2026-09-24):** the translation source files are no longer tracked in this repository. They live in the private `Algorythmos-AI/sggs-source` repository (release `translations-en-v1`) and are restored for a rebuild with `scripts/data/fetch_translations.sh`, which verifies every file against `pipeline/translations.SHA256SUMS`. Earlier commits in this repository's history still contain them, and `db/sggs.sqlite` still carries the `translations` table; both are addressed by keeping this repository private and by the planned repository split.
+
 ### iOS app distribution (TestFlight / App Store)
 TestFlight and App Store builds are *distribution*. The bundled iOS database (`personal` profile) embeds this translation layer, so `pipeline/check_release_license.sh` blocks such a build **until** a written distribution licence is recorded in `ios/Resources/TRANSLATION-LICENSE.md` (fields filled in and `LICENSED: true`). Without that, ship the Gurmukhi-only `public` profile (`pipeline/build_ios_db.py --profile public`). CI checks both directions.
 

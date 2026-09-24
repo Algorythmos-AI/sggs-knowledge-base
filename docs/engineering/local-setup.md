@@ -23,6 +23,7 @@ The server needs `db/sggs.sqlite` to exist. That DB is **~104 MiB (109 MB) and t
 ## Rebuild from the PDF
 
 ```bash
+bash scripts/data/fetch_translations.sh            # private English inputs, checksum-verified
 bash pipeline/rebuild_all.sh [path-to-source-pdf]   # default: ../Siri-Guru-...pdf
 ```
 

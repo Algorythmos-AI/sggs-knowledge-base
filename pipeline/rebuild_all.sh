@@ -34,6 +34,11 @@ else:
     sys.exit(f'source PDF sha256 {h.hexdigest()} != attested {want}; refusing to build '
              '(set SGGS_ALLOW_NEW_PDF=1 only for a reviewed new source edition)')
 EOF
+# The English translation sources are not tracked (not redistributable; NOTICE.md). They must be
+# present and byte-identical to the committed manifest: scripts/data/fetch_translations.sh.
+shasum -a 256 -c pipeline/translations.SHA256SUMS >/dev/null 2>&1 \
+  || { echo "translation sources missing or altered — run: bash scripts/data/fetch_translations.sh" >&2; exit 1; }
+echo "translation sources verified against pipeline/translations.SHA256SUMS"
 # Reproducible stamps: every date written into the DB/MANIFEST derives from this (build_clock.py).
 # Default = the HEAD commit time, so the same commit + same PDF + same toolchain => same bytes.
 export SOURCE_DATE_EPOCH="${SOURCE_DATE_EPOCH:-$(git log -1 --format=%ct)}"

@@ -294,6 +294,7 @@ python3 pipeline/golden_test.py <the-source-pdf>                     # 49 checks
 python3 pipeline/build_db.py       corpus/sggs.jsonl /tmp/sggs.db
 python3 pipeline/build_variants.py /tmp/sggs.db                      # phonetic-variant index
 python3 pipeline/enrich_v2.py      /tmp/sggs.db --apply              # structural columns + checksum
+bash scripts/data/fetch_translations.sh                             # private inputs (see NOTICE.md)
 python3 pipeline/load_translations.py /tmp/sggs.db "pipeline/translations/en_*.jsonl"
 cp /tmp/sggs.db db/sggs.sqlite
 
