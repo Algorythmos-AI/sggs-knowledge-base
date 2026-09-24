@@ -161,7 +161,7 @@ jobs:
             echo "::error::gateway sent $1 to '${got:-none}', expected $2"; return 1
           }
           python3 tools/gen_gateway.py --probes staging | while read -r ctx path; do probe "$path" "$ctx" || exit 1; done
-          probe /api/meta all || true   # the single API still answers unrouted paths ('all' until reader is routed)
+          probe /api/nope all           # an unknown prefix still falls through to the single API (the rollback path)
       - uses: ./.github/actions/fetch-dataset
         with: { token: "${{ secrets.SGGS_READ_TOKEN || github.token }}" }
       - name: The whole golden contract holds through the gateway, however the routes are split
