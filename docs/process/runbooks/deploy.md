@@ -90,3 +90,22 @@ The image bakes the commit at build time (`webapp/Dockerfile`: `ARG RENDER_GIT_C
 `ENV SGGS_COMMIT`), and serve.py also reads `RENDER_GIT_COMMIT` at runtime. If both are empty,
 deploy-api times out with a hint. Check the Render build log for the build arg, then set a
 service environment variable `SGGS_COMMIT` manually for that one deploy and re-run the job.
+
+## Staging services (Phase 4, staging only) — one-time setup
+
+`render.yaml` declares one free staging service per bounded context (`sggs-staging-reader`,
+`-search`, `-verify`, `-insights`, `-knowledge`). Each builds the same image with `SGGS_MODULES` set,
+so the build cuts that context's database slice (`tools/slice_db.py`). The `deploy-services` job of
+`deploy-staging` deploys each at the exact commit through the Render API and waits for `/readyz` to
+report that commit. Production is unchanged.
+
+1. **Create the services:** Render dashboard → *Blueprints* → the Blueprint linked to this repository
+   → **Sync** (or *New Blueprint Instance* from `render.yaml` on branch `integration`). Confirm that
+   exactly the five `sggs-staging-*` services are added. Nothing production is declared here.
+2. **API key:** Render dashboard → *Account Settings* → *API Keys* → create one, then store it only in
+   the GitHub `staging` environment:
+   `gh secret set RENDER_API_KEY --env staging --repo Algorythmos-AI/sggs-platform` (hidden prompt).
+3. The next merge to `integration` deploys all five; each must reach `/readyz` at that commit.
+
+Until the key exists, `deploy-services` is a no-op with a notice. The gateway still sends every
+`/api/*` request to `sggs-api-staging`; routing prefixes to the new services is the next step.

@@ -70,6 +70,33 @@ jobs:
         # free tier is slow to build + cold-starts; tolerate the old build's missing commit
         run: python3 scripts/ci/wait_for_deploy.py "$STG_API" --commit "$GITHUB_SHA" --timeout 1800 --unknown-grace 1800
 
+  deploy-services:
+    # Phase 4 (staging only): each bounded context as its own Render service, built from the same
+    # image with its slice (render.yaml). Independent of the single staging API above, which keeps
+    # serving the web until the gateway routes a prefix to a service. Needs the staging secret
+    # RENDER_API_KEY; until it exists this job is a no-op with a notice.
+    needs: [gates, preflight]
+    runs-on: ubuntu-latest
+    environment: staging
+    timeout-minutes: 45
+    strategy:
+      fail-fast: false
+      matrix:
+        service: [reader, search, verify, insights, knowledge]
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - name: Deploy sggs-staging-${{ matrix.service }} at this commit and wait until it is ready
+        env:
+          RENDER_API_KEY: ${{ secrets.RENDER_API_KEY }}
+          SERVICE: sggs-staging-${{ matrix.service }}
+        run: |
+          if [ -z "$RENDER_API_KEY" ]; then
+            echo "::notice::RENDER_API_KEY is not set — the per-service staging deploy is skipped (Phase 4 setup)"; exit 0
+          fi
+          url=$(python3 scripts/ci/render_deploy.py "$SERVICE" "$GITHUB_SHA")
+          echo "$SERVICE → $url"
+          python3 scripts/ci/wait_for_deploy.py "$url" --readyz --commit "$GITHUB_SHA" --timeout 1800 --unknown-grace 1800
+
   deploy-web:
     needs: deploy-api
     runs-on: ubuntu-latest
