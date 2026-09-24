@@ -3,7 +3,7 @@
 PIPELINE_PY ?= /usr/bin/python3
 PDF ?= ../Siri-Guru-Granth-Sahib-in-Gurmukhi-with-Index.pdf
 
-.PHONY: help doctor ci contract-http fingerprint ledger-check pr-checks release-preflight watch-deploy verify-prod scripture-diff check-versions test-web test-frontend contract verify guard reconcile rebuild ios-db ios-db-check ios-db-repair release testflight appstore-preflight
+.PHONY: help doctor ci openapi contract-http fingerprint ledger-check pr-checks release-preflight watch-deploy verify-prod scripture-diff check-versions test-web test-frontend contract verify guard reconcile rebuild ios-db ios-db-check ios-db-repair release testflight appstore-preflight
 help: ## list targets
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | awk 'BEGIN{FS=":.*?## "}{printf "  \033[36m%-16s\033[0m %s\n",$$1,$$2}'
 
@@ -43,6 +43,9 @@ test-banis: ## gate tests for the bani registry on a throwaway copy of the DB
 
 ci: check-versions verify guard ledger-check test-web contract ## run the gates CI runs (no PDF needed)
 	@echo "make ci: PASS"
+
+openapi: ## regenerate contract/openapi.json (26 routes; schemas inferred from real responses) — test-web fails if stale
+	python3 pipeline/gen_openapi.py
 
 contract-http: ## replay the golden contract over HTTP against a running API: make contract-http BASE=http://127.0.0.1:7777
 	@test -n "$(BASE)" || { echo "usage: make contract-http BASE=<api origin>"; exit 2; }

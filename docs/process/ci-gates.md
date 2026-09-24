@@ -2,7 +2,7 @@
 
 | Workflow · job | Proves | Needs |
 |---|---|---|
-| `web-ci · python` | ruff clean; server + repo-gate + pipeline-safety unit tests; the **golden contract replayed over HTTP** (`pipeline/contract_http.py`); `/api/health` all-true; the **shabad-heading regression** (`api_superset_check`); search harnesses; **contract does not drift** | LFS DB |
+| `web-ci · python` | ruff clean; server + repo-gate + pipeline-safety unit tests; the **golden contract replayed over HTTP** (`pipeline/contract_http.py`); `contract/openapi.json` is current and covers every dispatcher route; `/api/health` all-true; the **shabad-heading regression** (`api_superset_check`); search harnesses; **contract does not drift** | LFS DB |
 | `web-ci · frontend` | Astro builds; `pahar` vectors pass | Node 22 |
 | `scripture-integrity` | MANIFEST↔contract↔attestation hash chain; `verify_regroup --invariants`; `guard_scripture`; timing tests | LFS DB |
 | `version-consistency` | all 7 version strings unified; `main` PRs come from `integration`/`hotfix` | — |
