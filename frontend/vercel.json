@@ -4,6 +4,46 @@
   "cleanUrls": true,
   "rewrites": [
     {
+      "source": "/api/forms/:path*",
+      "has": [
+        {
+          "type": "host",
+          "value": "sggs-staging.vercel.app"
+        }
+      ],
+      "destination": "https://sggs-staging-knowledge.onrender.com/api/forms/:path*"
+    },
+    {
+      "source": "/api/v1/forms/:path*",
+      "has": [
+        {
+          "type": "host",
+          "value": "sggs-staging.vercel.app"
+        }
+      ],
+      "destination": "https://sggs-staging-knowledge.onrender.com/api/v1/forms/:path*"
+    },
+    {
+      "source": "/api/timing/:path*",
+      "has": [
+        {
+          "type": "host",
+          "value": "sggs-staging.vercel.app"
+        }
+      ],
+      "destination": "https://sggs-staging-knowledge.onrender.com/api/timing/:path*"
+    },
+    {
+      "source": "/api/v1/timing/:path*",
+      "has": [
+        {
+          "type": "host",
+          "value": "sggs-staging.vercel.app"
+        }
+      ],
+      "destination": "https://sggs-staging-knowledge.onrender.com/api/v1/timing/:path*"
+    },
+    {
       "source": "/api/:path*",
       "has": [
         {
