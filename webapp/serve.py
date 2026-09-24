@@ -6,7 +6,7 @@ Zero dependencies: Python 3 standard library only.
 
 Run:   python3 serve.py        then open  http://localhost:7777
 """
-import json, os, sqlite3, sys, threading, webbrowser, mimetypes, hashlib, time, types
+import json, os, re, sqlite3, sys, threading, webbrowser, mimetypes, hashlib, time, types, uuid
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from urllib.parse import urlparse, parse_qs
 
@@ -181,6 +181,10 @@ _CACHEABLE = ('ang', 'shabad', 'lines', 'bani', 'banis', 'word', 'analytics', 't
               'forms', 'neighbors', 'related', 'line_concepts')
 _CACHE_IMMUTABLE = 'public, max-age=300, s-maxage=3600'
 _ACCESS_LOG = os.environ.get('SGGS_ACCESS_LOG', '1') != '0'
+# A request id is echoed on every response (X-Request-Id) and written to the access log, so one
+# request can be followed from Vercel to this service. An incoming X-Request-Id or Vercel's own
+# x-vercel-id is reused when it is a plain token; anything else is replaced, never logged as sent.
+_RID_OK = re.compile(r'[A-Za-z0-9._:-]{8,128}')
 
 class H(BaseHTTPRequestHandler):
     # A client that connects and then sends nothing (or trickles bytes) used to hold its thread
@@ -197,7 +201,14 @@ class H(BaseHTTPRequestHandler):
         ms = round((time.monotonic() - t0) * 1000, 1) if t0 else None
         code = getattr(code, 'value', code)
         sys.stderr.write(json.dumps({'m': self.command, 'p': urlparse(self.path).path,
-                                     's': code, 'ms': ms}) + '\n')
+                                     's': code, 'ms': ms, 'id': getattr(self, '_rid', None)}) + '\n')
+
+    def _request_id(self):
+        for h in ('X-Request-Id', 'x-vercel-id'):
+            v = (self.headers.get(h) or '').strip()
+            if _RID_OK.fullmatch(v):
+                return v
+        return uuid.uuid4().hex
 
     def _sec_headers(self):
         # Defence-in-depth for the local app. No strict CSP on purpose: the UI relies on
@@ -208,6 +219,8 @@ class H(BaseHTTPRequestHandler):
         self.send_header('Referrer-Policy', 'no-referrer')
         # Honoured only over HTTPS (the hosted API); browsers ignore it on http://localhost.
         self.send_header('Strict-Transport-Security', 'max-age=31536000')
+        rid = getattr(self, '_rid', None)
+        if rid: self.send_header('X-Request-Id', rid)
 
     def _respond(self, status, body, ct, cache='no-store'):
         etag = None
@@ -303,6 +316,7 @@ class H(BaseHTTPRequestHandler):
 
     def _handle(self):
         self._t0 = time.monotonic()
+        self._rid = self._request_id()
         u = urlparse(self.path)
         if u.path == '/favicon.ico':
             return self._respond(404, b'', 'image/x-icon')
@@ -391,6 +405,12 @@ if __name__ == '__main__':
     srv = BoundedThreadingHTTPServer(('0.0.0.0', PORT), H)
     url = f'http://localhost:{PORT}'
     print(f'ੴ  SGGS Knowledge Base serving at {url}   (Ctrl-C to stop)')
+    try:                                   # one identity line per process; request lines carry only the id
+        _dbv = core.db().execute("SELECT value FROM meta WHERE key = 'version'").fetchone()
+    except Exception:
+        _dbv = None
+    print(json.dumps({'event': 'start', 'version': APP_VERSION, 'commit': APP_COMMIT,
+                      'dataset': _dbv[0] if _dbv else None, 'modules': sorted(ENABLED)}), flush=True)
     # Only pop a browser for local desktop use; never on a headless host. Opt in with SGGS_OPEN_BROWSER=1.
     if os.environ.get('SGGS_OPEN_BROWSER') == '1':
         try: threading.Timer(0.8, lambda: webbrowser.open(url)).start()
