@@ -159,4 +159,4 @@ EOF
 # committed DB against it; commit it together with the DB.
 python3 pipeline/sggs_integrity.py db/sggs.sqlite --out audit/dataset-fingerprint.json
 echo "fingerprint: audit/dataset-fingerprint.json"
-echo "DONE — start the app: cd webapp && python3 serve.py"
+echo "DONE — db/sggs.sqlite rebuilt, gated and fingerprinted (DATASET_VERSION $(cat DATASET_VERSION))"
