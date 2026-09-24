@@ -39,7 +39,7 @@
 #   SGGS_SKIP_CI_CHECK  1 → with SGGS_UPLOAD=1, skip waiting for green CI on the commit (offline /
 #                       pipeline-outage use only; the candidate record notes it).
 #   SGGS_ARCHIVE_DRY_RUN 1 → stop after step 3 (stage + gate + generate); nothing is signed,
-#                       archived or uploaded. Used by webapp/tests/test_ios_archive.py.
+#                       archived or uploaded. Used by ios/tests/test_ios_archive.py.
 #
 # Tracked files this script may touch: only — and only with SGGS_UPLOAD=1 — the append-only
 # ios/testflight-builds.json ledger, which you then commit with the release. It runs no git

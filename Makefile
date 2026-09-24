@@ -3,7 +3,7 @@
 PIPELINE_PY ?= /usr/bin/python3
 PDF ?= ../Siri-Guru-Granth-Sahib-in-Gurmukhi-with-Index.pdf
 
-.PHONY: help doctor ci openapi contract-http fingerprint ledger-check pr-checks release-preflight watch-deploy verify-prod scripture-diff check-versions test-web test-frontend contract verify guard reconcile rebuild ios-db ios-db-check ios-db-repair release testflight appstore-preflight
+.PHONY: help doctor ci test-data test-ios-gates openapi contract-http fingerprint ledger-check pr-checks release-preflight watch-deploy verify-prod scripture-diff check-versions test-web test-frontend contract verify guard reconcile rebuild ios-db ios-db-check ios-db-repair release testflight appstore-preflight
 help: ## list targets
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | awk 'BEGIN{FS=":.*?## "}{printf "  \033[36m%-16s\033[0m %s\n",$$1,$$2}'
 
@@ -18,8 +18,14 @@ doctor: ## check the local toolchain (the python3 trap, node, git-lfs, pdf)
 check-versions: ## assert the version is unified across all 7 locations
 	python3 scripts/release/check_versions.py
 
-test-web: ## server unit tests
+test-web: ## platform tests: API, contract, OpenAPI, web gates (webapp/tests)
 	python3 -m unittest discover -s webapp/tests -v
+
+test-data: ## data-integrity tests: install safety, fingerprints, editorial ledger (pipeline/tests)
+	python3 -m unittest discover -s pipeline/tests -v
+
+test-ios-gates: ## iOS source/listing/archive gates, no simulator (ios/tests)
+	python3 -m unittest discover -s ios/tests -v
 
 test-frontend: ## frontend build + pahar vectors
 	cd frontend && npm ci && npm run build && npm run test:pahar
@@ -41,7 +47,7 @@ banis: ## (re)build the Nitnem bani registry into db/sggs.sqlite (needs ./databa
 test-banis: ## gate tests for the bani registry on a throwaway copy of the DB
 	python3 pipeline/banis/test_banis_layer.py
 
-ci: check-versions verify guard ledger-check test-web contract ## run the gates CI runs (no PDF needed)
+ci: check-versions verify guard ledger-check test-web test-data test-ios-gates contract ## run the gates CI runs (no PDF needed)
 	@echo "make ci: PASS"
 
 openapi: ## regenerate contract/openapi.json (26 routes; schemas inferred from real responses) — test-web fails if stale
