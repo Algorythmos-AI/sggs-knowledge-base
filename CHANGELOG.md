@@ -3,7 +3,10 @@
 The format below (newest first) follows [Keep a Changelog](https://keepachangelog.com);
 entries prior to v1.1.0 are the project's original prose style and are preserved verbatim.
 
-## [Unreleased]
+## [1.3.9] — 2026-09-25 — services on staging, a versioned API, continuous verification
+
+No change to the scripture text, the corpus, the database bytes (`cb6775ff…`) or any page. Every
+legacy `/api/*` response is byte-identical (the golden contract pins it).
 
 ### Added
 - **Services, on staging.** Every bounded context runs as its own service on staging
@@ -26,6 +29,18 @@ entries prior to v1.1.0 are the project's original prose style and are preserved
   12 random Angs (plus Angs 1, 712 and 1430), fetched from the API origin and through the public
   site's CDN, compared byte for byte with the pinned database, and the golden contract replayed
   against production. A difference opens one issue; the printed seed replays it.
+- **`X-Service`** on every response names the service that answered (`all` for the single API).
+- **Service slices** (`tools/slice_db.py`, `make slices`) and a **latency baseline per context**
+  (`tools/perf_baseline.py`, `docs/perf/baseline-2026-09.json`) that the service split is held to.
+
+### Changed
+- **The CDN cache is purged after every deploy goes live.** Vercel caches the proxied scripture reads
+  for up to an hour and does not promise a deploy clears them; both deploy pipelines now purge it.
+- **`verify.py` opens the database immutable and query-only**, like every other connection.
+
+### Fixed
+- The data canary ran its tool from `main`, which predated it; it now runs from its own commit and
+  checks production against `main`'s pin and contract (first run: PASS).
 
 ## [1.3.8] — 2026-09-24 — three repositories: data, platform, app
 
