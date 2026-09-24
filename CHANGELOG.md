@@ -6,6 +6,13 @@ entries prior to v1.1.0 are the project's original prose style and are preserved
 ## [Unreleased]
 
 ### Added
+- **Services, on staging.** Every bounded context runs as its own service on staging
+  (`sggs-staging-reader`, `-search`, `-verify`, `-insights`, `-knowledge`): one image with
+  `SGGS_MODULES`, each serving a database slice cut and proven at build time, deployed at the exact
+  commit through the Render API. The gateway's routing is generated from the route table
+  (`tools/gen_gateway.py`, `gateway/routes.json`); every staging deploy proves each context answers
+  through the gateway (`X-Service`) and replays the whole golden contract through it. Production
+  still runs the single API (ADR-0010; `docs/process/runbooks/services-production.md`).
 - **`/api/v1/*`** serves every route with the same response bodies as `/api/*`, with strict
   semantics for new clients and the coming service gateway: an unknown endpoint is 404 (not 400) and
   every error is `{"error": {"code", "message", "request_id"}}`. Legacy `/api/*` is byte-identical
