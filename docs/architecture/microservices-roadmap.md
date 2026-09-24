@@ -41,3 +41,26 @@ is the contract. Verify and Timing extract first (own tables, own graceful-degra
 Guardrails: `/api/meta` gains a per-module health block; every response stays
 same-origin; golden vectors + `webapp/tests/` prove byte-identical behaviour before
 and after each move.
+
+## Spike S3 — database slices (measured 2026-09-24, dataset `cb6775ff…`, full DB 108.4 MB)
+
+`tools/slice_db.py --modules <ctx> --out build/slices/<ctx>.sqlite` (or `make slices`) cuts a
+service's database from the pinned one: the context's declared tables plus their closure (foreign-key
+targets, FTS5 shadow tables and external content tables), VACUUMed, every kept table proven equal in
+content to the full database and every kept FTS index passing `integrity-check`, installed
+atomically. Each slice was then served on its own (`SGGS_MODULES=<ctx> SGGS_DB=<slice>`):
+
+| Service | Tables | Slice | Ready (`/readyz`) | Key routes |
+|---|---|---|---|---|
+| search | 24 | 74.0 MB (68 %) | 90 ms | `/api/search` 10–200 ms, `/api/word` 8 ms |
+| insights | 17 | 65.7 MB (61 %) | 91 ms | `/api/themes/network` 6 ms, `/api/analytics/*` ≤ 2 ms |
+| reader | 17 | 55.7 MB (51 %) | 88 ms | `/api/ang/712` 22 ms, `/api/health` all-true 45 ms, `/api/random` 258 ms |
+| verify | 6 | 44.2 MB (41 %) | 119 ms | `/api/verify` 28 ms |
+| knowledge | 7 | 0.7 MB (< 1 %) | 94 ms | `/api/timing/clock` 1 ms |
+
+Findings: every slice boots in about a tenth of a second and serves its routes; routes of other
+contexts return 404; the reader slice passes every `/api/health` check (FTS5, Mool Mantar, 568 ੴ,
+live verify). No service needs more than ~75 MB of data, so the smallest paid instance class is
+sufficient for each; the total slice footprint (240 MB) is about twice the single database because
+`lines` + `fts` are shared by four contexts. Measured on a MacBook Air (Apple silicon) with warm file
+caches — cold-start on the host is Spike S2's job.
