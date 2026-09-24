@@ -3,13 +3,13 @@
 bump.py X.Y.Z — set the single unified version everywhere at once, and open a
 dated CHANGELOG stub. Run check_versions.py afterwards (it is the CI gate).
 
-Updates: webapp/serve.py (APP_VERSION + APP_BUILT), MANIFEST.json (version+built),
-frontend/package.json, ios/App/project.yml (MARKETING_VERSION), README badge +
-"Current release" line, MASTER-INDEX header. It does NOT
-touch db_sha256/corpus_sha256 (those are stamped by the rebuild) and does NOT
-touch the iOS build number: CURRENT_PROJECT_VERSION stays at its floor "1" and
-each TestFlight upload passes BUILD=N explicitly to ios/tools/testflight_archive.sh,
-which records it (per marketing version, monotonic) in ios/testflight-builds.json.
+Updates: webapp/serve.py (APP_VERSION + APP_BUILT), frontend/package.json, README badge +
+"Current release" line, MASTER-INDEX header. It does NOT touch db_sha256/corpus_sha256 (the
+dataset is pinned from sggs-data by dataset.lock.json).
+
+The iOS app takes the same number in its own repository, Algorythmos-AI/gurbani-soul-ios:
+after this release is tagged, `make vendor-sync-platform REF=vX.Y.Z` there vendors this
+release's contract and MARKETING_VERSION is set to X.Y.Z (its CI enforces the match).
 
 Usage: python3 scripts/release/bump.py 1.2.0 [--date 2026-09-20]
 """
@@ -45,16 +45,11 @@ def main():
     edit("webapp/serve.py", sub1(r"APP_VERSION = '[^']+'", f"APP_VERSION = '{v}'"))
     edit("webapp/serve.py", sub1(r"APP_BUILT = '[^']+'", f"APP_BUILT = '{d}'"))
 
-    def man(s):
-        m = json.loads(s); m["version"] = v; m["built"] = d
-        return json.dumps(m, indent=2) + "\n"
-    edit("MANIFEST.json", man)
 
     def pkg(s):
         return re.sub(r'("version":\s*")[^"]+(")', rf'\g<1>{v}\g<2>', s, count=1)
     edit("frontend/package.json", pkg)
 
-    edit("ios/App/project.yml", sub1(r'MARKETING_VERSION: "[^"]+"', f'MARKETING_VERSION: "{v}"'))
     edit("README.md", sub1(r"version-\d+\.\d+\.\d+-", f"version-{v}-"))
     edit("README.md", sub1(r"Current release: \*\*v\d+\.\d+\.\d+\*\*", f"Current release: **v{v}**"))
     edit("MASTER-INDEX.md", sub1(r"v\d+\.\d+\.\d+, built \d{4}-\d{2}-\d{2}", f"v{v}, built {d}"))

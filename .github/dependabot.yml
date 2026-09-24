@@ -11,6 +11,3 @@ updates:
   - package-ecosystem: docker
     directory: /webapp
     schedule: { interval: weekly }
-  - package-ecosystem: swift
-    directory: /ios/Packages/GurbaniSearchKit
-    schedule: { interval: weekly }

@@ -28,33 +28,9 @@ venv/
 *.sqlite-wal
 *.sqlite-shm
 
-# iOS app: Swift build output + the large derived DB (reproducible via pipeline/build_ios_db.py)
-ios/**/.build/
-ios/Resources/*.sqlite
-ios/**/*.xcodeproj/xcuserdata/
-ios/**/DerivedData/
-
-validation/*_results.jsonl
-
-# Xcode app: regenerable project + build output
-ios/App/build/
-ios/App/*.xcodeproj/
-ios/App/*.xcworkspace/
-db/backups/
-
-# public-profile iOS DB manifest (built on demand for the degradation-parity gate; the
-# .sqlite itself is already covered by ios/Resources/*.sqlite — DB artifacts are never
-# committed, CI rebuilds them deterministically)
-ios/Resources/sggs-ios-public.manifest.json
-# atomic-build temps (pipeline/build_ios_db.py) and the TestFlight archive's temporary sibling spec
-ios/Resources/*.tmp
-ios/App/SGGS-TestFlight.yml
+# Local screenshot review sets
 baseline_shots/
-ios/App/*.log
 new_shots/
-
-# SwiftPM/Xcode per-user package state
-ios/**/.swiftpm/
 
 # Vercel CLI link state (never commit)
 .vercel/
@@ -62,12 +38,16 @@ ios/**/.swiftpm/
 # Third-party brand reference material (not ours to publish)
 Brand-files/
 
-# App Store screenshot masters (multi-MB PNGs; keep locally, commit only contact-sheet/)
-ios/AppStore/screenshots/
-
 # Machine-local agent notes (account identifiers, local gotchas) — never committed
 *.local.md
 
-# English translation sources — private (Algorythmos-AI/sggs-source); fetch with scripts/data/fetch_translations.sh
-/pipeline/translations/
-/pipeline/translations_en_raw_sample.jsonl
+# English translation sources are private (Algorythmos-AI/sggs-source) and never belong here
+/pipeline/
+
+# Verified dataset objects fetched from sggs-data (scripts/data/fetch_dataset.py)
+.dataset-cache/
+
+# Scripture database installed from sggs-data by pin (make dataset)
+/db/
+# Search-harness output (tools/*_harness.py)
+qa/results/

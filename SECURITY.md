@@ -7,7 +7,7 @@ days. This repository is private; the app serves a read-only, offline corpus and
 holds no user accounts or personal data.
 
 ## Supported versions
-The latest `main` release (see `MANIFEST.json` / `/api/health`) is supported.
+The latest `main` release (see `/api/health`) is supported.
 Older tags are historical.
 
 ## Handled classes (already mitigated — see docs/engineering/invariants.md "Security invariants")

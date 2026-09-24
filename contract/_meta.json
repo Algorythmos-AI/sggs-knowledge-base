@@ -11,7 +11,7 @@
     "golden_timing.ndjson": 83,
     "golden_verify.ndjson": 18
   },
-  "generator": "pipeline/gen_golden_vectors.py (+ frontend/scripts/gen-pahar-vectors.mjs)",
+  "generator": "tools/gen_golden_vectors.py (+ frontend/scripts/gen-pahar-vectors.mjs)",
   "tool_versions": {
     "python": "3.14.7",
     "sqlite": "3.53.4"

@@ -3,7 +3,7 @@
 query path (serve.py) and the quotation-verification engine (verify.py). verify.py cannot
 import serve.py (serve imports verify), so the fold lives here and serve re-exports it.
 
-KEEP IN SYNC, byte for byte, with pipeline/sggs_pipeline.py:roman_norm() — the query-time
+KEEP IN SYNC, byte for byte, with sggs-data pipeline/sggs_pipeline.py:roman_norm() — the query-time
 fold must equal the fold that built `lines.translit_norm` or search/verify silently break.
 """
 import re
@@ -12,7 +12,7 @@ def roman_norm(s):
     """Phonetic-fold Roman normal form, applied to BOTH the index column and the
     query: 'waheguru'/'vaahiguroo' -> 'vhgr'; 'yashoda'/'jasodaa' -> 'jsd';
     'krishna'/'krisan' -> 'krsn'; 'gyan'/'giaan' -> 'gn'.
-    KEEP IN SYNC with pipeline/sggs_pipeline.py:roman_norm()."""
+    KEEP IN SYNC with sggs-data pipeline/sggs_pipeline.py:roman_norm()."""
     out = []
     for w in s.lower().split():
         w = w.replace('w', 'v').replace('z', 'j').replace('q', 'k').replace('x', 'k')

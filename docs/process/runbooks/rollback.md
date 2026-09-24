@@ -11,10 +11,11 @@ Render → the service → Events → previous successful deploy → **Rollback*
 the pipeline opened, and fix forward through a normal PR.
 
 ## Data (DB / corpus)
-The committed DB is a Git LFS object. To revert: `git revert <commit>` (or check out
-the previous `db/sggs.sqlite` and `corpus/sggs.jsonl`), confirm `MANIFEST.db_sha256`
-matches, and redeploy. Each GitHub Release records the shipped `db_sha256`.
+The database is pinned by `dataset.lock.json`. To revert a dataset, revert the lock bump
+(`git revert <commit>`): the image and CI install the previous object, sha256-verified, and
+nothing in sggs-data is ever deleted, so every previously pinned object stays available.
+Redeploy through the normal pipeline.
 
 ## iOS
-TestFlight → expire the bad build; promote the previous build. App Store: submit the
-previous archive or a hotfix.
+In `Algorythmos-AI/gurbani-soul-ios` (its `ios-hotfix` runbook): TestFlight → expire the bad
+build; the App Store has no binary rollback, so pause the phased release and ship a fix.

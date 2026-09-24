@@ -26,7 +26,7 @@ PORT = int(os.environ.get('PORT') or os.environ.get('SGGS_PORT') or '7777')
 # doesn't force an 86 MB DB re-commit. /api/meta and /api/health prefer these; the
 # DB meta row is the fallback. Bump on every search-logic release so the UI footer
 # (which reads /api/meta) reflects the running build.
-APP_VERSION = '1.3.7'
+APP_VERSION = '1.3.8'
 APP_BUILT = '2026-09-24'
 
 
@@ -372,13 +372,13 @@ class BoundedThreadingHTTPServer(ThreadingHTTPServer):
 if __name__ == '__main__':
     global_fts = None
     if not os.path.exists(core.DB):
-        sys.exit(f'Database not found: {core.DB}\nRun the pipeline first (see docs/engineering/local-setup.md).')
+        sys.exit(f'Database not found: {core.DB}\nRun `make dataset` to install the pinned database (see docs/engineering/local-setup.md).')
     # Fail-fast on a Git-LFS *pointer* file (130-byte text stub instead of the ~109 MB core.DB):
     # os.path.exists() would pass but every /api query would then 500. Catch it at boot with a
     # clear message rather than serving errors. (Real SQLite files start with "SQLite format 3\x00".)
     with open(core.DB, 'rb') as _f:
         if _f.read(16) != b'SQLite format 3\x00':
-            sys.exit(f'Not a valid SQLite file (Git-LFS pointer?): {core.DB}\nRun `git lfs pull` to fetch the real database.')
+            sys.exit(f'Not a valid SQLite file (Git-LFS pointer?): {core.DB}\nRun `make dataset` to install the pinned database.')
     core.HAVE_FTS = None
     if split_mode():                     # a service must never serve with part of its data missing
         _r = readiness()

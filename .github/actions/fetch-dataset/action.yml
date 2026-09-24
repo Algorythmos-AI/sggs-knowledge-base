@@ -1,0 +1,28 @@
+name: fetch-dataset
+description: >
+  Install db/sggs.sqlite from the pinned sggs-data release object (dataset.lock.json),
+  verified by sha256 and size and installed atomically. Verified objects are cached by
+  their sha256, so repeated runs download nothing. Use after actions/checkout WITHOUT
+  `lfs: true`.
+runs:
+  using: composite
+  steps:
+    - name: Read the pin
+      id: pin
+      shell: bash
+      run: |
+        SHA=$(python3 -c "import json;print(json.load(open('dataset.lock.json'))['database']['sha256'])")
+        echo "sha=$SHA" >> "$GITHUB_OUTPUT"
+    - name: Restore verified dataset cache
+      uses: actions/cache@v5
+      with:
+        path: .dataset-cache
+        key: dataset-${{ runner.os }}-${{ steps.pin.outputs.sha }}
+    - name: Install the pinned database (downloads only on a cache miss)
+      shell: bash
+      env:
+        GH_TOKEN: ${{ github.token }}
+      run: |
+        python3 scripts/data/fetch_dataset.py --cache-dir .dataset-cache
+        head -c 16 db/sggs.sqlite | grep -q "SQLite format 3" || {
+          echo "::error::db/sggs.sqlite is not a SQLite database after install"; exit 1; }

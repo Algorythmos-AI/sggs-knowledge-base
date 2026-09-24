@@ -2,7 +2,7 @@
 import sys, unittest
 from pathlib import Path
 ROOT = Path(__file__).resolve().parents[2]
-sys.path.insert(0, str(ROOT / "pipeline"))
+sys.path.insert(0, str(ROOT / "tools"))
 _argv = sys.argv
 sys.argv = sys.argv[:1]
 import contract_http as ch  # noqa: E402

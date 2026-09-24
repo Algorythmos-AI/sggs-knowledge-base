@@ -6,7 +6,7 @@ Human-gated; outward-facing. Do this when ready to re-link Vercel/Render.
    `Algorythmos-AI`. (Or `gh api repos/skalaliya/sggs-knowledge-base/transfer -f new_owner=Algorythmos-AI`.)
    Commits, tags, LFS objects, PRs, issues carry over; the old URL redirects.
 2. **Local remote:** `git remote set-url origin git@github.com:Algorythmos-AI/sggs-knowledge-base.git`
-   then `git lfs ls-files` — confirm `db/sggs.sqlite` resolves (not a pointer).
+   then `make dataset-check` — confirm the pinned database is still published.
 3. **Vercel:** install/authorize the Vercel GitHub App on the org; re-connect the
    project's Git repo (Settings → Git). Production branch stays `main`.
 4. **Render:** authorize the Render GitHub App on the org; re-link the service (or
