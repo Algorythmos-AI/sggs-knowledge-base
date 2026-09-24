@@ -25,6 +25,8 @@ and all shared mutable state; context modules reach it as `core.NAME` and never 
 `serve.py` is the composition root (build identity, route table, HTTP layer) and proxies
 `serve.DB = …` to `core`. Behaviour proven identical again (80/80 differential, seeded Hukam,
 HTTP contract against `python serve.py`, harnesses).
+2026-09-24 — each context declares the tables it reads (`TABLES`; `serve.CONTEXT_TABLES`), enforced by an
+authorizer-scoped test over every golden suite and OpenAPI sample. Finding: no API route reads `fts_tri`.
 
 ## Step 2 — service split (later)
 Each module becomes a service behind a gateway that keeps the **single `/api/*`

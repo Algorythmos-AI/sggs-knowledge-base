@@ -4,6 +4,14 @@ from . import core
 from .core import _FALLTHROUGH, _int_str
 from verify import verify as verify_claim
 
+# Tables this context reads (webapp/verify.py, through its own read-only connection). The platform split cuts each service's database
+# slice from this declaration; webapp/tests/test_declared_tables.py runs every route of the
+# context under an SQLite authorizer that denies anything undeclared.
+TABLES = frozenset({
+    'fts',
+    'lines',
+})
+
 
 MAX_CLAIM_CHARS = 600                                # /api/verify?q= — see the route
 

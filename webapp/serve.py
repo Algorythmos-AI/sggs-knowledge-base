@@ -67,6 +67,10 @@ from sggs.insights import (_route_analytics_author, _route_analytics_constellati
 from sggs.knowledge import (_route_forms, _route_timing_clock, _route_timing_divergence,   # noqa: F401
     _route_timing_raag)   # noqa: F401  (re-exported)
 
+from sggs import search as _search, reader as _reader, verification as _verification, insights as _insights, knowledge as _knowledge
+# Tables each bounded context reads — the source for per-service database slices.
+CONTEXT_TABLES = {'search': _search.TABLES, 'reader': _reader.TABLES, 'verify': _verification.TABLES,
+                  'insights': _insights.TABLES, 'knowledge': _knowledge.TABLES}
 
 class _ServeModule(types.ModuleType):
     """Shared mutable state (DB path, FTS flag, caches) has exactly one home: sggs.core.
