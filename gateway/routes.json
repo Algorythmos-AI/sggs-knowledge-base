@@ -7,6 +7,7 @@
     "services": [
       "insights",
       "knowledge",
+      "reader",
       "search",
       "verify"
     ]
