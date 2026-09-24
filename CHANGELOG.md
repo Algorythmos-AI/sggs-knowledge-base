@@ -3,6 +3,35 @@
 The format below (newest first) follows [Keep a Changelog](https://keepachangelog.com);
 entries prior to v1.1.0 are the project's original prose style and are preserved verbatim.
 
+## [1.3.7] — 2026-09-24 — contract-first API, modular services, private translation sources
+
+No change to the scripture text, the corpus, the database or any user-facing behaviour. The API is
+now organised as the bounded contexts that become the platform's services, and its contract is
+enforced over HTTP.
+
+### Added
+- **Golden contract over HTTP** (`pipeline/contract_http.py`) — the same projections the golden
+  vectors record, replayed against any running API; CI runs it against the booted server and the
+  production Docker image, and it passes against production.
+- **OpenAPI 3.1 contract** (`contract/openapi.json`) for all 26 routes — schemas inferred from real
+  responses, drift-checked against the route table.
+- **Bounded-context modules** (`webapp/sggs/`: core, search, reader, verification, insights,
+  knowledge), each declaring the tables it reads — enforced by an SQLite-authorizer test.
+- **`SGGS_MODULES`** runs any subset of contexts from one image (default `all`); **`SGGS_DB`** selects a
+  database slice; **`/healthz`** and **`/readyz`** health endpoints (the Docker health check uses
+  `/readyz`); a split service refuses to start on an incomplete database.
+
+### Changed
+- `serve.py` is now the composition root (route table, HTTP layer, startup); every former
+  `serve.*` name is re-exported, so all callers are unchanged.
+- The English translation source files moved to a private source archive; rebuilds fetch them with
+  `scripts/data/fetch_translations.sh`, verified against committed checksums.
+
+### Fixed
+- `gen_golden_vectors.py` no longer mistakes a `--flag` for the database path.
+
+### Data
+
 ## [1.3.6] — 2026-09-24 — data-integrity hardening, reproducible builds, editorial ledger
 
 No change to the scripture text, the corpus, the database or any user-facing behaviour. This
