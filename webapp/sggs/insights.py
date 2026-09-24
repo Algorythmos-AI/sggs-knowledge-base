@@ -4,6 +4,29 @@ resonance, Vaars, constellation, related compositions, line concepts, semantic n
 import json, sqlite3, math
 from .core import _FALLTHROUGH, _ID_MAX, _int, attach_translations, db, rows_to_list
 
+# Tables this context reads (precomputed analytics plus verse text). The platform split cuts each service's database
+# slice from this declaration; webapp/tests/test_declared_tables.py runs every route of the
+# context under an SQLite authorizer that denies anything undeclared.
+TABLES = frozenset({
+    'analytics_meta',
+    'author_analytics',
+    'author_distinctive_terms',
+    'author_resonance',
+    'authors',
+    'concept_lines',
+    'concepts',
+    'line_neighbors',
+    'lines',
+    'raag_analytics',
+    'raags',
+    'shabad_neighbors',
+    'theme_fingerprint',
+    'theme_network',
+    'translations',
+    'vaar_units',
+    'vaars',
+})
+
 
 def _route_themes_network(p, qs):
     concept = qs.get('concept', [None])[0]

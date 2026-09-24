@@ -4,6 +4,19 @@ import sqlite3
 from . import core
 from .core import _FALLTHROUGH, _ID_MAX, _int, db, rows_to_list
 
+# Tables this context reads (the attributed timing-claims layer and form metadata). The platform split cuts each service's database
+# slice from this declaration; webapp/tests/test_declared_tables.py runs every route of the
+# context under an SQLite authorizer that denies anything undeclared.
+TABLES = frozenset({
+    'raag_timing_claims',
+    'raags',
+    'shabd_musical_markers',
+    'shabd_poetic_genre',
+    'shabd_raag_map',
+    'shabd_structural_form',
+    'timing_sources',
+})
+
 
 def _route_timing_clock(p, qs):
     if core._TIMING_CACHE is not None: return core._TIMING_CACHE

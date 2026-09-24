@@ -6,6 +6,25 @@ from . import core
 from .core import ApiError, LINE_COLS, _FALLTHROUGH, _ID_MAX, _int_str, attach_translations, db, rows_to_list
 from verify import verify as verify_claim
 
+# Tables this context reads (/meta counts, /health probes (FTS, live verify), verbatim lines, the bani registry). The platform split cuts each service's database
+# slice from this declaration; webapp/tests/test_declared_tables.py runs every route of the
+# context under an SQLite authorizer that denies anything undeclared.
+TABLES = frozenset({
+    'authors',
+    'bani_lines',
+    'banis',
+    'concept_lines',
+    'concepts',
+    'extra_lines',
+    'fts',
+    'lines',
+    'meta',
+    'raags',
+    'sections',
+    'timing_sources',
+    'translations',
+})
+
 
 _BANI_KEY_RE = re.compile(r'^[a-z0-9_]{1,32}$')     # /api/bani/{key}
 

@@ -6,6 +6,22 @@ from . import core
 from .core import LINE_COLS, _FALLTHROUGH, _int, attach_translations, db, have_fts, rows_to_list
 from romannorm import roman_norm
 
+# Tables this context reads (the waterfall tiers (FTS, English FTS, passage FTS, variants, canon tokens, lexicon concepts)). The platform split cuts each service's database
+# slice from this declaration; webapp/tests/test_declared_tables.py runs every route of the
+# context under an SQLite authorizer that denies anything undeclared.
+TABLES = frozenset({
+    'canon_tokens',
+    'concept_lines',
+    'concepts',
+    'fts',
+    'fts_en',
+    'fts_shabad',
+    'lines',
+    'translations',
+    'variants',
+    'word_freq',
+})
+
 
 GURMUKHI = re.compile('[਀-੿]')
 
