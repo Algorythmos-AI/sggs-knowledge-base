@@ -67,3 +67,7 @@ ios/AppStore/screenshots/
 
 # Machine-local agent notes (account identifiers, local gotchas) — never committed
 *.local.md
+
+# English translation sources — private (Algorythmos-AI/sggs-source); fetch with scripts/data/fetch_translations.sh
+/pipeline/translations/
+/pipeline/translations_en_raw_sample.jsonl

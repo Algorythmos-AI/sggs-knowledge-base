@@ -18,11 +18,14 @@ cd webapp && python3 serve.py        # stdlib only; no pip install needed
 # → http://localhost:7777   (override port with SGGS_PORT)
 ```
 
+Run one service of the platform split from the same code with `SGGS_MODULES=search` (or any comma list of `reader,search,verify,insights,knowledge`; default `all`) and point it at its own database slice with `SGGS_DB=/path/slice.sqlite`. In split mode the server refuses to start unless the database holds every table the enabled contexts declare. `/healthz` (liveness) and `/readyz` (200 only when every declared table is present) are the platform health checks.
+
 The server needs `db/sggs.sqlite` to exist. That DB is **~104 MiB (109 MB) and tracked via Git LFS** — run `git lfs pull` after cloning or the app won't start.
 
 ## Rebuild from the PDF
 
 ```bash
+bash scripts/data/fetch_translations.sh            # private English inputs, checksum-verified
 bash pipeline/rebuild_all.sh [path-to-source-pdf]   # default: ../Siri-Guru-...pdf
 ```
 
@@ -56,7 +59,9 @@ pipeline/                  # PDF → corpus → DB + enrichment + tests
   *_harness.py             #   roundtrip / casual-quote / chaos search harnesses
   rebuild_all.sh           #   one-command rebuild: PDF → corpus → full DB incl. analytics/vaars
   bhatt_attribution.json   #   per-Bhatt Swaiyye attribution (signature evidence)
-webapp/serve.py            # stdlib HTTP server + JSON API (read end-to-end before editing)
+webapp/serve.py            # composition root: build identity, ROUTES table, HTTP layer, startup
+webapp/sggs/               # bounded contexts: core (DB handle + shared state), search, reader,
+                           #   verification, insights, knowledge — each becomes a service in the split
 webapp/verify.py           # quotation-verification engine (Layer 3)
 webapp/static/             # prebuilt Astro MPA (served); static.bak/ = local backup, ignore
 frontend/                  # Astro UI source (build → static/)

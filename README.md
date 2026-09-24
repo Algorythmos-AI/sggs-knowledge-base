@@ -9,7 +9,7 @@ One corpus powers two things people can use today:
 
 The website and the app keep separate names and identities on purpose — see [Brand & domains](docs/engineering/brand.md) and [`docs/website/README.md`](docs/website/README.md).
 
-![version](https://img.shields.io/badge/version-1.3.6-1a3a6b)
+![version](https://img.shields.io/badge/version-1.3.7-1a3a6b)
 ![python](https://img.shields.io/badge/python-3.8%2B%20·%20stdlib%20only-3776ab)
 ![dependencies](https://img.shields.io/badge/dependencies-none-2e7d32)
 ![corpus](https://img.shields.io/badge/corpus-60%2C658%20lines%20·%201%2C430%20Angs-9a3412)
@@ -294,6 +294,7 @@ python3 pipeline/golden_test.py <the-source-pdf>                     # 49 checks
 python3 pipeline/build_db.py       corpus/sggs.jsonl /tmp/sggs.db
 python3 pipeline/build_variants.py /tmp/sggs.db                      # phonetic-variant index
 python3 pipeline/enrich_v2.py      /tmp/sggs.db --apply              # structural columns + checksum
+bash scripts/data/fetch_translations.sh                             # private inputs (see NOTICE.md)
 python3 pipeline/load_translations.py /tmp/sggs.db "pipeline/translations/en_*.jsonl"
 cp /tmp/sggs.db db/sggs.sqlite
 
@@ -307,7 +308,7 @@ bash pipeline/rebuild_all.sh <the-source-pdf>
 
 ## Versioning
 
-Current release: **v1.3.6** (`MANIFEST.json`). The running build is stamped in the footer and at `/api/health`. Every change — search-logic, data, or UI — is recorded in `CHANGELOG.md` with its before/after metrics and whether the DB changed. Search-only patches never re-commit the DB; the `db_sha256` in `MANIFEST.json` always matches the shipped `db/sggs.sqlite`.
+Current release: **v1.3.7** (`MANIFEST.json`). The running build is stamped in the footer and at `/api/health`. Every change — search-logic, data, or UI — is recorded in `CHANGELOG.md` with its before/after metrics and whether the DB changed. Search-only patches never re-commit the DB; the `db_sha256` in `MANIFEST.json` always matches the shipped `db/sggs.sqlite`.
 
 ---
 

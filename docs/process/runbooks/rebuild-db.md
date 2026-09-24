@@ -6,6 +6,7 @@
 ```bash
 make doctor                                   # confirm interpreter + PDF + LFS DB
 cp db/sggs.sqlite /tmp/pre.sqlite             # backup for the proof
+bash scripts/data/fetch_translations.sh       # private translation inputs (checksum-verified)
 make rebuild                                  # PATH=/usr/bin:$PATH bash pipeline/rebuild_all.sh
                                               #   gates: reconcile char-exact, golden all-pass
 python3 pipeline/verify_regroup.py /tmp/pre.sqlite db/sggs.sqlite   # only comp_id/line_no changed
