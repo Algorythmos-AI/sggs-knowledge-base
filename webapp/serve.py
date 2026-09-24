@@ -6,7 +6,7 @@ Zero dependencies: Python 3 standard library only.
 
 Run:   python3 serve.py        then open  http://localhost:7777
 """
-import json, os, sqlite3, sys, threading, webbrowser, mimetypes, hashlib, time, types
+import json, os, re, sqlite3, sys, threading, webbrowser, mimetypes, hashlib, time, types, uuid
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from urllib.parse import urlparse, parse_qs
 
@@ -26,8 +26,8 @@ PORT = int(os.environ.get('PORT') or os.environ.get('SGGS_PORT') or '7777')
 # doesn't force an 86 MB DB re-commit. /api/meta and /api/health prefer these; the
 # DB meta row is the fallback. Bump on every search-logic release so the UI footer
 # (which reads /api/meta) reflects the running build.
-APP_VERSION = '1.3.8'
-APP_BUILT = '2026-09-24'
+APP_VERSION = '1.3.9'
+APP_BUILT = '2026-09-25'
 
 
 # The exact source commit of the running build, so a deploy can be verified by
@@ -181,6 +181,10 @@ _CACHEABLE = ('ang', 'shabad', 'lines', 'bani', 'banis', 'word', 'analytics', 't
               'forms', 'neighbors', 'related', 'line_concepts')
 _CACHE_IMMUTABLE = 'public, max-age=300, s-maxage=3600'
 _ACCESS_LOG = os.environ.get('SGGS_ACCESS_LOG', '1') != '0'
+# A request id is echoed on every response (X-Request-Id) and written to the access log, so one
+# request can be followed from Vercel to this service. An incoming X-Request-Id or Vercel's own
+# x-vercel-id is reused when it is a plain token; anything else is replaced, never logged as sent.
+_RID_OK = re.compile(r'[A-Za-z0-9._:-]{8,128}')
 
 class H(BaseHTTPRequestHandler):
     # A client that connects and then sends nothing (or trickles bytes) used to hold its thread
@@ -197,7 +201,14 @@ class H(BaseHTTPRequestHandler):
         ms = round((time.monotonic() - t0) * 1000, 1) if t0 else None
         code = getattr(code, 'value', code)
         sys.stderr.write(json.dumps({'m': self.command, 'p': urlparse(self.path).path,
-                                     's': code, 'ms': ms}) + '\n')
+                                     's': code, 'ms': ms, 'id': getattr(self, '_rid', None)}) + '\n')
+
+    def _request_id(self):
+        for h in ('X-Request-Id', 'x-vercel-id'):
+            v = (self.headers.get(h) or '').strip()
+            if _RID_OK.fullmatch(v):
+                return v
+        return uuid.uuid4().hex
 
     def _sec_headers(self):
         # Defence-in-depth for the local app. No strict CSP on purpose: the UI relies on
@@ -208,6 +219,11 @@ class H(BaseHTTPRequestHandler):
         self.send_header('Referrer-Policy', 'no-referrer')
         # Honoured only over HTTPS (the hosted API); browsers ignore it on http://localhost.
         self.send_header('Strict-Transport-Security', 'max-age=31536000')
+        rid = getattr(self, '_rid', None)
+        if rid: self.send_header('X-Request-Id', rid)
+        # Which service answered: 'all' for the single API, else the contexts this service runs.
+        # The gateway's routing is verified by this header (it carries no user data).
+        self.send_header('X-Service', 'all' if ENABLED == frozenset(CONTEXT_TABLES) else ','.join(sorted(ENABLED)))
 
     def _respond(self, status, body, ct, cache='no-store'):
         etag = None
@@ -303,6 +319,7 @@ class H(BaseHTTPRequestHandler):
 
     def _handle(self):
         self._t0 = time.monotonic()
+        self._rid = self._request_id()
         u = urlparse(self.path)
         if u.path == '/favicon.ico':
             return self._respond(404, b'', 'image/x-icon')
@@ -313,6 +330,8 @@ class H(BaseHTTPRequestHandler):
                 body = {'ready': False, 'error': 'database unavailable'}
             status = 200 if body.get('ok') or body.get('ready') else 503
             return self._respond(status, json.dumps(body).encode(), 'application/json')
+        if u.path.startswith('/api/v1/'):
+            return self._handle_v1(u)
         try:
             if u.path.startswith('/api/'):
                 body = json.dumps(api(u.path, parse_qs(u.query)), ensure_ascii=False).encode()
@@ -336,6 +355,33 @@ class H(BaseHTTPRequestHandler):
             # exception type / internals (e.g. sqlite schema hints) over the wire.
             msg = json.dumps({'error': 'internal server error'}).encode()
             return self._respond(500, msg, 'application/json')
+
+    def _handle_v1(self, u):
+        """/api/v1/* — the same routes and bodies as /api/*, with strict semantics: an unknown
+        endpoint is 404 (not 400), and every error is {"error": {"code", "message", "request_id"}}.
+        The legacy /api/* responses stay byte-identical (the golden contract pins them)."""
+        def err(status, code, message):
+            body = {'error': {'code': code, 'message': message, 'request_id': self._rid}}
+            return self._respond(status, json.dumps(body).encode(), 'application/json')
+        legacy = '/api/' + u.path[len('/api/v1/'):]
+        try:
+            body = json.dumps(api(legacy, parse_qs(u.query)), ensure_ascii=False).encode()
+            seg = legacy.split('/')[2] if legacy.count('/') >= 2 else ''
+            cache = _CACHE_IMMUTABLE if seg in _CACHEABLE else 'no-store'
+            return self._respond(200, body, 'application/json; charset=utf-8', cache)
+        except ApiError as e:
+            return err(e.status, 'not_found' if e.status == 404 else 'error', e.message)
+        except (ValueError, IndexError, OverflowError) as e:
+            if str(e) in ('unknown endpoint', 'missing endpoint'):
+                return err(404, 'not_found', f'no such endpoint: {u.path}')
+            return err(400, 'invalid_request', str(e))
+        except Exception:
+            import traceback
+            traceback.print_exc(file=sys.stderr)
+            try:
+                if hasattr(_local, 'con'): _local.con.close(); del _local.con
+            except Exception: pass
+            return err(500, 'internal', 'internal server error')
 
     def do_GET(self): self._handle()
     def do_HEAD(self): self._handle()
@@ -391,6 +437,12 @@ if __name__ == '__main__':
     srv = BoundedThreadingHTTPServer(('0.0.0.0', PORT), H)
     url = f'http://localhost:{PORT}'
     print(f'ੴ  SGGS Knowledge Base serving at {url}   (Ctrl-C to stop)')
+    try:                                   # one identity line per process; request lines carry only the id
+        _dbv = core.db().execute("SELECT value FROM meta WHERE key = 'version'").fetchone()
+    except Exception:
+        _dbv = None
+    print(json.dumps({'event': 'start', 'version': APP_VERSION, 'commit': APP_COMMIT,
+                      'dataset': _dbv[0] if _dbv else None, 'modules': sorted(ENABLED)}), flush=True)
     # Only pop a browser for local desktop use; never on a headless host. Opt in with SGGS_OPEN_BROWSER=1.
     if os.environ.get('SGGS_OPEN_BROWSER') == '1':
         try: threading.Timer(0.8, lambda: webbrowser.open(url)).start()

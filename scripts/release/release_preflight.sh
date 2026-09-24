@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # release_preflight.sh — read-only readiness check for an integration → main release.
 set -uo pipefail
-REPO=Algorythmos-AI/sggs-knowledge-base
+REPO=Algorythmos-AI/sggs-platform
 cd "$(git rev-parse --show-toplevel)" || exit 1
 bad=0
 ok()   { echo "  ok   $*"; }

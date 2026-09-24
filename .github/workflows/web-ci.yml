@@ -14,6 +14,7 @@ jobs:
     steps:
       - uses: actions/checkout@v5
       - uses: ./.github/actions/fetch-dataset
+        with: { token: "${{ secrets.SGGS_READ_TOKEN || github.token }}" }
       - uses: actions/setup-python@v6
         with:
           python-version-file: ".python-version"
@@ -56,12 +57,22 @@ jobs:
       - name: Build the production API image
         run: docker build -f webapp/Dockerfile --build-arg RENDER_GIT_COMMIT="$GITHUB_SHA" -t sggs-api:ci .
       - uses: ./.github/actions/fetch-dataset
+        with: { token: "${{ secrets.SGGS_READ_TOKEN || github.token }}" }
       - name: Run it and verify health + baked commit identity
         run: |
           docker run -d -p 7777:7777 -e PORT=7777 --name sggs sggs-api:ci
           for _ in $(seq 1 45); do curl -sf -o /dev/null http://127.0.0.1:7777/api/meta && break; sleep 2; done
           python3 scripts/ci/wait_for_deploy.py http://127.0.0.1:7777 --commit "$GITHUB_SHA" --timeout 120 --interval 3 --unknown-grace 0
           python3 tools/contract_http.py --base http://127.0.0.1:7777   # the shipped image honours the contract
+      - name: One service from the same image (SGGS_MODULES=knowledge cuts its slice at build time)
+        run: |
+          docker build -f webapp/Dockerfile --build-arg RENDER_GIT_COMMIT="$GITHUB_SHA" --build-arg SGGS_MODULES=knowledge -t sggs-api:knowledge .
+          docker run -d -p 7778:7777 -e PORT=7777 --name sggs-knowledge sggs-api:knowledge
+          for _ in $(seq 1 45); do curl -sf -o /dev/null http://127.0.0.1:7778/readyz && break; sleep 2; done
+          curl -sf http://127.0.0.1:7778/readyz | python3 -c "import json,sys; d=json.load(sys.stdin); assert d['ready'] and d['contexts'] == ['knowledge'], d; print('knowledge service ready:', d['contexts'])"
+          test "$(curl -s -o /dev/null -w '%{http_code}' http://127.0.0.1:7778/api/timing/clock)" = 200
+          test "$(curl -s -o /dev/null -w '%{http_code}' http://127.0.0.1:7778/api/ang/1)" = 404   # another service's route
+          docker run --rm --entrypoint sh sggs-api:knowledge -c 'ls -l /app/db && test "$(stat -c %s /app/db/sggs.sqlite)" -lt 5000000'
       - name: Container logs
         if: always()
         run: docker logs sggs 2>&1 | tail -20 || true

@@ -311,7 +311,10 @@ def verify(claim: str, ang: Optional[int] = None, db_path: str = DB_PATH) -> dic
       distance_details : dict  — scoring metadata
     }
     """
-    con = sqlite3.connect(f"file:{db_path}?mode=ro", uri=True)
+    # Same guarantees as the server's own connection factory (sggs/core.py): read-only, immutable
+    # (no locks, no journal, never a write), and query_only as a second fence.
+    con = sqlite3.connect(f"file:{db_path}?mode=ro&immutable=1", uri=True)
+    con.execute("PRAGMA query_only=ON")
     cur = con.cursor()
 
     try:

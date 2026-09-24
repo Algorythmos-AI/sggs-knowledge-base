@@ -1,0 +1,61 @@
+name: data-canary
+
+# Every 6 hours (and on demand): does production serve exactly the scripture this repository
+# pins? A random sample of lines (/api/lines) and whole Angs (/api/ang/N, plus Angs 1, 712 and
+# 1430) is fetched from the API origin and through the public site (Vercel CDN), and compared
+# byte for byte with the pinned database from sggs-data. The golden contract is replayed too.
+# A difference opens one issue (or comments on the open one); it never redeploys by itself.
+# Replay a failure locally with the printed seed:  python3 tools/data_canary.py --seed N --origin …
+
+on:
+  schedule:
+    - cron: "17 */6 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  issues: write
+
+concurrency:
+  group: data-canary
+  cancel-in-progress: false
+
+env:
+  API: https://sggs-knowledge-base.onrender.com
+  SITE: https://gurbanisoul.com
+
+jobs:
+  canary:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: main             # what production serves: its dataset pin and its golden contract
+      - uses: actions/checkout@v5
+        with:
+          path: canary          # the canary tool itself, from this workflow's own commit (main may predate it)
+      - uses: actions/setup-python@v6
+        with:
+          python-version-file: ".python-version"
+      - uses: ./.github/actions/fetch-dataset
+        with: { token: "${{ secrets.SGGS_READ_TOKEN || github.token }}" }
+      - name: Served scripture == pinned database (API origin and public site)
+        run: python3 canary/tools/data_canary.py --db db/sggs.sqlite --origin "$API" --origin "$SITE" --sample 500 --angs 12
+      - name: Golden contract over HTTP (production API)
+        run: python3 tools/contract_http.py --base "$API"
+
+      - name: open or update the incident issue
+        if: failure()
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          title="data-canary: production does not serve the pinned scripture"
+          body="The data canary failed — see ${RUN_URL} (the log prints the seed to replay it). Treat as P1: compare the served commit (/api/health) and dataset with dataset.lock.json; purge the Vercel cache if only the public site differs; roll back per docs/process/runbooks/rollback.md."
+          existing="$(gh issue list --repo "$GITHUB_REPOSITORY" --state open --search "in:title \"$title\"" --json number --jq '.[0].number // empty')"
+          if [ -n "$existing" ]; then
+            gh issue comment "$existing" --repo "$GITHUB_REPOSITORY" --body "$body"
+          else
+            gh issue create --repo "$GITHUB_REPOSITORY" --title "$title" --body "$body"
+          fi

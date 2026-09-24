@@ -4,6 +4,366 @@
   "cleanUrls": true,
   "rewrites": [
     {
+      "source": "/api/analytics/:path*",
+      "has": [
+        {
+          "type": "host",
+          "value": "sggs-staging.vercel.app"
+        }
+      ],
+      "destination": "https://sggs-staging-insights.onrender.com/api/analytics/:path*"
+    },
+    {
+      "source": "/api/v1/analytics/:path*",
+      "has": [
+        {
+          "type": "host",
+          "value": "sggs-staging.vercel.app"
+        }
+      ],
+      "destination": "https://sggs-staging-insights.onrender.com/api/v1/analytics/:path*"
+    },
+    {
+      "source": "/api/line_concepts/:path*",
+      "has": [
+        {
+          "type": "host",
+          "value": "sggs-staging.vercel.app"
+        }
+      ],
+      "destination": "https://sggs-staging-insights.onrender.com/api/line_concepts/:path*"
+    },
+    {
+      "source": "/api/v1/line_concepts/:path*",
+      "has": [
+        {
+          "type": "host",
+          "value": "sggs-staging.vercel.app"
+        }
+      ],
+      "destination": "https://sggs-staging-insights.onrender.com/api/v1/line_concepts/:path*"
+    },
+    {
+      "source": "/api/neighbors/:path*",
+      "has": [
+        {
+          "type": "host",
+          "value": "sggs-staging.vercel.app"
+        }
+      ],
+      "destination": "https://sggs-staging-insights.onrender.com/api/neighbors/:path*"
+    },
+    {
+      "source": "/api/v1/neighbors/:path*",
+      "has": [
+        {
+          "type": "host",
+          "value": "sggs-staging.vercel.app"
+        }
+      ],
+      "destination": "https://sggs-staging-insights.onrender.com/api/v1/neighbors/:path*"
+    },
+    {
+      "source": "/api/related/:path*",
+      "has": [
+        {
+          "type": "host",
+          "value": "sggs-staging.vercel.app"
+        }
+      ],
+      "destination": "https://sggs-staging-insights.onrender.com/api/related/:path*"
+    },
+    {
+      "source": "/api/v1/related/:path*",
+      "has": [
+        {
+          "type": "host",
+          "value": "sggs-staging.vercel.app"
+        }
+      ],
+      "destination": "https://sggs-staging-insights.onrender.com/api/v1/related/:path*"
+    },
+    {
+      "source": "/api/themes/:path*",
+      "has": [
+        {
+          "type": "host",
+          "value": "sggs-staging.vercel.app"
+        }
+      ],
+      "destination": "https://sggs-staging-insights.onrender.com/api/themes/:path*"
+    },
+    {
+      "source": "/api/v1/themes/:path*",
+      "has": [
+        {
+          "type": "host",
+          "value": "sggs-staging.vercel.app"
+        }
+      ],
+      "destination": "https://sggs-staging-insights.onrender.com/api/v1/themes/:path*"
+    },
+    {
+      "source": "/api/forms/:path*",
+      "has": [
+        {
+          "type": "host",
+          "value": "sggs-staging.vercel.app"
+        }
+      ],
+      "destination": "https://sggs-staging-knowledge.onrender.com/api/forms/:path*"
+    },
+    {
+      "source": "/api/v1/forms/:path*",
+      "has": [
+        {
+          "type": "host",
+          "value": "sggs-staging.vercel.app"
+        }
+      ],
+      "destination": "https://sggs-staging-knowledge.onrender.com/api/v1/forms/:path*"
+    },
+    {
+      "source": "/api/timing/:path*",
+      "has": [
+        {
+          "type": "host",
+          "value": "sggs-staging.vercel.app"
+        }
+      ],
+      "destination": "https://sggs-staging-knowledge.onrender.com/api/timing/:path*"
+    },
+    {
+      "source": "/api/v1/timing/:path*",
+      "has": [
+        {
+          "type": "host",
+          "value": "sggs-staging.vercel.app"
+        }
+      ],
+      "destination": "https://sggs-staging-knowledge.onrender.com/api/v1/timing/:path*"
+    },
+    {
+      "source": "/api/ang/:path*",
+      "has": [
+        {
+          "type": "host",
+          "value": "sggs-staging.vercel.app"
+        }
+      ],
+      "destination": "https://sggs-staging-reader.onrender.com/api/ang/:path*"
+    },
+    {
+      "source": "/api/v1/ang/:path*",
+      "has": [
+        {
+          "type": "host",
+          "value": "sggs-staging.vercel.app"
+        }
+      ],
+      "destination": "https://sggs-staging-reader.onrender.com/api/v1/ang/:path*"
+    },
+    {
+      "source": "/api/bani/:path*",
+      "has": [
+        {
+          "type": "host",
+          "value": "sggs-staging.vercel.app"
+        }
+      ],
+      "destination": "https://sggs-staging-reader.onrender.com/api/bani/:path*"
+    },
+    {
+      "source": "/api/v1/bani/:path*",
+      "has": [
+        {
+          "type": "host",
+          "value": "sggs-staging.vercel.app"
+        }
+      ],
+      "destination": "https://sggs-staging-reader.onrender.com/api/v1/bani/:path*"
+    },
+    {
+      "source": "/api/banis/:path*",
+      "has": [
+        {
+          "type": "host",
+          "value": "sggs-staging.vercel.app"
+        }
+      ],
+      "destination": "https://sggs-staging-reader.onrender.com/api/banis/:path*"
+    },
+    {
+      "source": "/api/v1/banis/:path*",
+      "has": [
+        {
+          "type": "host",
+          "value": "sggs-staging.vercel.app"
+        }
+      ],
+      "destination": "https://sggs-staging-reader.onrender.com/api/v1/banis/:path*"
+    },
+    {
+      "source": "/api/health/:path*",
+      "has": [
+        {
+          "type": "host",
+          "value": "sggs-staging.vercel.app"
+        }
+      ],
+      "destination": "https://sggs-staging-reader.onrender.com/api/health/:path*"
+    },
+    {
+      "source": "/api/v1/health/:path*",
+      "has": [
+        {
+          "type": "host",
+          "value": "sggs-staging.vercel.app"
+        }
+      ],
+      "destination": "https://sggs-staging-reader.onrender.com/api/v1/health/:path*"
+    },
+    {
+      "source": "/api/lines/:path*",
+      "has": [
+        {
+          "type": "host",
+          "value": "sggs-staging.vercel.app"
+        }
+      ],
+      "destination": "https://sggs-staging-reader.onrender.com/api/lines/:path*"
+    },
+    {
+      "source": "/api/v1/lines/:path*",
+      "has": [
+        {
+          "type": "host",
+          "value": "sggs-staging.vercel.app"
+        }
+      ],
+      "destination": "https://sggs-staging-reader.onrender.com/api/v1/lines/:path*"
+    },
+    {
+      "source": "/api/meta/:path*",
+      "has": [
+        {
+          "type": "host",
+          "value": "sggs-staging.vercel.app"
+        }
+      ],
+      "destination": "https://sggs-staging-reader.onrender.com/api/meta/:path*"
+    },
+    {
+      "source": "/api/v1/meta/:path*",
+      "has": [
+        {
+          "type": "host",
+          "value": "sggs-staging.vercel.app"
+        }
+      ],
+      "destination": "https://sggs-staging-reader.onrender.com/api/v1/meta/:path*"
+    },
+    {
+      "source": "/api/random/:path*",
+      "has": [
+        {
+          "type": "host",
+          "value": "sggs-staging.vercel.app"
+        }
+      ],
+      "destination": "https://sggs-staging-reader.onrender.com/api/random/:path*"
+    },
+    {
+      "source": "/api/v1/random/:path*",
+      "has": [
+        {
+          "type": "host",
+          "value": "sggs-staging.vercel.app"
+        }
+      ],
+      "destination": "https://sggs-staging-reader.onrender.com/api/v1/random/:path*"
+    },
+    {
+      "source": "/api/shabad/:path*",
+      "has": [
+        {
+          "type": "host",
+          "value": "sggs-staging.vercel.app"
+        }
+      ],
+      "destination": "https://sggs-staging-reader.onrender.com/api/shabad/:path*"
+    },
+    {
+      "source": "/api/v1/shabad/:path*",
+      "has": [
+        {
+          "type": "host",
+          "value": "sggs-staging.vercel.app"
+        }
+      ],
+      "destination": "https://sggs-staging-reader.onrender.com/api/v1/shabad/:path*"
+    },
+    {
+      "source": "/api/search/:path*",
+      "has": [
+        {
+          "type": "host",
+          "value": "sggs-staging.vercel.app"
+        }
+      ],
+      "destination": "https://sggs-staging-search.onrender.com/api/search/:path*"
+    },
+    {
+      "source": "/api/v1/search/:path*",
+      "has": [
+        {
+          "type": "host",
+          "value": "sggs-staging.vercel.app"
+        }
+      ],
+      "destination": "https://sggs-staging-search.onrender.com/api/v1/search/:path*"
+    },
+    {
+      "source": "/api/word/:path*",
+      "has": [
+        {
+          "type": "host",
+          "value": "sggs-staging.vercel.app"
+        }
+      ],
+      "destination": "https://sggs-staging-search.onrender.com/api/word/:path*"
+    },
+    {
+      "source": "/api/v1/word/:path*",
+      "has": [
+        {
+          "type": "host",
+          "value": "sggs-staging.vercel.app"
+        }
+      ],
+      "destination": "https://sggs-staging-search.onrender.com/api/v1/word/:path*"
+    },
+    {
+      "source": "/api/verify/:path*",
+      "has": [
+        {
+          "type": "host",
+          "value": "sggs-staging.vercel.app"
+        }
+      ],
+      "destination": "https://sggs-staging-verify.onrender.com/api/verify/:path*"
+    },
+    {
+      "source": "/api/v1/verify/:path*",
+      "has": [
+        {
+          "type": "host",
+          "value": "sggs-staging.vercel.app"
+        }
+      ],
+      "destination": "https://sggs-staging-verify.onrender.com/api/v1/verify/:path*"
+    },
+    {
       "source": "/api/:path*",
       "has": [
         {

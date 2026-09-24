@@ -9,7 +9,7 @@ One corpus powers two things people can use today:
 
 The website and the app keep separate names and identities on purpose — see [Brand & domains](docs/engineering/brand.md) and [`docs/website/README.md`](docs/website/README.md).
 
-![version](https://img.shields.io/badge/version-1.3.8-1a3a6b)
+![version](https://img.shields.io/badge/version-1.3.9-1a3a6b)
 ![python](https://img.shields.io/badge/python-3.8%2B%20·%20stdlib%20only-3776ab)
 ![dependencies](https://img.shields.io/badge/dependencies-none-2e7d32)
 ![corpus](https://img.shields.io/badge/corpus-60%2C658%20lines%20·%201%2C430%20Angs-9a3412)
@@ -235,7 +235,7 @@ Design docs (in `docs/design/`), in reading order: `00_Build-Plan.md` → `01_Pr
 ## Repository layout
 
 ```
-sggs-knowledge-base/
+sggs-platform/
 ├── webapp/
 │   ├── serve.py            # zero-dependency stdlib HTTP server (composition root + route table)
 │   ├── sggs/               # the bounded contexts: core, reader, search, verification, insights, knowledge
@@ -282,7 +282,7 @@ The corpus and database are rebuilt from the source edition in [`Algorythmos-AI/
 
 ## Versioning
 
-Current release: **v1.3.8**. The running build is stamped in the footer and at `/api/health`. Every change — search-logic, data, or UI — is recorded in `CHANGELOG.md` with its before/after metrics and whether the DB changed. The dataset versions separately (sggs-data `data-vX.Y.Z`); `dataset.lock.json` names the exact database every build serves.
+Current release: **v1.3.9**. The running build is stamped in the footer and at `/api/health`. Every change — search-logic, data, or UI — is recorded in `CHANGELOG.md` with its before/after metrics and whether the DB changed. The dataset versions separately (sggs-data `data-vX.Y.Z`); `dataset.lock.json` names the exact database every build serves.
 
 ---
 

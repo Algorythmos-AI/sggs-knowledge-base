@@ -2,7 +2,7 @@
 # Apply .github/rulesets/*.json to the repo via the GitHub API (idempotent:
 # updates a ruleset with the same name if it already exists). Requires GitHub
 # Team/Pro on the repo owner, and `gh auth` with admin on the repo.
-#   REPO=Algorythmos-AI/sggs-knowledge-base bash scripts/gh/apply_rulesets.sh
+#   REPO=Algorythmos-AI/sggs-platform bash scripts/gh/apply_rulesets.sh
 set -euo pipefail
 REPO="${REPO:-$(gh repo view --json nameWithOwner -q .nameWithOwner)}"
 echo "Applying rulesets to $REPO"

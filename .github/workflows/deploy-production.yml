@@ -109,6 +109,7 @@ jobs:
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
       - uses: ./.github/actions/fetch-dataset
+        with: { token: "${{ secrets.SGGS_READ_TOKEN || github.token }}" }
       - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5
         with:
           python-version-file: ".python-version"
@@ -218,6 +219,12 @@ jobs:
           VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
           URL: ${{ needs.deploy-web.outputs.url }}
         run: vercel promote "$URL" --yes --timeout 5m --token="$VERCEL_TOKEN"
+      - name: Purge the CDN cache (proxied API reads are cached up to s-maxage; a new dataset must not be served stale)
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+        # Non-fatal: a failed purge only risks cached reads up to s-maxage old (the data canary would
+        # catch a difference); it must not trigger the web rollback below.
+        run: vercel cache purge --type cdn --yes --token="$VERCEL_TOKEN" || echo "::warning::CDN cache purge failed — cached API reads may be up to s-maxage old"
       - name: Smoke the public production domain
         id: public
         working-directory: frontend

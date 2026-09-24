@@ -2,7 +2,7 @@
 # watch_deploy.sh [SHA] — follow deploy-production for a commit, printing job transitions.
 # Exit 0 if the run succeeds, 1 otherwise. Read-only.
 set -uo pipefail
-REPO=Algorythmos-AI/sggs-knowledge-base
+REPO=Algorythmos-AI/sggs-platform
 git fetch -q origin 2>/dev/null
 SHA="${1:-$(git rev-parse origin/main)}"
 echo "commit: $SHA ($(git log -1 --pretty=%s "$SHA" 2>/dev/null))"

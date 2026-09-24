@@ -70,6 +70,33 @@ jobs:
         # free tier is slow to build + cold-starts; tolerate the old build's missing commit
         run: python3 scripts/ci/wait_for_deploy.py "$STG_API" --commit "$GITHUB_SHA" --timeout 1800 --unknown-grace 1800
 
+  deploy-services:
+    # Phase 4 (staging only): each bounded context as its own Render service, built from the same
+    # image with its slice (render.yaml). Independent of the single staging API above, which keeps
+    # serving the web until the gateway routes a prefix to a service. Needs the staging secret
+    # RENDER_API_KEY; until it exists this job is a no-op with a notice.
+    needs: [gates, preflight]
+    runs-on: ubuntu-latest
+    environment: staging
+    timeout-minutes: 45
+    strategy:
+      fail-fast: false
+      matrix:
+        service: [reader, search, verify, insights, knowledge]
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - name: Deploy sggs-staging-${{ matrix.service }} at this commit and wait until it is ready
+        env:
+          RENDER_API_KEY: ${{ secrets.RENDER_API_KEY }}
+          SERVICE: sggs-staging-${{ matrix.service }}
+        run: |
+          if [ -z "$RENDER_API_KEY" ]; then
+            echo "::notice::RENDER_API_KEY is not set — the per-service staging deploy is skipped (Phase 4 setup)"; exit 0
+          fi
+          url=$(python3 scripts/ci/render_deploy.py "$SERVICE" "$GITHUB_SHA")
+          echo "$SERVICE → $url"
+          python3 scripts/ci/wait_for_deploy.py "$url" --readyz --commit "$GITHUB_SHA" --timeout 1800 --unknown-grace 1800
+
   deploy-web:
     needs: deploy-api
     runs-on: ubuntu-latest
@@ -93,9 +120,12 @@ jobs:
           url=$(python3 scripts/ci/vercel_deploy_url.py deploy.out deploy.err)
           echo "deployed $url"
           vercel alias set "$url" sggs-staging.vercel.app --token="$VERCEL_TOKEN"
+      - name: Purge the CDN cache (proxied API reads are cached up to s-maxage; a new dataset must not be served stale)
+        env: { VERCEL_TOKEN: "${{ secrets.VERCEL_TOKEN }}" }
+        run: vercel cache purge --type cdn --yes --token="$VERCEL_TOKEN" || echo "::warning::CDN cache purge failed — cached API reads may be up to s-maxage old"
 
   verify:
-    needs: deploy-web
+    needs: [deploy-web, deploy-services]   # routing probes need the services at this commit too
     runs-on: ubuntu-latest
     environment: staging
     timeout-minutes: 20
@@ -117,3 +147,24 @@ jobs:
           npm ci
           npx playwright install --with-deps chromium
           npx playwright test --grep @smoke --project=desktop
+      - name: The gateway routes each context to its service (X-Service), everything else to the single API
+        env:
+          VERCEL_AUTOMATION_BYPASS_SECRET: ${{ secrets.VERCEL_AUTOMATION_BYPASS_SECRET }}
+        run: |
+          probe() {  # $1 = path, $2 = expected X-Service
+            for _ in $(seq 1 12); do
+              got=$(curl -s -D - -o /dev/null --max-time 90 -H "x-vercel-protection-bypass: $VERCEL_AUTOMATION_BYPASS_SECRET" "$STG_WEB$1" \
+                    | tr -d '\r' | awk -F': ' 'tolower($1)=="x-service"{print $2}')
+              [ "$got" = "$2" ] && { echo "ok  $1 → $got"; return 0; }
+              echo "    $1 → '${got:-none}' (want $2), retrying"; sleep 20
+            done
+            echo "::error::gateway sent $1 to '${got:-none}', expected $2"; return 1
+          }
+          python3 tools/gen_gateway.py --probes staging | while read -r ctx path; do probe "$path" "$ctx" || exit 1; done
+          probe /api/nope all           # an unknown prefix still falls through to the single API (the rollback path)
+      - uses: ./.github/actions/fetch-dataset
+        with: { token: "${{ secrets.SGGS_READ_TOKEN || github.token }}" }
+      - name: The whole golden contract holds through the gateway, however the routes are split
+        env:
+          VERCEL_AUTOMATION_BYPASS_SECRET: ${{ secrets.VERCEL_AUTOMATION_BYPASS_SECRET }}
+        run: python3 tools/contract_http.py --base "$STG_WEB"

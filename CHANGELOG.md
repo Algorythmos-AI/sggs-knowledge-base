@@ -3,6 +3,45 @@
 The format below (newest first) follows [Keep a Changelog](https://keepachangelog.com);
 entries prior to v1.1.0 are the project's original prose style and are preserved verbatim.
 
+## [1.3.9] — 2026-09-25 — services on staging, a versioned API, continuous verification
+
+No change to the scripture text, the corpus, the database bytes (`cb6775ff…`) or any page. Every
+legacy `/api/*` response is byte-identical (the golden contract pins it).
+
+### Added
+- **Services, on staging.** Every bounded context runs as its own service on staging
+  (`sggs-staging-reader`, `-search`, `-verify`, `-insights`, `-knowledge`): one image with
+  `SGGS_MODULES`, each serving a database slice cut and proven at build time, deployed at the exact
+  commit through the Render API. The gateway's routing is generated from the route table
+  (`tools/gen_gateway.py`, `gateway/routes.json`); every staging deploy proves each context answers
+  through the gateway (`X-Service`) and replays the whole golden contract through it. Production
+  still runs the single API (ADR-0010; `docs/process/runbooks/services-production.md`).
+- **`/api/v1/*`** serves every route with the same response bodies as `/api/*`, with strict
+  semantics for new clients and the coming service gateway: an unknown endpoint is 404 (not 400) and
+  every error is `{"error": {"code", "message", "request_id"}}`. Legacy `/api/*` is byte-identical
+  (the golden contract pins it); the OpenAPI description documents both.
+- **Request ids.** Every API response carries `X-Request-Id` (reusing a valid incoming id or
+  Vercel's `x-vercel-id`, else a random one), and the access log line records it, so one request
+  can be followed from the CDN to the API. A startup line records version, commit, dataset and
+  enabled modules. The log still never contains a query string, IP or user agent.
+- **Data canary** (`tools/data_canary.py`, workflow `data-canary`, `make canary`): every 6 hours
+  production is proven to serve exactly the pinned scripture — a random sample of 500 lines and
+  12 random Angs (plus Angs 1, 712 and 1430), fetched from the API origin and through the public
+  site's CDN, compared byte for byte with the pinned database, and the golden contract replayed
+  against production. A difference opens one issue; the printed seed replays it.
+- **`X-Service`** on every response names the service that answered (`all` for the single API).
+- **Service slices** (`tools/slice_db.py`, `make slices`) and a **latency baseline per context**
+  (`tools/perf_baseline.py`, `docs/perf/baseline-2026-09.json`) that the service split is held to.
+
+### Changed
+- **The CDN cache is purged after every deploy goes live.** Vercel caches the proxied scripture reads
+  for up to an hour and does not promise a deploy clears them; both deploy pipelines now purge it.
+- **`verify.py` opens the database immutable and query-only**, like every other connection.
+
+### Fixed
+- The data canary ran its tool from `main`, which predated it; it now runs from its own commit and
+  checks production against `main`'s pin and contract (first run: PASS).
+
 ## [1.3.8] — 2026-09-24 — three repositories: data, platform, app
 
 No change to the scripture text, the corpus, the database bytes (`cb6775ff…`), the API's
