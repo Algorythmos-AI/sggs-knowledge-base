@@ -30,7 +30,9 @@ is needed:
 ## As-code
 - **Deploys are CI-gated** — see [runbook: deploy](runbooks/deploy.md). The platforms' own git
   auto-deploys are switched off after cutover.
-- Render: `render.yaml` (Blueprint) defines both services from `webapp/Dockerfile`.
+- Render: `render.yaml` (Blueprint) declares **staging only** (`sggs-api-staging`, from `webapp/Dockerfile`).
+  Production (`sggs-knowledge-base`) is a manually managed service and is deliberately **not**
+  in the Blueprint, so linking it can never create or adopt production.
 - Vercel: `frontend/vercel.json` (root dir = `frontend/`) — production branch `main`,
   staging a custom environment tracking `integration`.
 - `deploy-verify` CI curls `/api/health` and asserts `/api/meta.version` matches the

@@ -7,7 +7,7 @@ and an exit gate, and we move when the gate is met.
 Companion documents:
 - [TestFlight test plan](testflight-test-plan.md) — what testers do, on which devices, how feedback is triaged.
 - [App Store listing](app-store-listing.md) — the draft metadata, privacy answers and review notes.
-- [Readiness report (2026-09-05)](../../SGGS-iOS-TestFlight-Readiness-2026-09-05.md) — the audit this plan builds on.
+- [Readiness report (2026-09-05)](../reports/archive/SGGS-iOS-TestFlight-Readiness-2026-09-05.md) — the audit this plan builds on.
 
 ---
 

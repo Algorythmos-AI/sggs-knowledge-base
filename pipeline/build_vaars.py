@@ -38,6 +38,7 @@ Writes two purely-additive tables:
 Idempotent & additive — only creates/replaces vaars + vaar_units.
 """
 import argparse, sqlite3, json, time, re, collections
+from build_clock import stamp
 
 GUR = {'੦': '0', '੧': '1', '੨': '2', '੩': '3', '੪': '4', '੫': '5', '੬': '6', '੭': '7', '੮': '8', '੯': '9'}
 CANON_ANGS = [83, 137, 300, 318, 462, 508, 517, 548, 585, 642, 705, 785,
@@ -262,7 +263,7 @@ def main():
                          u['pno'], u['first_line_id'], u['ang'], theme_of(u['line_ids'])))
 
     con.execute("CREATE TABLE IF NOT EXISTS analytics_meta (key TEXT PRIMARY KEY, value TEXT)")
-    con.execute("INSERT OR REPLACE INTO analytics_meta VALUES ('vaars_built', ?)", (time.strftime('%Y-%m-%d %H:%M'),))
+    con.execute("INSERT OR REPLACE INTO analytics_meta VALUES ('vaars_built', ?)", (stamp('%Y-%m-%d %H:%M'),))
     con.commit()
     if not args.no_vacuum:
         con.isolation_level = None; con.execute("VACUUM")

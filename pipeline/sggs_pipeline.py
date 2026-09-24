@@ -37,7 +37,7 @@ def fix_text(s):
         else:
             out.append(c); i += 1
     s = ''.join(out)
-    # 2. font-glyph restorations (proven by word evidence; see Validation-Report)
+    # 2. font-glyph restorations (proven by word evidence; see docs/reports/archive/Validation-Report.md)
     for a, b in [('Â', 'ਾਂ'),      # kanna+bindi   ਸÂਿਤ -> ਸਾਂਿਤ
                  ('¸', '੍ਹ'),      # pairin-haha   ਿਤਨ¸ -> ਿਤਨ੍ਹ
                  ('±', '੍ਹ'), ('º', '੍ਹ'), ('¼', '੍ਹ'), ('¾', '੍ਹ'),  # ਕੋੜ±ੇ ਪੜº ਕਾਨ¼ ਚੜ¾
@@ -75,7 +75,7 @@ def fix_text(s):
             out.append(c); i += 1
     s = ''.join(out)
     # 4. documented editorial corrections (impossible Unicode produced by the
-    #    font's glyph order; restored to the canonical reading -- see Validation-Report)
+    #    font's glyph order; restored to the canonical reading -- see docs/reports/archive/Validation-Report.md)
     for a, b in [('\u0a4d\u0a30\u0a3f\u0a3f\u0a4d\u0a38\u0a1f', '\u0a4d\u0a30\u0a3f\u0a38\u0a1f\u0a3f'),
                  ('\u0a4d\u0a38\u0a28\u0a47\u0a39', '\u0a38\u0a4d\u0a28\u0a47\u0a39'),
                  ('\u0a3f\u25cc \u0a2e\u0a4d\u0a2f\u0a4d\u0a2f\u0a3e\u0a28\u0a47', '\u0a2e\u0a4d\u0a2f\u0a4d\u0a2f\u0a3f\u0a3e\u0a28\u0a47')]:

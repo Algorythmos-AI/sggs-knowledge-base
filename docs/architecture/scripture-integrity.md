@@ -25,10 +25,14 @@ flowchart LR
 
 ## The only sanctioned text transforms
 1. PDF **visual → logical** Unicode reordering of the sihari (`ਿਕ੍ਰਪਾ → ਕ੍ਰਿਪਾ`).
-2. **3 logged** editorial Unicode-repair corrections (Angs 573, 586, 727) where the
-   source font emitted impossible sequences.
+2. Editorial Unicode-repair corrections where the source font emitted impossible
+   sequences. The complete register is `audit/editorial-ledger.jsonl` — **4 rules,
+   11 applications**: Angs 573, 586, 727 (itemised from the start) and Angs 1354, 1358,
+   1387, 1398, 1402, 1406, 1408, 1409 (same `fix_text` step-4 rules; itemised 2026-09-23,
+   scholarly review completed and approved 2026-09-24, gate G3). Every decoding transform (timestamps, halant
+   order, glyph restorations, vowel re-attachment, stray-character strip) is registered too.
 
-Any new transform must be logged the same way and reviewed by a human. The English
+Any new transform must be registered in the ledger and reviewed by a human. The English
 translations are a **separate, labelled layer** (Dr. Sant Singh Khalsa via
 BaniDB/ShabadOS) and are never blended into the Gurmukhi.
 
@@ -37,6 +41,8 @@ BaniDB/ShabadOS) and are never blended into the Gurmukhi.
 |---|---|---|
 | `pipeline/reconcile.py` | corpus == PDF, character for character | every rebuild (gate) |
 | `pipeline/golden_test.py` | canonical structural checks | every rebuild (gate) |
+| `pipeline/sggs_integrity.py` | the committed DB's content equals `audit/dataset-fingerprint.json` — every table (build stamps blanked), every FTS5 index (via `fts5vocab`), `scripture_sha256` (the iOS definition) and `t0_sha256`; stable across SQLite versions | every PR (CI gate); written by every rebuild |
+| `pipeline/ledger_check.py` | `fix_text` editorial rules == the ledger; any scripture (T0) change is covered by a new, reviewed ledger entry | every PR (CI gate) |
 | `pipeline/verify_regroup.py` | a corpus change touched only `comp_id`/`line_no`; scripture byte-identical | any PR touching corpus/db |
 | `pipeline/timing/guard_scripture.py` | pre-existing tables byte-identical to the committed baseline | after any DB write |
 | `validation/reconcile-attestation.json` | the corpus in this commit reconciled char-exact locally (the PDF never enters CI) | `make reconcile` |

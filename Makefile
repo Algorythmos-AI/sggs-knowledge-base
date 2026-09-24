@@ -3,7 +3,7 @@
 PIPELINE_PY ?= /usr/bin/python3
 PDF ?= ../Siri-Guru-Granth-Sahib-in-Gurmukhi-with-Index.pdf
 
-.PHONY: help doctor ci check-versions test-web test-frontend contract verify guard reconcile rebuild ios-db ios-db-check ios-db-repair release testflight appstore-preflight
+.PHONY: help doctor ci fingerprint ledger-check pr-checks release-preflight watch-deploy verify-prod scripture-diff check-versions test-web test-frontend contract verify guard reconcile rebuild ios-db ios-db-check ios-db-repair release testflight appstore-preflight
 help: ## list targets
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | awk 'BEGIN{FS=":.*?## "}{printf "  \033[36m%-16s\033[0m %s\n",$$1,$$2}'
 
@@ -15,7 +15,7 @@ doctor: ## check the local toolchain (the python3 trap, node, git-lfs, pdf)
 	@test -f "$(PDF)" && echo "pdf: present" || echo "  source PDF not at $(PDF) (needed only for reconcile/rebuild)"
 	@test "$$(uname -s)" != Darwin || python3 pipeline/check_ios_db_pair.py || true
 
-check-versions: ## assert the version is unified across all 8 locations
+check-versions: ## assert the version is unified across all 7 locations
 	python3 scripts/release/check_versions.py
 
 test-web: ## server unit tests
@@ -41,8 +41,14 @@ banis: ## (re)build the Nitnem bani registry into db/sggs.sqlite (needs ./databa
 test-banis: ## gate tests for the bani registry on a throwaway copy of the DB
 	python3 pipeline/banis/test_banis_layer.py
 
-ci: check-versions verify guard test-web contract ## run the gates CI runs (no PDF needed)
+ci: check-versions verify guard ledger-check test-web contract ## run the gates CI runs (no PDF needed)
 	@echo "make ci: PASS"
+
+fingerprint: ## verify db/sggs.sqlite content == audit/dataset-fingerprint.json (per table, FTS index, scripture)
+	python3 pipeline/sggs_integrity.py db/sggs.sqlite --compare audit/dataset-fingerprint.json
+
+ledger-check: ## editorial ledger: fix_text rules == register; scripture diffs vs integration covered by new entries
+	python3 pipeline/ledger_check.py --base $$(git merge-base HEAD origin/integration)
 
 reconcile: ## prove corpus == PDF char-for-char and write the attestation (needs PDF)
 	$(PIPELINE_PY) pipeline/reconcile.py "$(PDF)" corpus/sggs.jsonl
@@ -84,3 +90,17 @@ testflight: ## archive + gate + export/upload a candidate (macOS): make testflig
 
 appstore-preflight: ## may this version be SUBMITTED? newest ledger build must be channel=appstore, review signed, versions + listing clean
 	python3 ios/tools/appstore_preflight.py $(MARKETING_VERSION)
+
+# ── delivery tooling (docs/engineering/delivery.md) ─────────────────────────
+pr-checks: ## watch a PR's checks until they finish: make pr-checks PR=<n>
+	@test -n "$(PR)" || { echo "usage: make pr-checks PR=<number>"; exit 2; }
+	bash scripts/ci/wait_pr_checks.sh $(PR)
+release-preflight: ## release readiness: trunk green, versions unified, CHANGELOG section, nothing open
+	bash scripts/release/release_preflight.sh
+watch-deploy: ## follow the production deploy gate by gate (SHA defaults to origin/main)
+	bash scripts/release/watch_deploy.sh $(SHA)
+verify-prod: ## prove what production serves: make verify-prod [ARGS="--commit <sha> --version X.Y.Z"]
+	python3 scripts/ops/verify_prod.py $(ARGS)
+scripture-diff: ## byte-level scripture diff vs a previous DB: make scripture-diff PRE=<old.sqlite>
+	@test -n "$(PRE)" || { echo "usage: make scripture-diff PRE=<old.sqlite> [ARGS=\"--allow <cols>\"]"; exit 2; }
+	python3 scripts/data/diff_scripture.py "$(PRE)" db/sggs.sqlite $(ARGS)

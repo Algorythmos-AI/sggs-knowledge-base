@@ -10,7 +10,7 @@ holds no user accounts or personal data.
 The latest `main` release (see `MANIFEST.json` / `/api/health`) is supported.
 Older tags are historical.
 
-## Handled classes (already mitigated — see CLAUDE.md "Security invariants")
+## Handled classes (already mitigated — see docs/engineering/invariants.md "Security invariants")
 - SQL: parameterized everywhere; FTS column allowlist + `_fts_clean` strips `"`/`*`.
 - Path traversal: `_resolve_static` realpath-jails every static request.
 - The API is opened read-only (`mode=ro&immutable=1&query_only`); the app never writes.

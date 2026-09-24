@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""Phonetic Variant Engine — deterministic build (design: 03_Phonetic-Variant-Engine.md;
+"""Phonetic Variant Engine — deterministic build (design: docs/design/03_Phonetic-Variant-Engine.md;
 rules: validation/variant_rules_spec.md; review: validation/variant_arch_review.md).
 
 Generates, for every (gurmukhi word, canonical translit) pair, the romanization

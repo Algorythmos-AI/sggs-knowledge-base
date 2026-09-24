@@ -1,11 +1,11 @@
 # SGGS Knowledge Base — Master Index
 
-**Source:** `Siri-Guru-Granth-Sahib-in-Gurmukhi-with-Index.pdf` (1,483 pages → 1,430 Angs) · v1.3.5, built 2026-09-23 · 60,658 lines (char-for-char reconciled with the source) · 29,244 distinct words · 54 themes · per-Bhatt Swaiyye attribution · Vaar pauris correctly attributed · raag-timing knowledge layer (attributed claims, divergence preserved).
+**Source:** `Siri-Guru-Granth-Sahib-in-Gurmukhi-with-Index.pdf` (1,483 pages → 1,430 Angs) · v1.3.6, built 2026-09-24 · 60,658 lines (char-for-char reconciled with the source) · 29,244 distinct words · 54 themes · per-Bhatt Swaiyye attribution · Vaar pauris correctly attributed · raag-timing knowledge layer (attributed claims, divergence preserved).
 
 ## Use it
 
 - **Web app:** double-click **`Start SGGS App.command`** (or `cd webapp && python3 serve.py`) → http://localhost:7777 (see `webapp/README.md`)
-- **Ask Claude:** any Gurbani question in a Cowork session with this folder — answered per `Answer-Protocol.md` (verbatim + Ang + labelled explanation)
+- **Ask a question:** any Gurbani question — answered per `Answer-Protocol.md` (verbatim + Ang + labelled explanation)
 - **Direct SQL:** `db/sggs.sqlite` (SQLite FTS5; open read-only)
 - **Read:** `corpus/by-raag/*.md` (human-readable, by Raag/Bani) · `corpus/sggs.jsonl` (machine-readable)
 
@@ -13,15 +13,16 @@
 
 | Path | Contents |
 |---|---|
-| `00_Build-Plan.md` | The approved plan (v1) |
-| `01_Production-Architecture.md` | Production audit + web-app architecture (v2) |
+| `docs/engineering/` | Engineering handbook — invariants, local setup, delivery, brand |
+| `docs/design/` | Design docs: `00_Build-Plan.md` (v1 plan), `01_Production-Architecture.md` (v2), `02_…`, `03_Phonetic-Variant-Engine.md`, Astro migration, ML analytics, Phase 3 roadmap, raag timing layer |
+| `docs/reports/archive/` | Point-in-time audits and reports (validation, QA, hardening, Apple-grade audit, iOS readiness) |
 | `pipeline/` | Reproducible build (`bash pipeline/rebuild_all.sh`): `sggs_pipeline.py`, `build_corpus.py`, `reconcile.py` (char-exact gate), `golden_test.py`, `build_db.py`, then translations/variants + Insight-Engine builders (`ml_analytics_builder.py`, `build_vaars.py`, `build_resonance.py`, `build_semantic_vectors_lite.py`) |
 | `corpus/` | `sggs.jsonl` (60,658 records) + `by-raag/` readable Markdown |
 | `db/sggs.sqlite` | The knowledge base: `lines` + FTS5 (`fts`/`fts_en`/`fts_shabad`/`fts_tri`), `translations`, `variants`, `canon_tokens`, `raags`, `sections`, `authors`, `concepts`/`concept_lines`, `word_freq`, analytics (`theme_network`, `*_analytics`, `theme_fingerprint`, `author_resonance`, `vaars`/`vaar_units`, `*_neighbors`), `meta` |
 | `webapp/` | `serve.py` (stdlib server) + `static/` (prebuilt Astro multi-page UI) + README |
 | `Answer-Protocol.md` | Faithfulness rules for answering |
-| `Validation-Report.md` | All quality gates, checks, corrections & known limits |
-| `Raag_Timing_Knowledge_Layer.md` | Raag timing as attributed claims (pahar clock, divergence policy) + bani-forms metadata; schema, derivation rules, runbook |
+| `docs/reports/archive/Validation-Report.md` | All quality gates, checks, corrections & known limits (superseded; see banner) |
+| `docs/design/Raag_Timing_Knowledge_Layer.md` | Raag timing as attributed claims (pahar clock, divergence policy) + bani-forms metadata; schema, derivation rules, runbook |
 | `pipeline/timing/` + `audit/scripture-baseline.json` | Timing-layer migrations/seed/derivation + the committed per-table scripture integrity baseline (`guard_scripture.py` gate) |
 
 ## Line record (every one of the 60,658 lines)

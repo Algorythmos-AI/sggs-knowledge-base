@@ -3,6 +3,45 @@
 The format below (newest first) follows [Keep a Changelog](https://keepachangelog.com);
 entries prior to v1.1.0 are the project's original prose style and are preserved verbatim.
 
+## [1.3.6] — 2026-09-24 — data-integrity hardening, reproducible builds, editorial ledger
+
+No change to the scripture text, the corpus, the database or any user-facing behaviour. This
+release hardens how the data is built, proven and governed, and makes the repository
+organisation-ready.
+
+### Added
+- **Editorial ledger** (`audit/editorial-ledger.jsonl`) — the register of every transform the
+  pipeline applies to the source text, and a CI gate (`pipeline/ledger_check.py`) that fails any
+  scripture change or new `fix_text` rule without a registered, reviewed entry. It records
+  4 editorial rules applied at 11 places (Angs 573, 586, 727, 1354, 1358, 1387, 1398, 1402, 1406,
+  1408, 1409); the 8 not previously itemised were reviewed and approved on 2026-09-24 (gate G3).
+- **Install integrity gate** (`pipeline/db_integrity_gate.py`) — `integrity_check`,
+  `foreign_key_check`, FTS5 `integrity-check` against the content table, required tables and the
+  60,658-line / 1,430-Ang shape, all before a database may be installed.
+- **Reproducible builds** — one build clock (`SOURCE_DATE_EPOCH`), sorted inserts and
+  deterministic tie-breaks; `scripts/data/compare_builds.py` proves two builds identical table by
+  table (three full rebuilds with different hash seeds: 56/56 tables identical).
+- **Dataset fingerprints** (`pipeline/sggs_integrity.py`, `audit/dataset-fingerprint.json`) — a
+  content identity for every table, every FTS5 index (via `fts5vocab`), `scripture_sha256` and
+  `t0_sha256`, identical across SQLite versions; CI verifies the committed database against it.
+- **Engineering handbook** (`docs/engineering/`) and delivery tooling under `scripts/` with Make
+  targets (`pr-checks`, `release-preflight`, `watch-deploy`, `verify-prod`, `scripture-diff`,
+  `ledger-check`).
+
+### Changed
+- The rebuild installs the corpus and database atomically (temp file, fsync, verified sha256,
+  `os.replace`), proves the corpus before installing it, and refuses a source PDF whose hash
+  differs from the reconcile attestation.
+- Design documents moved to `docs/design/` and point-in-time reports to `docs/reports/archive/`;
+  process docs corrected to match the real rulesets and Render Blueprint.
+- The version is kept in 7 places (the retired agent-guidance file is no longer one).
+
+### Fixed
+- Translation loading and the trigram index can no longer fail silently during a rebuild.
+- `golden_test.py` fails instead of skipping its corpus checks when the corpus is missing.
+
+### Data
+
 ## [1.3.5] — 2026-09-23 — gurbanisoul.com v2, compositions as one work, widget fixes
 
 ### Added
@@ -246,7 +285,7 @@ Web, iOS links, ops and docs only — scripture, corpus and DB byte-identical to
 - **Canonical public host is now `gurbanisoul.com`** everywhere: iOS `AppLinks` (Privacy/Support),
   the App Store listing URLs and contact (`support@gurbanisoul.com`), `deploy-production` /
   `uptime` / `sggs-verify-prod` targets (with a no-redirect directional guard and a landing check),
-  `SECURITY.md`, `NOTICE.md`, `CLAUDE.md` and `docs/process/environments.md`. `www` and the legacy
+  `SECURITY.md`, `NOTICE.md`, the engineering handbook and `docs/process/environments.md`. `www` and the legacy
   Vercel alias 308-redirect to the apex.
 - `testflight_archive.sh` defaults `GITHUB_REPOSITORY` from the git remote so a local
   `make testflight … UPLOAD=1` no longer trips the CI-green check.
@@ -789,7 +828,7 @@ only — scripture, the DB (`db_sha256` unchanged), and all bundle identifiers a
 
 ## v1.0.0 — Unified Production Baseline & TestFlight Release
 Version-unification pass: iOS, web, and API version strings reset to a single `1.0.0` baseline (iOS build 1) ahead of the first public TestFlight/production release. Metadata and documentation only — no corpus, DB, or search-logic change (`git diff -- corpus db` empty). Consolidates the recently landed pre-TestFlight hardening work now shipping under this baseline: Reader/sheet layout hardening (AX3 Dynamic Type truncation fix, scene-active watchdog), iOS 26 tab bar UX polish (bottom-bar controls moved out from under the floating glass tab bar; iPad search-presentation tab bar fix), precision deep-link/verse routing (`sggs://ang`, `sggs://shabad`, Spotlight, Study Trail — every entry point lands scrolled to and highlighting the exact verse), and full test-suite stabilization (kit 17/17, 33 unit, 26/26 UI tests green in one uninterrupted run).
-- **Versions.** `APP_VERSION` 1.0.0 / `MANIFEST.json` 1.0.0 (`db_sha256`/`corpus_sha256` unchanged), iOS `MARKETING_VERSION` 1.0.0 build 1, README/MASTER-INDEX/CLAUDE.md in step.
+- **Versions.** `APP_VERSION` 1.0.0 / `MANIFEST.json` 1.0.0 (`db_sha256`/`corpus_sha256` unchanged), iOS `MARKETING_VERSION` 1.0.0 build 1, README/MASTER-INDEX/engineering handbook in step.
 
 ## iOS 1.1.1 + web v2.12.1 — 2026-09-05 — pre-TestFlight hardening pass (scripture byte-identical; no DB rebuild)
 Full-project audit before the first TestFlight build: four audit agents over every iOS source, the Swift kit, tests, CI, plists and the web server/frontend, then an adversarial review of each proposed fix before it was applied. Everything below is verified: kit 17/17 (golden contract), app 30 unit + 22 UI, search harnesses byte-identical to the pre-pass baseline, `/api/health` all true, `git diff -- corpus db ios/Resources` empty.
@@ -802,7 +841,7 @@ Full-project audit before the first TestFlight build: four audit agents over eve
 - **Web UI.** Stale `akal_kaal` theme key replaced by `akal`+`kaal` (Akāl was silently dropped from "The Divine Reality"); "53 concepts" → 54; unguarded chart loads on Insights/Constellation now render an honest error line; request tokens stop duplicate SVGs on rapid select changes; loading placeholders clear on error; `markPins` reflects pinned state after every re-render; `history.replaceState` keeps `?ang=`/`?q=` shareable and Back on-page; a11y: dial is a `group` (its arcs are reachable again), study-trail drawer is a `dialog` with a focus trap, constellation stars no longer 360 tab stops; escape-helper bypasses closed and inline `goReader(...,'name')` string-building replaced by `data-go-*` delegation; network table follows the PPMI slider.
 - **Pre-merge audit (second commit).** `guard_scripture.py` GUARD PASS recorded; one uninterrupted 31-unit + 22-UI green run; **AX3 Dynamic Type bug fixed** — scripture in List rows truncated with "…" at accessibility sizes (vertical `fixedSize` on `GurmukhiText`/translit/English; Search idle view scrolls; Lineage fixed-width labels → min-width). Scene-active `flushIfIdle()` watchdog that cannot present mid-dismiss (+ unit test). Search field placement `.always` so it can never collapse behind the pill row. **iPad bug fixed:** after a search the tab bar stayed hidden for the whole search presentation (no way to leave Search) — `searchPresentationToolbarBehavior(.avoidHidingContent)`. iPad regular-width caps: Reader capsule 520 pt, Clock dial 420 pt, Explore grid 720 pt. XCUITest resilience helpers (launch env reset, tab-switch verification, keyboard-focus check, context-menu retry) and the iPad-capable `tab()` helper; capture test gains an env-gated landscape mode.
 - **Reader & Shabad UX (third commit).** *Precision routing:* every verse tap (Search, Themes, Saved, Constellation, Trail, Reader, Spotlight, `sggs://shabad/C?line=Y`) opens the composition **scrolled to and highlighting that verse** (`Presentation.shabad(compId:focusLineId:)`; sheet: two-pass `ScrollViewReader` landing in the `List`; Reader: `scrollPosition(id:)` + `LazyVStack.scrollTargetLayout()` with the verse set as the page's initial position and re-asserted after the page-turn transition settles (proxy-based scrolling was dropped by that transition; an eager `VStack` made accessibility snapshots stall — both verified in the simulator); `FocusHighlight` accent wash fading over 1.6 s; VoiceOver focus moved to the verse after the sheet settles). "Open Ang N in Reader" is now an always-visible footer on the sheet that opens the Ang **of the focused verse** (compositions span Angs — it used to open the composition's first Ang, so the Reader could never land on a verse from a later page) (it used to be the last row — unreachable without scrolling a 385-line composition) and, like `sggs://ang/N?line=Y`, lands the Reader on the same verse (`Router.pendingReaderLineId`, always overwritten; landing runs from the page's `onAppear` and on pending-id change so the same-Ang case works). Web: `/reader?ang=X&line=Y|comp=Z` scrolls (`scrollIntoView` centre, reduced-motion aware) + `.verse-focus` flash + programmatic focus; the composition modal scrolls **its own** `#panel` scroller to the tapped line and its "Open Ang N" carries the line; every "open →" (pins, echoes, trail) passes the line. *Immersive reading:* ambient chrome — Reader nav bar/page capsule (iOS) and nav + toolbar (web) slide away while reading downwards and return on any upward scroll, at the top, on a page turn, key press, or top-edge pointer; never for VoiceOver/Switch Control, never while a modal/drawer is open, instant under Reduce Motion. Adjacent Angs are prefetched (iOS `ReaderModel.pages` ×5, web `angCache` ×6 via raw fetch — no toast on failure) so page turns never show a spinner; a fixed-height **"Continues on Ang N+1"** pill (derived strictly from the next page's `continued_from`, never from the last line's comp_id) joins the existing "Continues from" pill. *State hardening proofs:* new XCUITests `testSearchResultOpensShabadAtLine`, `testReaderChromeReturnsOnScrollUp`, `testDeepLinkAngBeatsResume` (control relaunch resumes 1430, linked launch lands on 7), `testRapidTapsNeverStrandSheets`; unit tests for `?line=` parsing and Spotlight line ids. Presentation layer only — no DB/pipeline/search/verify/kit change.
-- **Versions.** `APP_VERSION` 2.12.1 / `MANIFEST.json` 2.12.1 (`db_sha256` unchanged `b513da34…`), README/MASTER-INDEX/CLAUDE.md in step. Human-gated: Developer Program activation + Team ID, App Group provisioning, translation licence (`LICENSED: true`), Granthi review of icon/saroop, on-device A11Y pass, store metadata.
+- **Versions.** `APP_VERSION` 2.12.1 / `MANIFEST.json` 2.12.1 (`db_sha256` unchanged `b513da34…`), README/MASTER-INDEX/engineering handbook in step. Human-gated: Developer Program activation + Team ID, App Group provisioning, translation licence (`LICENSED: true`), Granthi review of icon/saroop, on-device A11Y pass, store metadata.
 
 ## iOS 1.1.0 — 2026-07-12 — "Ink & Saffron" premium pass: hardening + designed light/dark + accent system (iOS app only; web/scripture untouched)
 - **Correctness first (9 verified app-layer bugs fixed, each with regression tests where testable):** "Ang 0" share cards from shabad/theme/saved rows (line identity now plumbed everywhere; card share refuses to render uncited; Save + Explore-related restored inside sheets); iPad multi-window state mirroring (multi-scene disabled until navigation is per-scene); widget target shipped without the Sant Lipi font, a privacy manifest, or a matching `CFBundleShortVersionString` (App Store rejection); root-sheet swap race stranding modals (explicit dismiss-in-flight flag); `sggs://ang/1` hijacked by resume-last-Ang; stale-response races on Constellation/Progression; launch-integrity hash could **crash** (uncatchable ObjC exception) instead of failing closed on a corrupt bundle; `SavedScreen` `@Query` crash when the bookmarks store is unavailable; `CLLocationManager` re-created on every ClockScreen init.

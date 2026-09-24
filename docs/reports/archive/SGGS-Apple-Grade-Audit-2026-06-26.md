@@ -86,7 +86,7 @@ up in a static review.
   carries visual-regression risk on the charts; do as a focused, separately-verified pass.
 - **gzip in the stdlib server** — negligible value on localhost.
 - **Design-token consolidation** (spacing/type scale, button hierarchy) — broad restyle churn.
-- **Scripture-text review items** (per `CLAUDE.md`): empty `translit_norm` id 35328 / Ang 829; the
+- **Scripture-text review items** (per `docs/engineering/known-issues.md`): empty `translit_norm` id 35328 / Ang 829; the
   `ਓ ੁ` & isolated-matra rows (~695–699, 1354/1358/1387). **Text layer — left to a Granthi/scholar; never auto-edited.**
 
 ---

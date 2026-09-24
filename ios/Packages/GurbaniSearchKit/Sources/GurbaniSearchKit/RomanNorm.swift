@@ -5,7 +5,7 @@ import Foundation
 /// the query — the query-time half MUST match the index-time fold or search silently breaks.
 ///
 /// Pinned by `contract/golden_roman_norm.ndjson` (generated from the real Python function).
-/// Any change here must keep that contract green. See CLAUDE.md fidelity-contract convention.
+/// Any change here must keep that contract green. See docs/engineering/invariants.md (fidelity contract).
 public enum RomanNorm {
 
     // Digraph collapse, applied in THIS EXACT ORDER (order is load-bearing: `chh` before `ch`).

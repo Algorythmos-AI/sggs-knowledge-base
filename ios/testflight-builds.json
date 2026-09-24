@@ -154,6 +154,30 @@
       "sdk": "iphoneos26.5",
       "uploaded_at": "2026-09-22T12:57:23Z",
       "note": null
+    },
+    {
+      "version": "1.3.5",
+      "build": 1,
+      "source_commit": "28e0ed9d2494820ead538391b5bee9320e07eca9",
+      "profile": "public",
+      "channel": "testflight",
+      "db_sha256": "b10809c4997b2a75f4c20e39b309f6c4c50bcb6ab26906880c8b8b4d24c7335f",
+      "xcode": "26.5",
+      "sdk": "iphoneos26.5",
+      "uploaded_at": "2026-09-23T07:21:09Z",
+      "note": null
+    },
+    {
+      "version": "1.3.5",
+      "build": 2,
+      "source_commit": "28e0ed9d2494820ead538391b5bee9320e07eca9",
+      "profile": "public",
+      "channel": "appstore",
+      "db_sha256": "b10809c4997b2a75f4c20e39b309f6c4c50bcb6ab26906880c8b8b4d24c7335f",
+      "xcode": "26.5",
+      "sdk": "iphoneos26.5",
+      "uploaded_at": "2026-09-23T08:22:36Z",
+      "note": null
     }
   ]
 }

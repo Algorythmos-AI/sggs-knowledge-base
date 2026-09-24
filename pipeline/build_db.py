@@ -118,7 +118,8 @@ cur.execute('INSERT INTO meta VALUES(?,?)', ('edition', 'Siri Guru Granth Sahib 
 cur.execute('INSERT INTO meta VALUES(?,?)', ('fts5', '1' if HAVE_FTS else '0'))
 import datetime
 cur.execute('INSERT INTO meta VALUES(?,?)', ('version', _app_version()))   # was hardcoded '1.4.0'; now tracks webapp/serve.py:APP_VERSION
-cur.execute('INSERT INTO meta VALUES(?,?)', ('built', datetime.date.today().isoformat()))
+from build_clock import stamp
+cur.execute('INSERT INTO meta VALUES(?,?)', ('built', stamp('%Y-%m-%d')))
 con.commit()
 
 # --- human-readable corpus, one file per raag/section

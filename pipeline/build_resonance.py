@@ -18,6 +18,7 @@ reads it with a plain SELECT.
 Idempotent and additive — only creates/replaces author_resonance.
 """
 import argparse, sqlite3, time, collections
+from build_clock import stamp
 
 TABLE = "author_resonance"
 
@@ -65,7 +66,7 @@ def main():
     con.executemany(f"INSERT INTO {TABLE} VALUES (?,?,?,?,?)", rows)
     con.execute("CREATE TABLE IF NOT EXISTS analytics_meta (key TEXT PRIMARY KEY, value TEXT)")
     con.execute("INSERT OR REPLACE INTO analytics_meta VALUES ('author_resonance_built', ?)",
-                (time.strftime('%Y-%m-%d %H:%M'),))
+                (stamp('%Y-%m-%d %H:%M'),))
     con.commit()
     if not args.no_vacuum:
         con.isolation_level = None

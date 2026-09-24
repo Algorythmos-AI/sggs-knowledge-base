@@ -30,9 +30,10 @@ Usage:
   python3 pipeline/ml_analytics_builder.py [--db db/sggs.sqlite] [--out /tmp/sggs_a.sqlite]
                                            [--min-support 20] [--neighbors-k 10]
   (build deps: Python stdlib + numpy. The optional --semantic line-level MiniLM upgrade is
-   documented in ML_Analytics_Engine.md and is NOT required for Phase 1.)
+   documented in docs/design/ML_Analytics_Engine.md and is NOT required for Phase 1.)
 """
 import argparse, json, math, os, re, shutil, sqlite3, sys, time
+from build_clock import stamp
 from collections import Counter, defaultdict
 
 try:
@@ -284,8 +285,9 @@ def build_shabad_neighbors(con, K):
         for bi in range(block.shape[0]):
             gi = start + bi
             s = sims[bi].copy(); s[gi] = -1.0     # exclude self
-            top = np.argpartition(-s, K)[:K]
-            top = top[np.argsort(-s[top])]
+            # Deterministic top-K: score desc, ties broken by position (comp_ids order).
+            # argpartition/quicksort pick an arbitrary member of a tie at the K boundary.
+            top = np.lexsort((np.arange(s.shape[0]), -s))[:K]
             for rank, j in enumerate(top, 1):
                 if s[j] <= 0:
                     break
@@ -351,7 +353,7 @@ def main():
     con.execute("CREATE TABLE analytics_meta (key TEXT PRIMARY KEY, value TEXT)")
     con.executemany("INSERT INTO analytics_meta VALUES (?,?)", [
         ('version', '2.1.0'),
-        ('built', time.strftime('%Y-%m-%d')),
+        ('built', stamp('%Y-%m-%d')),
         ('scripture_touched', 'NO — all analytics are over structural metadata + the 53 '
          'verified themes + the labeled English translation; the Gurmukhi is never altered '
          'or scored'),

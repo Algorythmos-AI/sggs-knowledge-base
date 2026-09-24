@@ -7,9 +7,9 @@ One corpus powers two things people can use today:
 - **The Knowledge Base** — the scholarly study website: search, reader, themes, lineage, insights and the raag clock. Live at **[gurbanisoul.com/search](https://gurbanisoul.com/search)** (and fully offline via `serve.py`).
 - **Gurbani Soul** — the native iOS/iPadOS app (SwiftUI): the whole Granth verbatim and offline, Nitnem with gentle reminders, Hukam, the raag clock, widgets and a Live Activity. Its landing page is **[gurbanisoul.com](https://gurbanisoul.com)**. Built by **Algorythmos Pty Ltd**.
 
-The website and the app keep separate names and identities on purpose — see [CLAUDE.md → Brand & domains](CLAUDE.md) and [`docs/website/README.md`](docs/website/README.md).
+The website and the app keep separate names and identities on purpose — see [Brand & domains](docs/engineering/brand.md) and [`docs/website/README.md`](docs/website/README.md).
 
-![version](https://img.shields.io/badge/version-1.3.5-1a3a6b)
+![version](https://img.shields.io/badge/version-1.3.6-1a3a6b)
 ![python](https://img.shields.io/badge/python-3.8%2B%20·%20stdlib%20only-3776ab)
 ![dependencies](https://img.shields.io/badge/dependencies-none-2e7d32)
 ![corpus](https://img.shields.io/badge/corpus-60%2C658%20lines%20·%201%2C430%20Angs-9a3412)
@@ -228,7 +228,7 @@ The English layer is **58,039 lines (95.7% of the Granth)**, aligned exact/skele
 4. **Explanation** — LLMs may only *explain*; any quote must pass the verifier (`Answer-Protocol.md`).
 5. **Governance** — mandatory citation, a source registry, `CHANGELOG.md`, and audit reports.
 
-Design docs, in reading order: `00_Build-Plan.md` → `01_Production-Architecture.md` → `02_Sovereign-Architecture-Assessment.md` → `03_Phonetic-Variant-Engine.md` → `Schema_v2_Migration_Report.md`. `MASTER-INDEX.md` is the doc index.
+Design docs (in `docs/design/`), in reading order: `00_Build-Plan.md` → `01_Production-Architecture.md` → `02_Sovereign-Architecture-Assessment.md` → `03_Phonetic-Variant-Engine.md` → `docs/reports/archive/Schema_v2_Migration_Report.md`. `MASTER-INDEX.md` is the doc index; the [engineering handbook](docs/engineering/README.md) is the operating manual.
 
 ---
 
@@ -276,7 +276,7 @@ Every release is gated against a battery of harnesses; nothing ships that regres
 | Structural checksum | `pipeline/enrich_v2.py --report` | 3,159 CLEAN / 527 STRUCTURAL / 2 verified |
 | Runtime self-test | `GET /api/health` | 6 / 6 checks |
 
-Narrative evidence lives in `Validation-Report.md`, `Audit_Report.md`, `Proactive_Hardening_Report_v2.0.6.md`, and `QA_Resolution_Report.md`.
+Narrative evidence lives in [`docs/reports/archive/`](docs/reports/archive/): `Validation-Report.md`, `Audit_Report.md`, `Proactive_Hardening_Report_v2.0.6.md`, and `QA_Resolution_Report.md`.
 
 ---
 
@@ -307,7 +307,7 @@ bash pipeline/rebuild_all.sh <the-source-pdf>
 
 ## Versioning
 
-Current release: **v1.3.5** (`MANIFEST.json`). The running build is stamped in the footer and at `/api/health`. Every change — search-logic, data, or UI — is recorded in `CHANGELOG.md` with its before/after metrics and whether the DB changed. Search-only patches never re-commit the DB; the `db_sha256` in `MANIFEST.json` always matches the shipped `db/sggs.sqlite`.
+Current release: **v1.3.6** (`MANIFEST.json`). The running build is stamped in the footer and at `/api/health`. Every change — search-logic, data, or UI — is recorded in `CHANGELOG.md` with its before/after metrics and whether the DB changed. Search-only patches never re-commit the DB; the `db_sha256` in `MANIFEST.json` always matches the shipped `db/sggs.sqlite`.
 
 ---
 
