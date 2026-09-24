@@ -57,6 +57,11 @@ class RequestIdAndAccessLog(unittest.TestCase):
             r.read()
             return r.headers.get("X-Request-Id")
 
+    def test_the_answering_service_is_named(self):
+        req = urllib.request.Request(f"http://127.0.0.1:{self.port}/api/meta")
+        with urllib.request.urlopen(req, timeout=15) as r:
+            self.assertEqual(r.headers.get("X-Service"), "all")
+
     def test_ids(self):
         generated = self.get("/api/meta")
         self.assertRegex(generated, r"^[0-9a-f]{32}$")

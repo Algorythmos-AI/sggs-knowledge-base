@@ -221,6 +221,9 @@ class H(BaseHTTPRequestHandler):
         self.send_header('Strict-Transport-Security', 'max-age=31536000')
         rid = getattr(self, '_rid', None)
         if rid: self.send_header('X-Request-Id', rid)
+        # Which service answered: 'all' for the single API, else the contexts this service runs.
+        # The gateway's routing is verified by this header (it carries no user data).
+        self.send_header('X-Service', 'all' if ENABLED == frozenset(CONTEXT_TABLES) else ','.join(sorted(ENABLED)))
 
     def _respond(self, status, body, ct, cache='no-store'):
         etag = None

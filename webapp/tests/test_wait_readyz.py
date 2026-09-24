@@ -60,6 +60,10 @@ class WaitReadyz(unittest.TestCase):
         self.assertEqual(r.returncode, 0, r.stdout + r.stderr)
         self.assertIn("/readyz", r.stdout)
 
+    def test_a_single_context_service_names_itself(self):
+        with urllib.request.urlopen(f"http://127.0.0.1:{self.port}/readyz", timeout=5) as r:
+            self.assertEqual(r.headers.get("X-Service"), "knowledge")
+
     def test_a_different_commit_times_out(self):
         self.assertNotEqual(self.wait("deadbeef00000000").returncode, 0)
 
