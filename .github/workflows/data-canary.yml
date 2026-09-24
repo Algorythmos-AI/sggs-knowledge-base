@@ -36,6 +36,7 @@ jobs:
         with:
           python-version-file: ".python-version"
       - uses: ./.github/actions/fetch-dataset
+        with: { token: "${{ secrets.SGGS_READ_TOKEN || github.token }}" }
       - name: Served scripture == pinned database (API origin and public site)
         run: python3 tools/data_canary.py --origin "$API" --origin "$SITE" --sample 500 --angs 12
       - name: Golden contract over HTTP (production API)
