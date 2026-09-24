@@ -48,12 +48,12 @@ jobs:
           fi
   api-image:
     # Builds the exact image Render builds and proves it boots healthy with the commit
-    # baked in — a broken Dockerfile/LFS context fails here, not in production.
+    # baked in — a broken Dockerfile or dataset pin fails here, not in production. No
+    # fetch-dataset step: the image must obtain the pinned database by itself.
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@v5
-      - uses: ./.github/actions/fetch-dataset
       - name: Build the production API image
         run: docker build -f webapp/Dockerfile --build-arg RENDER_GIT_COMMIT="$GITHUB_SHA" -t sggs-api:ci .
       - name: Run it and verify health + baked commit identity

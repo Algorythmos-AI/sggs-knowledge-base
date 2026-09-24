@@ -1,8 +1,10 @@
-# Allowlist: the API image needs only webapp/ and the LFS database (see webapp/Dockerfile).
-# Keeps the build context small and prevents unrelated or sensitive files entering images.
+# Allowlist: the API image needs only webapp/ plus the dataset pin and its fetcher (the database
+# itself is downloaded and verified inside the build — see webapp/Dockerfile). Keeps the build
+# context small and prevents unrelated or sensitive files entering images.
 *
 !webapp/
-!db/sggs.sqlite
+!dataset.lock.json
+!scripts/data/fetch_dataset.py
 webapp/static.bak/
 webapp/tests/
 **/__pycache__/
