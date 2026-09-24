@@ -5,6 +5,7 @@
     "single_api": "https://sggs-api-staging.onrender.com",
     "service_origin": "https://sggs-staging-{context}.onrender.com",
     "services": [
+      "insights",
       "knowledge",
       "verify"
     ]
