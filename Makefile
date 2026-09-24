@@ -2,7 +2,7 @@
 # The scripture database is owned by Algorythmos-AI/sggs-data and consumed by pin (dataset.lock.json);
 # data rebuilds, reconcile and the scripture gates live there.
 
-.PHONY: help doctor dataset dataset-check ci openapi contract-http pr-checks release-preflight watch-deploy verify-prod check-versions test-web test-frontend contract harnesses release
+.PHONY: help doctor dataset dataset-check ci openapi contract-http pr-checks release-preflight watch-deploy verify-prod check-versions test-web test-frontend contract harnesses canary release
 help: ## list targets
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | awk 'BEGIN{FS=":.*?## "}{printf "  \033[36m%-16s\033[0m %s\n",$$1,$$2}'
 
@@ -34,6 +34,9 @@ contract: ## regenerate golden vectors and fail if they drift
 harnesses: ## search regression harnesses (roundtrip + casual quotes) → qa/results/
 	python3 tools/roundtrip_harness.py
 	python3 tools/casual_quote_harness.py
+
+canary: ## production serves the pinned scripture byte for byte (sample of lines + whole Angs, API and site)
+	python3 tools/data_canary.py --origin https://sggs-knowledge-base.onrender.com --origin https://gurbanisoul.com
 
 ci: check-versions dataset-check test-web contract ## run the gates CI runs
 	@echo "make ci: PASS"
