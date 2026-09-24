@@ -31,14 +31,17 @@ jobs:
     steps:
       - uses: actions/checkout@v5
         with:
-          ref: main             # the pin production is released from
+          ref: main             # what production serves: its dataset pin and its golden contract
+      - uses: actions/checkout@v5
+        with:
+          path: canary          # the canary tool itself, from this workflow's own commit (main may predate it)
       - uses: actions/setup-python@v6
         with:
           python-version-file: ".python-version"
       - uses: ./.github/actions/fetch-dataset
         with: { token: "${{ secrets.SGGS_READ_TOKEN || github.token }}" }
       - name: Served scripture == pinned database (API origin and public site)
-        run: python3 tools/data_canary.py --origin "$API" --origin "$SITE" --sample 500 --angs 12
+        run: python3 canary/tools/data_canary.py --db db/sggs.sqlite --origin "$API" --origin "$SITE" --sample 500 --angs 12
       - name: Golden contract over HTTP (production API)
         run: python3 tools/contract_http.py --base "$API"
 
