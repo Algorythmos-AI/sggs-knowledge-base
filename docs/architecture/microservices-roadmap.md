@@ -64,3 +64,12 @@ live verify). No service needs more than ~75 MB of data, so the smallest paid in
 sufficient for each; the total slice footprint (240 MB) is about twice the single database because
 `lines` + `fts` are shared by four contexts. Measured on a MacBook Air (Apple silicon) with warm file
 caches — cold-start on the host is Spike S2's job.
+
+## Spike S1 — CDN caching of the proxied API (observed 2026-09-24 on production)
+
+Vercel caches responses of the external `/api/*` rewrite by the API's own headers: `/api/ang/*`
+(`s-maxage=3600`) goes MISS then HIT, and `s-maxage` is stripped before the browser; `no-store`
+routes (`/api/search`, `/api/random`, `/api/health`) are never cached. Vercel's documentation does
+not promise that a new deployment clears cached external-rewrite responses, so both deploy workflows
+now purge the CDN cache right after the web goes live (`vercel cache purge --type cdn`, available in
+the pinned CLI), and the data canary checks through the CDN as well as at the origin.

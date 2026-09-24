@@ -93,6 +93,9 @@ jobs:
           url=$(python3 scripts/ci/vercel_deploy_url.py deploy.out deploy.err)
           echo "deployed $url"
           vercel alias set "$url" sggs-staging.vercel.app --token="$VERCEL_TOKEN"
+      - name: Purge the CDN cache (proxied API reads are cached up to s-maxage; a new dataset must not be served stale)
+        env: { VERCEL_TOKEN: "${{ secrets.VERCEL_TOKEN }}" }
+        run: vercel cache purge --type cdn --yes --token="$VERCEL_TOKEN" || echo "::warning::CDN cache purge failed — cached API reads may be up to s-maxage old"
 
   verify:
     needs: deploy-web
