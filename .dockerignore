@@ -5,6 +5,7 @@
 !webapp/
 !dataset.lock.json
 !scripts/data/fetch_dataset.py
+!tools/slice_db.py
 webapp/static.bak/
 webapp/tests/
 **/__pycache__/
