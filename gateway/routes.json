@@ -1,0 +1,14 @@
+{
+  "_comment": "Which bounded contexts the gateway sends to their own service, per environment. Everything else goes to the environment's single API. frontend/vercel.json's rewrites are generated from this file and serve.ROUTES by tools/gen_gateway.py; never edit them by hand.",
+  "staging": {
+    "host": "sggs-staging.vercel.app",
+    "single_api": "https://sggs-api-staging.onrender.com",
+    "service_origin": "https://sggs-staging-{context}.onrender.com",
+    "services": ["knowledge"]
+  },
+  "production": {
+    "single_api": "https://sggs-knowledge-base.onrender.com",
+    "service_origin": null,
+    "services": []
+  }
+}
