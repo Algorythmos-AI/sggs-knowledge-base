@@ -145,12 +145,7 @@ n_var = con.execute('SELECT count(*) FROM variants').fetchone()[0]
 n_en = con.execute("SELECT count(*) FROM translations WHERE lang='en'").fetchone()[0]
 con.close()
 m = json.load(open('MANIFEST.json'))
-av = None
-try:
-    import re
-    av = re.search(r"APP_VERSION\s*=\s*'([^']+)'", open('webapp/serve.py').read()).group(1)
-except Exception: pass
-m.update({'version': av or m.get('version'),
+m.update({'version': open('DATASET_VERSION').read().strip(),   # dataset version (not the app build)
           'built': datetime.datetime.fromtimestamp(int(os.environ['SOURCE_DATE_EPOCH']), datetime.timezone.utc).date().isoformat(), 'variants': n_var,
           'translations_en': n_en, 'corpus_sha256': sha('corpus/sggs.jsonl'),
           'db_sha256': sha('db/sggs.sqlite')})

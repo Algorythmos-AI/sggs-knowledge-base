@@ -15,7 +15,7 @@ doctor: ## check the local toolchain (the python3 trap, node, git-lfs, pdf)
 	@test -f "$(PDF)" && echo "pdf: present" || echo "  source PDF not at $(PDF) (needed only for reconcile/rebuild)"
 	@test "$$(uname -s)" != Darwin || python3 pipeline/check_ios_db_pair.py || true
 
-check-versions: ## assert the version is unified across all 7 locations
+check-versions: ## assert the app version is unified across all 6 locations
 	python3 scripts/release/check_versions.py
 
 test-web: ## platform tests: API, contract, OpenAPI, web gates (webapp/tests)

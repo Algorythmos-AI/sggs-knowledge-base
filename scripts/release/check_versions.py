@@ -5,7 +5,7 @@ place it lives, plus two iOS build invariants. The CI `version-consistency`
 gate; also runnable locally (`make check-versions`).
 
 Sources of truth checked (all must equal webapp/serve.py:APP_VERSION):
-  webapp/serve.py APP_VERSION · MANIFEST.json version · frontend/package.json
+  webapp/serve.py APP_VERSION · frontend/package.json
   version · ios/App/project.yml MARKETING_VERSION · README.md badge ·
   MASTER-INDEX.md header · CHANGELOG.md top entry.
 
@@ -39,7 +39,6 @@ def main():
     canon = first(r"APP_VERSION\s*=\s*'([^']+)'", read("webapp/serve.py"), "serve.py")
     found = {
         "webapp/serve.py APP_VERSION": canon,
-        "MANIFEST.json version": json.loads(read("MANIFEST.json")).get("version", "<none>"),
         "frontend/package.json version": json.loads(read("frontend/package.json")).get("version", "<none>"),
         "ios project.yml MARKETING_VERSION": first(r'MARKETING_VERSION:\s*"([^"]+)"', read("ios/App/project.yml"), "project.yml"),
         "README.md badge": first(r"version-([0-9]+\.[0-9]+\.[0-9]+)-", read("README.md"), "README"),

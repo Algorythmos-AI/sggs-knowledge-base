@@ -86,6 +86,7 @@ class CommittedDataset(unittest.TestCase):
         want = json.loads((ROOT / "audit" / "dataset-fingerprint.json").read_text(encoding="utf-8"))
         self.assertEqual(si.compare(want, self.fp), [])
 
+    @unittest.skipUnless((ROOT / "ios" / "Resources" / "sggs-ios.manifest.json").exists(), "iOS app not in this repository")
     def test_scripture_hash_is_the_ios_definition(self):
         ios = json.loads((ROOT / "ios" / "Resources" / "sggs-ios.manifest.json").read_text(encoding="utf-8"))
         self.assertEqual(self.fp["scripture_sha256"], ios["scripture_sha256"])

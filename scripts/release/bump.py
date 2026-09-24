@@ -3,7 +3,7 @@
 bump.py X.Y.Z — set the single unified version everywhere at once, and open a
 dated CHANGELOG stub. Run check_versions.py afterwards (it is the CI gate).
 
-Updates: webapp/serve.py (APP_VERSION + APP_BUILT), MANIFEST.json (version+built),
+Updates: webapp/serve.py (APP_VERSION + APP_BUILT),
 frontend/package.json, ios/App/project.yml (MARKETING_VERSION), README badge +
 "Current release" line, MASTER-INDEX header. It does NOT
 touch db_sha256/corpus_sha256 (those are stamped by the rebuild) and does NOT
@@ -45,10 +45,6 @@ def main():
     edit("webapp/serve.py", sub1(r"APP_VERSION = '[^']+'", f"APP_VERSION = '{v}'"))
     edit("webapp/serve.py", sub1(r"APP_BUILT = '[^']+'", f"APP_BUILT = '{d}'"))
 
-    def man(s):
-        m = json.loads(s); m["version"] = v; m["built"] = d
-        return json.dumps(m, indent=2) + "\n"
-    edit("MANIFEST.json", man)
 
     def pkg(s):
         return re.sub(r'("version":\s*")[^"]+(")', rf'\g<1>{v}\g<2>', s, count=1)
