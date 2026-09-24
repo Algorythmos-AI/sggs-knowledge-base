@@ -1,0 +1,641 @@
+# -*- coding: utf-8 -*-
+"""Search context: the ranked waterfall (exact FTS, seeker lexicon, variants, English, passage,
+fold, theme) and the /api/search and /api/word routes."""
+import json, re, sqlite3
+from . import core
+from .core import LINE_COLS, _FALLTHROUGH, _int, attach_translations, db, have_fts, rows_to_list
+from romannorm import roman_norm
+
+
+GURMUKHI = re.compile('[਀-੿]')
+
+
+def fold_match_alts(fn):
+    """Exact-fold FTS clauses for a query token's fold, plus the casual-spelling twins a
+    user is most likely to produce. All EXACT (never prefix) so they can't over-match — a
+    twin only reaches words whose whole skeleton matches but for that one feature, and the
+    multi-token AND + BM25 keep precision.
+      • initial-vowel: roman_norm keeps the lead vowel and canonical long oo/ee fold to
+        head o/e, but users type short u/i (oopar~upar, ootam~utam) -> swap o<->u, e<->i.
+      • subjoined-h aspiration: the index keeps it (ਤੁਮ੍ਹ tumh->'dmh', ਚੀਨ੍ਹੇ cheenhe->'cnh')
+        but casual typing drops it (tum->'dm', chine->'cn'). Insert an h after a nasal/l so
+        the short query fold reaches the aspirated index fold (the one-directional gap —
+        the index always carries the aspiration the user omits)."""
+    if not fn or len(fn) < 2: return []
+    variants = [fn]
+    swap = {'o': 'u', 'u': 'o', 'e': 'i', 'i': 'e'}.get(fn[0])
+    if swap: variants.append(swap + fn[1:])
+    for i, ch in enumerate(fn):                       # subjoined-h reinsertion
+        if ch in 'mnl' and (i + 1 >= len(fn) or fn[i + 1] != 'h'):
+            variants.append(fn[:i + 1] + 'h' + fn[i + 1:])
+    seen, uniq = set(), []
+    for v in variants:
+        if v not in seen: seen.add(v); uniq.append(v)
+    return [f'translit_norm: "{v}"' for v in uniq[:5]]
+
+
+# Columns that may be interpolated into FTS5 SQL by name. Every call site passes a
+# string literal from this set, so this is a defensive allowlist (a future refactor that
+# ever lets user input reach `col` would otherwise be a structural injection point).
+_FTS_COLS = frozenset({'text', 'translit', 'translit_norm', 'fl_g', 'fl_r', 'skeleton'})
+
+
+def _fts_clean(s):
+    """Strip the two characters that carry FTS5 operator meaning inside a quoted phrase:
+    a stray " closes the phrase (syntax error / injection), and a trailing * silently
+    turns an exact term into a prefix match. Tokens are otherwise passed verbatim."""
+    return str(s).replace('"', '').replace('*', '')
+
+
+def fts_query(tokens, phrase=False):
+    toks = [_fts_clean(t) for t in tokens if _fts_clean(t)]
+    if not toks: return None
+    if phrase: return '"' + ' '.join(toks) + '"'
+    return ' AND '.join(f'"{t}"' for t in toks)
+
+
+def search_fts(col, q, phrase, limit, offset, no_headers=False):
+    if col not in _FTS_COLS: raise ValueError(f'invalid column: {col}')
+    m = fts_query(q.split(), phrase)
+    if not m: return []
+    # no_headers: the phonetic-fold tier (translit_norm) collapses distinct words to the
+    # same skeleton (bihaagarhaa->'vhgr'==vaahiguroo), so raag/author HEADER lines that
+    # never carry the real word still fold-match and pollute the results. Exclude headers
+    # from this tier only — a seeker wants scripture lines, not metadata captions.
+    wh = ' WHERE lines.is_header = 0' if no_headers else ''
+    # BM25 relevance ranking; column weights: text, translit, translit_norm, fl_g, fl_r, skeleton
+    sql = (f"SELECT {LINE_COLS} FROM lines JOIN "
+           f"(SELECT rowid, bm25(fts, 10.0, 5.0, 4.0, 3.0, 3.0, 1.0) AS rk "
+           f" FROM fts WHERE {col} MATCH ?) m ON lines.id = m.rowid{wh} "
+           f"ORDER BY m.rk, lines.id LIMIT ? OFFSET ?")
+    try:
+        return rows_to_list(db().execute(sql, (m, limit, offset)).fetchall())
+    except sqlite3.OperationalError:      # very old SQLite without bm25(): fall back
+        hf = ' AND is_header = 0' if no_headers else ''
+        sql = (f"SELECT {LINE_COLS} FROM lines WHERE id IN "
+               f"(SELECT rowid FROM fts WHERE {col} MATCH ?){hf} ORDER BY id LIMIT ? OFFSET ?")
+        return rows_to_list(db().execute(sql, (m, limit, offset)).fetchall())
+
+
+# Curated seeker lexicon: what people type -> how the corpus says it.
+# Values: ('theme', concept_key) or ('translit', [terms tried in order]).
+SEEKER_LEXICON = {
+    'ego': ('theme', 'haumai'), 'truth': ('theme', 'sach'), 'liberation': ('theme', 'mukti'),
+    'moksha': ('theme', 'mukti'), 'salvation': ('theme', 'mukti'), 'love': ('theme', 'prem_pyar'),
+    'mercy': ('translit', ['daiaa', 'kirapaa']), 'compassion': ('translit', ['daiaa']),
+    'grace': ('translit', ['nadar', 'kirapaa']), 'peace': ('translit', ['saant', 'sukh']),
+    'death': ('translit', ['kaal', 'maran']), 'bliss': ('translit', ['anand']),
+    'fear': ('translit', ['bhau']), 'fearless': ('translit', ['nirabhau']),
+    'soul': ('translit', ['aatam', 'jeeo']), 'light': ('translit', ['jot']),
+    'mind': ('translit', ['man']), 'word': ('translit', ['sabad']),
+    'karma': ('translit', ['karam']), 'bhakti': ('translit', ['bhagat']),
+    'dhyan': ('translit', ['dhiaan']), 'gyan': ('translit', ['giaan']),
+    # darshan folds to 'drsn' = trisanaa (thirst/desire) — opposite meaning; anchor to
+    # the real word. sewa/seva fold to 'sv' which is dominated by sabh (all). Route both
+    # to their canonical translit so these two most-searched terms resolve cleanly.
+    'darshan': ('translit', ['darasan']), 'darshana': ('translit', ['darasan']),
+    'sewa': ('translit', ['sevaa']), 'seva': ('translit', ['sevaa']), 'sewaa': ('translit', ['sevaa']),
+    # Modern spoken Hindi/Punjabi verb perfectives -> Gurbani canonical forms. The variant
+    # engine emits -iaa/-aaiaa but misses the -io ending (gaya->gaiaa but not gaio), so a
+    # remembered line like 'kanthe rah gaya ram' (ਕਾਂਠੈ ਰਹਿ ਗਇਓ ਰਾਮੁ) failed to resolve.
+    # Each maps to its two commonest canonical spellings (the per-token cap is 2).
+    'gaya': ('translit', ['gaio', 'gaiaa']), 'gaiya': ('translit', ['gaio', 'gaiaa']),
+    'gayi': ('translit', ['gaee', 'gaiaa']), 'gayee': ('translit', ['gaee', 'gaiaa']),
+    'hua': ('translit', ['hoaa', 'hoiaa']), 'hoya': ('translit', ['hoaa', 'hoiaa']),
+    'raha': ('translit', ['rahio', 'rahiaa']), 'rahaa': ('translit', ['rahio', 'rahiaa']),
+    'kaha': ('translit', ['kahio', 'kahiaa']), 'kahaa': ('translit', ['kahio', 'kahiaa']),
+    'kiya': ('translit', ['keeaa', 'keeo']), 'kia': ('translit', ['keeaa', 'keeo']),
+    'kiaa': ('translit', ['keeaa', 'keeo']), 'keeya': ('translit', ['keeaa', 'keeo']),
+    'aaya': ('translit', ['aaio', 'aaiaa']), 'aya': ('translit', ['aaio', 'aaiaa']),
+    'diya': ('translit', ['deeo', 'deeaa']), 'dia': ('translit', ['deeo', 'deeaa']),
+    'liya': ('translit', ['leeo', 'leeaa']), 'lia': ('translit', ['leeo', 'leeaa']),
+    'bhaya': ('translit', ['bhaio', 'bhaiaa']), 'bhaia': ('translit', ['bhaio', 'bhaiaa']),
+    'paya': ('translit', ['paaio', 'paaiaa']), 'paaya': ('translit', ['paaio', 'paaiaa']),
+    # casual short renderings that otherwise resolve to the WRONG canonical and poison the
+    # AND: 'sai' is a rare word, but the user means ਸਾਈ saaee / ਸਾਈਂ saaeen (Lord/Master).
+    'sai': ('translit', ['saaee', 'saaeen']), 'sain': ('translit', ['saaeen', 'saaee']),
+    'saeen': ('translit', ['saaeen', 'saaee']), 'saai': ('translit', ['saaee', 'saaeen']),
+    'karoh': ('translit', ['karah']), 'karo': ('translit', ['karah', 'kar']),
+    'farid': ('translit', ['phareed', 'phareedaa']), 'krishna': ('translit', ['krisan']),
+    'sita': ('translit', ['seetaa']), 'dhru': ('translit', ['dhroo']),
+    'prahlad': ('translit', ['prahilaad', 'prahalaad']), 'ravan': ('translit', ['raavan']),
+    'brahma': ('translit', ['brahamaa']), 'shiva': ('translit', ['siv']), 'shiv': ('translit', ['siv']),
+    'indra': ('translit', ['indr', 'ind']), 'yashoda': ('translit', ['jasodaa', 'jasudaa']),
+    'yamuna': ('translit', ['jamunaa']), 'waheguru': ('translit', ['vaahiguroo']),
+    'allah': ('translit', ['alah']), 'khuda': ('translit', ['khudaa', 'khudaae']),
+    'satnam': ('translit', ['sat naam', 'satinaam']), 'satguru': ('translit', ['satigur']),
+    'satnam waheguru': ('translit', ['vaahiguroo', 'sat naam']),
+    # 'baba'/'sheikh' is a honorific before Farid; alone 'baba' drops to 1 token (no
+    # honorific-drop) and 'farid' folds weakly, so the bigram resolved to a vrata line.
+    # Anchor the whole phrase to the canonical 'phareed'. 'sheikh farid' already works.
+    'baba farid': ('translit', ['phareed', 'phareedaa']),
+    'baba fareed': ('translit', ['phareed', 'phareedaa']),
+    # Hindi/Sanskrit spellings whose roman_norm collapses to a 1-char weak fold (maaya->'m',
+    # kya->'g'), dropping the distinctive token; anchor to the Gurbani canonical form.
+    'maaya': ('translit', ['maaiaa']), 'kya': ('translit', ['kiaa', 'kia']),
+    # MODERN POSTPOSITION LAYER (closed class). Hindi/Punjabi का/के/की/को collapse to a weak
+    # 1-char fold (ka/ke/ki->'g', ko/kau->'g') so they drop out of the AND, AND they differ
+    # from the Gurbani spelling the line actually uses (ਕੈ kai / ਕਾ kaa / ਕੇ ke / ਕੀ kee /
+    # ਕਉ kau). Anchoring each to its canonical translit restores a STRONG exact discriminator
+    # — this is why `jamuna ka kul khel kelio` now resolves to Ang 1403 (jamunaa KAI kool khel
+    # khelio) instead of a short BM25 decoy. These five recur on tens of thousands of lines.
+    'ka': ('translit', ['kai', 'kaa']), 'ke': ('translit', ['ke', 'kai']),
+    'ki': ('translit', ['kee', 'ki']), 'kau': ('translit', ['kau', 'ko']),
+    'ko': ('translit', ['ko', 'kau']),
+    # MODERN PRONOUN / PARTICLE + COMPOUND + NAMED-FIGURE layer (proactive hardening, v2.0.6).
+    # Each casual form has 0 corpus lines (no hijack) and each target is canon-verified.
+    'mein': ('translit', ['mah', 'vich']), 'me': ('translit', ['mah', 'vich']),  # में/मैं -> ਮਹਿ/ਵਿਚਿ (in)
+    'ye': ('translit', ['ih', 'eh']),               # ये -> ਇਹੁ/ਏਹ (this)
+    'main': ('translit', ['mai', 'hau']),           # मैं (I) -> ਮੈ/ਹਉ (bare 'main' is ਮੈਣ wax, 2 lines)
+    'inka': ('translit', ['tin', 'tinhaa']),        # इनका -> ਤਿਨ (those/their)
+    'jivan': ('translit', ['jeevan']),              # जीवन -> ਜੀਵਨੁ ('jivan' itself: 0 corpus lines)
+    'mua': ('translit', ['mooaa', 'moaa']),         # मुआ -> ਮੂਆ (died); its fold 'm' was weak-dropped
+    'keertan': ('translit', ['keeratan']),          # ਕੀਰਤਨ ('keertan' spelling resolved empty)
+    'raidas': ('translit', ['ravidaas']),           # Bhagat ਰਵਿਦਾਸ — common alt spelling, was 0 results
+    'waheguruji': ('translit', ['vaahiguroo']),     # space-collapsed जपੁ form
+    'sachkhand': ('translit', ['sach khand']),      # ਸਚ ਖੰਡ — space-collapsed compound
+    'kirtan sohila': ('translit', ['sohilaa']),     # bani name -> ਸੋਹਿਲਾ
+    'onkar': ('translit', ['oankaar']), 'ikonkar': ('translit', ['oankaar']),
+    'rabb': ('translit', ['har', 'raam']), 'rab': ('translit', ['har', 'raam']),
+    'dard': ('translit', ['dukh']), 'dil': ('translit', ['man']),
+    'khushi': ('translit', ['sukh']), 'satsang': ('translit', ['saadhasang', 'sang']),
+    'ocean': ('translit', ['saagar']), 'name': ('translit', ['naam']),
+}
+
+
+def lexicon_search(q, limit, offset):
+    entry = SEEKER_LEXICON.get(q.strip().lower())
+    if not entry: return None
+    kind, val = entry
+    if kind == 'theme':
+        t = theme_search(val, limit, offset)
+        return t if t['results'] else None
+    for term in val:
+        res = search_fts('translit', term, False, limit, offset)
+        if res: return {'mode': f'seeker-lexicon ({term})', 'results': res}
+    return None
+
+
+def term_concepts(tokens):
+    """Map any query token to its theme(s) — the corpus-verified concept index."""
+    if core._TERM2CONCEPT is None:
+        # Double-checked lock: ThreadingHTTPServer can race two first-requests here, and
+        # building into the module global directly would let a second thread observe a
+        # half-built dict (silently missing concept hits). Build a local, publish atomically.
+        with core._concept_lock:
+            if core._TERM2CONCEPT is None:
+                d = {}
+                for name, terms in db().execute('SELECT concept, gurmukhi_terms FROM concepts'):
+                    for t in json.loads(terms):
+                        d.setdefault(t, []).append(name)
+                core._TERM2CONCEPT = d
+    hits = []
+    for t in tokens:
+        for c in core._TERM2CONCEPT.get(t, ()):
+            if c not in hits: hits.append(c)
+    return hits
+
+
+def search_like(col, q, limit, offset):
+    if col not in _FTS_COLS: raise ValueError(f'invalid column: {col}')
+    pat = '%' + '%'.join(q.split()) + '%'
+    sql = f"SELECT {LINE_COLS} FROM lines WHERE {col} LIKE ? ORDER BY id LIMIT ? OFFSET ?"
+    return rows_to_list(db().execute(sql, (pat, limit, offset)).fetchall())
+
+
+PUNCT_RE = re.compile(r'[॥।.,;:!?"\'()\[\]{}|/\\-]+')
+
+
+def do_search(q, mode, limit, offset):
+    if len(q) > 300: raise ValueError('query too long (max 300 chars)')
+    q = PUNCT_RE.sub(' ', q).strip()          # dandas & punctuation are separators
+    q = re.sub(r'\s+', ' ', q)
+    if not q: return {'mode': mode, 'results': []}
+    if core.HAVE_FTS is None: core.HAVE_FTS = have_fts()
+    toks = q.split()
+    is_gurmukhi = bool(GURMUKHI.search(q))
+
+    def run(col, phrase=False):
+        if core.HAVE_FTS: return search_fts(col, q, phrase, limit, offset)
+        return search_like('text' if col == 'text' else col, q, limit, offset)
+
+    latin_present = bool(re.search('[a-zA-Z]', q))
+    if mode == 'auto' and is_gurmukhi and latin_present:
+        ms = mixed_search(q, limit, offset)
+        if ms: return {'mode': 'mixed-script', 'results': ms}
+        q_lat = ' '.join(t for t in toks if not GURMUKHI.search(t))
+        if q_lat:
+            sub = do_search(q_lat, 'auto', limit, offset)   # drop Gurmukhi tokens, retry
+            if sub.get('results'):
+                sub['mode'] = 'mixed-script (latin part: ' + sub['mode'] + ')'
+                return sub
+    # explicit modes
+    if mode == 'gurmukhi':
+        res = run('text'); used = 'gurmukhi'
+        if not res and core.HAVE_FTS:
+            res = search_like('skeleton', re.sub('[ਾਿੀੁੂੇੈੋੌੰਂ੍]', '', q), limit, offset); used = 'gurmukhi-skeleton'
+    elif mode == 'roman':
+        res = run('translit'); used = 'roman'
+        if not res and core.HAVE_FTS:
+            strong = ' '.join(t for t in roman_norm(q).split() if len(t) >= 2)
+            if strong:
+                res = search_fts('translit_norm', strong, False, limit, offset, no_headers=True)
+                used = 'roman-spelling-tolerant'
+    elif mode == 'first':
+        col = 'fl_g' if is_gurmukhi else 'fl_r'
+        res = run(col, phrase=True); used = 'first-letters'
+    elif mode == 'theme':
+        return theme_search(q, limit, offset)
+    elif mode == 'english':
+        res = search_en(q, limit, offset); used = 'english'
+    else:  # auto
+        if is_gurmukhi:
+            single_letters = all(len(t) == 1 for t in toks) and len(toks) >= 2
+            if single_letters:
+                res = run('fl_g', phrase=True); used = 'first-letters'
+            else:
+                res = run('text'); used = 'gurmukhi'
+                if not res:
+                    res = search_like('skeleton', re.sub('[ਾਿੀੁੂੇੈੋੌੰਂ੍]', '', q), limit, offset); used = 'gurmukhi-skeleton'
+        else:
+            ql = q.lower()
+            cpt = db().execute('SELECT concept FROM concepts WHERE concept = ?', (ql,)).fetchone()
+            if cpt:
+                return theme_search(ql, limit, offset)
+            if all(len(t) <= 3 for t in toks) and len(toks) >= 2:
+                res = run('fl_r', phrase=True); used = 'first-letters'
+                if not res:
+                    res = run('translit'); used = 'roman'
+            else:
+                res = run('translit'); used = 'roman'
+            if not res:                                   # curated seeker words
+                lx = lexicon_search(q, limit, offset)
+                if lx: return lx
+            if not res:                                   # precomputed variant index
+                vr = variant_search(q, limit, offset)
+                if vr: return {'mode': 'variant-match', 'results': vr}
+            if not res:                                   # English layer before fold:
+                res = search_en(q, limit, offset)         # 'mercy' must hit translations,
+                used = 'english-translation'              # not fold-collide with ਮੋਰਚਾ
+            if not res:                                   # hallucinated honorifics: retry early
+                kept = [t for t in toks if t.lower() not in
+                        {'ji','jee','jeo','jio','sahib','maharaj','maharaaj','shri','shree','sri','baba','guru','dev','waale','wale'}]
+                if 2 <= len(kept) < len(toks):
+                    sub = do_search(' '.join(kept), 'auto', limit, offset)
+                    if sub.get('results'):
+                        sub['mode'] = sub['mode'] + ' (honorifics dropped)'
+                        return sub
+            if not res and len(toks) >= 3:                # quote spans ॥ lines —
+                ps = passage_search(q, limit, offset)     # shabad-level AND is more
+                if ps: return {'mode': 'passage-match (quote spans lines)', 'results': ps}   # precise than per-line fold
+            if not res and core.HAVE_FTS:
+                strong = ' '.join(t for t in roman_norm(q).split() if len(t) >= 2)
+                if strong:
+                    res = search_fts('translit_norm', strong, False, limit, offset, no_headers=True)
+                    used = 'roman-spelling-tolerant'
+            if not res and len(toks) <= 14:               # blob targets short/spaceless smash; only an
+                bl = blob_search(q, limit, offset)        # absurd 15+ token paste can't collapse to one
+                if bl: return {'mode': 'skeleton-blob', 'results': attach_translations(bl)}  # blob line — skip just those
+            if not res and len(toks) == 1:
+                t = theme_search(q, limit, offset)
+                if t['results']: return t
+    HONORIFICS = {'ji', 'jee', 'jeo', 'sahib', 'maharaj', 'maharaaj', 'shri', 'shree',
+                  'sri', 'baba', 'guru', 'dev', 'waale', 'wale', 'jio'}
+    if len(res) < 3 and mode == 'auto':
+        kept = [t for t in toks if t.lower() not in HONORIFICS]
+        if len(kept) >= 2 and len(kept) < len(toks):
+            sub = do_search(' '.join(kept), 'auto', limit, offset)
+            if sub.get('results'):
+                seen = {r['id'] for r in res}
+                merged = [r for r in sub['results'] if r['id'] not in seen]
+                if not res:
+                    sub['mode'] = sub['mode'] + ' (honorifics dropped)'
+                    return sub
+                res = (res + merged)[:limit]
+                used = used + ' + honorific-dropped'
+    out = {'mode': used, 'results': res}
+    if is_gurmukhi:
+        rel = term_concepts(toks)
+        if rel: out['related_themes'] = rel[:3]
+    return out
+
+
+def variant_search(q, limit, offset):
+    """Precomputed romanization-variant tier (docs/design/03_Phonetic-Variant-Engine.md).
+    HYBRID per-token resolution so one stubborn token can't kill the AND:
+      1. variant-index hit        -> translit:(a OR b OR c)   (<=3 by freq*score)
+      2. trailing-vowel retry     -> same ('naari' ~ canonical 'naar')
+      3. canonical/exact token    -> translit:("t")
+      4. otherwise phonetic fold  -> translit_norm:("fold(t)")
+    All combined in ONE FTS expression."""
+    toks = [t for t in q.lower().split() if t.isalnum()]
+    if not toks or len(toks) > 10: return None
+    groups = []
+    try:
+        def lookup(tok):
+            return db().execute(
+                'SELECT DISTINCT translit FROM variants WHERE variant = ? '
+                'ORDER BY freq * score DESC LIMIT 3', (tok,)).fetchall()
+        weak_skipped = 0
+        for t in toks:
+            # Token waterfall: EVERY token gets a full OR-group so a mislabeled
+            # variant or a strict canonical coincidence can never poison the AND:
+            #   (translit:"variant…" OR translit:"self" OR translit:"lexicon" OR translit_norm:"fold")
+            alts = []
+            rs = lookup(t)
+            if not rs and len(t) > 3 and t[-1] in 'aeiou':
+                rs = lookup(t[:-1])                  # dropped/extra terminal vowel
+            if not rs and len(t) > 3 and t[-1] in 'nm' and t[-2] in 'aeiou':
+                rs = lookup(t[:-1])                  # user-added nasal: main -> mai
+            base_sfx = None
+            if not rs:
+                for suf in ('ing', 'ed', 'es', 'er', 's'):   # English morphology: boling -> bol
+                    if t.endswith(suf) and len(t) > len(suf) + 2:
+                        base_sfx = t[:-len(suf)]
+                        rs = lookup(base_sfx)
+                        if rs: break
+            for r in rs:
+                alts.append(f'translit: "{_fts_clean(r[0])}"')
+            def is_canon(tok):
+                try:
+                    return db().execute('SELECT 1 FROM canon_tokens WHERE token = ?', (tok,)).fetchone()
+                except sqlite3.OperationalError:
+                    return db().execute('SELECT 1 FROM variants WHERE translit = ? LIMIT 1', (tok,)).fetchone()
+            for cand in (t, t[:-1] if len(t) > 3 and t[-1] in 'aeiounm' else None, base_sfx):
+                if cand and is_canon(cand):
+                    alts.append(f'translit: "{cand}"')
+            if t[-1] in 'aiu':                       # ki~kee, jo~joo, sada~sadaa
+                long_v = t[:-1] + {'a': 'aa', 'i': 'ee', 'u': 'oo'}[t[-1]]
+                if is_canon(long_v):
+                    alts.append(f'translit: "{long_v}"')
+            lx = SEEKER_LEXICON.get(t)               # satnam -> "sat naam" phrase
+            if lx and lx[0] == 'translit':
+                for term in lx[1][:2]:
+                    alts.append(f'translit: "{term}"')
+            fn = roman_norm(t)
+            # EXACT folds, never prefix. A prefix wildcard on a short fold-skeleton
+            # over-matches catastrophically: query 'dhara'->'dr' would prefix-match
+            # 'teerath'->'drd', so `hamra dhara har` wrongly surfaced Ang 1142 above the
+            # true Ang 366 (whose 'dharhaa' folds to exactly 'dr'). fold_match_alts adds
+            # only the exact fold + its initial-vowel twin (oopar~upar). Typo-tail recall
+            # is carried by the curated layers above (variants, canon_tokens, long-vowel
+            # twins, nasal-trim, suffix-strip, lexicon) — not by a blunt wildcard.
+            alts += fold_match_alts(fn)
+            if alts:
+                groups.append('(' + ' OR '.join(alts) + ')')
+            elif fn:                                 # only a 1-char fold: weak token
+                weak_skipped += 1                    # (jo/so/ha — skip, don't poison)
+            else:
+                return None
+        # Dedupe identical OR-groups. A repeated mantra ("satnam waheguru satnam waheguru")
+        # otherwise inflates len(groups) AND the all-but-one threshold (need=N-1), so no line
+        # can clear it and the query crashes into the blob tier with junk. Collapse to uniques.
+        seen_g, uniq_g = set(), []
+        for g in groups:
+            if g not in seen_g: seen_g.add(g); uniq_g.append(g)
+        had_repeat = len(uniq_g) < len(groups)
+        groups = uniq_g
+        if not groups or (weak_skipped and len(groups) < 2): return None
+        expr = ' AND '.join(groups)
+        sql = (f"SELECT {LINE_COLS} FROM lines JOIN "
+               f"(SELECT rowid, bm25(fts, 10.0, 5.0, 4.0, 3.0, 3.0, 1.0) AS rk "
+               f" FROM fts WHERE fts MATCH ?) m ON lines.id = m.rowid "
+               f"ORDER BY m.rk, lines.id LIMIT ? OFFSET ?")
+        res = rows_to_list(db().execute(sql, (expr, limit, offset)).fetchall())
+        if res: return res
+        # GRACEFUL ALL-BUT-ONE FALLBACK. The strict AND above is brittle: if any single
+        # token resolves to the wrong canonical (e.g. a casual short form we don't cover)
+        # it zeroes out the whole multi-word query and the user is dumped into a worse
+        # tier. Only when the strict AND found NOTHING, re-rank candidates by HOW MANY
+        # groups they satisfy and accept lines matching all-but-one. A line matching every
+        # token still wins (highest count); precision holds because we required ≥N-1.
+        if len(groups) >= 3 or (had_repeat and len(groups) >= 2):
+            or_rows = db().execute(
+                f"SELECT {LINE_COLS}, translit_norm FROM lines JOIN "
+                f"(SELECT rowid, bm25(fts, 10.0, 5.0, 4.0, 3.0, 3.0, 1.0) AS rk "
+                f" FROM fts WHERE fts MATCH ?) m ON lines.id = m.rowid "
+                f"ORDER BY m.rk LIMIT 150", (' OR '.join(groups),)).fetchall()
+            gterms = [re.findall(r'(\w+): "([^"]+)"', g) for g in groups]
+            need = len(groups) - 1
+            scored = []
+            for r in or_rows:
+                d = dict(r)
+                tw = set((d.get('translit') or '').split())
+                nw = set((d.pop('translit_norm') or '').split())
+                # a multi-word translit target (e.g. satnam -> "sat naam") matches when
+                # all its words are present, not as a single set member
+                hits = sum(1 for terms in gterms
+                           if any((all(x in tw for x in t.split())) if c == 'translit'
+                                  else (t in nw) for c, t in terms))
+                if hits >= need: scored.append((hits, d))
+            if scored:
+                scored.sort(key=lambda x: -x[0])      # most tokens matched first; stable on bm25
+                return [d for _, d in scored[offset:offset + limit]]
+        return None
+    except sqlite3.OperationalError:
+        return None
+
+
+def mixed_search(q, limit, offset):
+    """Bilingual blender: Gurmukhi tokens match the text column; latin tokens
+    resolve through variants/lexicon/fold — all in one AND expression."""
+    toks = q.split()
+    if len(toks) > 10: return None
+    groups = []
+    try:
+        for t in toks:
+            if GURMUKHI.search(t):
+                clean = t.replace('"', '')
+                groups.append(f'(text: "{clean}")')
+                continue
+            t = t.lower()
+            if not t.isalnum(): continue
+            alts = []
+            rs = db().execute('SELECT DISTINCT translit FROM variants WHERE variant = ? '
+                              'ORDER BY freq * score DESC LIMIT 3', (t,)).fetchall()
+            for r in rs: alts.append(f'translit: "{_fts_clean(r[0])}"')
+            try:
+                if db().execute('SELECT 1 FROM canon_tokens WHERE token = ?', (t,)).fetchone():
+                    alts.append(f'translit: "{t}"')
+            except sqlite3.OperationalError: pass
+            lx = SEEKER_LEXICON.get(t)
+            if lx and lx[0] == 'translit':
+                for term in lx[1][:2]: alts.append(f'translit: "{term}"')
+            fn = roman_norm(t)
+            alts += fold_match_alts(fn)                                      # exact fold + vowel twin
+            if alts: groups.append('(' + ' OR '.join(alts) + ')')
+        if len(groups) < 2: return None
+        expr = ' AND '.join(groups)
+        sql = (f"SELECT {LINE_COLS} FROM lines JOIN "
+               f"(SELECT rowid, bm25(fts, 10.0, 5.0, 4.0, 3.0, 3.0, 1.0) AS rk "
+               f" FROM fts WHERE fts MATCH ?) m ON lines.id = m.rowid "
+               f"ORDER BY m.rk, lines.id LIMIT ? OFFSET ?")
+        return attach_translations(rows_to_list(db().execute(sql, (expr, limit, offset)).fetchall())) or None
+    except sqlite3.OperationalError:
+        return None
+
+
+def passage_search(q, limit, offset):
+    """Cross-line passage tier: user quotes a couplet spanning ॥ boundaries
+    (ਜੀਵਤ ਜੋ ਮਰੈ ਹਾਂ ॥ ਦੁਤਰੁ ਸੋ ਤਰੈ ਹਾਂ ॥ is TWO corpus lines). Folded tokens
+    are matched at SHABAD level; the shabad's lines are returned in order."""
+    toks = [roman_norm(t) for t in q.lower().split() if t.isalnum()]
+    toks = [t for t in toks if len(t) >= 2]   # 1-char folds (jo→j, ha→h) are noise
+    if len(toks) < 3: return None
+    # EXACT folds, not prefix: 2-3 char skeletons (jvd/mr/dr) prefix-match hundreds
+    # of words, exploding the match set and burying the true couplet — Ang 410 fell
+    # from bm25 rank #20 to #42, out of the LIMIT-25 window. Typo-tail queries
+    # resolve at the variant/waterfall tier before reaching here; the seq-gate below
+    # stays prefix-aware so in-order verification still tolerates tails.
+    m = ' AND '.join(f'"{t}"' for t in toks)
+    try:
+        cand = db().execute(
+            'SELECT comp_id, tnorm, rank FROM fts_shabad WHERE fts_shabad MATCH ? '
+            'ORDER BY rank LIMIT 60', (m,)).fetchall()   # 60 not 40: a true line can sit
+        if not cand: return None                          # past rank 40 in a long shabad
+        seq = re.compile(r'\b' + r'\w*\b.*?\b'.join(re.escape(t) for t in toks) + r'\w*')
+        # Rank by the SPAN of the tightest in-order match (non-greedy `.*?` finds the
+        # shortest). A genuine quote keeps its words contiguous; a coincidental scatter
+        # across a long shabad spans hundreds. Score the span PER LINE — a quote normally
+        # sits inside ONE line — and fall back to the whole-shabad tnorm only when no
+        # single line carries the full in-order match, i.e. a true cross-line couplet
+        # (Ang 410: ਜੀਵਤ ਜੋ ਮਰੈ ਹਾਂ ॥ / ਦੁਤਰੁ ਸੋ ਤਰੈ ਹਾਂ ॥). Per-line scoring stops one
+        # incidental short-fold hit elsewhere in a long shabad from inflating the span and
+        # sinking the real line (`jaisee aag…` Ang 921 fell to span 3495 / rank #4 before).
+        comp_ids = [r[0] for r in cand]
+        ph = ','.join('?' * len(comp_ids))
+        line_norms = {}
+        for cid, tn in db().execute(
+                f'SELECT comp_id, translit_norm FROM lines '
+                f'WHERE comp_id IN ({ph}) AND is_header = 0', comp_ids).fetchall():
+            line_norms.setdefault(cid, []).append(tn or '')
+        scored = []
+        for r in cand:
+            cid, shabad_tn = r[0], (r[1] or '')
+            best = None
+            for ln in line_norms.get(cid, ()):            # tightest single-line match
+                mt = seq.search(ln)
+                if mt:
+                    s = len(mt.group(0))
+                    if best is None or s < best: best = s
+            if best is None:                              # cross-line couplet: whole shabad
+                mt = seq.search(shabad_tn)
+                if mt: best = len(mt.group(0))
+            if best is not None:
+                scored.append((best, r[2], cid))          # (span, bm25, comp_id)
+        if not scored: return None                    # no in-order match: abstain, never junk
+        scored.sort(key=lambda x: (x[0], x[1]))        # tightest span, then bm25 relevance
+        cids = [s[2] for s in scored[:3]]
+        fold_set = set(toks)
+        out = []
+        for cid in cids:
+            lines = rows_to_list(db().execute(
+                f'SELECT {LINE_COLS}, translit_norm FROM lines '
+                f'WHERE comp_id = ? AND is_header = 0 ORDER BY id', (cid,)).fetchall())
+            # BUBBLE the matched line(s) to the absolute top. A long Salok block is one
+            # comp_id spanning dozens of lines; returning them chronologically buried the
+            # real hit (e.g. ਕਾਂਠੈ ਰਹਿ ਗਇਓ ਰਾਮੁ was #6 under 5 preceding verses). Rank:
+            #   1. the line that carries the full in-order quote (_seq) — the exact answer
+            #   2. then by how many query folds the line carries (_hits)
+            #   3. then reading order (id)
+            # Non-matching lines follow as context in reading order. A true cross-line
+            # couplet has _seq=0 on every single line (the match spans two) but _hits>0 on
+            # both tuks, so both still lead, in order.
+            for l in lines:
+                tn = l.pop('translit_norm') or ''
+                l['_hits'] = sum(1 for w in tn.split() if w in fold_set)
+                l['_seq'] = 1 if seq.search(tn) else 0
+            matched = [l for l in lines if l['_hits'] > 0]
+            matched.sort(key=lambda l: (-l['_seq'], -l['_hits'], l['id']))
+            context = sorted((l for l in lines if l['_hits'] == 0), key=lambda l: l['id'])
+            per_comp = max(2, limit // max(len(cids), 1))   # every top shabad surfaces
+            keep = (matched + context)[:per_comp]
+            for l in keep: l.pop('_hits', None); l.pop('_seq', None)
+            out += keep                                     # matched line(s) first, no re-sort
+        return attach_translations(out[offset:offset + limit]) or None
+    except sqlite3.OperationalError:
+        return None
+
+
+def blob_search(q, limit, offset):
+    """Desperate tier: keyboard-smash / spaceless input. Collapse the whole query
+    to a fold-skeleton blob; prefilter lines by the blob's head, then fuzzy-rank."""
+    nb = ''.join(roman_norm(q).split())
+    if len(nb) < 8: return None
+    import difflib
+    try:
+        cands, seen_ids = [], set()
+        for w in (nb[:5], nb[2:7], nb[4:9]):
+            if len(w) < 4: continue
+            for r in db().execute(
+                    f"SELECT {LINE_COLS}, norm_blob FROM lines WHERE is_header=0 "
+                    f"AND norm_blob LIKE ? LIMIT 300", ('%' + w + '%',)).fetchall():
+                if r['id'] not in seen_ids:
+                    seen_ids.add(r['id']); cands.append(r)
+        scored = []
+        for r in cands:
+            ratio = difflib.SequenceMatcher(None, nb, r['norm_blob'] or '').ratio()
+            if ratio >= 0.55: scored.append((ratio, dict(r)))
+        if not scored: return None
+        scored.sort(key=lambda x: -x[0])
+        out = []
+        for _, r in scored[:max(limit, 3)]:
+            r.pop('norm_blob', None); out.append(r)
+        return out[offset:offset + limit] or None
+    except sqlite3.OperationalError:
+        return None
+
+
+def search_en(q, limit, offset):
+    """Search the labeled English translation layer (Dr. Sant Singh Khalsa)."""
+    m = fts_query(q.split())
+    if not m: return []
+    try:
+        rs = db().execute(
+            f"SELECT {LINE_COLS}, e.text AS en FROM "
+            f"(SELECT line_id, text, bm25(fts_en) AS rk FROM fts_en WHERE fts_en MATCH ?) e "
+            f"JOIN lines ON lines.id = e.line_id ORDER BY e.rk LIMIT ? OFFSET ?",
+            (m, limit, offset)).fetchall()
+        return rows_to_list(rs)
+    except sqlite3.OperationalError:
+        return []
+
+
+def theme_search(q, limit, offset):
+    ql = q.strip().lower()
+    row = db().execute('SELECT concept, gurmukhi_terms, description FROM concepts WHERE concept = ?', (ql,)).fetchone()
+    if not row:
+        like = f'%{ql}%'
+        row = db().execute('SELECT concept, gurmukhi_terms, description FROM concepts WHERE concept LIKE ? OR description LIKE ?',
+                           (like, like)).fetchone()
+    if not row: return {'mode': 'theme', 'results': [], 'concept': None}
+    rs = db().execute(
+        f"SELECT {LINE_COLS}, cl.term AS matched_term FROM concept_lines cl "
+        f"JOIN lines ON lines.id = cl.line_id WHERE cl.concept = ? "
+        f"ORDER BY lines.id LIMIT ? OFFSET ?", (row['concept'], limit, offset)).fetchall()
+    n = db().execute('SELECT count(*) FROM concept_lines WHERE concept = ?', (row['concept'],)).fetchone()[0]
+    return {'mode': 'theme', 'concept': {'name': row['concept'], 'terms': json.loads(row['gurmukhi_terms']),
+            'description': row['description'], 'total': n}, 'results': rows_to_list(rs)}
+
+
+def _route_search(p, qs):
+    q = qs.get('q', [''])[0]
+    # clamp both ends: a negative limit is `LIMIT -1` in SQLite = no limit (full-corpus
+    # dump); a negative offset is silently treated as 0. Bound them to a sane window.
+    limit = _int(qs, 'limit', 50, 0, 200)
+    offset = _int(qs, 'offset', 0, 0, 1_000_000)      # corpus has 60,658 lines: lossless
+    out = do_search(q, qs.get('mode', ['auto'])[0], limit, offset)
+    attach_translations(out.get('results'))     # en for EVERY mode (FTS/variant/theme tiers
+    out.setdefault('related_themes', [])         # skipped it); uniform contract for the UI
+    return out
+    return _FALLTHROUGH
+
+
+def _route_word(p, qs):
+    w = _fts_clean(qs.get('w', [''])[0].strip())   # a bare " in MATCH -> OperationalError 500
+    n = db().execute('SELECT n FROM word_freq WHERE word = ?', (w,)).fetchone()
+    rs = db().execute(f"SELECT {LINE_COLS} FROM lines WHERE id IN "
+                      f"(SELECT rowid FROM fts WHERE text MATCH ?) ORDER BY id LIMIT 100",
+                      (f'"{w}"',)).fetchall() if core.HAVE_FTS else []
+    return {'word': w, 'count': n['n'] if n else 0, 'lines': rows_to_list(rs)}
+    return _FALLTHROUGH

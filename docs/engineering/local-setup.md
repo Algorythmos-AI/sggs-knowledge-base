@@ -57,7 +57,9 @@ pipeline/                  # PDF → corpus → DB + enrichment + tests
   *_harness.py             #   roundtrip / casual-quote / chaos search harnesses
   rebuild_all.sh           #   one-command rebuild: PDF → corpus → full DB incl. analytics/vaars
   bhatt_attribution.json   #   per-Bhatt Swaiyye attribution (signature evidence)
-webapp/serve.py            # stdlib HTTP server + JSON API (read end-to-end before editing)
+webapp/serve.py            # composition root: build identity, ROUTES table, HTTP layer, startup
+webapp/sggs/               # bounded contexts: core (DB handle + shared state), search, reader,
+                           #   verification, insights, knowledge — each becomes a service in the split
 webapp/verify.py           # quotation-verification engine (Layer 3)
 webapp/static/             # prebuilt Astro MPA (served); static.bak/ = local backup, ignore
 frontend/                  # Astro UI source (build → static/)

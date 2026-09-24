@@ -19,6 +19,12 @@ flowchart LR
 **Progress.** 2026-09-24 — `api()` is a route table (`serve.ROUTES`): 26 handlers, each tagged with
 its bounded context (reader, search, verify, insights, knowledge). Behaviour proven identical
 (golden vectors in-process and over HTTP, a differential old-vs-new run, all three harnesses).
+2026-09-24 — the handlers and their helpers live in bounded-context modules under `webapp/sggs/`
+(`core` · `search` · `reader` · `verification` · `insights` · `knowledge`). `core` owns the one DB handle
+and all shared mutable state; context modules reach it as `core.NAME` and never import `serve`.
+`serve.py` is the composition root (build identity, route table, HTTP layer) and proxies
+`serve.DB = …` to `core`. Behaviour proven identical again (80/80 differential, seeded Hukam,
+HTTP contract against `python serve.py`, harnesses).
 
 ## Step 2 — service split (later)
 Each module becomes a service behind a gateway that keeps the **single `/api/*`
