@@ -3,6 +3,15 @@
 The format below (newest first) follows [Keep a Changelog](https://keepachangelog.com);
 entries prior to v1.1.0 are the project's original prose style and are preserved verbatim.
 
+## [Unreleased]
+
+### Added
+- **Data canary** (`tools/data_canary.py`, workflow `data-canary`, `make canary`): every 6 hours
+  production is proven to serve exactly the pinned scripture — a random sample of 500 lines and
+  12 random Angs (plus Angs 1, 712 and 1430), fetched from the API origin and through the public
+  site's CDN, compared byte for byte with the pinned database, and the golden contract replayed
+  against production. A difference opens one issue; the printed seed replays it.
+
 ## [1.3.8] — 2026-09-24 — three repositories: data, platform, app
 
 No change to the scripture text, the corpus, the database bytes (`cb6775ff…`), the API's
