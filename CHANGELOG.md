@@ -6,6 +6,10 @@ entries prior to v1.1.0 are the project's original prose style and are preserved
 ## [Unreleased]
 
 ### Added
+- **`/api/v1/*`** serves every route with the same response bodies as `/api/*`, with strict
+  semantics for new clients and the coming service gateway: an unknown endpoint is 404 (not 400) and
+  every error is `{"error": {"code", "message", "request_id"}}`. Legacy `/api/*` is byte-identical
+  (the golden contract pins it); the OpenAPI description documents both.
 - **Request ids.** Every API response carries `X-Request-Id` (reusing a valid incoming id or
   Vercel's `x-vercel-id`, else a random one), and the access log line records it, so one request
   can be followed from the CDN to the API. A startup line records version, commit, dataset and

@@ -327,6 +327,8 @@ class H(BaseHTTPRequestHandler):
                 body = {'ready': False, 'error': 'database unavailable'}
             status = 200 if body.get('ok') or body.get('ready') else 503
             return self._respond(status, json.dumps(body).encode(), 'application/json')
+        if u.path.startswith('/api/v1/'):
+            return self._handle_v1(u)
         try:
             if u.path.startswith('/api/'):
                 body = json.dumps(api(u.path, parse_qs(u.query)), ensure_ascii=False).encode()
@@ -350,6 +352,33 @@ class H(BaseHTTPRequestHandler):
             # exception type / internals (e.g. sqlite schema hints) over the wire.
             msg = json.dumps({'error': 'internal server error'}).encode()
             return self._respond(500, msg, 'application/json')
+
+    def _handle_v1(self, u):
+        """/api/v1/* — the same routes and bodies as /api/*, with strict semantics: an unknown
+        endpoint is 404 (not 400), and every error is {"error": {"code", "message", "request_id"}}.
+        The legacy /api/* responses stay byte-identical (the golden contract pins them)."""
+        def err(status, code, message):
+            body = {'error': {'code': code, 'message': message, 'request_id': self._rid}}
+            return self._respond(status, json.dumps(body).encode(), 'application/json')
+        legacy = '/api/' + u.path[len('/api/v1/'):]
+        try:
+            body = json.dumps(api(legacy, parse_qs(u.query)), ensure_ascii=False).encode()
+            seg = legacy.split('/')[2] if legacy.count('/') >= 2 else ''
+            cache = _CACHE_IMMUTABLE if seg in _CACHEABLE else 'no-store'
+            return self._respond(200, body, 'application/json; charset=utf-8', cache)
+        except ApiError as e:
+            return err(e.status, 'not_found' if e.status == 404 else 'error', e.message)
+        except (ValueError, IndexError, OverflowError) as e:
+            if str(e) in ('unknown endpoint', 'missing endpoint'):
+                return err(404, 'not_found', f'no such endpoint: {u.path}')
+            return err(400, 'invalid_request', str(e))
+        except Exception:
+            import traceback
+            traceback.print_exc(file=sys.stderr)
+            try:
+                if hasattr(_local, 'con'): _local.con.close(); del _local.con
+            except Exception: pass
+            return err(500, 'internal', 'internal server error')
 
     def do_GET(self): self._handle()
     def do_HEAD(self): self._handle()
