@@ -13,7 +13,7 @@
     "test:e2e": "playwright test",
     "check:mermaid": "node scripts/check-mermaid.mjs dist",
     "check:budget": "node scripts/check-budget.mjs dist",
-    "lhci": "lhci autorun",
+    "lhci": "npx --yes @lhci/cli@0.15.1 autorun",
     "check:links": "node scripts/check-links.mjs dist",
     "check:all": "npm run check:mermaid && npm run check:links && npm run check:budget",
     "typecheck": "astro check"
@@ -32,7 +32,6 @@
   "devDependencies": {
     "@astrojs/check": "0.9.10",
     "@axe-core/playwright": "4.13.0",
-    "@lhci/cli": "0.15.1",
     "@playwright/test": "1.63.0",
     "@types/node": "26.6.2",
     "typescript": "6.0.3"
