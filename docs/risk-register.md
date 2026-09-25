@@ -1,3 +1,9 @@
+---
+title: "Risk Register"
+description: "The top project risks, their owners and mitigations, as tracked on the delivery board."
+sidebar:
+  order: 3
+---
 # Risk Register
 
 Maintained on the delivery board (`type/risk`); top items:

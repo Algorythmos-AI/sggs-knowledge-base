@@ -1,3 +1,9 @@
+---
+title: "Runbook: Transfer the repo to the Algorythmos-AI org"
+description: "Moving the repository into the Algorythmos-AI organisation and re-linking the deploy platforms (completed)."
+sidebar:
+  order: 6
+---
 # Runbook: Transfer the repo to the Algorythmos-AI org
 
 Human-gated; outward-facing. Do this when ready to re-link Vercel/Render.

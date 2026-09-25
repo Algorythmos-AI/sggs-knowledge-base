@@ -1,3 +1,9 @@
+---
+title: "The website — gurbanisoul.com"
+description: "The public website gurbanisoul.com: DNS, SEO, Open Graph images, security headers, imagery policy, screenshots and its gates."
+sidebar:
+  order: 4
+---
 # The website — gurbanisoul.com
 
 The public web property is one Astro static site (`frontend/`) served on the product domain

@@ -1,3 +1,9 @@
+---
+title: "Runbook: Deploys (CI-gated)"
+description: "The CI-gated deploy pipeline gate by gate, its one-time setup, secrets and how to read a failed run."
+sidebar:
+  order: 1
+---
 # Runbook: Deploys (CI-gated)
 
 Production deploys are performed by **`.github/workflows/deploy-production.yml`**, on
@@ -6,6 +12,8 @@ reaches users unless every required check on that exact commit is green.
 
 ```mermaid
 flowchart LR
+    accTitle: The deploy-production job chain
+    accDescr: Gates, preflight and approval, then the API deploy and its verification, the unaliased web deploy and its smoke, promotion with the public smoke and rollback edge, and the release tag.
   G[gates: required checks on SHA] --> A[approve]
   P[preflight: secrets present] --> A
   A --> DA[deploy-api: Render hook ref=SHA]
@@ -38,6 +46,23 @@ flowchart LR
    - `RENDER_DEPLOY_HOOK_PROD` (Render → service → Settings → Deploy Hook)
 2. Optional: Environments → **`production-approval`** → Required reviewers = you.
 3. The Render and Vercel **GitHub Apps must be installed on the `Algorythmos-AI` org** (Render clones the repo to build; `ref=` must exist there).
+
+## The wiki (docs.gurbanisoul.com) — one-time setup (owner)
+The wiki (`docs-site/`, ADR-0012) deploys through `deploy-docs.yml` with the same posture: the
+Vercel project's git deployments are off; CI builds, deploys, smokes by commit, promotes, rolls back.
+1. **Vercel** → New Project **`sggs-docs`** from this repository, Root Directory **`docs-site`**,
+   Framework Astro. Settings → Git: disable automatic deployments (the committed
+   `docs-site/vercel.json` also sets `git.deploymentEnabled` false for `main` and `integration`).
+2. Domains: add **`docs.gurbanisoul.com`**. Cloudflare (zone *Company-Domains*):
+   `CNAME docs → cname.vercel-dns.com`, **DNS-only** (grey cloud), like the apex and `www`.
+3. Claim the staging alias once: `vercel alias set <any deployment of sggs-docs> sggs-docs-staging.vercel.app`
+   (CI re-points it on every push to `integration`).
+4. GitHub → Settings → Environments → **`staging`** and **`production`**: reuse `VERCEL_TOKEN` and
+   `VERCEL_ORG_ID`; add **`VERCEL_DOCS_PROJECT_ID`** (the new project's id) and
+   **`VERCEL_DOCS_BYPASS_SECRET`** (Deployment Protection → Protection Bypass for Automation; it is
+   per project, so the web project's secret does not work here). Never paste a value anywhere else.
+5. Until the domain resolves, `deploy-production`'s public smoke fails after promotion and the job
+   rolls back; the staging job proves the build in the meantime.
 
 ## Staging (review integration before production)
 Every push to `integration` runs **`deploy-staging.yml`**: gates (core checks on the SHA) →

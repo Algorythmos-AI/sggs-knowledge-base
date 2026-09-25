@@ -1,3 +1,9 @@
+---
+title: "SGGS Knowledge Base — Engineering Wiki"
+description: "Start here: what the SGGS Knowledge Base is, how its three repositories fit together, and where to read next."
+sidebar:
+  order: 0
+---
 # SGGS Knowledge Base — Engineering Wiki
 
 An offline, sovereign, zero-dependency study application over the complete
@@ -8,6 +14,10 @@ standard-library server serves a prebuilt Astro site and a native iOS app.
 > **Prime directive:** the Gurmukhi text is sacred and **verbatim**. It is never
 > edited, normalized, or corrected. Every change is proven against the source PDF.
 > See [Scripture integrity](https://github.com/Algorythmos-AI/sggs-data/blob/main/docs/architecture/scripture-integrity.md) (in sggs-data).
+
+<!-- sggs:status -->
+On the rendered wiki this line shows what production is serving right now — version, commit,
+build date, dataset build and the health checks — read live from `/api/health`.
 
 ## Start here
 | If you want to… | Read |

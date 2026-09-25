@@ -1,0 +1,6 @@
+/* Interactive elements (src/widgets). Every widget renders inside the page flow, degrades to the
+   author's fallback text without JavaScript, and never moves content while loading. */
+sggs-status { display: block; margin: 1rem 0 1.5rem; min-height: 2.6rem; }
+.status { display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: center; }
+.status__label { font-size: 0.85rem; color: var(--sl-color-gray-3); margin-right: 0.25rem; }
+.status--pending .chip { opacity: 0.6; }

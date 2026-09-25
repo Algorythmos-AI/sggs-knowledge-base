@@ -1,0 +1,45 @@
+{
+  "name": "sggs-docs",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "The SGGS engineering + domain wiki (docs.gurbanisoul.com): Astro Starlight over the Markdown in ../docs",
+  "scripts": {
+    "dev": "astro dev --port 4322",
+    "prebuild": "node scripts/copy-assets.mjs",
+    "build": "astro build --force",
+    "preview": "node scripts/serve-dist.mjs 4323",
+    "test:unit": "node --test 'plugins/test/*.test.mjs'",
+    "test:e2e": "playwright test",
+    "check:mermaid": "node scripts/check-mermaid.mjs dist",
+    "check:budget": "node scripts/check-budget.mjs dist",
+    "lhci": "npx --yes @lhci/cli@0.15.1 autorun",
+    "check:links": "node scripts/check-links.mjs dist",
+    "check:all": "npm run check:mermaid && npm run check:links && npm run check:budget",
+    "typecheck": "astro check"
+  },
+  "dependencies": {
+    "@astrojs/markdown-remark": "7.3.1",
+    "@astrojs/starlight": "0.42.4",
+    "astro": "7.3.5",
+    "mdast-util-to-string": "4.0.0",
+    "mermaid-isomorphic": "3.1.0",
+    "playwright": "1.63.0",
+    "sharp": "0.35.4",
+    "starlight-openapi": "0.26.2",
+    "unist-util-visit": "5.1.0"
+  },
+  "devDependencies": {
+    "@astrojs/check": "0.9.10",
+    "@axe-core/playwright": "4.13.0",
+    "@playwright/test": "1.63.0",
+    "@types/node": "26.6.2",
+    "typescript": "6.0.3"
+  },
+  "engines": {
+    "node": "22.x"
+  },
+  "overrides": {
+    "form-data": "4.0.6"
+  }
+}

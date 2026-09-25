@@ -1,3 +1,9 @@
+---
+title: "Local setup, repository map & API"
+description: "Running the platform on a developer machine: installing the pinned database, the repository map, the API quick reference and the iOS pair."
+sidebar:
+  order: 2
+---
 # Local setup, repository map & API
 
 Running, rebuilding and navigating the project on a developer machine.

@@ -1,3 +1,9 @@
+---
+title: "Current state & known issues"
+description: "Historical release notes that explain today's invariants, plus the items that are still open."
+sidebar:
+  order: 5
+---
 # Current state & known issues
 
 Historical release notes that explain today's invariants, plus items still open. `CHANGELOG.md` is the authoritative release history.

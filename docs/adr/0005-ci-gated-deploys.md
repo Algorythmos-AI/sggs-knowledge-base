@@ -1,3 +1,9 @@
+---
+title: "ADR-0005: Production deploys are performed by CI after gates, not by platform git hooks"
+description: "Why production is deployed by CI after every required check passes, never by a platform's git hook."
+sidebar:
+  order: 5
+---
 # ADR-0005: Production deploys are performed by CI after gates, not by platform git hooks
 
 **Status:** accepted (2026-09-15)

@@ -1,0 +1,15 @@
+---
+// Starlight's footer (edit link, last updated, pagination) plus the page's verification stamp:
+// process and engineering pages say which commit they were last read against (frontmatter
+// `verified`; enforced by tools/docs_check.py).
+import Default from '@astrojs/starlight/components/Footer.astro';
+const { entry } = Astro.locals.starlightRoute;
+const verified = (entry.data as any).verified as { commit: string; date: string } | undefined;
+const repo = 'https://github.com/Algorythmos-AI/sggs-platform';
+---
+{verified && (
+  <p class="verified">
+    <span>Last verified against <a href={`${repo}/commit/${verified.commit}`}><code>{verified.commit.slice(0, 7)}</code></a> on {verified.date}.</span>
+  </p>
+)}
+<Default><slot /></Default>

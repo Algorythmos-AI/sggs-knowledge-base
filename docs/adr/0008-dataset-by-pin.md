@@ -1,3 +1,9 @@
+---
+title: "ADR-0008: The platform consumes the dataset by pin, never by copy"
+description: "Why the platform installs the scripture database from a pinned sggs-data commit and never commits a copy."
+sidebar:
+  order: 8
+---
 # ADR-0008: The platform consumes the dataset by pin, never by copy
 
 **Status:** accepted (2026-09-24)

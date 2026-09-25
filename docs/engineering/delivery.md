@@ -1,3 +1,9 @@
+---
+title: "Delivery, versioning & release"
+description: "How work reaches users: the versioning convention, the integration to staging to production loop, delivery tooling and the iOS release."
+sidebar:
+  order: 3
+---
 # Delivery, versioning & release
 
 How work reaches users. Read before shipping.

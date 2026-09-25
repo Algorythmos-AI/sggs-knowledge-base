@@ -1,3 +1,9 @@
+---
+title: "Runbook: Rollback"
+description: "Rolling the web and the API back to the previous known-good deployment on Vercel and Render."
+sidebar:
+  order: 2
+---
 # Runbook: Rollback
 
 ## Web (Vercel)

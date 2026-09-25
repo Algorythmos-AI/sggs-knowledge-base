@@ -1,3 +1,9 @@
+---
+title: "Environments"
+description: "Local, staging and production side by side: hosts, API platforms, data, protection and who deploys what."
+sidebar:
+  order: 2
+---
 # Environments
 
 | | Local | Staging | Production |

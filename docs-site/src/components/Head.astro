@@ -1,0 +1,8 @@
+---
+// Starlight's <head> plus the widget bundle (one script, loaded once per page, deferred by Astro).
+import Default from '@astrojs/starlight/components/Head.astro';
+---
+<Default><slot /></Default>
+<script>
+  import '../widgets/index.ts';
+</script>

@@ -356,8 +356,9 @@ class DocsHygiene(unittest.TestCase):
     }
 
     def _tracked_markdown(self):
-        # Read-only, stdlib: walk the repo for *.md, skipping vendored/build trees.
-        skip = {"node_modules", "dist", "static", "static.bak", ".git", "_astro", "build"}
+        # Read-only, stdlib: walk the repo for *.md, skipping vendored/build trees (and the wiki's
+        # installed copies of the sibling repositories' docs, which are theirs to keep clean).
+        skip = {"node_modules", "dist", "static", "static.bak", ".git", "_astro", "build", ".sources"}
         for p in ROOT.rglob("*.md"):
             rel = p.relative_to(ROOT)
             if any(part in skip for part in rel.parts):
@@ -904,3 +905,28 @@ class NewsletterPrivacy(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class DocsSite(unittest.TestCase):
+    """The wiki (docs-site/ over docs/, ADR-0012) is gated at the source: every published page carries
+    frontmatter, every relative link resolves, widgets have fallbacks, Mermaid stays on the brand
+    palette, scripture appears only as cited verbatim quotes, and the site configuration keeps the
+    same-origin /api rewrite pointed at the product host with git deployments off. The rules live
+    in tools/docs_check.py (run by the `docs` check too); this test makes the required `python`
+    check enforce them as well."""
+
+    def test_docs_check_reports_no_errors(self):
+        import importlib.util
+        import sys
+        spec = importlib.util.spec_from_file_location("docs_check", ROOT / "tools" / "docs_check.py")
+        mod = importlib.util.module_from_spec(spec)
+        sys.modules["docs_check"] = mod   # dataclasses resolve annotations through sys.modules
+        spec.loader.exec_module(mod)
+        problems = mod.run(ROOT / "db" / "sggs.sqlite")
+        errors = [str(p) for p in problems if p.level == "error"]
+        self.assertEqual(errors, [], "tools/docs_check.py reports errors:\n" + "\n".join(errors))
+
+    def test_docs_site_is_not_a_versioned_package(self):
+        pkg = json.loads((ROOT / "docs-site" / "package.json").read_text(encoding="utf-8"))
+        self.assertTrue(pkg.get("private"))
+        self.assertEqual(pkg.get("version"), "0.0.0", "docs-site is not part of the unified version (check_versions.py reads frontend only)")

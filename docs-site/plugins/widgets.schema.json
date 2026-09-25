@@ -1,0 +1,9 @@
+{
+  "_comment": "Every interactive element the wiki may embed. Authors write `<!-- sggs:<name> attr=\"value\" -->` in plain Markdown (invisible on GitHub); remark-widgets turns it into `<sggs-<name>>` on the site and refuses unknown names or attributes. Each widget must be followed by a static fallback (tools/docs_check.py).",
+  "widgets": {
+    "status": {
+      "purpose": "Live production version, commit, build date and health checks from /api/health.",
+      "attrs": {}
+    }
+  }
+}

@@ -1,3 +1,9 @@
+---
+title: "Search Waterfall"
+description: "The order in which /api/search tries its tiers, from exact full-text matches to the skeleton fallback, and how results are ranked."
+sidebar:
+  order: 2
+---
 # Search Waterfall
 
 `/api/search?q=&mode=` runs a deliberate **waterfall**: cheap exact matches first,
@@ -7,6 +13,8 @@ shift ranking corpus-wide.
 
 ```mermaid
 flowchart TB
+    accTitle: The search waterfall
+    accDescr: The order in which /api/search tries its tiers, from exact full-text matches to the skeleton fallback.
     q[query] --> mixed{Gurmukhi + Latin?}
     mixed -->|yes| m[mixed_search]
     mixed -->|no| gm{Gurmukhi?}

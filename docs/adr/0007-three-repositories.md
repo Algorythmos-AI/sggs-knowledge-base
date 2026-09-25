@@ -1,3 +1,9 @@
+---
+title: "ADR-0007: Three repositories — data, platform, app — joined by pinned artifacts"
+description: "Why the project is split into data, platform and app repositories joined by pinned, checksummed artifacts."
+sidebar:
+  order: 7
+---
 # ADR-0007: Three repositories — data, platform, app — joined by pinned artifacts
 
 **Status:** accepted (2026-09-24, release 1.3.8)

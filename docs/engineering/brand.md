@@ -1,3 +1,9 @@
+---
+title: "Brand & domains"
+description: "Product identity: company, app and website names, the gurbanisoul.com domain, visual identity rules and the identifiers that never change."
+sidebar:
+  order: 4
+---
 # Brand & domains
 
 Product identity. Read before touching names, URLs, or visual identity.

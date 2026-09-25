@@ -29,6 +29,14 @@ make ci            # run the same gates CI runs
   [`docs/engineering/delivery.md`](docs/engineering/delivery.md#delivery-tooling).
 - Commits and PRs carry the author's name only (no tool attribution trailers).
 
+## Docs (the wiki)
+The engineering wiki is the Markdown under `docs/`, rendered at docs.gurbanisoul.com by `docs-site/`
+(ADR-0012). Write pages as before, with a `title`/`description` frontmatter block and relative links;
+`make docs-check` runs the gates (frontmatter, links, widgets, Mermaid palette, the scripture rule),
+`make docs` builds the site, `make docs-dev` serves it locally. Scripture is never typed into a
+page: it appears only as an API-fetched verbatim line with its Ang, or a cited blockquote the gate
+verifies against the pinned database.
+
 ## Toolchain (important)
 The server and tools are Python stdlib only; the web UI needs Node. CI pins Python to
 `.python-version` (3.12) and Node to `.nvmrc` (22). `make doctor` checks the toolchain and

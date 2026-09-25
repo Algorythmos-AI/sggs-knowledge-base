@@ -7,6 +7,18 @@ entries prior to v1.1.0 are the project's original prose style and are preserved
 
 No change to the scripture text, the corpus, the database bytes or any API response.
 
+### Added
+- **The engineering wiki is a docs site.** `docs-site/` (Astro Starlight) renders the Markdown in
+  `docs/` — unchanged, still PR-reviewed and GitHub-rendered — at docs.gurbanisoul.com with search,
+  a sidebar, dark mode, brand-themed Mermaid rendered to accessible SVG at build, an API reference
+  generated from `contract/openapi.json`, and a live production status strip. Sibling repositories'
+  docs will be published by pin (`docs-site/sources.lock.json`, `tools/fetch_sibling_docs.py`).
+  `tools/docs_check.py` gates every page (frontmatter, links, widgets, palette, the scripture
+  quotation rule, site configuration) in the required `python` check; the new `docs` check builds
+  the site with links validated and runs unit, end-to-end, accessibility and budget tests; deploys
+  are CI-gated (`deploy-docs.yml`). ADR-0012. Every published page gained a `title`/`description`
+  frontmatter block and every existing diagram an accessible title.
+
 ### Changed
 - **The API runs as Vercel functions on staging.** Each bounded context is a Python function in
   the web's own Vercel project (plus `all`, the whole API), generated at deploy time from the pinned
