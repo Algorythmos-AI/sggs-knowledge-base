@@ -25,7 +25,7 @@ flowchart LR
   DW --> VW[verify-web: API functions, golden contract, @smoke on unaliased URL]
   VW --> PR[promote: vercel promote + @smoke on public domain]
   PR --> R[release: tag vX.Y.Z + GitHub Release]
-  PR -. smoke fails .-> RB[vercel rollback to previous + incident issue]
+  PR -. promote or smoke fails .-> RB[vercel rollback to the deployment that served the domain + incident issue]
 ```
 
 ## What each gate proves
@@ -37,7 +37,7 @@ flowchart LR
 | deploy-api | Render runs **this commit** (`/api/health.commit == SHA`) and is healthy — production's rollback target while `/api` is on the functions | web untouched; old API keeps serving until Render switches |
 | verify-api | 100 sampled compositions serve exact lines, headings present, gaps 404 | incident issue; **roll back Render** (rollback.md) |
 | deploy-web / verify-web | **before** it is live: every API function is ready at this commit with exactly its contexts and the API's files are not downloadable (`verify_functions.py --env production`), the whole golden contract holds through its `/api` (`contract_http.py`), and the heading smoke passes | not promoted — users unaffected |
-| promote | public domain serves this commit and passes smoke | automatic `vercel rollback` to the recorded previous deployment + incident issue |
+| promote | public domain serves this commit and passes smoke | automatic `vercel rollback` to the deployment that served `gurbanisoul.com` when deploy-web started (rollback.md) + incident issue |
 | release | tag + GitHub Release are created only after a verified deploy | re-run the job |
 
 ## One-time setup (owner)
