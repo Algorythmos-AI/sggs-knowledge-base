@@ -25,4 +25,6 @@ the decisions are [ADR-0007](../adr/0007-three-repositories.md) and [ADR-0008](.
 | `vendor.lock.json` | app | platform tag `vX.Y.Z` · sha256 per vendored `contract/` file | the app's parity tests and release gate |
 | `docs-site/sources.lock.json` | platform (wiki) | sibling commit · sha256 per published doc | `tools/fetch_sibling_docs.py --check` in the `docs` job |
 
-A bump of any of them is a small pull request that a reviewer can read in full.
+A bump of any of them is a small pull request that a reviewer can read in full. The wiki's own pin
+is proposed automatically: every Monday `docs-pins` opens that pull request when a sibling changed
+a file the wiki publishes, and moves nothing otherwise.

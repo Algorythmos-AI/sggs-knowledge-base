@@ -72,17 +72,22 @@ flowchart LR
 ```mermaid
 flowchart LR
     accTitle: Production deployment
-    accDescr: A push to main deploys the static frontend on Vercel, which rewrites /api to the Render service; the iOS archive ships through TestFlight to the App Store.
-    dev[git push main] --> vercel[Vercel<br/>static frontend]
-    vercel -->|/api/* rewrite| render[Render<br/>Docker: serve.py + pinned DB]
+    accDescr: A push to main deploys one Vercel project holding the static frontend and the API as Python functions; /api is rewritten internally to the all function, which serves the pinned database; the Render single API stays deployed as the rollback target; the iOS archive ships through TestFlight to the App Store.
+    dev[git push main] --> vercel[Vercel<br/>static frontend + API functions]
+    vercel -->|/api/* internal rewrite| fn[function all<br/>serve.py + pinned DB]
+    vercel -.->|rollback: api_platform render| render[Render<br/>the single API, kept deployed]
     ios2[iOS archive] --> tf[TestFlight / App Store]
     classDef n fill:#FDF6E3,color:#201A12,stroke:#A87900;
 ```
 
-The web frontend and API are **same-origin**: the browser calls `/api/*` and
-Vercel rewrites those paths to the Render service, so there is no CORS and the
-frontend carries no API-base configuration. A staging environment mirrors this
-with a host-conditioned rewrite — see [Environments](../process/environments.md).
+The web frontend and API are **same-origin**: the browser calls `/api/*` and Vercel's internal
+rewrites send those paths to the API, which runs as Python functions in the same Vercel project
+([ADR-0011](../adr/0011-api-as-functions-in-the-web-project.md)) — in production the whole API as
+one function, `all`. There is no CORS and the frontend carries no API-base configuration.
+`gateway/routes.json` decides this per environment: setting production's `api_platform` back to
+`render` proxies `/api` to the Render single API, which every release still deploys as the rollback
+target. Staging routes each bounded context to its own function — see
+[Environments](../process/environments.md) and [bounded contexts](bounded-contexts-and-gateway.md).
 
 ## The five layers
 1. **Scripture core** — `lines` (60,658 verbatim rows), raags, sections, authors, vaars.
