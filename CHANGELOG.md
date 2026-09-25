@@ -17,6 +17,16 @@ entries prior to v1.1.0 are the project's original prose style and are preserved
 - **The Brand section has an index** (`/brand/` was a 404) with the palette rendered from
   `docs/brand/tokens.json` at build (`<!-- sggs:swatches -->`): every role, light and dark, and its
   WCAG contrast computed from the file.
+- **The wiki watches itself.** `docs-watch` (every six hours) proves `docs.gurbanisoul.com` serves the
+  commit its last production deploy shipped and runs the new **live suite** (`docs-site/e2e-live`:
+  every API-backed widget against the real API, a line read from `/api/ang/1` verifying exact, axe as
+  deployed, no CSP errors) — the same suite runs after every staging deploy. `uptime` probes the
+  wiki too. `docs-pins` (Mondays) opens a pull request when a sibling repository changes a file the
+  wiki publishes (`tools/docs_pins.py`; with `DOCS_BOT_TOKEN`, else an issue); `docs-freshness`
+  (Mondays) lists the pages whose cited code changed since their `verified` stamp
+  (`tools/docs_check.py --freshness`). Every one keeps a single issue, closed when green.
+- `make review-pack`: the G3 scholar-review pack as one PDF with a sign-off sheet; `make docs-live`,
+  `make docs-freshness`, `make docs-pins`.
 
 ### Changed
 - **Mermaid diagrams follow the reader's scheme:** each is drawn from both legs of the palette (palette
@@ -54,6 +64,8 @@ entries prior to v1.1.0 are the project's original prose style and are preserved
 - **The docs smoke fails on any redirect** (the `trailingSlash` loop would have passed a lenient
   check), checks `/api/meta`, and finds its poster on the architecture page instead of skipping it.
 - Two wiki links that 404ed: the reader is `/reader?ang=N`, and the website has no verify page.
+- The status strip's "checking /api/health…" state measured 3.17:1 (the whole chip was dimmed); only
+  its dot dims now. Found by the live suite on production; a mocked test now holds axe on that state.
 - **`apply_rulesets.sh` could weaken branch protection:** it PUT each committed ruleset as-is, which
   resets keys the file does not mention (both trunks have `require_extra_approval_for_unattributed_changes`
   on). It now merges the file into the live ruleset (`scripts/gh/merge_ruleset.py`, tested) and

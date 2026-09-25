@@ -193,6 +193,12 @@ jobs:
       - name: Smoke the staging wiki by commit
         env: { VERCEL_DOCS_BYPASS_SECRET: "${{ secrets.VERCEL_DOCS_BYPASS_SECRET }}" }
         run: python3 scripts/ci/docs_smoke.py "$DOCS_STAGING" --commit "$GITHUB_SHA"
+      - name: The live suite against staging (real API, the deployed headers and CSP)
+        working-directory: docs-site
+        env:
+          DOCS_LIVE_URL: ${{ env.DOCS_STAGING }}
+          VERCEL_BYPASS: ${{ secrets.VERCEL_DOCS_BYPASS_SECRET }}
+        run: npx playwright test -c playwright.live.config.ts
 
   deploy-production:
     name: deploy-production

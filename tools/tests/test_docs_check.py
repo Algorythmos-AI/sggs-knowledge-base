@@ -258,3 +258,34 @@ class Terms(Fixture):
     def test_known_terms_pass_and_unknown_fail(self):
         self.assertEqual(self.errors(FM + "An [[Ang]] and a [[Salok|salok]] are fine; `[[not-a-term]]` in code is ignored.\n"), [])
         self.assertTrue(any("not a glossary term" in e for e in self.errors(FM + "A [[Frobnicator]] here.\n")))
+
+
+class Freshness(unittest.TestCase):
+    def test_cited_files_are_code_not_docs(self):
+        page = dc.DOCS / "architecture" / "request-lifecycle.md"
+        text = ('<!-- sggs:code file="webapp/serve.py" symbol="api" -->\n'
+                '<!-- sggs:code file="pipeline/build_db.py" repo="sggs-data" -->\n'
+                'See [the gateway](../../gateway/routes.json), [a page](overview.md), [gone](../../nope.py).\n'
+                '![Poster 08 — x](../diagrams/posters/08-request-lifecycle.svg)\n')
+        files = dc.cited_files(page, text)
+        self.assertIn("webapp/serve.py", files)
+        self.assertIn("gateway/routes.json", files)
+        self.assertNotIn("pipeline/build_db.py", files)          # a sibling's file: not this repository's history
+        self.assertNotIn("nope.py", files)                       # missing files are dropped
+        self.assertFalse(any(f.startswith("docs/") for f in files))
+        self.assertTrue(len(files) > 2)                          # the poster's source-of-truth files come in
+
+    def test_the_report_orders_moved_pages_first_and_is_empty_when_fresh(self):
+        rows = [{"page": "docs/a.md", "commit": "aaaaaaa", "date": "2026-09-25", "behind": 3, "cited": ["x.py"], "changed": []},
+                {"page": "docs/b.md", "commit": "bbbbbbb", "date": "2026-09-25", "behind": 9, "cited": ["y.py"], "changed": ["y.py"]},
+                {"page": "docs/c.md", "commit": "ccccccc", "date": "2026-09-01", "behind": 80, "cited": [], "changed": []}]
+        md = dc.freshness_markdown(rows)
+        self.assertLess(md.index("docs/b.md"), md.index("docs/c.md"))
+        self.assertNotIn("docs/a.md", md)
+        self.assertIn("| `docs/b.md` | `bbbbbbb` 2026-09-25 | 9 | `y.py` |", md)
+        self.assertEqual(dc.freshness_markdown([rows[0]]), "")
+
+    def test_the_repository_report_runs(self):
+        rows = dc.freshness()
+        self.assertTrue(any(r["page"] == "docs/process/ci-gates.md" for r in rows))
+        self.assertTrue(all(isinstance(r["behind"], int) for r in rows))

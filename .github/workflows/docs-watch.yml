@@ -1,0 +1,93 @@
+name: docs-watch
+# Every six hours: does docs.gurbanisoul.com serve the commit the last successful production deploy
+# of the wiki shipped, and does it work end to end against the real API? Commit identity catches a
+# deployment that reached the domain outside CI (as the first one did on 2026-09-26) or a manual
+# rollback nobody recorded; the live suite (docs-site/e2e-live) catches what a mocked CI cannot —
+# the real API, the real headers, the real CSP. One issue while failing; closed when green.
+# Runbook: docs/process/runbooks/docs-site.md.
+on:
+  schedule:
+    - cron: "41 */6 * * *"
+  workflow_dispatch:
+    inputs:
+      expect_commit:
+        description: "Debug: expect this commit instead of the last deployed one (proves the issue opens and closes)"
+        required: false
+        default: ""
+
+permissions:
+  contents: read
+  actions: read
+  issues: write
+
+concurrency:
+  group: docs-watch
+  cancel-in-progress: false
+
+env:
+  DOCS: https://docs.gurbanisoul.com
+
+jobs:
+  watch:
+    name: watch
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5
+        with: { python-version-file: ".python-version" }
+      - name: The commit production should serve
+        id: expect
+        env:
+          GH_TOKEN: ${{ github.token }}
+          OVERRIDE: ${{ inputs.expect_commit }}
+        run: |
+          if [ -n "$OVERRIDE" ]; then
+            echo "expecting $OVERRIDE (manual override)"; echo "sha=$OVERRIDE" >> "$GITHUB_OUTPUT"; exit 0
+          fi
+          latest="$(gh run list --repo "$GITHUB_REPOSITORY" --workflow deploy-docs.yml --branch main --event push --limit 1 --json status --jq '.[0].status // ""')"
+          case "$latest" in
+            queued|in_progress|waiting|pending|requested)
+              echo "a production deploy of the wiki is running ($latest): nothing to compare yet"; echo "skip=1" >> "$GITHUB_OUTPUT"; exit 0 ;;
+          esac
+          sha="$(gh run list --repo "$GITHUB_REPOSITORY" --workflow deploy-docs.yml --branch main --event push --status success --limit 1 --json headSha --jq '.[0].headSha // ""')"
+          if [ -z "$sha" ]; then echo "::error::no successful production deploy of the wiki on record"; exit 1; fi
+          echo "the last successful production deploy shipped $sha"
+          echo "sha=$sha" >> "$GITHUB_OUTPUT"
+      - name: Production serves that commit, whole (docs_smoke, no redirects)
+        if: steps.expect.outputs.skip != '1'
+        run: python3 scripts/ci/docs_smoke.py "$DOCS" --commit "${{ steps.expect.outputs.sha }}" --timeout 120 --interval 15
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        if: steps.expect.outputs.skip != '1'
+        with: { node-version-file: ".nvmrc", cache: npm, cache-dependency-path: docs-site/package-lock.json }
+      - name: The live suite against production (real API, real headers)
+        if: steps.expect.outputs.skip != '1'
+        working-directory: docs-site
+        env: { DOCS_LIVE_URL: "${{ env.DOCS }}" }
+        run: |
+          npm ci
+          npx playwright install --with-deps chromium
+          npx playwright test -c playwright.live.config.ts
+      - name: Open, update or close the issue
+        if: always() && steps.expect.outputs.skip != '1'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          STATUS: ${{ job.status }}
+          SHA: ${{ steps.expect.outputs.sha }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          title="docs-watch: production wiki check failing"
+          existing="$(gh issue list --repo "$GITHUB_REPOSITORY" --state open --search "in:title \"$title\"" --json number --jq '.[0].number // empty')"
+          if [ "$STATUS" = "success" ]; then
+            if [ -n "$existing" ]; then gh issue close "$existing" --repo "$GITHUB_REPOSITORY" --comment "Green again: production serves ${SHA:0:7} and the live suite passes. $RUN_URL"; fi
+            exit 0
+          fi
+          served="$(curl -fsS --max-time 30 "$DOCS/" | grep -o 'name="sggs-docs-commit" content="[0-9a-f]*"' | grep -o '[0-9a-f]\{7,\}' || echo unknown)"
+          body="docs.gurbanisoul.com serves ${served:0:7}; the last successful production deploy shipped ${SHA:0:7}. If they differ, the domain changed outside CI (a manual promote or rollback): redeploy through a release, or record it. If they match, the smoke or the live suite failed — the run says which. Run: $RUN_URL · runbook: docs/process/runbooks/docs-site.md"
+          # one issue, its body rewritten each run (a comment every six hours would bury it)
+          body="$body · last checked $(date -u +%Y-%m-%dT%H:%MZ)"
+          if [ -n "$existing" ]; then
+            gh issue edit "$existing" --repo "$GITHUB_REPOSITORY" --body "$body"
+          else
+            gh issue create --repo "$GITHUB_REPOSITORY" --title "$title" --body "$body"
+          fi

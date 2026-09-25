@@ -1,9 +1,12 @@
 name: uptime
 
-# Production liveness, every 15 minutes. Two things are watched:
+# Production liveness, every 15 minutes. Three things are watched:
 #   1. the API behind the site (/api/health must report ok with every check true);
 #   2. /privacy and /support — the URLs entered in App Store Connect. If either stops resolving the
-#      listing is non-compliant (guidelines 2.1 / 5.1.1), so they are monitored like the API.
+#      listing is non-compliant (guidelines 2.1 / 5.1.1), so they are monitored like the API;
+#   3. the engineering wiki, docs.gurbanisoul.com: the landing page and /api/health through its
+#      rewrite (its live widgets depend on that path). A separate job and issue: a docs outage is
+#      never confused with a product outage.
 # The app itself is fully offline and is NOT affected by an outage here.
 # A failure opens one issue (or comments on the open one); it never pages or redeploys.
 
@@ -22,6 +25,7 @@ concurrency:
 
 env:
   SITE: https://gurbanisoul.com
+  DOCS: https://docs.gurbanisoul.com
 
 jobs:
   probe:
@@ -73,6 +77,49 @@ jobs:
         run: |
           title="uptime: production probe failing"
           body="Failing:${FAILING:- (probe step did not finish)}  ·  run: ${RUN_URL}  ·  runbook: docs/process/runbooks/deploy.md"
+          existing="$(gh issue list --repo "$GITHUB_REPOSITORY" --state open --search "in:title \"$title\"" --json number --jq '.[0].number // empty')"
+          if [ -n "$existing" ]; then
+            gh issue comment "$existing" --repo "$GITHUB_REPOSITORY" --body "$body"
+          else
+            gh issue create --repo "$GITHUB_REPOSITORY" --title "$title" --body "$body"
+          fi
+
+  docs:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: probe the wiki
+        id: probe
+        run: |
+          set -u
+          fail=""
+          # --max-redirs 0: a redirect on /api is how the widgets broke before launch (trailingSlash)
+          fetch() { curl -fsS --max-redirs 0 --retry 3 --retry-delay 10 --retry-all-errors --max-time 60 "$1"; }
+          if page="$(fetch "$DOCS/")"; then
+            echo "$page" | grep -q "Sri Guru Granth Sahib" || fail="$fail /(content)"
+            echo "$page" | grep -q 'name="sggs-docs-commit"' || fail="$fail /(no commit stamp)"
+          else
+            fail="$fail /(unreachable)"
+          fi
+          if health="$(fetch "$DOCS/api/health")"; then
+            echo "$health" | python3 -c 'import json,sys; d=json.load(sys.stdin); sys.exit(0 if d.get("ok") is True else "health not ok")' \
+              || fail="$fail /api/health(checks)"
+          else
+            fail="$fail /api/health(unreachable or redirected)"
+          fi
+          echo "fail=$fail" >> "$GITHUB_OUTPUT"
+          if [ -n "$fail" ]; then echo "::error::failing:$fail"; exit 1; fi
+          echo "wiki probes ok"
+
+      - name: open or update the incident issue
+        if: failure()
+        env:
+          GH_TOKEN: ${{ github.token }}
+          FAILING: ${{ steps.probe.outputs.fail }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          title="uptime: docs site probe failing"
+          body="Failing:${FAILING:- (probe step did not finish)}  ·  run: ${RUN_URL}  ·  runbook: docs/process/runbooks/docs-site.md"
           existing="$(gh issue list --repo "$GITHUB_REPOSITORY" --state open --search "in:title \"$title\"" --json number --jq '.[0].number // empty')"
           if [ -n "$existing" ]; then
             gh issue comment "$existing" --repo "$GITHUB_REPOSITORY" --body "$body"
