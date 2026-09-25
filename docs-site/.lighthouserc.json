@@ -24,7 +24,7 @@
         "http://localhost/process/ci-gates/index.html",
         "http://localhost/glossary/index.html"
       ],
-      "numberOfRuns": 1,
+      "numberOfRuns": 3,
       "settings": {
         "preset": "desktop",
         "skipAudits": [

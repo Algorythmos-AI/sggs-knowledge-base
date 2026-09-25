@@ -1,5 +1,6 @@
 """tools/docs_check.py — the rules, exercised on small fixture pages (stdlib unittest)."""
 import importlib.util
+import json
 import sys
 import tempfile
 import unittest
@@ -113,6 +114,17 @@ class Scripture(Fixture):
 class SiteConfig(unittest.TestCase):
     def test_site_config_is_valid(self):
         self.assertEqual([str(p) for p in dc.check_site_config() if p.level == "error"], [])
+
+    def test_unknown_vercel_json_key_is_refused(self):
+        # `vercel deploy` rejects additional properties such as "_comment" (seen on the first docs deploy).
+        real = dc.SITE / "vercel.json"
+        original = real.read_text(encoding="utf-8")
+        try:
+            v = json.loads(original); v["_comment"] = "x"
+            real.write_text(json.dumps(v), encoding="utf-8")
+            self.assertTrue(any("_comment" in str(p) for p in dc.check_site_config()))
+        finally:
+            real.write_text(original, encoding="utf-8")
 
     def test_repo_docs_pass(self):
         errors = [str(p) for p in dc.run(ROOT / "db" / "sggs.sqlite") if p.level == "error"]

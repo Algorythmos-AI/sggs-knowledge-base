@@ -550,12 +550,22 @@ def check_drift() -> list[Problem]:
     return P
 
 
+# Top-level keys this site's vercel.json may use (a subset of https://openapi.vercel.sh/vercel.json).
+VERCEL_JSON_KEYS = {"$schema", "buildCommand", "installCommand", "outputDirectory", "framework", "trailingSlash",
+                    "cleanUrls", "rewrites", "redirects", "headers", "git", "github", "regions", "functions"}
+
+
 def check_site_config() -> list[Problem]:
     P: list[Problem] = []
     vercel = SITE / "vercel.json"
     site_ts = ROOT / "frontend" / "src" / "site.ts"
     try:
         v = json.loads(vercel.read_text(encoding="utf-8"))
+        # `vercel build` accepts unknown keys but `vercel deploy` refuses the upload ("should NOT have
+        # additional property"), so a stray key only fails at deploy time. Keep to the schema's keys.
+        unknown = sorted(set(v) - VERCEL_JSON_KEYS)
+        if unknown:
+            P.append(Problem(vercel, 1, f"docs-site/vercel.json has keys Vercel's schema rejects at deploy: {', '.join(unknown)} (comments belong in docs, not in vercel.json)"))
         host = re.search(r'SITE_URL\s*=\s*"https://([^/"]+)"', site_ts.read_text(encoding="utf-8")).group(1)
         rw = [r for r in v.get("rewrites", []) if r.get("source") == "/api/:path*"]
         if not rw or rw[0].get("destination") != f"https://{host}/api/:path*":
