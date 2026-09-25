@@ -1,0 +1,74 @@
+[
+  {
+    "id": "step-01",
+    "title": "Branch and run the local gates",
+    "caption": "Branch feat/… or fix/… from integration, the trunk. Before opening a pull request run make ci (versions, dataset check, the server tests, the contract, the docs gates) so the pull request’s checks are a confirmation, not a discovery.",
+    "link": "/onboarding/first-pr/"
+  },
+  {
+    "id": "step-02",
+    "title": "The pull request",
+    "caption": "Every workflow on the CI gates map runs on the commit: web-ci, scripture-integrity, version-consistency, security, pr-hygiene, e2e and the docs job. A change to scripture handling, search, verification or the dataset pin completes the scripture-safety checklist in the template.",
+    "link": "/process/ci-gates/"
+  },
+  {
+    "id": "step-03",
+    "title": "Squash merge",
+    "caption": "Feature and fix pull requests are squash-merged into integration so the trunk carries one clean commit per change. Only the owner merges (the ruleset requires CODEOWNERS); the engineer hands over the exact command.",
+    "link": "/process/branching/"
+  },
+  {
+    "id": "step-04",
+    "title": "deploy-staging",
+    "caption": "The push runs deploy-staging: the gates job waits for the core checks and playwright on the commit, preflight checks the staging secrets, the API functions are generated from the pinned database (each context’s slice proven by the slicer), vercel build proves what each function bundles, the deployment is aliased to sggs-staging.vercel.app and the CDN cache is purged.",
+    "link": "/process/runbooks/deploy/"
+  },
+  {
+    "id": "step-05",
+    "title": "Verify staging, then a person looks",
+    "caption": "verify_functions.py checks every function’s /readyz reports this commit and exactly its contexts; the gateway probes prove each context answers through the real rewrites with its own X-Service; the web smoke runs; the whole golden contract passes through the gateway. Then the owner reviews the staging site, logged in to Vercel, before any release.",
+    "link": "/process/environments/"
+  },
+  {
+    "id": "step-06",
+    "title": "The release pull request",
+    "caption": "make release VERSION=X.Y.Z bumps the unified version everywhere and stubs the CHANGELOG section; a dataset change arrived earlier as a reviewed lock bump with a regenerated contract. The pull request goes from integration to main and is merged as a merge commit — never squashed — so main stays a descendant of integration.",
+    "link": "/process/release/"
+  },
+  {
+    "id": "step-07",
+    "title": "gates, preflight, approve",
+    "caption": "deploy-production waits until every check the main ruleset requires, plus playwright, has succeeded on the exact merge commit; preflight proves every production secret exists; approve is an optional human click when the production-approval environment has reviewers. Nothing has been deployed yet.",
+    "link": "/process/runbooks/deploy/"
+  },
+  {
+    "id": "step-08",
+    "title": "The API, verified by commit",
+    "caption": "deploy-api triggers the Render deploy hook with ref=SHA and waits until /api/health.commit equals the commit and the health checks are all true. verify-api then samples compositions and proves exact lines, present headings and 404 on the permanent comp_id gaps. The web is untouched until this passes.",
+    "link": "/process/runbooks/deploy/"
+  },
+  {
+    "id": "step-09",
+    "title": "The web, built unaliased and smoked",
+    "caption": "vercel build and deploy with --skip-domain produce a deployment nobody can reach yet; the @smoke tests run against it. A failure here leaves users on the previous deployment.",
+    "link": "/process/runbooks/deploy/"
+  },
+  {
+    "id": "step-10",
+    "title": "Promote — with a way back",
+    "caption": "vercel promote puts the deployment on gurbanisoul.com, the CDN cache is purged so no stale API body outlives its dataset, and the @smoke tests run against the public domain. If they fail, the job runs vercel rollback to the recorded previous deployment and opens an incident issue. The API rolls back from Render’s previous deploy; a dataset rolls back by reverting the lock bump.",
+    "link": "/process/runbooks/rollback/"
+  },
+  {
+    "id": "step-11",
+    "title": "Tag, and the app follows",
+    "caption": "Only after a verified deploy does the release job create the tag vX.Y.Z and a GitHub Release from the CHANGELOG section. The app repository then vendors the contract at that tag, sets MARKETING_VERSION and uploads X.Y.Z (1) with CHANNEL=appstore; scripts/release/check_release_complete.py proves web, API and the binary report the same number from the same commit.",
+    "link": "/engineering/delivery/"
+  },
+  {
+    "id": "step-12",
+    "title": "After the release",
+    "caption": "make verify-prod proves what production serves by commit identity. Every six hours the data canary proves the served scripture equals the pin at the origin and through the CDN and replays the golden contract; every fifteen minutes uptime probes /api/health and the App Store URLs. The wiki deploys through the same chain in deploy-docs.yml.",
+    "link": "/process/ci-gates/"
+  }
+]

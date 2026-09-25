@@ -3,6 +3,9 @@ title: "Delivery, versioning & release"
 description: "How work reaches users: the versioning convention, the integration to staging to production loop, delivery tooling and the iOS release."
 sidebar:
   order: 3
+verified:
+  commit: f25ab970
+  date: "2026-09-25"
 ---
 # Delivery, versioning & release
 

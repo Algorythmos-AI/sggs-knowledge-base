@@ -3,6 +3,9 @@ title: "Runbook — launch-notice sign-up (Buttondown)"
 description: "Turning on the launch-notice sign-up on the landing page with Buttondown, and the privacy rules it must keep."
 sidebar:
   order: 4
+verified:
+  commit: f25ab970
+  date: "2026-09-25"
 ---
 # Runbook — launch-notice sign-up (Buttondown)
 

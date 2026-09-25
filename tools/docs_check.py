@@ -48,7 +48,7 @@ SOURCES_DIR = SITE / ".sources"
 NOT_PUBLISHED = ("docs/reports/archive/", "docs/design/")
 # pages the site generates rather than reads from docs/ (starlight-openapi): a link to one is valid
 VIRTUAL_PAGES = {"docs/api/reference": "/api/reference/"}
-REQUIRE_VERIFIED: tuple[str, ...] = ()   # e.g. ("docs/process/", "docs/engineering/") once stamped (P5)
+REQUIRE_VERIFIED: tuple[str, ...] = ("docs/process/", "docs/engineering/", "docs/architecture/")
 STALE_AFTER_COMMITS = 60
 TITLE_LEN, DESC_LEN = (8, 120), (40, 200)
 CITATION_RE = re.compile(r"^—\s*Sri Guru Granth Sahib Ji\s*·\s*Ang\s+(\d{1,4})\s*$")

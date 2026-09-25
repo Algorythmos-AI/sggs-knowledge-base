@@ -3,6 +3,9 @@ title: "Three repositories and pins"
 description: "The hand-offs between sggs-data, sggs-platform and gurbani-soul-ios, each a reviewed lock file with a commit and a checksum, drawn as one poster you can step through."
 sidebar:
   order: 6
+verified:
+  commit: f25ab970
+  date: "2026-09-25"
 ---
 # Three repositories and pins
 

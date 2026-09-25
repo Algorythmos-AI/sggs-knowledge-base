@@ -3,6 +3,9 @@ title: "Bounded contexts and the gateway"
 description: "How one codebase runs as five contexts, how a process is sliced with SGGS_MODULES, and how the /api routing is generated from the route table and proven on every staging deploy."
 sidebar:
   order: 5
+verified:
+  commit: f25ab970
+  date: "2026-09-25"
 ---
 # Bounded contexts and the gateway
 

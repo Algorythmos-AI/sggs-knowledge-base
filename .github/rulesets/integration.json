@@ -43,6 +43,9 @@
           },
           {
             "context": "secrets"
+          },
+          {
+            "context": "docs"
           }
         ]
       }

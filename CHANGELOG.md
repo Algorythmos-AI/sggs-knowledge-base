@@ -8,6 +8,17 @@ entries prior to v1.1.0 are the project's original prose style and are preserved
 No change to the scripture text, the corpus, the database bytes or any API response.
 
 ### Added
+- **Delivery, CI and operations on the wiki.** Posters 10 (the CI gates map) and 11 (the delivery
+  pipeline) on the CI gates and branching pages; every page under `docs/process/`,
+  `docs/engineering/` and `docs/architecture/` now carries a `verified: {commit, date}` stamp (read
+  against the code; `tools/docs_check.py` requires it and warns when it falls 60 commits behind);
+  the `docs` job becomes a required check on `integration` (`.github/rulesets/integration.json`;
+  the owner applies it with `scripts/gh/apply_rulesets.sh`); a weekly external-link check
+  (`docs-links.yml`, lychee, policy in `.lychee.toml`) that opens an issue and never blocks; an
+  **Archive** page listing the design notes and audit reports with what superseded them; the
+  completed org-transfer runbook moves to the archive. Corrections while stamping: the fold's three
+  homes and the current `comp_id` counts in the invariants, staging's API functions and the
+  data-rollback path in the process pages.
 - **Search, verification and the API on the wiki.** `docs/search/` (modes and tiers, the Roman
   fold, the verification engine, harnesses and golden vectors) and `docs/api/` (the API, contract
   and OpenAPI, versioning and caching, plus `routes.md` **generated** by `tools/gen_route_table.py`

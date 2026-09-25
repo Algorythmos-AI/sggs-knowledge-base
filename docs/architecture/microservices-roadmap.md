@@ -3,6 +3,9 @@ title: "Microservices Roadmap (monolith → modular → services)"
 description: "How the stdlib monolith is factored into bounded contexts, and the spikes and gates on the road to services."
 sidebar:
   order: 3
+verified:
+  commit: f25ab970
+  date: "2026-09-25"
 ---
 # Microservices Roadmap (monolith → modular → services)
 
