@@ -97,7 +97,7 @@ The same offline app runs unchanged in the cloud. The browser only ever calls `/
 | | Local | Staging | Production |
 |---|---|---|---|
 | Web | `serve.py` :7777 | `sggs-staging.vercel.app` (SSO) | **`gurbanisoul.com`** |
-| API | same process | `sggs-api-staging.onrender.com` | `sggs-knowledge-base.onrender.com` |
+| API | same process | Vercel functions in the web project | `sggs-knowledge-base.onrender.com` |
 | Branch | working tree | `integration` | `main` |
 
 **Delivery is CI-gated end to end** — no hand deploys. Branch → PR into `integration` → merge auto-deploys **staging** → release PR `integration → main` (merge commit) runs the gated production deploy, verified by the running **commit**, then a `vX.Y.Z` tag. Full topology, DNS and email: [`docs/website/README.md`](docs/website/README.md). Process and runbooks:

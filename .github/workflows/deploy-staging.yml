@@ -1,8 +1,10 @@
 name: deploy-staging
-# CI-gated STAGING deploy. Every push to integration (a merged PR) deploys to the
-# staging API (Render) + staging web (Vercel, aliased to sggs-staging.vercel.app) and
-# smoke-tests it — so you can review integration on a real, isolated URL before opening
-# a release PR to main. No promote, no release. Runbook: docs/process/runbooks/deploy.md.
+# CI-gated STAGING deploy. Every push to integration (a merged PR) deploys the staging web
+# (Vercel, aliased to sggs-staging.vercel.app) with the API inside it — one Python function per
+# bounded context plus `all` (tools/build_api_functions.py) — and proves it: every function ready
+# at this commit, each context answered by its own function, the whole golden contract, and the
+# web smoke. Review integration there before opening a release PR to main. No promote, no release.
+# Runbook: docs/process/runbooks/deploy.md.
 on:
   push:
     branches: [integration]
@@ -16,7 +18,6 @@ permissions:
   contents: read
 
 env:
-  STG_API: https://sggs-api-staging.onrender.com
   STG_WEB: https://sggs-staging.vercel.app
   VERCEL_CLI: vercel@59.7.0
 
@@ -44,64 +45,19 @@ jobs:
           VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
           VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
           VERCEL_AUTOMATION_BYPASS_SECRET: ${{ secrets.VERCEL_AUTOMATION_BYPASS_SECRET }}
-          RENDER_DEPLOY_HOOK_STAGING: ${{ secrets.RENDER_DEPLOY_HOOK_STAGING }}
         run: |
           missing=""
-          for v in VERCEL_TOKEN VERCEL_ORG_ID VERCEL_PROJECT_ID VERCEL_AUTOMATION_BYPASS_SECRET RENDER_DEPLOY_HOOK_STAGING; do
+          for v in VERCEL_TOKEN VERCEL_ORG_ID VERCEL_PROJECT_ID VERCEL_AUTOMATION_BYPASS_SECRET; do
             [ -n "${!v}" ] || missing="$missing $v"
           done
           [ -z "$missing" ] || { echo "::error::missing staging environment secrets:$missing (docs/process/runbooks/deploy.md)"; exit 1; }
           echo "all staging secrets present"
 
-  deploy-api:
+  deploy-web:
     needs: [gates, preflight]
     runs-on: ubuntu-latest
     environment: staging
     timeout-minutes: 30
-    steps:
-      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
-      - name: Trigger staging Render deploy of this commit
-        env: { HOOK: "${{ secrets.RENDER_DEPLOY_HOOK_STAGING }}" }
-        run: |
-          case "$HOOK" in *\?*) sep='&' ;; *) sep='?' ;; esac
-          curl -fsS -X POST "${HOOK}${sep}ref=${GITHUB_SHA}" -o /dev/null
-          echo "staging deploy requested for ${GITHUB_SHA::7}"
-      - name: Wait until the staging API runs this commit and is healthy
-        # free tier is slow to build + cold-starts; tolerate the old build's missing commit
-        run: python3 scripts/ci/wait_for_deploy.py "$STG_API" --commit "$GITHUB_SHA" --timeout 1800 --unknown-grace 1800
-
-  deploy-services:
-    # Phase 4 (staging only): each bounded context as its own Render service, built from the same
-    # image with its slice (render.yaml). Independent of the single staging API above, which keeps
-    # serving the web until the gateway routes a prefix to a service. Needs the staging secret
-    # RENDER_API_KEY; until it exists this job is a no-op with a notice.
-    needs: [gates, preflight]
-    runs-on: ubuntu-latest
-    environment: staging
-    timeout-minutes: 45
-    strategy:
-      fail-fast: false
-      matrix:
-        service: [reader, search, verify, insights, knowledge]
-    steps:
-      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
-      - name: Deploy sggs-staging-${{ matrix.service }} at this commit and wait until it is ready
-        env:
-          RENDER_API_KEY: ${{ secrets.RENDER_API_KEY }}
-          SERVICE: sggs-staging-${{ matrix.service }}
-        run: |
-          if [ -z "$RENDER_API_KEY" ]; then
-            echo "::notice::RENDER_API_KEY is not set — the per-service staging deploy is skipped (Phase 4 setup)"; exit 0
-          fi
-          url=$(python3 scripts/ci/render_deploy.py "$SERVICE" "$GITHUB_SHA")
-          echo "$SERVICE → $url"
-          python3 scripts/ci/wait_for_deploy.py "$url" --readyz --commit "$GITHUB_SHA" --timeout 1800 --unknown-grace 1800
-
-  deploy-web:
-    needs: deploy-api
-    runs-on: ubuntu-latest
-    environment: staging
-    timeout-minutes: 20
     env:
       VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
       VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
@@ -109,23 +65,32 @@ jobs:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
       - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with: { node-version-file: ".nvmrc" }
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5
+        with: { python-version: "3.12" }
+      - uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7 # v10.2.0
+        with: { version: "0.11.7", enable-cache: false }
       - run: npm i -g "$VERCEL_CLI"
-      - name: Build + deploy (preview) and alias to the staging domain
+      - uses: ./.github/actions/fetch-dataset
+        with: { token: "${{ secrets.SGGS_READ_TOKEN || github.token }}" }
+      - name: Generate the API functions at this commit (each context's slice is proven by the slicer)
+        run: python3 tools/build_api_functions.py --commit "$GITHUB_SHA"
+      - name: Build, prove what each function bundles, deploy (preview) and alias to the staging domain
         env: { VERCEL_TOKEN: "${{ secrets.VERCEL_TOKEN }}" }
         run: |
           vercel pull --yes --environment=preview --token="$VERCEL_TOKEN"
           vercel build --token="$VERCEL_TOKEN"
+          python3 tools/build_api_functions.py --verify-output .vercel/output
           vercel deploy --prebuilt --archive=tgz --format=json --token="$VERCEL_TOKEN" > deploy.out 2> deploy.err || { cat deploy.err; exit 1; }
           cat deploy.err
           url=$(python3 scripts/ci/vercel_deploy_url.py deploy.out deploy.err)
           echo "deployed $url"
           vercel alias set "$url" sggs-staging.vercel.app --token="$VERCEL_TOKEN"
-      - name: Purge the CDN cache (proxied API reads are cached up to s-maxage; a new dataset must not be served stale)
+      - name: Purge the CDN cache (API reads are cached up to s-maxage; a new dataset must not be served stale)
         env: { VERCEL_TOKEN: "${{ secrets.VERCEL_TOKEN }}" }
         run: vercel cache purge --type cdn --yes --token="$VERCEL_TOKEN" || echo "::warning::CDN cache purge failed — cached API reads may be up to s-maxage old"
 
   verify:
-    needs: [deploy-web, deploy-services]   # routing probes need the services at this commit too
+    needs: deploy-web
     runs-on: ubuntu-latest
     environment: staging
     timeout-minutes: 20
@@ -133,7 +98,11 @@ jobs:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
       - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with: { node-version-file: ".nvmrc", cache: npm, cache-dependency-path: frontend/package-lock.json }
-      - name: Warm the free-tier staging web + smoke it
+      - name: Every API function is ready at this commit and holds exactly its context
+        env:
+          VERCEL_AUTOMATION_BYPASS_SECRET: ${{ secrets.VERCEL_AUTOMATION_BYPASS_SECRET }}
+        run: python3 scripts/ci/verify_functions.py "$STG_WEB" --commit "$GITHUB_SHA" --env staging
+      - name: Warm the staging web + smoke it
         working-directory: frontend
         env:
           PLAYWRIGHT_BASE_URL: ${{ env.STG_WEB }}
@@ -147,7 +116,7 @@ jobs:
           npm ci
           npx playwright install --with-deps chromium
           npx playwright test --grep @smoke --project=desktop
-      - name: The gateway routes each context to its service (X-Service), everything else to the single API
+      - name: The gateway routes each context to its function (X-Service), everything else to `all`
         env:
           VERCEL_AUTOMATION_BYPASS_SECRET: ${{ secrets.VERCEL_AUTOMATION_BYPASS_SECRET }}
         run: |
@@ -161,7 +130,7 @@ jobs:
             echo "::error::gateway sent $1 to '${got:-none}', expected $2"; return 1
           }
           python3 tools/gen_gateway.py --probes staging | while read -r ctx path; do probe "$path" "$ctx" || exit 1; done
-          probe /api/nope all           # an unknown prefix still falls through to the single API (the rollback path)
+          probe /api/nope all           # an unknown prefix falls through to `all`, the whole API
       - uses: ./.github/actions/fetch-dataset
         with: { token: "${{ secrets.SGGS_READ_TOKEN || github.token }}" }
       - name: The whole golden contract holds through the gateway, however the routes are split

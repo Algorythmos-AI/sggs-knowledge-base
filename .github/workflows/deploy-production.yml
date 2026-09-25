@@ -129,7 +129,7 @@ jobs:
     needs: verify-api
     runs-on: ubuntu-latest
     environment: production
-    timeout-minutes: 20
+    timeout-minutes: 30
     outputs:
       url: ${{ steps.deploy.outputs.url }}
       previous: ${{ steps.prev.outputs.previous }}
@@ -141,7 +141,15 @@ jobs:
       - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
           node-version-file: ".nvmrc"
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5
+        with: { python-version: "3.12" }
+      - uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7 # v10.2.0
+        with: { version: "0.11.7", enable-cache: false }
       - run: npm i -g "$VERCEL_CLI"
+      - uses: ./.github/actions/fetch-dataset
+        with: { token: "${{ secrets.SGGS_READ_TOKEN || github.token }}" }
+      - name: Generate the API functions at this commit (every deployment carries them; routes.json decides what they serve)
+        run: python3 tools/build_api_functions.py --commit "$GITHUB_SHA"
       - name: Record the current production deployment (rollback target)
         id: prev
         env:
@@ -159,6 +167,7 @@ jobs:
         run: |
           vercel pull --yes --environment=production --token="$VERCEL_TOKEN"
           vercel build --prod --token="$VERCEL_TOKEN"
+          python3 tools/build_api_functions.py --verify-output .vercel/output
           # The CLI's stdout shape differs between environments (it broke the first gated
           # deploy), so capture both streams, log them, and resolve the URL with a tested
           # helper that accepts any JSON shape and falls back to the "Production" line.

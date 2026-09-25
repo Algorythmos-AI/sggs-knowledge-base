@@ -3,6 +3,23 @@
 The format below (newest first) follows [Keep a Changelog](https://keepachangelog.com);
 entries prior to v1.1.0 are the project's original prose style and are preserved verbatim.
 
+## [Unreleased]
+
+No change to the scripture text, the corpus, the database bytes or any API response.
+
+### Changed
+- **The API runs as Vercel functions on staging.** Each bounded context is a Python function in
+  the web's own Vercel project (plus `all`, the whole API), generated at deploy time from the pinned
+  database by `tools/build_api_functions.py` — the same `serve.py` handler, each function with its
+  proven slice and the commit it was built from, refusing to load if its slice lacks a declared
+  table. Routing is still generated from the route table (`tools/gen_gateway.py`), now as internal
+  rewrites. The build is refused if a function would bundle anything but its own code and database,
+  or if a database would be published as a static file; every staging deploy checks each function's
+  readiness at the commit, the routing, and the whole golden contract. Staging no longer uses Render
+  (`render.yaml` and the Render deploy script are removed). Production keeps the Render API; its
+  deployments carry the functions, unrouted, until it is moved (ADR-0011,
+  `docs/process/runbooks/services-production.md`).
+
 ## [1.3.9] — 2026-09-25 — services on staging, a versioned API, continuous verification
 
 No change to the scripture text, the corpus, the database bytes (`cb6775ff…`) or any page. Every
