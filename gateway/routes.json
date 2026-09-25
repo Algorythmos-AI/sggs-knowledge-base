@@ -12,8 +12,7 @@
     ]
   },
   "production": {
-    "api_platform": "render",
-    "api": "https://sggs-knowledge-base.onrender.com",
+    "api_platform": "vercel",
     "services": []
   }
 }

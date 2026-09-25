@@ -469,8 +469,16 @@
       "destination": "/api/svc/all"
     },
     {
-      "source": "/api/:path*",
-      "destination": "https://sggs-knowledge-base.onrender.com/api/:path*"
+      "source": "/api/(.*)",
+      "destination": "/api/svc/all"
+    },
+    {
+      "source": "/readyz",
+      "destination": "/api/svc/all"
+    },
+    {
+      "source": "/healthz",
+      "destination": "/api/svc/all"
     }
   ],
   "headers": [
@@ -545,9 +553,6 @@
     }
   ],
   "git": {
-    "deploymentEnabled": {
-      "main": false,
-      "integration": false
-    }
+    "deploymentEnabled": false
   }
 }

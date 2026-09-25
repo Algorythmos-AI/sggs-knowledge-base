@@ -41,7 +41,8 @@ route outside the enabled set is a 404, and startup refuses a database missing a
 ## Routing, generated
 
 `gateway/routes.json` says per environment where `/api` goes: on staging to Vercel functions
-(`api/svc/<context>` plus `all`), on production to the single Render API. `tools/gen_gateway.py`
+(`api/svc/<context>` plus `all`), on production to `all` alone until contexts are split out there
+one release at a time (`api_platform: render` still proxies to the Render single API, the rollback). `tools/gen_gateway.py`
 combines it with `serve.ROUTES` and writes the rewrites in `frontend/vercel.json`: every prefix of
 a routed context and its `/api/v1` twin to its function, everything else to `all`, host-conditioned
 for staging. At deploy time `tools/build_api_functions.py` generates the functions themselves;

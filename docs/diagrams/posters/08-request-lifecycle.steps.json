@@ -2,7 +2,7 @@
   {
     "id": "step-01",
     "title": "Same-origin call",
-    "caption": "The browser (or a wiki widget) calls /api/ang/712 on the site’s own host. There is no CORS and no API base URL in the frontend: a Vercel rewrite forwards the request — on staging to the context’s own function, on production to the single Render API. The rules are generated from the route table.",
+    "caption": "The browser (or a wiki widget) calls /api/ang/712 on the site’s own host. There is no CORS and no API base URL in the frontend: a Vercel rewrite forwards the request — on staging to the context’s own function, on production to all, the whole API as one function. The rules are generated from the route table.",
     "link": "/architecture/bounded-contexts-and-gateway/"
   },
   {

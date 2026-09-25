@@ -7,9 +7,11 @@ sidebar:
 # Runbook: move production onto the API functions
 
 Staging answers every bounded context with its own Vercel function inside the web project
-(ADR-0011). Production still proxies `/api` to the Render single API. Every production deployment
-already carries the six functions (built and bundle-checked by `deploy-production`), so moving
-production is a routing change, released through the normal pipeline, with no new hosting.
+(ADR-0011). Steps 0 and 1 below are merged on `integration` and ship with the next release: production
+answers `/api` with `all`, Git previews are off, and `deploy-production` checks every function and the
+golden contract on the unaliased deployment before promoting it. Render keeps deploying as the
+rollback target until step 4. Every production deployment already carries the six functions, so
+moving production is a routing change, released through the normal pipeline, with no new hosting.
 
 ## Prerequisites
 - A green staging deploy with every context routed (`deploy-staging` → verify: every function ready
