@@ -8,6 +8,17 @@ entries prior to v1.1.0 are the project's original prose style and are preserved
 No change to the scripture text, the corpus, the database bytes or any API response.
 
 ### Added
+- **Search, verification and the API on the wiki.** `docs/search/` (modes and tiers, the Roman
+  fold, the verification engine, harnesses and golden vectors) and `docs/api/` (the API, contract
+  and OpenAPI, versioning and caching, plus `routes.md` **generated** by `tools/gen_route_table.py`
+  from `serve.ROUTES`, `_CACHEABLE` and the OpenAPI declarations, checked for drift in the docs
+  job). `search-waterfall.md` rewritten from `do_search`. Posters 05 (the search waterfall), 06 (the
+  fold in three places) and 07 (the verification engine). New widgets: `<sggs-waterfall>` (runs
+  `/api/search` and lights the tier that answered), `<sggs-verify>` (runs `/api/verify` and lights
+  the verdict rung) and `<sggs-api-try>` (a try-it console for any route, form from the OpenAPI
+  spec, copy-as-curl). `tools/docs_check.py` now fails if a search `mode` literal in the code is not
+  named on the waterfall page and poster, or if the verify thresholds in the code differ from the
+  poster's.
 - **Data & pipeline on the wiki.** `docs/data/` — overview, anatomy of a line record (poster 03
   and a live Ang explorer over `/api/ang/{n}`), corpus pipeline and gates (poster 04, with code
   read from sggs-data at the pinned commit), the dataset pin, and the editorial ledger (4 rules,

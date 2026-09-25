@@ -7,7 +7,7 @@
 import path from 'node:path';
 import { existsSync, statSync } from 'node:fs';
 import { visit } from 'unist-util-visit';
-import { REPO_ROOT, SOURCES_DIR, idForRepoPath, sitePathForId, githubUrlForRepoPath, repoRelOf, loadSources, originOf } from './paths.mjs';
+import { REPO_ROOT, SOURCES_DIR, VIRTUAL_PAGES, idForRepoPath, sitePathForId, githubUrlForRepoPath, repoRelOf, loadSources, originOf } from './paths.mjs';
 
 const isRelative = (url) => !!url && !/^(?:[a-z][a-z0-9+.-]*:|\/\/|\/|#)/i.test(url);
 
@@ -32,6 +32,8 @@ export function rewriteLink(url, fromRepoRel, sources) {
   const fromDir = path.posix.dirname(fromRepoRel);
   let repoRel = path.posix.normalize(path.posix.join(fromDir, decodeURI(target)));
   if (repoRel.startsWith('../')) return url; // outside the repository: leave it
+  const virtual = VIRTUAL_PAGES[repoRel.replace(/\/$/, '')];
+  if (virtual) return virtual + hash;
   const abs = path.join(REPO_ROOT, repoRel);
   let isDir = target.endsWith('/') || (existsSync(abs) && statSync(abs).isDirectory());
   if (isDir) {

@@ -8,6 +8,7 @@ const here = dirname(fileURLToPath(import.meta.url));
 /** Answer every /api call from a fixture (or 503 when none), so tests never reach production. */
 export async function mockApi(page: Page, fixtures: Record<string, string | null> = { '/api/health': 'health.json' }) {
   await page.route('**/api/**', async (route) => {
+    if (route.request().resourceType() === 'document') return route.fallback();   // a docs page under /api/… (the reference, the routes page)
     const path = new URL(route.request().url()).pathname;
     const name = fixtures[path];
     if (name === undefined || name === null) return route.fulfill({ status: 503, contentType: 'application/json', body: '{"error":"mocked outage"}' });

@@ -40,7 +40,9 @@ jobs:
           python3 tools/fetch_sibling_docs.py --check
           python3 tools/fetch_sibling_docs.py
       - name: Source-level docs gates (frontmatter, links, widgets, Mermaid palette, scripture rule, posters, site config)
-        run: python3 tools/docs_check.py
+        run: |
+          python3 tools/docs_check.py
+          python3 tools/gen_route_table.py --check
       - name: Tool tests
         run: python3 -m unittest discover -s tools/tests -v
       - name: Install

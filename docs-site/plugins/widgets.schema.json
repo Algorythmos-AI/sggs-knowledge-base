@@ -34,6 +34,26 @@
           "description": "An explicit range, e.g. 23-60, instead of a symbol."
         }
       }
+    },
+    "waterfall": {
+      "purpose": "Search simulator: runs /api/search and lights the tier that answered on poster 05; results verbatim with their Ang.",
+      "attrs": {
+        "q": {
+          "description": "The query to run first."
+        }
+      }
+    },
+    "verify": {
+      "purpose": "Verification playground: runs /api/verify and lights the verdict rung on poster 07; the matched line verbatim with its Ang and the scoring details.",
+      "attrs": {}
+    },
+    "api-try": {
+      "purpose": "Try-it console for any route: a parameter form from contract/openapi.json (embedded at build by remark-api-try), the live response, headers, and copy-as-curl.",
+      "attrs": {
+        "route": {
+          "description": "The route to open first, e.g. /api/ang/{n}."
+        }
+      }
     }
   }
 }

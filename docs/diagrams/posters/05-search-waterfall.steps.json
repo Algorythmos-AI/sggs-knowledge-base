@@ -1,0 +1,74 @@
+[
+  {
+    "id": "step-01",
+    "title": "Normalise and detect the script",
+    "caption": "A query longer than 300 characters is refused. Dandas and punctuation become separators, whitespace collapses, and the code notes whether the query holds Gurmukhi, Latin letters, or both. In auto mode the API chooses the tier and reports it as mode; the simulator on this page reads that field.",
+    "link": "/search/modes-and-tiers/"
+  },
+  {
+    "id": "step-02",
+    "title": "Mixed script",
+    "caption": "Gurmukhi and Latin in one query (auto mode) go to mixed_search (mode mixed-script), a blender in which Gurmukhi tokens match the text column and Latin tokens resolve through variants, the lexicon and the fold in one AND expression. If that finds nothing, the Latin tokens alone are retried through the whole waterfall.",
+    "link": "/search/modes-and-tiers/"
+  },
+  {
+    "id": "step-03",
+    "title": "Explicit modes",
+    "caption": "mode=gurmukhi, roman, first, theme or english picks one tier up front — the text column, the transliteration (with a fold fallback), first letters, the theme index or the English layer — and skips the cascade.",
+    "link": "/search/modes-and-tiers/"
+  },
+  {
+    "id": "step-04",
+    "title": "Auto, Gurmukhi: letters, text, skeleton",
+    "caption": "A Gurmukhi query of single letters is read as first letters of each word (fl_g, phrase match; mode first-letters). Otherwise the verbatim text column is searched; if nothing matches, the vowel signs are stripped and the skeleton column is matched by LIKE (mode gurmukhi-skeleton).",
+    "link": "/search/modes-and-tiers/"
+  },
+  {
+    "id": "step-05",
+    "title": "Auto, Roman: concept, first letters, transliteration",
+    "caption": "A query that is exactly a concept name answers from the theme index. Two or more tokens of at most three letters are first letters (fl_r). Otherwise the transliteration column is searched (mode roman). Every later tier runs only if this one found nothing.",
+    "link": "/search/modes-and-tiers/"
+  },
+  {
+    "id": "step-06",
+    "title": "The seeker lexicon",
+    "caption": "A curated table of words seekers actually type — names, common spellings — maps to a transliteration term or a theme. The mode names the term that matched: seeker-lexicon (vaahiguroo).",
+    "link": "/search/modes-and-tiers/"
+  },
+  {
+    "id": "step-07",
+    "title": "The variant index",
+    "caption": "The precomputed romanisation-variant index resolves each token to up to three spellings, with a trailing-vowel retry, so one stubborn token cannot kill the AND (mode variant-match).",
+    "link": "/search/modes-and-tiers/"
+  },
+  {
+    "id": "step-08",
+    "title": "The English layer",
+    "caption": "Before the fold is tried, the English translations are searched (fts_en): \"mercy\" must reach the translations rather than collide with a fold of a Gurmukhi word (mode english-translation).",
+    "link": "/search/modes-and-tiers/"
+  },
+  {
+    "id": "step-09",
+    "title": "Honorifics dropped",
+    "caption": "ji, sahib, maharaj, guru, dev, baba and the like are removed and the shorter query is retried through the waterfall; the mode gains the suffix (honorifics dropped). After any tier, a thin result set is also topped up the same way (mode … + honorific-dropped).",
+    "link": "/search/modes-and-tiers/"
+  },
+  {
+    "id": "step-10",
+    "title": "Passages across lines",
+    "caption": "Three or more tokens are folded and matched at composition level in fts_shabad, so a couplet that spans two corpus lines is found and the composition’s lines are returned in order (mode passage-match).",
+    "link": "/search/modes-and-tiers/"
+  },
+  {
+    "id": "step-11",
+    "title": "The phonetic fold",
+    "caption": "roman_norm folds the query and the index the same way (translit_norm), so waheguru and vaahiguroo meet at vhgr. Only tokens of two or more folded characters count, and heading lines are excluded because the fold collapses distinct words (mode roman-spelling-tolerant).",
+    "link": "/search/the-roman-fold/"
+  },
+  {
+    "id": "step-12",
+    "title": "The last resorts, and the ranking",
+    "caption": "Up to 14 tokens collapse to a fold-skeleton blob that is prefiltered and fuzzy-ranked (mode skeleton-blob); a single token is tried as a theme. Whatever tier answered, results are bm25-ranked with the column weights 10, 5, 4, 3, 3, 1, translations are attached, related themes are added for Gurmukhi queries, and the mode is reported. Never reorder a tier or change a weight without the harnesses and make contract.",
+    "link": "/search/harnesses-and-golden-vectors/"
+  }
+]

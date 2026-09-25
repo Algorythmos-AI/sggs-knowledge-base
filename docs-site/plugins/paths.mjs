@@ -30,6 +30,8 @@ export const PLATFORM_REPO = 'Algorythmos-AI/sggs-platform';
 export const PLATFORM_REF = 'integration';
 export const SOURCES_DIR = 'docs-site/.sources';
 export const NOT_PUBLISHED = ['docs/reports/archive/', 'docs/design/'];
+// pages the site generates rather than reads from docs/ (starlight-openapi); tools/docs_check.py has the same map
+export const VIRTUAL_PAGES = { 'docs/api/reference': '/api/reference/' };
 
 /** The pinned sibling sources: { <repo name>: { repository, commit, alias, ... } }. */
 export function loadSources() {
