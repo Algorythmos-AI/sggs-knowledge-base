@@ -26,6 +26,18 @@ test.describe('the wiki', () => {
     await expect(page.locator('sggs-status .status')).toContainText('unavailable');
   });
 
+  test('while the status strip is still checking, it is readable (axe on the pending state)', async ({ page }) => {
+    // a slow API is when readers see "checking /api/health…": that state must meet contrast too
+    let release!: () => void;
+    const gate = new Promise<void>((r) => { release = r; });
+    await page.route('**/api/health', async (route) => { await gate; await route.fulfill({ status: 503, body: '{}' }); });
+    await page.goto('/');
+    await expect(page.locator('sggs-status .status--pending')).toBeVisible();
+    const results = await new AxeBuilder({ page }).include('sggs-status').withTags(['wcag2a', 'wcag2aa']).analyze();
+    expect(results.violations, JSON.stringify(results.violations, null, 1)).toEqual([]);
+    release();
+  });
+
   test('overflowing code and tables are keyboard-scrollable', async ({ page }) => {
     await mockApi(page);
     await page.goto('/process/runbooks/deploy/');

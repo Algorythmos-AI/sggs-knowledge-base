@@ -44,7 +44,7 @@
   {
     "id": "step-08",
     "title": "Between merges",
-    "caption": "Every six hours the data canary proves production serves the pinned scripture byte for byte — 500 sampled lines and fifteen Angs, at the API origin and through the site’s CDN — and replays the golden contract; every fifteen minutes uptime probes /api/health and the App Store URLs; every night the whole docs job re-runs on integration to catch drift from outside the repository; on Mondays security scans the full history for secrets and docs-links checks every external link in the wiki and the sibling docs it publishes. Each opens or updates one issue; none pages or redeploys.",
+    "caption": "Every six hours the data canary proves production serves the pinned scripture byte for byte — 500 sampled lines and fifteen Angs, at the API origin and through the site’s CDN — and replays the golden contract; every fifteen minutes uptime probes /api/health and the App Store URLs; every fifteen minutes uptime also probes the wiki; every six hours docs-watch proves docs.gurbanisoul.com serves the commit its last production deploy shipped and runs the live suite against the real API; every night the whole docs job re-runs on integration to catch drift from outside the repository; on Mondays security scans the full history for secrets, docs-links checks every external link in the wiki and the sibling docs it publishes, docs-pins moves a sibling pin when the docs it publishes changed, and docs-freshness lists the pages whose cited code moved since their verified stamp. Each opens or updates one issue; none pages or redeploys.",
     "link": "/process/ci-gates/"
   }
 ]

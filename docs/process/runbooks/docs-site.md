@@ -29,6 +29,14 @@ REPO=Algorythmos-AI/sggs-platform bash scripts/gh/apply_rulesets.sh
 
 ## 2. Staging walkthrough (before the first promotion)
 
+Most of this walkthrough is automated now. After every staging deploy `deploy-docs` runs the
+**live suite** (`docs-site/e2e-live/live.spec.ts`) against the staging alias with the real API: the
+status strip, the search simulator, the Ang explorer on Angs 1, 712 and 1256, a line read from
+`/api/ang/1` verifying as `VERIFIED_EXACT`, the API console, ⌘K search, axe on five pages as
+deployed, and no Content-Security-Policy errors. Run it by hand with
+`make docs-live URL=https://docs.gurbanisoul.com` (add `VERCEL_BYPASS=…` for the staging alias).
+What stays human is taste: one visual pass on a new release.
+
 Open `https://sggs-docs-staging.vercel.app` logged in to Vercel. Run the visual pass the build
 cannot judge — the same list the repository's QA script shoots
 (`cd docs-site && node scripts/visual-qa.mjs <url>` writes light, dark and phone screenshots of
@@ -98,9 +106,12 @@ restores it. The wiki carries no state, so a rollback costs nothing but the newe
 |---|---|
 | every pull request | the `docs` check (required on `integration`): gates, build, links, budgets, e2e, axe on every page, Lighthouse on twenty |
 | a dataset bump lands | nothing to do: the docs job installs the pinned database and re-verifies the cited lines |
-| sggs-data or the app changes a document the wiki pins | `python3 tools/fetch_sibling_docs.py --update <name>` in a small pull request (a bump shows exactly which files changed) |
-| Mondays | `docs-links` checks every external link and opens an issue on a failure; `security` scans the history |
-| a page under process, engineering or architecture is 60 commits behind its stamp | the gate warns: re-read the page against the code and move the stamp |
+| every 15 minutes | `uptime` probes the wiki's landing page and `/api/health` through its rewrite; issue *uptime: docs site probe failing* |
+| every 6 hours | `docs-watch`: the domain serves the last deployed commit, the smoke and the live suite pass; issue *docs-watch: production wiki check failing* (after a manual rollback it stays open until the next release — expected) |
+| every night | the `docs` job re-runs on `integration`; issue *docs: nightly wiki build failing* while red |
+| Mondays | `docs-links` checks every external link (issue *docs: broken external links*); `security` scans the history; `docs-pins` opens *docs(wiki): bump the sibling docs pins* when a sibling changed a published file (or issue *docs: the sibling docs changed — bump the pins* until `DOCS_BOT_TOKEN` exists); `docs-freshness` rewrites issue *docs: wiki pages to re-verify* |
+| a page is in *wiki pages to re-verify* | re-read it against the code it cites, fix what drifted, move its `verified` stamp; the issue closes itself when every page is fresh |
+| a scholar review is due (G3) | `make review-pack` writes one PDF — Scripture 101, the glossary's scripture and script sections, the contributors — with a sign-off sheet |
 | a new page | frontmatter, links, the scripture rule and the fallback rule are gated; a poster or a widget follows [the contributing guides](../../contributing/README.md) |
 
 ## 6. Sibling README links (owner, after launch)

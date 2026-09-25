@@ -5,6 +5,29 @@ entries prior to v1.1.0 are the project's original prose style and are preserved
 
 ## [Unreleased]
 
+### Added
+- **The wiki watches itself.** `docs-watch` (every six hours) proves `docs.gurbanisoul.com` serves the
+  commit its last production deploy shipped and runs the new **live suite** (`docs-site/e2e-live`:
+  every API-backed widget against the real API, a line read from `/api/ang/1` verifying exact, axe as
+  deployed, no CSP errors) — the same suite runs after every staging deploy. `uptime` probes the
+  wiki too. `docs-pins` (Mondays) opens a pull request when a sibling repository changes a file the
+  wiki publishes (`tools/docs_pins.py`; with `DOCS_BOT_TOKEN`, else an issue); `docs-freshness`
+  (Mondays) lists the pages whose cited code changed since their `verified` stamp
+  (`tools/docs_check.py --freshness`). Every one keeps a single issue, closed when green.
+- `make review-pack`: the G3 scholar-review pack as one PDF with a sign-off sheet; `make docs-live`,
+  `make docs-freshness`, `make docs-pins`.
+
+### Changed
+- **The wiki's CSP allows inline scripts by sha256 only** (13 hashes; no `'unsafe-inline'`),
+  checked by `docs-site/scripts/csp.mjs`; the e2e server sends the production headers, so every
+  page's e2e and axe run under the real policy. ADR-0012 amended.
+- **The `docs` job equals `make docs`:** types, `check:render`, `check:links` and `check:csp` join
+  the build checks; it also runs every night on `integration`, opening one issue while red. The
+  `main` ruleset requires `docs`. `docs-links` also checks the sibling docs and pins its actions by
+  SHA. `docs_check` gates the poster legend and the theme's brand colours against the tokens.
+- `docs-site/scripts/visual-qa.mjs` proxies `/api` to production (`https://gurbanisoul.com`, was
+  the Render rollback origin) and accepts a Vercel bypass for the staging alias.
+
 ### Fixed
 - **The wiki's deploy pipeline.** Staging refuses to be the docs project's first Vercel deployment
   (the first one became production on 2026-09-26 and served an `integration` build at
@@ -17,17 +40,8 @@ entries prior to v1.1.0 are the project's original prose style and are preserved
 - **The docs smoke fails on any redirect** (the `trailingSlash` loop would have passed a lenient
   check), checks `/api/meta`, and finds its poster on the architecture page instead of skipping it.
 - Two wiki links that 404ed: the reader is `/reader?ang=N`, and the website has no verify page.
-
-### Changed
-- **The wiki's CSP allows inline scripts by sha256 only** (13 hashes; no `'unsafe-inline'`),
-  checked by `docs-site/scripts/csp.mjs`; the e2e server sends the production headers, so every
-  page's e2e and axe run under the real policy. ADR-0012 amended.
-- **The `docs` job equals `make docs`:** types, `check:render`, `check:links` and `check:csp` join
-  the build checks; it also runs every night on `integration`, opening one issue while red. The
-  `main` ruleset requires `docs`. `docs-links` also checks the sibling docs and pins its actions by
-  SHA. `docs_check` gates the poster legend and the theme's brand colours against the tokens.
-- `docs-site/scripts/visual-qa.mjs` proxies `/api` to production (`https://gurbanisoul.com`, was
-  the Render rollback origin) and accepts a Vercel bypass for the staging alias.
+- The status strip's "checking /api/health…" state measured 3.17:1 (the whole chip was dimmed); only
+  its dot dims now. Found by the live suite on production; a mocked test now holds axe on that state.
 
 ## [1.3.10] — 2026-09-25 — the API on Vercel functions in production, the engineering wiki
 

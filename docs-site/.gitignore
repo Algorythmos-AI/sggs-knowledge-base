@@ -14,3 +14,5 @@ playwright-report/
 .lighthouseci/
 qa-shots/
 src/og/fonts/
+# the G3 review pack (scripts/review-pack.mjs)
+review-pack/

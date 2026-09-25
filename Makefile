@@ -2,7 +2,7 @@
 # The scripture database is owned by Algorythmos-AI/sggs-data and consumed by pin (dataset.lock.json);
 # data rebuilds, reconcile and the scripture gates live there.
 
-.PHONY: help doctor dataset dataset-check ci openapi contract-http pr-checks release-preflight watch-deploy verify-prod check-versions test-web test-frontend contract harnesses canary slices release docs docs-dev docs-check docs-e2e posters
+.PHONY: help doctor dataset dataset-check ci openapi contract-http pr-checks release-preflight watch-deploy verify-prod check-versions test-web test-frontend contract harnesses canary slices release docs docs-dev docs-check docs-e2e docs-live docs-freshness docs-pins review-pack posters
 help: ## list targets
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | awk 'BEGIN{FS=":.*?## "}{printf "  \033[36m%-16s\033[0m %s\n",$$1,$$2}'
 
@@ -62,6 +62,15 @@ posters: ## regenerate the wiki's posters from docs-site/posters/*.mjs into docs
 	cd docs-site && node scripts/build-posters.mjs
 docs-e2e: docs ## end-to-end + accessibility suite against the built wiki (mocked API)
 	cd docs-site && npx playwright install chromium && npm run test:e2e
+docs-live: ## the live suite against a deployed wiki and the real API: make docs-live URL=https://docs.gurbanisoul.com
+	@test -n "$(URL)" || { echo "usage: make docs-live URL=https://docs.gurbanisoul.com (VERCEL_BYPASS=… for staging)"; exit 2; }
+	cd docs-site && npx playwright install chromium && DOCS_LIVE_URL="$(URL)" npm run test:live
+docs-freshness: ## which stamped wiki pages cite code that changed since their stamp (a report)
+	python3 tools/docs_check.py --freshness
+docs-pins: ## re-pin the sibling docs, keeping a new pin only where a published file changed
+	python3 tools/docs_pins.py
+review-pack: docs ## the G3 scholar-review pack: Scripture 101, the glossary, the contributors, one PDF
+	cd docs-site && npm run review-pack
 
 openapi: ## regenerate contract/openapi.json (26 routes; schemas inferred from real responses) — test-web fails if stale
 	python3 tools/gen_openapi.py
