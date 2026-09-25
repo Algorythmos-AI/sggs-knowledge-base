@@ -15,10 +15,11 @@
     "check:budget": "node scripts/check-budget.mjs dist",
     "lhci": "npx --yes @lhci/cli@0.15.1 autorun",
     "check:links": "node scripts/check-links.mjs dist",
-    "check:all": "npm run check:mermaid && npm run check:links && npm run check:budget",
+    "check:all": "npm run check:render && npm run check:mermaid && npm run check:links && npm run check:budget",
     "typecheck": "astro check",
     "posters": "node scripts/build-posters.mjs",
-    "check:posters": "node scripts/build-posters.mjs --check"
+    "check:posters": "node scripts/build-posters.mjs --check",
+    "check:render": "node scripts/check-render.mjs dist"
   },
   "dependencies": {
     "@astrojs/markdown-remark": "7.3.1",
