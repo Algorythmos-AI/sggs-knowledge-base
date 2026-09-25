@@ -3,7 +3,7 @@
 // Knowledge Base (Base.astro). Emits an absolute canonical + Open Graph/Twitter/theme-color/
 // manifest set. Does NOT emit <title> (the layout owns it). No hreflang here — locale alternates
 // live only in sitemap.xml until the `pa` pages exist.
-import { SITE_URL, APP_STORE_ID } from "../site";
+import { SITE_URL, APP_STORE_ID, APP_STORE_LIVE } from "../site";
 import { ogForPath } from "../routes";
 
 export interface Props {
@@ -48,4 +48,4 @@ const ogAbsolute = new URL(ogPath, SITE_URL).href;
 
 <link rel="manifest" href="/site.webmanifest" />
 <meta name="apple-mobile-web-app-title" content="Gurbani Soul" />
-{APP_STORE_ID && <meta name="apple-itunes-app" content={`app-id=${APP_STORE_ID}`} />}
+{APP_STORE_LIVE && <meta name="apple-itunes-app" content={`app-id=${APP_STORE_ID}`} />}

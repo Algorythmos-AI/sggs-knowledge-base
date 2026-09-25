@@ -1,3 +1,9 @@
+---
+title: "Reports & Audit History"
+description: "Index of past audits, reports and plans kept for history; the live state is in the handbook."
+sidebar:
+  order: 2
+---
 # Reports & Audit History
 
 Historical audits and plans. These are point-in-time records; the live state is in

@@ -1,9 +1,24 @@
+---
+title: "Architecture Overview"
+description: "The system in one page: who uses it, the containers across three repositories, production deployment and the five data layers."
+sidebar:
+  order: 1
+verified:
+  commit: f25ab970
+  date: "2026-09-25"
+---
 # Architecture Overview
+
+The whole system on one poster — press *Next* on the site to build it up step by step:
+
+![Poster 01 — the system landscape: people, surfaces, API, pinned database, sources, CI](../diagrams/posters/01-system-landscape.svg)
 
 ## System context (C4 level 1)
 
 ```mermaid
 flowchart TB
+    accTitle: System context
+    accDescr: Readers and scholars use the web app and the iOS app; both read the stdlib API. The source Bir PDF feeds the reproducible pipeline; the ShabadOS English layer is attached, labelled, to the API.
     reader([Sikh sangat / student]):::person
     granthi([Granthi / scholar]):::person
     subgraph SGGS[SGGS Knowledge Base]
@@ -20,14 +35,16 @@ flowchart TB
     pdf -.->|reproducible pipeline<br/>char-exact| SGGS
     shabados -.->|labelled translation layer| api
     granthi -.->|reviews flagged text<br/>never edits| SGGS
-    classDef person fill:#1a3a6b,color:#fff,stroke:#0d2340;
-    classDef ext fill:#444,color:#fff,stroke:#222;
+    classDef person fill:#8A1538,color:#FFFFFF,stroke:#8A1538;
+    classDef ext fill:#B69A81,color:#201A12,stroke:#B69A81;
 ```
 
 ## Containers (C4 level 2)
 
 ```mermaid
 flowchart LR
+    accTitle: Containers across the three repositories
+    accDescr: sggs-data builds the corpus and the SQLite database from the PDF through the reconcile and golden gates; this repository pins that database and serves it through serve.py and the Astro site; gurbani-soul-ios bundles a database built from it and vendors the golden contract.
     subgraph data[sggs-data — build time]
       PDF[(Bir PDF)] --> corpus[build_corpus.py<br/>+ sggs_pipeline.py]
       corpus --> jsonl[corpus/sggs.jsonl<br/>verbatim, SHA-pinned]
@@ -47,17 +64,19 @@ flowchart LR
       iosdb --> app[SwiftUI app<br/>GurbaniSearchKit]
       contract -.->|vendored; byte-parity tests| app
     end
-    classDef gate fill:#7a1f1f,color:#fff;
+    classDef gate fill:#B33528,color:#FFFFFF,stroke:#B33528;
 ```
 
 ## Deployment (production)
 
 ```mermaid
 flowchart LR
+    accTitle: Production deployment
+    accDescr: A push to main deploys the static frontend on Vercel, which rewrites /api to the Render service; the iOS archive ships through TestFlight to the App Store.
     dev[git push main] --> vercel[Vercel<br/>static frontend]
     vercel -->|/api/* rewrite| render[Render<br/>Docker: serve.py + pinned DB]
     ios2[iOS archive] --> tf[TestFlight / App Store]
-    classDef n fill:#1a3a6b,color:#fff;
+    classDef n fill:#FDF6E3,color:#201A12,stroke:#A87900;
 ```
 
 The web frontend and API are **same-origin**: the browser calls `/api/*` and

@@ -1,3 +1,9 @@
+---
+title: "ADR-0004: One unified SemVer across web, API, and iOS"
+description: "Why the web, the API and the iOS app share one version number, and what that forces at release time."
+sidebar:
+  order: 4
+---
 # ADR-0004: One unified SemVer across web, API, and iOS
 
 **Status:** accepted (2026-09-15)

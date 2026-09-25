@@ -1,3 +1,9 @@
+---
+title: "The website — gurbanisoul.com"
+description: "The public website gurbanisoul.com: DNS, SEO, Open Graph images, security headers, imagery policy, screenshots and its gates."
+sidebar:
+  order: 4
+---
 # The website — gurbanisoul.com
 
 The public web property is one Astro static site (`frontend/`) served on the product domain
@@ -49,7 +55,8 @@ public contact in the App Store listing, `SECURITY.md`, and the privacy/support 
 ## SEO
 
 `frontend/astro.config.mjs` sets `site: 'https://gurbanisoul.com'`; `frontend/src/site.ts` holds
-`SITE_URL`, `SUPPORT_EMAIL`, `APP_STORE_URL`, `APP_STORE_ID`, and the photo-credit list. The head
+`SITE_URL`, `SUPPORT_EMAIL`, `APP_STORE_URL`, `APP_STORE_ID`, the `APP_STORE_LIVE` switch, and the
+photo-credit list. The head
 SEO/social/PWA block is a shared component, **`frontend/src/components/Seo.astro`** (used by both
 `Marketing.astro` and the Knowledge Base's `Base.astro`). Every page emits:
 
@@ -58,7 +65,7 @@ SEO/social/PWA block is a shared component, **`frontend/src/components/Seo.astro
 - `theme-color` — the Knowledge Base (`themeColor="auto"`) gets one per OS colour scheme; the
   light-first marketing shell (`themeColor="light"`) gets a single `#themeColorMeta` that
   `scripts/theme.ts` keeps in step with the *page* theme; `apple-mobile-web-app-title`, `<link rel="manifest">`, an SVG
-  favicon, and — once `APP_STORE_ID` is set — the `apple-itunes-app` Smart App Banner.
+  favicon, and — once the app is live (`APP_STORE_LIVE`) — the `apple-itunes-app` Smart App Banner.
 
 `og:image` defaults to the page's OG card (`/og/<slug>.png`, see **OG images** below).
 `frontend/public/robots.txt` points crawlers at the canonical host and names `/sitemap.xml`, which
@@ -112,8 +119,8 @@ Emitted through **`frontend/src/components/JsonLd.astro`**, which serialises the
   **WebSite** ("Gurbani Soul") with a `SearchAction` targeting `/search?q={search_term_string}` on
   the canonical host, and a **SoftwareApplication** ("Gurbani Soul", iOS, `ReferenceApplication`,
   `offers.price "0"`, publisher → the Organization by `@id`). There is deliberately **no
-  `aggregateRating`** (we have no ratings). `installUrl`/`url` are added only once `APP_STORE_URL`
-  is set.
+  `aggregateRating`** (we have no ratings). `installUrl`/`url` are added only once the app is live
+  (`APP_STORE_LIVE`).
 - **`/support`** carries a **FAQPage** generated from the same `faqs` array that renders the visible
   `<h4>` question / `<p>` answer block, so the structured data can never drift from the page. The
   `JsonLdInvariants` gate parses every block, checks the landing's three types (and the
@@ -286,14 +293,29 @@ device, iOS version, commit, deep link, environment).
 
 ---
 
-## Swapping in the App Store badge (after approval)
+## The App Store switch (launch day)
 
-Until the app is approved, `APP_STORE_URL` in `frontend/src/site.ts` is `''` and the hero shows a
-"Coming soon to the App Store" chip (`data-app-store="coming-soon"`). After approval:
-1. Download the official badge from Apple's App Store Marketing Tools (needs the app ID) into
-   `frontend/public/img/app-store-badge.svg`.
-2. Set `APP_STORE_URL` to the App Store product URL.
-3. `npm run build && npm run sync` — the hero swaps the chip for the linked badge automatically.
+`frontend/src/site.ts` commits Apple's real values — `APP_STORE_ID = "6812982384"` and
+`APP_STORE_URL = "https://apps.apple.com/app/id6812982384"` — but whether the site presents the app
+as available is a **build-time switch**: `APP_STORE_LIVE` is true only when the build env sets
+`PUBLIC_APP_STORE_LIVE=1`. Every App Store render site keys on it:
+
+| Off (default) | On (`PUBLIC_APP_STORE_LIVE=1`) |
+|---|---|
+| hero chip `data-app-store="coming-soon"`, download band `coming-soon-foot`, nav `coming-soon-nav` | "Download on the App Store" / "Get the app" links to the product page in the hero, the download band, the nav and the mobile menu |
+| no `apple-itunes-app` meta | the Smart App Banner on every page (`Seo.astro`) |
+| no `installUrl` in the SoftwareApplication JSON-LD | `url` + `installUrl` = the product page |
+
+Why a switch and not a source edit: under the one-number policy the site must keep the version the
+App Store build carries, so launch day cannot be a new release. The flip is a Vercel project env var
+plus a redeploy of the **same** `main` commit — see `docs/process/runbooks/deploy.md` → "Launch-day
+App Store switch". Set it only after Apple's product page answers 200.
+
+Gates: `AppStoreSwitch` (the flag comes only from the env; no render site keys on the URL/ID),
+`test_cta_state_is_consistent` (the built landing is wholly in one state) and the `@smoke` spec
+(`frontend/e2e/landing.spec.ts`, same two states; `SGGS_EXPECT_APP_STORE=live|soon` pins the state
+a deployment must serve). The CTAs are text links, not Apple's badge artwork; if the badge is added
+later, self-host the official SVG unmodified per Apple's App Store marketing guidelines.
 
 ---
 

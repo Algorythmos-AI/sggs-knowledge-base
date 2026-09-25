@@ -1,6 +1,9 @@
 name: deploy-production
-# CI-gated production deploy. Order: gates → API (Render) → verify API → build web
-# (unaliased) → smoke the unaliased web → promote → smoke public → release tag.
+# CI-gated production deploy. Order: gates → API (Render) → verify API → build web with the API
+# functions (unaliased) → verify its functions, golden contract and smoke → promote → smoke public
+# → release tag. gateway/routes.json decides whether production's /api is answered by the functions
+# or proxied to Render; Render keeps deploying every release as the rollback target until it is
+# retired (docs/process/runbooks/services-production.md, step 4).
 # Nothing reaches users unless every required check on this exact commit is green.
 # Runbook: docs/process/runbooks/deploy.md
 on:
@@ -129,7 +132,7 @@ jobs:
     needs: verify-api
     runs-on: ubuntu-latest
     environment: production
-    timeout-minutes: 20
+    timeout-minutes: 30
     outputs:
       url: ${{ steps.deploy.outputs.url }}
       previous: ${{ steps.prev.outputs.previous }}
@@ -141,7 +144,15 @@ jobs:
       - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
           node-version-file: ".nvmrc"
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5
+        with: { python-version: "3.12" }
+      - uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7 # v10.2.0
+        with: { version: "0.11.7", enable-cache: false }
       - run: npm i -g "$VERCEL_CLI"
+      - uses: ./.github/actions/fetch-dataset
+        with: { token: "${{ secrets.SGGS_READ_TOKEN || github.token }}" }
+      - name: Generate the API functions at this commit (every deployment carries them; routes.json decides what they serve)
+        run: python3 tools/build_api_functions.py --commit "$GITHUB_SHA"
       - name: Record the current production deployment (rollback target)
         id: prev
         env:
@@ -159,6 +170,7 @@ jobs:
         run: |
           vercel pull --yes --environment=production --token="$VERCEL_TOKEN"
           vercel build --prod --token="$VERCEL_TOKEN"
+          python3 tools/build_api_functions.py --verify-output .vercel/output
           # The CLI's stdout shape differs between environments (it broke the first gated
           # deploy), so capture both streams, log them, and resolve the URL with a tested
           # helper that accepts any JSON shape and falls back to the "Production" line.
@@ -176,7 +188,7 @@ jobs:
     needs: deploy-web
     runs-on: ubuntu-latest
     environment: production
-    timeout-minutes: 15
+    timeout-minutes: 25
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
       - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
@@ -184,6 +196,19 @@ jobs:
           node-version-file: ".nvmrc"
           cache: npm
           cache-dependency-path: frontend/package-lock.json
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5
+        with:
+          python-version-file: ".python-version"
+      - name: Every API function is ready at this commit and holds exactly its context
+        env:
+          VERCEL_AUTOMATION_BYPASS_SECRET: ${{ secrets.VERCEL_AUTOMATION_BYPASS_SECRET }}
+        run: python3 scripts/ci/verify_functions.py "${{ needs.deploy-web.outputs.url }}" --commit "$GITHUB_SHA" --env production
+      - uses: ./.github/actions/fetch-dataset
+        with: { token: "${{ secrets.SGGS_READ_TOKEN || github.token }}" }
+      - name: The whole golden contract holds through the unaliased deployment's /api
+        env:
+          VERCEL_AUTOMATION_BYPASS_SECRET: ${{ secrets.VERCEL_AUTOMATION_BYPASS_SECRET }}
+        run: python3 tools/contract_http.py --base "${{ needs.deploy-web.outputs.url }}"
       - name: Playwright smoke against the unaliased deployment
         working-directory: frontend
         env:

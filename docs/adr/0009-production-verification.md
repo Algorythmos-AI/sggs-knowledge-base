@@ -1,3 +1,9 @@
+---
+title: "ADR-0009: Production is verified continuously, and logs never carry what people search"
+description: "How production is verified continuously by a data canary and request ids, and why logs never carry what people search."
+sidebar:
+  order: 9
+---
 # ADR-0009: Production is verified continuously, and logs never carry what people search
 
 **Status:** accepted (2026-09-24)

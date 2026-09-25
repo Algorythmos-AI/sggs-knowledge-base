@@ -2,7 +2,7 @@
 # The scripture database is owned by Algorythmos-AI/sggs-data and consumed by pin (dataset.lock.json);
 # data rebuilds, reconcile and the scripture gates live there.
 
-.PHONY: help doctor dataset dataset-check ci openapi contract-http pr-checks release-preflight watch-deploy verify-prod check-versions test-web test-frontend contract harnesses canary slices release
+.PHONY: help doctor dataset dataset-check ci openapi contract-http pr-checks release-preflight watch-deploy verify-prod check-versions test-web test-frontend contract harnesses canary slices release docs docs-dev docs-check docs-e2e posters
 help: ## list targets
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | awk 'BEGIN{FS=":.*?## "}{printf "  \033[36m%-16s\033[0m %s\n",$$1,$$2}'
 
@@ -41,8 +41,27 @@ canary: ## production serves the pinned scripture byte for byte (sample of lines
 slices: ## cut every service's database slice from the pinned DB into build/slices/ (proven equal in content)
 	for m in reader search verify insights knowledge; do python3 tools/slice_db.py --modules $$m --out build/slices/$$m.sqlite || exit 1; done
 
-ci: check-versions dataset-check test-web contract ## run the gates CI runs
+ci: check-versions dataset-check test-web contract docs-check ## run the gates CI runs
 	@echo "make ci: PASS"
+
+# ── the wiki (docs-site/ over docs/; docs.gurbanisoul.com) ───────────────────
+docs-check: ## docs gates: frontmatter, links, widgets, Mermaid palette, scripture rule, posters, drift vs code, site config, sibling pin, generated pages
+	python3 tools/docs_check.py
+	python3 tools/gen_route_table.py --check
+	python3 tools/gen_contributors.py --check
+	python3 tools/gen_repo_map.py --check
+	python3 tools/fetch_sibling_docs.py --check
+	python3 -m unittest discover -s tools/tests
+docs: ## build the wiki (installs pinned sibling docs; renders every Mermaid fence; validates links)
+	python3 tools/fetch_sibling_docs.py
+	cd docs-site && npm ci && npm run test:unit && node scripts/build-posters.mjs --check && npm run build && npm run check:all
+docs-dev: ## serve the wiki locally on :4322 (proxies /api to a local serve.py on :7777)
+	python3 tools/fetch_sibling_docs.py
+	cd docs-site && npm run dev
+posters: ## regenerate the wiki's posters from docs-site/posters/*.mjs into docs/diagrams/posters/
+	cd docs-site && node scripts/build-posters.mjs
+docs-e2e: docs ## end-to-end + accessibility suite against the built wiki (mocked API)
+	cd docs-site && npx playwright install chromium && npm run test:e2e
 
 openapi: ## regenerate contract/openapi.json (26 routes; schemas inferred from real responses) — test-web fails if stale
 	python3 tools/gen_openapi.py

@@ -1,3 +1,12 @@
+---
+title: "Microservices Roadmap (monolith → modular → services)"
+description: "How the stdlib monolith is factored into bounded contexts, and the spikes and gates on the road to services."
+sidebar:
+  order: 3
+verified:
+  commit: f25ab970
+  date: "2026-09-25"
+---
 # Microservices Roadmap (monolith → modular → services)
 
 `webapp/serve.py` is a single stdlib module today. The path to services is
@@ -13,6 +22,8 @@ Extraction order by coupling (cleanest first):
 
 ```mermaid
 flowchart LR
+    accTitle: Order of module extraction
+    accDescr: The order in which bounded contexts are extracted from the monolith on the road to services.
     verify[Verify] --> timing[Timing] --> analytics[Analytics] --> search[Search] --> reader[Reader]
 ```
 
@@ -82,6 +93,17 @@ Sydney): reader p95 568 ms, insights 524, search 453, knowledge 375, verify 365 
 everywhere, i.e. network round-trip dominates (server-side work is 1–200 ms, see Spike S3). After
 the split, `--compare docs/perf/baseline-2026-09.json` from the same vantage point fails if any
 context's p95 is more than 10 % worse.
+
+## Hosting: Vercel functions in the web project (ADR-0011)
+
+The contexts first ran on staging as five free Render services. They now run as Python functions in
+the web's own Vercel project — one per context plus `all` — generated at deploy time by
+`tools/build_api_functions.py` and routed internally, so production can move with no new hosting
+(the web is already on Vercel Pro; functions are billed by use from the plan's credit). The trial on a
+separate Vercel project passed the whole golden contract (266 records) on Vercel's Python 3.12 /
+SQLite 3.40.0, with every function ready at its commit and holding exactly its context; it also
+showed why the functions belong in the web project (one edge and one firewall instead of two, and no
+framework-less static output that would publish the databases).
 
 ## The gateway (staging, Phase 4 step 3)
 

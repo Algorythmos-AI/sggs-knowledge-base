@@ -1,3 +1,12 @@
+---
+title: "Engineering handbook"
+description: "The operating manual for this repository: which handbook page to read before which kind of change."
+sidebar:
+  order: 0
+verified:
+  commit: f25ab970
+  date: "2026-09-25"
+---
 # Engineering handbook
 
 The operating manual for this repository. Start with the invariants: they are

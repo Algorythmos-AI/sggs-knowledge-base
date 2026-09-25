@@ -1,0 +1,32 @@
+[
+  {
+    "id": "step-01",
+    "title": "The problem",
+    "caption": "Seekers type a Gurmukhi word in Roman letters the way they hear it: waheguru, vaahiguroo, wahegurooh. A search that demanded one spelling would miss most of them. The fold makes every spelling of a word land on one key — and it must be exactly the same fold wherever it runs, or the query key will not match the index key and lines silently go missing.",
+    "link": "/search/the-roman-fold/"
+  },
+  {
+    "id": "step-02",
+    "title": "Five steps to one key",
+    "caption": "Lower-case each word. Substitute w→v, z→j, q→k, x→k. Reduce the digraphs (sh, chh, ch, kh, gh, jh, th, dh, bh, ph, rh) to their first letter and f to p. Merge the voicing pairs b→v, k→g, t→d, p→v. Turn a leading y into j and drop a medial y. Keep a leading vowel, drop every other vowel, collapse doubled letters. waheguru becomes vhgr; yashoda and jasodaa become jsd; gyan and giaan become gn.",
+    "link": "/search/the-roman-fold/"
+  },
+  {
+    "id": "step-03",
+    "title": "Home 1: the data repository, at build time",
+    "caption": "sggs-data’s pipeline applies roman_norm to every line’s transliteration and stores the result in the translit_norm column of the lines table. That column is what the fold tier and the verification engine search.",
+    "link": "/data/line-record/"
+  },
+  {
+    "id": "step-04",
+    "title": "Home 2: the platform, at query time",
+    "caption": "webapp/romannorm.py is the one copy in this repository: serve.py re-exports it and verify.py imports it (verify cannot import serve, which imports verify). Search tier 11 folds the query with it; the verification engine folds a Roman claim with it before scoring.",
+    "link": "/search/verification-engine/"
+  },
+  {
+    "id": "step-05",
+    "title": "Home 3, and the contract that binds all three",
+    "caption": "The iOS app carries a Swift port, RomanNorm.swift. tools/gen_golden_vectors.py drives the platform’s function and records 24,719 input and output pairs in contract/golden_roman_norm.ndjson; make contract fails here if the file drifts, the app pins the file by sha256 in vendor.lock.json and runs byte-parity tests, and the data repository’s copy is held to the same vectors. Three copies, one truth.",
+    "link": "/search/harnesses-and-golden-vectors/"
+  }
+]

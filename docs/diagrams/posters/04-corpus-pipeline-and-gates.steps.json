@@ -1,0 +1,86 @@
+[
+  {
+    "id": "step-01",
+    "title": "Pre-flight: the exact inputs",
+    "caption": "The rebuild refuses to start unless there is free disk, the interpreter has PyMuPDF, numpy and scipy, and the source PDF’s sha256 equals the attestation recorded with the committed corpus. The translation sources and the ShabadOS database must be byte-identical to their checksum lists. SOURCE_DATE_EPOCH is the commit time, so the same commit, PDF and toolchain give the same bytes.",
+    "link": "/data/process/runbooks/rebuild-db/"
+  },
+  {
+    "id": "step-02",
+    "title": "1/8 Extract the corpus",
+    "caption": "build_corpus.py reads every page: page_content strips borders and joins wrapped lines; fix_text applies the registered decoding steps 0 to 5 (print timestamps, halant order, font-glyph restorations, sihari order, the four editorial rules, stray characters); segment_units cuts the stream on the double danda; detect_header reads the metadata from headings; four post-passes fix page-break numerals, fold each heading run into its composition, let an invocation adopt its section and refine Bhatt attribution. Everything is written to a staging file.",
+    "link": "/data/pipeline/"
+  },
+  {
+    "id": "step-03",
+    "title": "2/8 Reconcile: character for character",
+    "caption": "reconcile.py rebuilds the PDF’s text stream through the same page_content and fix_text, joins the corpus rows in id order, drops the spaces on both sides, and requires the two streams to be identical. Nothing lost, nothing duplicated, nothing reordered — or the rebuild aborts and the committed corpus stays as it was.",
+    "link": "/data/architecture/scripture-integrity/"
+  },
+  {
+    "id": "step-04",
+    "title": "3/8 The golden suite",
+    "caption": "golden_test.py runs nine groups of canonical checks: the unit corrections on raw words, the page-to-Ang map, the Mool Mantar character for character, transliteration and first-letter spot checks, rahao detection, header detection (including verses that must not be headings), Angs 1429–1430, and raag-start pages where the title and the invocation must be separate, correctly placed units.",
+    "link": "/data/pipeline/"
+  },
+  {
+    "id": "step-05",
+    "title": "Install the corpus atomically",
+    "caption": "Only now does atomic_install.py replace corpus/sggs.jsonl: the new file is written beside the old one, fsynced and renamed in one step, so a failed or interrupted rebuild never leaves a truncated corpus behind.",
+    "link": "/data/pipeline/"
+  },
+  {
+    "id": "step-06",
+    "title": "4/8 Build the database",
+    "caption": "build_db.py creates the lines table (23 columns), its indexes, the raags, sections and authors aggregates, the FTS5 index over the six search columns and the meta table, in a temporary location.",
+    "link": "/data/line-record/"
+  },
+  {
+    "id": "step-07",
+    "title": "5/8 Enrichment",
+    "caption": "Concept tags, the English translations (ShabadOS and Dr. Sant Singh Khalsa, loaded as a separate table), the phonetic variant index and enrich_v2’s structural columns (stanza_index, pada_total, source_category) are added. None of these touches a text column.",
+    "link": "/data/line-record/"
+  },
+  {
+    "id": "step-08",
+    "title": "6/8 Auxiliary indexes",
+    "caption": "fts_en for English, fts_shabad for cross-line passages, fts_tri for typo-tolerant trigram search and canon_tokens. The trigram tokenizer is a search-tier contract: an SQLite without it must fail the build, never ship a database that silently lacks it.",
+    "link": "/architecture/search-waterfall/"
+  },
+  {
+    "id": "step-09",
+    "title": "7/8 The Insight Engine",
+    "caption": "Theme network, fingerprints, author and raag analytics, semantic neighbours (exact sparse tf-idf cosine), author resonance and the 22 Vaars, detected by their title headers. Additive tables only.",
+    "link": "/data/pipeline/"
+  },
+  {
+    "id": "step-10",
+    "title": "7b · 7c The knowledge layers",
+    "caption": "The raag-timing knowledge layer and the Nitnem bani registry (from the pinned ShabadOS database) add their own new tables; guard_banis checks the registry. Scripture stays untouched.",
+    "link": "/data/pipeline/"
+  },
+  {
+    "id": "step-11",
+    "title": "8/8 The integrity gate",
+    "caption": "db_integrity_gate.py refuses a database that lacks a declared table or breaks a counted invariant, before anything is installed.",
+    "link": "/data/pipeline/"
+  },
+  {
+    "id": "step-12",
+    "title": "Install, stamp, fingerprint",
+    "caption": "atomic_install.py replaces db/sggs.sqlite. MANIFEST.json records the database’s sha256 and DATASET_VERSION; sggs_integrity.py writes the per-table content fingerprint to audit/dataset-fingerprint.json. Both are committed together with the database.",
+    "link": "/data/dataset-pin/"
+  },
+  {
+    "id": "step-13",
+    "title": "Beside it: verify_regroup",
+    "caption": "When a rebuild changes how lines are grouped, verify_regroup.py compares the old and new databases and allows only comp_id and line_no to differ: every Gurmukhi byte must be identical.",
+    "link": "/data/architecture/scripture-integrity/"
+  },
+  {
+    "id": "step-14",
+    "title": "On every pull request",
+    "caption": "sggs-data’s CI re-proves the committed data: sggs_integrity against the fingerprint, data_quality against its reviewed baseline, verify_regroup’s invariants, guard_scripture (pre-existing tables byte-identical), guard_banis, the timing tests, and ledger_check — a scripture change or a new fix_text rule that has no entry in the editorial ledger fails the build.",
+    "link": "/data/editorial-ledger/"
+  }
+]

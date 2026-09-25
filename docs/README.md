@@ -1,3 +1,9 @@
+---
+title: "SGGS Knowledge Base — Engineering Wiki"
+description: "Start here: what the SGGS Knowledge Base is, how its three repositories fit together, and where to read next."
+sidebar:
+  order: 0
+---
 # SGGS Knowledge Base — Engineering Wiki
 
 An offline, sovereign, zero-dependency study application over the complete
@@ -9,18 +15,25 @@ standard-library server serves a prebuilt Astro site and a native iOS app.
 > edited, normalized, or corrected. Every change is proven against the source PDF.
 > See [Scripture integrity](https://github.com/Algorythmos-AI/sggs-data/blob/main/docs/architecture/scripture-integrity.md) (in sggs-data).
 
+<!-- sggs:status -->
+On the rendered wiki this line shows what production is serving right now — version, commit,
+build date, dataset build and the health checks — read live from `/api/health`.
+
 ## Start here
 | If you want to… | Read |
 |---|---|
+| Join the project (engineer, intern, student) | [Start here — your first week](onboarding/README.md) |
+| Follow a guided path, or do a hands-on exercise | [Learning paths](learning-paths/README.md) · [Exercises](exercises/README.md) · [Contributing to the wiki](contributing/README.md) |
+| Learn what the scripture is before you touch the data | [Scripture 101](scripture/README.md) — what it is, its structure, the script and its Unicode, the Answer Protocol |
 | Understand the whole system in 5 minutes | [Architecture overview](architecture/overview.md) |
-| Know how text fidelity is guaranteed | [Scripture integrity](https://github.com/Algorythmos-AI/sggs-data/blob/main/docs/architecture/scripture-integrity.md) (sggs-data) |
-| Understand the data model & `comp_id` | [Database schema](https://github.com/Algorythmos-AI/sggs-data/blob/main/docs/architecture/database-schema.md) (sggs-data) |
-| See how search works | [Search waterfall](architecture/search-waterfall.md) |
+| Know how text fidelity is guaranteed | [Scripture integrity](https://github.com/Algorythmos-AI/sggs-data/blob/main/docs/architecture/scripture-integrity.md) (sggs-data) · [The editorial ledger](data/editorial-ledger.md) |
+| Understand the data model & `comp_id` | [Anatomy of a line record](data/line-record.md) · [Database schema](https://github.com/Algorythmos-AI/sggs-data/blob/main/docs/architecture/database-schema.md) (sggs-data) |
+| See how search and verification work | [Search waterfall](architecture/search-waterfall.md) · [Search & verification](search/README.md) · [The API](api/README.md) |
 | Ship a change | [Branching](process/branching.md) · [Environments](process/environments.md) · [Release](process/release.md) |
-| Rebuild the database | In [sggs-data](https://github.com/Algorythmos-AI/sggs-data) ([runbook](https://github.com/Algorythmos-AI/sggs-data/blob/main/docs/process/runbooks/rebuild-db.md)); here, bump `dataset.lock.json` |
+| Rebuild the database, or take a new dataset | [Corpus pipeline and gates](data/pipeline.md) · [The dataset pin](data/dataset-pin.md) · the [rebuild runbook](https://github.com/Algorythmos-AI/sggs-data/blob/main/docs/process/runbooks/rebuild-db.md) (sggs-data) |
 | Know what CI checks and why | [CI gates](process/ci-gates.md) |
-| Take the iOS app through TestFlight to the App Store | [`Algorythmos-AI/gurbani-soul-ios`](https://github.com/Algorythmos-AI/gurbani-soul-ios) (`docs/ios/`) |
-| Understand a past decision | [ADRs](adr/) |
+| Understand the iOS app, or take it through TestFlight to the App Store | [The iOS app](ios/README.md) · [How the app takes a release](ios/how-the-app-takes-a-release.md) · the pinned [launch plan](https://github.com/Algorythmos-AI/gurbani-soul-ios/blob/main/docs/ios/testflight-launch-plan.md) |
+| Understand a past decision, a release, or a path in the repository | [Decisions](adr/README.md) · [Releases](reference/releases.md) · [Repository map](reference/repo-map.md) |
 
 ## Repository at a glance
 | Path | What |

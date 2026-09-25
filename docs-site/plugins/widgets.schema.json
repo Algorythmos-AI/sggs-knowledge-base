@@ -1,0 +1,88 @@
+{
+  "_comment": "Every interactive element the wiki may embed. Authors write `<!-- sggs:<name> attr=\"value\" -->` in plain Markdown (invisible on GitHub); remark-widgets turns it into `<sggs-<name>>` on the site and refuses unknown names or attributes. Each widget must be followed by a static fallback (tools/docs_check.py).",
+  "widgets": {
+    "status": {
+      "purpose": "Live production version, commit, build date and health checks from /api/health.",
+      "attrs": {}
+    },
+    "walkthrough": {
+      "purpose": "Inserted by remark-posters around an inlined poster; not written by authors (use ![alt](../diagrams/posters/NN-slug.svg)).",
+      "attrs": {}
+    },
+    "ang-explorer": {
+      "purpose": "Live Ang explorer: every line record of an Ang from /api/ang/{n}, verbatim, with the columns annotated; quick picks and header/rahao filters.",
+      "attrs": {
+        "ang": {
+          "description": "The Ang to open first (1–1430); default 1."
+        }
+      }
+    },
+    "code": {
+      "purpose": "A code excerpt read from the real source at build time (this repository at the documented commit, or a pinned sibling from sources.lock.json) — never a pasted copy. Resolved by plugins/remark-code-excerpt.mjs; no JavaScript.",
+      "attrs": {
+        "file": {
+          "description": "Repository-relative path of the file.",
+          "required": true
+        },
+        "repo": {
+          "description": "A source name from docs-site/sources.lock.json (e.g. sggs-data); omitted = this repository."
+        },
+        "symbol": {
+          "description": "A function/class/const name to excerpt (language-aware); the excerpt runs to the end of its block."
+        },
+        "lines": {
+          "description": "An explicit range, e.g. 23-60, instead of a symbol."
+        }
+      }
+    },
+    "waterfall": {
+      "purpose": "Search simulator: runs /api/search and lights the tier that answered on poster 05; results verbatim with their Ang.",
+      "attrs": {
+        "q": {
+          "description": "The query to run first."
+        }
+      }
+    },
+    "verify": {
+      "purpose": "Verification playground: runs /api/verify and lights the verdict rung on poster 07; the matched line verbatim with its Ang and the scoring details.",
+      "attrs": {}
+    },
+    "api-try": {
+      "purpose": "Try-it console for any route: a parameter form from contract/openapi.json (embedded at build by remark-api-try), the live response, headers, and copy-as-curl.",
+      "attrs": {
+        "route": {
+          "description": "The route to open first, e.g. /api/ang/{n}."
+        }
+      }
+    },
+    "quiz": {
+      "purpose": "Self-check questions: `<!-- sggs:quiz -->` followed by a ```quiz fence (Q: lines and answers, the right one marked ✓ — why). No backend; the fence reads as text on GitHub.",
+      "attrs": {}
+    },
+    "term": {
+      "purpose": "Inserted by remark-terms for [[Term]]; not written by authors as a comment. Hover-card with the glossary definition.",
+      "attrs": {}
+    },
+    "progress": {
+      "purpose": "Learning-path checklist: enhances the list that follows with checkboxes remembered in this browser only (localStorage, per path).",
+      "attrs": {
+        "path": {
+          "description": "A short key for the path, e.g. platform-engineer.",
+          "required": true
+        }
+      }
+    },
+    "repo-map": {
+      "purpose": "An expandable map of the three repositories with a one-line purpose per path, rendered at build from docs/reference/repo-map.json (remark-repo-map); no JavaScript.",
+      "attrs": {}
+    },
+    "adr-timeline": {
+      "purpose": "The ADRs on a timeline, rendered at build from docs/adr/*.md (remark-adr-timeline); no JavaScript.",
+      "attrs": {}
+    },
+    "releases": {
+      "purpose": "CHANGELOG.md as a release timeline, rendered at build (remark-releases), with a filter box on the site.",
+      "attrs": {}
+    }
+  }
+}

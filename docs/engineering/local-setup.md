@@ -1,6 +1,16 @@
+---
+title: "Local setup, repository map & API"
+description: "Running the platform on a developer machine: installing the pinned database, the repository map, the API quick reference and the iOS pair."
+sidebar:
+  order: 2
+verified:
+  commit: f25ab970
+  date: "2026-09-25"
+---
 # Local setup, repository map & API
 
-Running, rebuilding and navigating the project on a developer machine.
+Running, rebuilding and navigating the project on a developer machine. New to the project? The
+step-by-step version with troubleshooting is [Run it locally](../onboarding/run-it-locally.md).
 
 ## What this is
 
@@ -56,7 +66,7 @@ scripts/                   # ci / release / ops / data (fetch_dataset.py) toolin
 
 ## API quick reference (`webapp/serve.py`)
 
-`/api/search?q=&mode=&limit=&offset=` (modes: `auto`,`gurmukhi`,`roman`,`english`,`first`,`theme`) · `/api/ang/{1..1430}` · `/api/shabad/{comp_id}` · `/api/random` (complete Hukam unit) · `/api/verify?q=&ang=` · `/api/word?w=` · `/api/meta` · `/api/health` · `/api/themes/network` · `/api/analytics/{author,raag,progression,resonance,vaars,vaar,constellation}` · `/api/related` · `/api/line_concepts` · `/api/neighbors`.
+`/api/search?q=&mode=&limit=&offset=` (modes: `auto`,`gurmukhi`,`roman`,`english`,`first`,`theme`) · `/api/ang/{1..1430}` · `/api/shabad/{comp_id}` · `/api/random` (complete Hukam unit) · `/api/verify?q=&ang=` · `/api/word?w=` · `/api/meta` · `/api/health` · `/api/themes/network` · `/api/analytics/{author,raag,progression,resonance,vaars,vaar,constellation}` · `/api/related` · `/api/line_concepts` · `/api/neighbors` · `/api/timing/*` · `/api/forms` · `/api/banis` · `/api/bani/{key}`. The generated, complete table is [API routes](../api/routes.md).
 
 `/api/health` is the fast integrity check (asserts 60,658 lines, 1,430 distinct Angs, FTS works, verbatim Mool Mantar, ≥560 `ੴ`, live verify). Use it after any DB change.
 

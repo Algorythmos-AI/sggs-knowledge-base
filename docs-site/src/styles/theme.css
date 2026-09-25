@@ -1,0 +1,173 @@
+/* The wiki's theme: the Gurbani Soul palette (docs/brand/tokens.json) on Starlight's variables.
+   Light = warm paper; dark = warm ink. Gold (#FFBC0D) is fill-only and never text in light mode;
+   links and accents use accent / accentText, which pass 4.5:1 on paper. */
+
+@font-face {
+  font-family: "Source Serif 4";
+  src: url("/fonts/SourceSerif4-latin.woff2") format("woff2");
+  font-weight: 200 900;
+  font-style: normal;
+  font-display: swap;
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+2000-206F, U+2074, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+@font-face {
+  font-family: "Sant Lipi";
+  src: url("/fonts/SantLipi-VF.woff2") format("woff2");
+  font-weight: 300 700;
+  font-style: normal;
+  font-display: swap;
+  unicode-range: U+0A00-0A7F, U+200C-200D, U+25CC;
+}
+
+:root {
+  /* dark (Starlight's default leg) — warm ink */
+  --sl-color-accent-low: #3a2c05;
+  --sl-color-accent: #ffbc0d;
+  --sl-color-accent-high: #ffd45c;
+  --sl-color-white: #f3ecdd;
+  --sl-color-gray-1: #e6dcc8;
+  --sl-color-gray-2: #c9bfad;
+  --sl-color-gray-3: #9c9282;
+  --sl-color-gray-4: #635a4e;
+  --sl-color-gray-5: #3b332c;
+  --sl-color-gray-6: #251f1a;
+  --sl-color-black: #151210;
+  --sl-color-bg: #151210;
+  --sl-color-bg-nav: #1e1a17;
+  --sl-color-bg-sidebar: #171412;
+  --sl-color-bg-inline-code: #2a2420;
+  --sl-color-hairline: #3b332c;
+  --sl-color-hairline-light: #2f2823;
+
+  --sgs-ink: #f3ecdd;
+  --sgs-paper: #171412;
+  --sgs-paper-warm: #171412;
+  --sgs-card: #1e1a17;
+  --sgs-canvas: #151210;
+  --sgs-accent: #ffbc0d;
+  --sgs-accent-text: #ffbc0d;
+  --sgs-accent-fill: #ffbc0d;
+  --sgs-on-accent: #2b1a05;
+  --sgs-maroon: #e0658a;
+  --sgs-kraft: #b69a81;
+  --sgs-positive: #5bc98c;
+  --sgs-negative: #ff7a6b;
+  --sgs-info: #7fb0ff;
+  --sgs-special: #b79af2;
+
+  --sl-font: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --sl-font-system-mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  --sgs-font-serif: "Source Serif 4", Georgia, "Times New Roman", serif;
+  --sgs-font-gm: "Sant Lipi", "Mukta Mahee", "Gurmukhi MN", "Noto Sans Gurmukhi", "Raavi", sans-serif;
+  --sl-text-h1: 2.25rem;
+  --sl-text-h2: 1.625rem;
+  --sl-text-h3: 1.3rem;
+}
+
+:root[data-theme="light"] {
+  /* text and interactive colour is accentText (#8A6100, 5.4:1 on paper); the mid gold #A87900
+     is a tint/border colour only (tokens.json: 3:1 minimum), never text. */
+  --sl-color-accent-low: #fdf0c8;
+  --sl-color-accent: #8a6100;
+  --sl-color-accent-high: #5c4100;
+  --sl-color-text-accent: #8a6100;
+  --sl-color-white: #201a12;
+  --sl-color-gray-1: #2b241c;
+  --sl-color-gray-2: #4a4137;
+  --sl-color-gray-3: #6b6156;
+  --sl-color-gray-4: #9a9084;
+  --sl-color-gray-5: #d9d0c2;
+  --sl-color-gray-6: #efe8dc;
+  --sl-color-gray-7: #f7f2ea;
+  --sl-color-black: #fbf7f0;
+  --sl-color-bg: #fbf7f0;
+  --sl-color-bg-nav: #fdf6e3;
+  --sl-color-bg-sidebar: #f7f1e6;
+  --sl-color-bg-inline-code: #f2ebdd;
+  --sl-color-hairline: #e3dacb;
+  --sl-color-hairline-light: #ede6d8;
+
+  --sgs-ink: #201a12;
+  --sgs-paper: #fbf7f0;
+  --sgs-paper-warm: #fdf6e3;
+  --sgs-card: #ffffff;
+  --sgs-canvas: #f2f2f7;
+  --sgs-accent: #a87900;
+  --sgs-accent-text: #8a6100;
+  --sgs-accent-fill: #ffbc0d;
+  --sgs-on-accent: #2b1a05;
+  --sgs-maroon: #8a1538;
+  --sgs-kraft: #b69a81;
+  --sgs-positive: #27703f;
+  --sgs-negative: #b33528;
+  --sgs-info: #2a63c9;
+  --sgs-special: #6d3fbf;
+}
+
+/* headings in the brand serif; everything else stays in the system sans for reading speed */
+.sl-markdown-content :is(h1, h2, h3, h4),
+h1#_top,
+.site-title span,
+.hero h1 {
+  font-family: var(--sgs-font-serif);
+  letter-spacing: -0.01em;
+}
+.sl-markdown-content :is(h2, h3) { margin-top: 2.25em; }
+
+/* Gurmukhi is always Sant Lipi and always ink-coloured — never the accent */
+:lang(pa), .gm, [lang="pa"] {
+  font-family: var(--sgs-font-gm);
+  color: var(--sgs-ink);
+  letter-spacing: 0;
+  font-feature-settings: "kern";
+}
+
+/* tables read as reference material */
+.sl-markdown-content table { font-size: 0.95em; }
+.sl-markdown-content th { background: var(--sl-color-gray-6); }
+
+/* diagrams: a warm-paper card in both schemes so the one Mermaid theme always reads */
+.diagram {
+  margin: 1.5rem 0;
+  padding: 1rem;
+  border: 1px solid var(--sl-color-hairline);
+  border-radius: 12px;
+  background: var(--sgs-diagram-bg, #fdf6e3);
+}
+:root:not([data-theme="light"]) .diagram { --sgs-diagram-bg: #fbf7f0; }
+.diagram__scroll { overflow-x: auto; overscroll-behavior-x: contain; }
+.diagram__scroll:focus-visible { outline: 2px solid var(--sl-color-accent); outline-offset: 4px; }
+/* diagrams scale to fit the column; a wide one keeps its drawn size and scrolls sideways */
+.diagram__scroll svg { display: block; max-width: 100%; height: auto; margin: 0 auto; }
+.diagram--wide .diagram__scroll svg { max-width: none; }
+.diagram__hint { margin: 0.5rem 0 0; font-size: 0.8rem; color: #5a5148; text-align: center; }
+.diagram figcaption { margin-top: 0.75rem; font-size: 0.875rem; color: #5a5148; text-align: center; } /* ink on the cream card in both schemes (6:1) */
+
+/* the frontmatter table GitHub would show is not rendered here; nothing to do */
+
+/* generic "chips" used by widgets and badges */
+.chip {
+  display: inline-flex; align-items: center; gap: 0.4em;
+  padding: 0.2em 0.7em; border-radius: 999px;
+  border: 1px solid var(--sl-color-hairline);
+  background: var(--sl-color-bg-nav);
+  font-size: 0.85em; line-height: 1.6; white-space: nowrap;
+}
+.chip--ok { border-color: var(--sgs-positive); }
+.chip--bad { border-color: var(--sgs-negative); }
+.chip__dot { width: 0.6em; height: 0.6em; border-radius: 50%; background: var(--sgs-kraft); }
+.chip--ok .chip__dot { background: var(--sgs-positive); }
+.chip--bad .chip__dot { background: var(--sgs-negative); }
+
+/* verified-against-commit badge in the page footer */
+.verified { display: flex; flex-wrap: wrap; gap: 0.5rem 1rem; align-items: center; margin: 1rem 0 0; font-size: 0.85rem; color: var(--sl-color-gray-3); }
+.verified code { font-size: 0.85em; }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: 0.001ms !important; transition-duration: 0.001ms !important; }
+}
+
+/* Task lists (`- [ ]`): rendered as labelled glyphs by plugins/remark-task-lists.mjs. */
+.sl-markdown-content li.task-list-item { list-style: none; margin-inline-start: -1.25rem; }
+.sl-markdown-content .task-box { display: inline-block; width: 1.25rem; color: var(--sl-color-gray-2); }
+.sl-markdown-content .task-box[data-done="1"] { color: var(--sl-color-accent-high); }

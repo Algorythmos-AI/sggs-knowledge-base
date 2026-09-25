@@ -1,0 +1,203 @@
+{
+  "_comment": "Documentation of the sibling repositories, published on the wiki at a pinned commit (tools/fetch_sibling_docs.py; ADR-0012). A bump is a reviewed PR, exactly like dataset.lock.json. 'alias' is the URL prefix on the site; 'files' records the sha256 of every installed file. Non-Markdown files (pipeline sources) are pinned for build-time code excerpts (<!-- sggs:code -->) and are never published as pages.",
+  "sources": {
+    "sggs-data": {
+      "repository": "Algorythmos-AI/sggs-data",
+      "ref": "main",
+      "commit": "2e789adbc3bf9f6715559381af9539c89793e096",
+      "alias": "data",
+      "include": [
+        "docs/architecture/*.md",
+        "docs/adr/*.md",
+        "docs/process/runbooks/*.md",
+        "Answer-Protocol.md",
+        "pipeline/rebuild_all.sh",
+        "pipeline/build_corpus.py",
+        "pipeline/sggs_pipeline.py",
+        "pipeline/reconcile.py",
+        "pipeline/golden_test.py",
+        "pipeline/atomic_install.py",
+        "pipeline/ledger_check.py",
+        "pipeline/verify_regroup.py",
+        "pipeline/db_integrity_gate.py"
+      ],
+      "files": {
+        "Answer-Protocol.md": {
+          "blob": "02baabd0986b98c2f4331f0e4fc5f04bdb0173f1",
+          "sha256": "4b58f1ce00c6a8e2b748d4c12b8e9a8699ff7e5b0d96dcd2836dd8b5b6ccc2e1"
+        },
+        "docs/adr/0002-comp-id-keep-last-regroup.md": {
+          "blob": "8b04e6632b05ae2a8a8578fc855a6be9bf1a22f9",
+          "sha256": "ea0e985d141e5761949845958c2a712400d6756b791bccd66cc7dc94e83fedce"
+        },
+        "docs/adr/0003-integrity-proofs.md": {
+          "blob": "d8408182aa37a3ae9114921f2bb719569d73d047",
+          "sha256": "6b61314a4f8c4842833d93bc5602733a434680b01805e3053011eae70eb340ea"
+        },
+        "docs/adr/0004-backups-and-restore.md": {
+          "blob": "2162e1a2bc78d4686c80634d437291cfb04a5b08",
+          "sha256": "08da7ac7af962f85950bb1a5a32ac3b37056a80399479082bbdbd64a632a0929"
+        },
+        "docs/architecture/database-schema.md": {
+          "blob": "82d7dcb257b61d495195d602fc919bebf3140596",
+          "sha256": "ba714c1dcb7176ee491d6ea53b2a83bf0852a456d97c5fcd3e04606ef014c1bf"
+        },
+        "docs/architecture/scripture-integrity.md": {
+          "blob": "2e57bc3b538f0743bb19c05241865f568c7fc9d5",
+          "sha256": "1cea7602e14c320151c67f283347cf7e15f03d56edbf734a4f56385f5b4a5990"
+        },
+        "docs/process/runbooks/data-restore.md": {
+          "blob": "df63b73c4977d1be83cf077ed5f8ce23afa99c6e",
+          "sha256": "506cb45b4ec32c4434abc5029995be7962e786a7779631f2f05fb3a4efe7f93e"
+        },
+        "docs/process/runbooks/rebuild-db.md": {
+          "blob": "1a6c2a503546d8d5a9173127f8c3dd135a24930f",
+          "sha256": "36d3c877b2fc9f3dab7eff29b8183acd2bbe121ddc3476a73a4b9f1685924c78"
+        },
+        "pipeline/atomic_install.py": {
+          "blob": "0319924fae96b5f40e97e3d6df60d7b210a3bc5d",
+          "sha256": "95545cc554a244c718c37ab95949bd4260c7bd9bcacc44ff77b0e741fdda8aee"
+        },
+        "pipeline/build_corpus.py": {
+          "blob": "9d02a51820e22c58b8a114d02502e27f573b9beb",
+          "sha256": "b2d09f52d43ddccaf7da1d4669b0310875ad927b90fc21894a93c29541337596"
+        },
+        "pipeline/db_integrity_gate.py": {
+          "blob": "10aa02717edf551c9df3c57d7ca217577960ded8",
+          "sha256": "cace8e2bd5a8d431c5af542e6b7dbbabed28f002ed0c1ab9443f401081b23231"
+        },
+        "pipeline/golden_test.py": {
+          "blob": "5b9ee987a58f83a45a8d4c5cc3e8beba672d0a99",
+          "sha256": "842260f6c38d37c8815460d92c0cfe33275dfefc5b5d21cdb98b2017029faf9f"
+        },
+        "pipeline/ledger_check.py": {
+          "blob": "87192f8c9b00d22d1312c04dd57a6716c493c53f",
+          "sha256": "327548c596b43d00241766a0766729f9341511be4da080ba954cddf6f9bf84a9"
+        },
+        "pipeline/rebuild_all.sh": {
+          "blob": "f61510c5d25186306163a5018841d88dcd65d7a3",
+          "sha256": "1a70b02f966a3b199c19f3546cbf04af7a446d2bb263f74914ded4e36194fb3f"
+        },
+        "pipeline/reconcile.py": {
+          "blob": "c01ebecdf4e72749ffb2ced70cf951e8155dc35b",
+          "sha256": "fd0400a4f2932d5d7df896a6e683256206963d2ab656a3180907e945583975dd"
+        },
+        "pipeline/sggs_pipeline.py": {
+          "blob": "2a7ef025bd6c5d80da62873fb169f99fcf0f47b9",
+          "sha256": "57ebd2d82b17e5c0eecb3884655eacdc90e30449e56dd7f49b27e3755ade1b11"
+        },
+        "pipeline/verify_regroup.py": {
+          "blob": "808f545ee314616bc30fb91554a439f21995f12b",
+          "sha256": "a4089871e2f7a5d5fa35479651cf06a537d742f3b035dbc8fa1a88eade42dbaf"
+        }
+      }
+    },
+    "gurbani-soul-ios": {
+      "repository": "Algorythmos-AI/gurbani-soul-ios",
+      "ref": "main",
+      "commit": "0fbedb86975603f030342a4016433e46b5f88b90",
+      "alias": "ios",
+      "include": [
+        "docs/ios/*.md",
+        "docs/adr/*.md",
+        "docs/process/runbooks/*.md",
+        "docs/nitnem/spec.md",
+        "CONTRIBUTING.md",
+        "vendor.lock.json",
+        "ios/testflight-builds.json",
+        "scripts/vendor_sync.py",
+        "ios/tools/testflight_archive.sh",
+        "ios/tools/testflight_ledger.py",
+        "ios/tools/appstore_preflight.py",
+        "pipeline/check_release_license.sh",
+        "pipeline/check_ios_db_pair.py",
+        "ios/App/Sources/Data/LaunchIntegrity.swift",
+        "ios/App/Sources/Persistence/SavedLine.swift",
+        "ios/Packages/GurbaniSearchKit/Sources/GurbaniSearchKit/RomanNorm.swift",
+        "ios/Packages/GurbaniSearchKit/Sources/GurbaniSearchKit/BaniOutline.swift"
+      ],
+      "files": {
+        "CONTRIBUTING.md": {
+          "blob": "f12729d34b1093942968604eedd942cc26c7ecb8",
+          "sha256": "a3d593ca3442094680a17687b7745c524dc8ae3e384fc998b17f8e8c846af99f"
+        },
+        "docs/adr/0001-vendored-inputs-one-number.md": {
+          "blob": "c4185cc73e607f31e4524d46ce1fc1c7d7319b3d",
+          "sha256": "e5cd7a34e20f905a6b4ca95883f15bf541f08e274f4788a2b2e89d407619e875"
+        },
+        "docs/ios/app-store-listing.md": {
+          "blob": "70dd15af378d9a219c7f3d7bce0746e783820f06",
+          "sha256": "75519944ddba1553c79a35f6aae6b96dd2ba38c204588fe185481f1d2ec5ae3c"
+        },
+        "docs/ios/testflight-launch-plan.md": {
+          "blob": "6ffd2e3230b337a03ff9b1f0e4b1b8a526a36a47",
+          "sha256": "f77e1e820447995af565d3319e23835837d12eefe6d3c5cdafdd23efc49832b8"
+        },
+        "docs/ios/testflight-test-plan.md": {
+          "blob": "ccb8f984ae6ee36b7b753875164af0b56039c7d5",
+          "sha256": "49de3388f117668cd298418067ff77e65dd776597d4a1b98902c2c68c1bc2d28"
+        },
+        "docs/nitnem/spec.md": {
+          "blob": "1a6968f7cda5c3a4ca0408b49b80862042580caa",
+          "sha256": "fba2c9aefebcedf5336dd084ee26f49614422f45d0d9da96675f9629d1183244"
+        },
+        "docs/process/runbooks/app-store-submission.md": {
+          "blob": "2109024973a5312f1263e0c9dd7ec38d3fab684d",
+          "sha256": "0eb995d670418c54c0817c96481841683564dbfa2530c52f80a6d03d4974d1d8"
+        },
+        "docs/process/runbooks/ios-hotfix.md": {
+          "blob": "9128d8529e9f07f0c8f4a3d24a0cd87a1edf2274",
+          "sha256": "899cd8d00acaca7103d4350d77170e0e5e68c384be0f0609398f152375368297"
+        },
+        "ios/App/Sources/Data/LaunchIntegrity.swift": {
+          "blob": "d99fe8da185452cf7bb57754fd9d69fa3ea43241",
+          "sha256": "73803611a8ab3c7a89c080cbccc54d3240109268833aaec89fb07f5e277f317b"
+        },
+        "ios/App/Sources/Persistence/SavedLine.swift": {
+          "blob": "6e9e463fb05e86f63f1dd62795ae9955bcb7f962",
+          "sha256": "cd5bcdfdce211c2426500967295e906dfc9180aae42d213c863f51ed7577a52e"
+        },
+        "ios/Packages/GurbaniSearchKit/Sources/GurbaniSearchKit/BaniOutline.swift": {
+          "blob": "595e0a77d7584601cc2a9b01e410996110879f90",
+          "sha256": "9eeb9e81549139e994836c8730ad964c2ca3bf0591b8a4038dccea8feff43154"
+        },
+        "ios/Packages/GurbaniSearchKit/Sources/GurbaniSearchKit/RomanNorm.swift": {
+          "blob": "8a397a6351bea6373aad3f1bb3c118ade133f6b3",
+          "sha256": "cee1944242c0d2575f21967b3d05f31953e239c1b00c465f629f74f572699a28"
+        },
+        "ios/testflight-builds.json": {
+          "blob": "1eaa7b65f0d42b2c72f3ee1bcb851e443d3003f8",
+          "sha256": "294b2f7809784bdd4988a24ba4025c4b9603367411d7cbdeacedef7856035330"
+        },
+        "ios/tools/appstore_preflight.py": {
+          "blob": "9e6b160a4dfd962317f97542b5e36a712871b7c8",
+          "sha256": "593887a9ac3070280064ffa2b8ece920c6255c99f6b49d2b71d3d0c2c6d148de"
+        },
+        "ios/tools/testflight_archive.sh": {
+          "blob": "40a7afdf66d5120849eb613f01e041d88375ce44",
+          "sha256": "fe4d7dab4c46ac08912bc430aeef9f89671a32fd90ab8bef059c7ee58b4dbfb2"
+        },
+        "ios/tools/testflight_ledger.py": {
+          "blob": "7d1d6a6ed45ca73d8b7c9345b7b1b8a16b1281fc",
+          "sha256": "14e003c4c1165df41e0e3fa06a32e91c8f37e5fd69286c9273e4a699c913fb58"
+        },
+        "pipeline/check_ios_db_pair.py": {
+          "blob": "ac2054df9cab0166d73462b104c6c406fd43accc",
+          "sha256": "d551f472b9adf7b3fcff6d66c20887e761bda9ecb92a9764d3efeaf24a2bd4be"
+        },
+        "pipeline/check_release_license.sh": {
+          "blob": "c7e16449ddb9151bfdb866a6cfe83ed722b9fddc",
+          "sha256": "0dd02794a02689b32b9029314a76f66448d6874703e1e6ecf6752e5c065feec9"
+        },
+        "scripts/vendor_sync.py": {
+          "blob": "c9aa4a9a41feac57a190b394e93899b2adb4fa0c",
+          "sha256": "4fe3c48f1c7a5025a1862a73dc984b87983e5fcfe4bc6dd419f2cede27c73cf1"
+        },
+        "vendor.lock.json": {
+          "blob": "2570ed8fb202ff874f4cc3671efc21692d72ce56",
+          "sha256": "146ea2083702cbb415713480eb7a7f5170b2cadcd1f8cbe46096c54784727b39"
+        }
+      }
+    }
+  }
+}

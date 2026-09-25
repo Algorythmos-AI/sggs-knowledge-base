@@ -1,3 +1,12 @@
+---
+title: "Runbook: Rollback"
+description: "Rolling the web and the API back to the previous known-good deployment on Vercel and Render."
+sidebar:
+  order: 2
+verified:
+  commit: f25ab970
+  date: "2026-09-25"
+---
 # Runbook: Rollback
 
 ## Web (Vercel)

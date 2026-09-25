@@ -1,0 +1,16 @@
+# generated / installed — never committed
+node_modules/
+dist/
+.astro/
+.vercel/
+# sibling-repo docs installed by tools/fetch_sibling_docs.py at their pinned commits
+.sources/
+# copied at build from ../frontend/public/fonts and ../docs/diagrams (scripts/copy-assets.mjs)
+public/fonts/
+public/posters/
+# test output
+test-results/
+playwright-report/
+.lighthouseci/
+qa-shots/
+src/og/fonts/

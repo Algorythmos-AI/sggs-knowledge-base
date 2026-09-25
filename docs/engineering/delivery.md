@@ -1,3 +1,12 @@
+---
+title: "Delivery, versioning & release"
+description: "How work reaches users: the versioning convention, the integration to staging to production loop, delivery tooling and the iOS release."
+sidebar:
+  order: 3
+verified:
+  commit: f25ab970
+  date: "2026-09-25"
+---
 # Delivery, versioning & release
 
 How work reaches users. Read before shipping.
@@ -11,7 +20,7 @@ How work reaches users. Read before shipping.
 - **The dataset versions separately.** It is built and versioned in `Algorythmos-AI/sggs-data` (`DATASET_VERSION` there = the DB's `meta.version`, served as `db_version`). This repository serves exactly the object `dataset.lock.json` pins; a new dataset arrives as a reviewed lock bump, never with an unrelated app change.
 
 ## Delivery SOP — how work reaches users (read before shipping)
-**Environments:** `integration` = trunk → auto-deploys **staging** (`sggs-staging.vercel.app`, API `sggs-api-staging.onrender.com`, SSO-protected). `main` = **production** (web on the canonical domain **`gurbanisoul.com`**; `www` and the legacy `*.vercel.app` alias 308→apex; API `…onrender.com`). Both deploy **only** through CI (`deploy-staging.yml` / `deploy-production.yml`); the platforms' own git auto-deploys are OFF and Render auto-deploy is OFF. Never deploy by hand except a documented pipeline-outage hotfix.
+**Environments:** `integration` = trunk → auto-deploys **staging** (`sggs-staging.vercel.app`, SSO-protected; the API runs as Vercel functions inside it). `main` = **production** (web on the canonical domain **`gurbanisoul.com`**; `www` and the legacy `*.vercel.app` alias 308→apex; the API runs as Vercel functions inside it from the release after 1.3.9, with the Render single API `…onrender.com` kept deploying as the rollback target). Both deploy **only** through CI (`deploy-staging.yml` / `deploy-production.yml`); the platforms' own git auto-deploys are OFF and Render auto-deploy is OFF. Never deploy by hand except a documented pipeline-outage hotfix.
 
 **The loop (use the tooling below; do not improvise it):**
 1. **Ship**: branch from `integration` (`fix/…`, `feat/…`), run local gates, open a PR into `integration`, watch CI green. Corpus/DB change? It happens in [sggs-data](https://github.com/Algorythmos-AI/sggs-data) first (scripture proofs); here it arrives as a reviewed `dataset.lock.json` bump. You cannot merge — hand the user the exact `--admin` command (one line, no comments).

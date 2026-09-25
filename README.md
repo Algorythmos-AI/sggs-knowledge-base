@@ -9,7 +9,7 @@ One corpus powers two things people can use today:
 
 The website and the app keep separate names and identities on purpose — see [Brand & domains](docs/engineering/brand.md) and [`docs/website/README.md`](docs/website/README.md).
 
-![version](https://img.shields.io/badge/version-1.3.9-1a3a6b)
+![version](https://img.shields.io/badge/version-1.3.10-1a3a6b)
 ![python](https://img.shields.io/badge/python-3.8%2B%20·%20stdlib%20only-3776ab)
 ![dependencies](https://img.shields.io/badge/dependencies-none-2e7d32)
 ![corpus](https://img.shields.io/badge/corpus-60%2C658%20lines%20·%201%2C430%20Angs-9a3412)
@@ -80,16 +80,26 @@ The same offline app runs unchanged in the cloud. The browser only ever calls `/
                     ┌──────────────────┴───────────────────┐
    gurbanisoul.com (canonical apex, 200)      www + *.vercel.app (308 → apex)
                     │
-     ┌──────────────┴───────────────┐
+     ┌──────────────┴────────────────┐
      │  Vercel — Astro static site   │   /            → Gurbani Soul landing
      │  (frontend/ → webapp/static/) │   /search /reader … → Knowledge Base
-     └──────────────┬───────────────┘   /privacy /support  → policy (App Store URLs)
-                    │  /api/*  (rewrite)
-                    ▼
-     ┌───────────────────────────────┐
-     │  Render — stdlib Python API    │   webapp/serve.py, DB opened read-only
-     │  (webapp/Dockerfile)           │   /api/search /ang /shabad /verify /health …
-     └───────────────────────────────┘
+     └──────────────┬────────────────┘   /privacy /support  → policy (App Store URLs)
+                    │  /api/*  (rewrite — target set by gateway/routes.json)
+                    ├┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┐
+                    │  production                        ┆  rollback only
+                    ▼                                    ▼
+     ┌───────────────────────────────┐   ┌┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┐
+     │  Vercel — Python functions    │   ┆  Render — stdlib Python API  ┆
+     │  in the same web project      │   ┆  (webapp/Dockerfile)         ┆
+     │  (api/svc/all.py, generated   │   ┆  sggs-knowledge-base         ┆
+     │  by build_api_functions.py)   │   ┆  .onrender.com               ┆
+     └───────────────────────────────┘   ┆  redeployed every release    ┆
+                                         ┆  until retired               ┆
+                                         └┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┘
+
+     Both run the same stdlib webapp/serve.py on the pinned DB, opened read-only
+     (/api/search /ang /shabad /verify /health …). Rollback: set production.api_platform
+     to "render" in gateway/routes.json, regenerate and release (runbooks/services-production.md).
 
      Gurbani Soul (iOS) — no network at all: the DB ships inside the app.
 ```
@@ -97,7 +107,7 @@ The same offline app runs unchanged in the cloud. The browser only ever calls `/
 | | Local | Staging | Production |
 |---|---|---|---|
 | Web | `serve.py` :7777 | `sggs-staging.vercel.app` (SSO) | **`gurbanisoul.com`** |
-| API | same process | `sggs-api-staging.onrender.com` | `sggs-knowledge-base.onrender.com` |
+| API | same process | Vercel functions in the web project | Vercel functions in the web project (Render single API kept as rollback) |
 | Branch | working tree | `integration` | `main` |
 
 **Delivery is CI-gated end to end** — no hand deploys. Branch → PR into `integration` → merge auto-deploys **staging** → release PR `integration → main` (merge commit) runs the gated production deploy, verified by the running **commit**, then a `vX.Y.Z` tag. Full topology, DNS and email: [`docs/website/README.md`](docs/website/README.md). Process and runbooks:
@@ -282,7 +292,7 @@ The corpus and database are rebuilt from the source edition in [`Algorythmos-AI/
 
 ## Versioning
 
-Current release: **v1.3.9**. The running build is stamped in the footer and at `/api/health`. Every change — search-logic, data, or UI — is recorded in `CHANGELOG.md` with its before/after metrics and whether the DB changed. The dataset versions separately (sggs-data `data-vX.Y.Z`); `dataset.lock.json` names the exact database every build serves.
+Current release: **v1.3.10**. The running build is stamped in the footer and at `/api/health`. Every change — search-logic, data, or UI — is recorded in `CHANGELOG.md` with its before/after metrics and whether the DB changed. The dataset versions separately (sggs-data `data-vX.Y.Z`); `dataset.lock.json` names the exact database every build serves.
 
 ---
 
@@ -313,6 +323,8 @@ Honest about the edges:
 
 > ### ⚠️ Keep this repository PRIVATE
 > The **English translation layer** (Dr. Sant Singh Khalsa, via the ShabadOS open database) is licensed for **personal, non-commercial use with attribution** and **must not be redistributed publicly**. See **`NOTICE.md`** for the full terms and the source registry.
+>
+> **Current status:** the repository is temporarily public by owner decision D-002 (free Actions compute) and goes private again at the org's go-private step (`Algorythmos-AI/.github-private` → `docs/go-private.md`).
 
 The Gurmukhi scripture is the eternal Word and belongs to the Panth; it is reproduced here verbatim for study. Code in this repository is the author's own. Before making anything public, read `NOTICE.md`.
 

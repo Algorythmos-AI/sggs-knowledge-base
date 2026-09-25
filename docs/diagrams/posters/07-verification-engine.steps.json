@@ -1,0 +1,44 @@
+[
+  {
+    "id": "step-01",
+    "title": "Normalise and detect the script",
+    "caption": "The claim is trimmed and NFC-normalised. If it holds Gurmukhi, dandas, danda numerals and pipes are stripped to give the clean claim; if it is Roman, every word is folded with roman_norm — the same fold that built the translit_norm column — to give the claim key.",
+    "link": "/search/verification-engine/"
+  },
+  {
+    "id": "step-02",
+    "title": "Candidates, then a score for each",
+    "caption": "The FTS index is asked for an exact phrase first (the text column for Gurmukhi, translit_norm for Roman; the skeleton as a second chance), then for a looser OR of the tokens. Every candidate line is scored with difflib’s SequenceMatcher ratio against the claim; the best, the runner-up and the gap between them decide the rung.",
+    "link": "/search/verification-engine/"
+  },
+  {
+    "id": "step-03",
+    "title": "VERIFIED_EXACT",
+    "caption": "If the phrase query produced an exact hit — the cleaned bytes equal a canonical line — the verdict is VERIFIED_EXACT with confidence 1.0. Nothing fuzzy was needed.",
+    "link": "/search/verification-engine/"
+  },
+  {
+    "id": "step-04",
+    "title": "VERIFIED_PARTIAL",
+    "caption": "People quote half a line constantly. If the claim is at least three words or twelve characters and sits whole inside a candidate line (but is not the whole line), the verdict is VERIFIED_PARTIAL with confidence 0.95 and that line is returned.",
+    "link": "/search/verification-engine/"
+  },
+  {
+    "id": "step-05",
+    "title": "VERIFIED",
+    "caption": "A best ratio of at least 0.95 (_THRESH_EXACT) is VERIFIED; the confidence is the ratio itself. Small transliteration differences land here.",
+    "link": "/search/verification-engine/"
+  },
+  {
+    "id": "step-06",
+    "title": "PROBABLE or AMBIGUOUS",
+    "caption": "A best ratio of at least 0.85 (_THRESH_PROBABLE) is PROBABLE — unless the runner-up is itself at least 0.80 (_THRESH_AMBIG) and within 0.05 (_THRESH_GAP), in which case two lines fit and the verdict is AMBIGUOUS: the engine reports both scores and refuses to choose.",
+    "link": "/search/verification-engine/"
+  },
+  {
+    "id": "step-07",
+    "title": "NOT_FOUND, the Ang modifier, the answer",
+    "caption": "Below 0.85, or with no candidates at all, the verdict is NOT_FOUND with confidence 0.0 and no line is asserted — a percentage would only mislead. When the caller claimed an Ang and a line was matched, the verdict gains +ANG_MATCH or +ANG_MISMATCH(actual=N). The response carries the verdict, the confidence, the matched line id, the canonical Gurmukhi with its Ang, raag, author, comp_id and section, and distance_details. contract/golden_verify.ndjson pins these verdicts across every deploy and the iOS port.",
+    "link": "/search/harnesses-and-golden-vectors/"
+  }
+]

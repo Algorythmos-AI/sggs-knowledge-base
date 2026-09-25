@@ -1,0 +1,21 @@
+---
+// Starlight's <head> plus: the page's Open Graph card (prerendered by src/pages/og/[...id].png.ts for
+// every collection page; the generated API reference and the 404 page fall back to the landing card)
+// and the widget bundle (one script, loaded once per page, deferred by Astro).
+import Default from '@astrojs/starlight/components/Head.astro';
+import { getEntry } from 'astro:content';
+const { id } = Astro.locals.starlightRoute;
+const pageId = id || 'index';
+const ogId = (await getEntry('docs', pageId)) ? pageId : 'index';
+const site = (Astro.site ?? new URL('https://docs.gurbanisoul.com')).origin;
+const ogImage = `${site}/og/${ogId}.png`;
+---
+<Default><slot /></Default>
+<meta property="og:image" content={ogImage} />
+<meta property="og:image:width" content="1200" />
+<meta property="og:image:height" content="630" />
+<meta name="twitter:card" content="summary_large_image" />
+<meta name="twitter:image" content={ogImage} />
+<script>
+  import '../widgets/index.ts';
+</script>

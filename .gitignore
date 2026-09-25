@@ -53,3 +53,11 @@ Brand-files/
 qa/results/
 # Service database slices (make slices)
 build/
+
+# The wiki's generated trees (docs-site/.gitignore lists them too; kept here for tools that walk the repo)
+docs-site/.sources/
+docs-site/dist/
+docs-site/public/fonts/
+docs-site/public/posters/
+docs-site/qa-shots/
+docs-site/src/og/fonts/

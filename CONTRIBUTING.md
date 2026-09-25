@@ -1,5 +1,8 @@
 # Contributing
 
+New here? Start with the wiki's [onboarding track](docs/onboarding/README.md) and the
+[code of conduct](CODE_OF_CONDUCT.md).
+
 ## Prime directive
 This repository is a verbatim knowledge base of **Sri Guru Granth Sahib Ji**.
 **Never edit, normalize, or "correct" the Gurmukhi text.** If something looks
@@ -28,6 +31,14 @@ make ci            # run the same gates CI runs
 - Watch your PR to green with `make pr-checks PR=<n>`; delivery tooling is listed in
   [`docs/engineering/delivery.md`](docs/engineering/delivery.md#delivery-tooling).
 - Commits and PRs carry the author's name only (no tool attribution trailers).
+
+## Docs (the wiki)
+The engineering wiki is the Markdown under `docs/`, rendered at docs.gurbanisoul.com by `docs-site/`
+(ADR-0012). Write pages as before, with a `title`/`description` frontmatter block and relative links;
+`make docs-check` runs the gates (frontmatter, links, widgets, Mermaid palette, the scripture rule),
+`make docs` builds the site, `make docs-dev` serves it locally. Scripture is never typed into a
+page: it appears only as an API-fetched verbatim line with its Ang, or a cited blockquote the gate
+verifies against the pinned database.
 
 ## Toolchain (important)
 The server and tools are Python stdlib only; the web UI needs Node. CI pins Python to

@@ -1,0 +1,30 @@
+---
+// "Edit this page" points at the file's real home: this repository's docs/ on the trunk, or the
+// sibling repository at the commit the wiki pins. Plus a prefilled issue link for readers who
+// cannot open a PR. Starlight's default derives the URL from the site root, which is not where
+// these pages live.
+import { originOf, PLATFORM_REPO, PLATFORM_REF } from '../../plugins/paths.mjs';
+
+const { entry, id } = Astro.locals.starlightRoute;
+const filePath = (entry as any).filePath as string | undefined; // relative to docs-site/, e.g. ../docs/x.md
+let editUrl: string | undefined;
+let sourceLabel = 'this repository';
+if (filePath) {
+  const repoRel = filePath.startsWith('../') ? filePath.slice(3) : `docs-site/${filePath}`;
+  const o = originOf(repoRel);
+  if (o?.kind === 'sibling') {
+    editUrl = `https://github.com/${o.repository}/edit/${o.commit}/${o.rel}`;
+    sourceLabel = o.repository;
+  } else {
+    editUrl = `https://github.com/${PLATFORM_REPO}/edit/${PLATFORM_REF}/${repoRel}`;
+  }
+}
+const issueUrl = `https://github.com/${PLATFORM_REPO}/issues/new?title=${encodeURIComponent(`docs: ${id || 'index'}`)}&labels=documentation`;
+---
+{editUrl && <a href={editUrl} class="sl-flex edit-link"><span aria-hidden="true">✎</span> Edit this page <span class="sr-only">(in {sourceLabel})</span></a>}
+<a href={issueUrl} class="sl-flex edit-link">Report a problem with this page</a>
+
+<style>
+  .edit-link { gap: 0.5rem; align-items: center; text-decoration: none; color: var(--sl-color-gray-3); }
+  .edit-link:hover { color: var(--sl-color-white); }
+</style>

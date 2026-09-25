@@ -1,0 +1,43 @@
+name: docs-links
+# Weekly external-link check of the wiki (ADR-0003 roadmap line, delivered with the docs site).
+# Not a pull-request check: external sites go down for reasons of their own. A broken link opens
+# one issue (or comments on the open one); it never blocks a merge or a deploy.
+on:
+  schedule:
+    - cron: "23 5 * * 1"   # Monday 05:23 UTC
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  external-links:
+    name: external-links
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check every external link in docs/ and the sibling docs it publishes
+        id: lychee
+        uses: lycheeverse/lychee-action@v2
+        with:
+          args: >-
+            --config .lychee.toml
+            --no-progress
+            "docs/**/*.md" "CONTRIBUTING.md" "CODE_OF_CONDUCT.md"
+          output: lychee/out.md
+          fail: true
+      - name: open or update the incident issue
+        if: failure() && github.event_name == 'schedule'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          title="docs: broken external links (weekly check)"
+          body="$(printf '%s\n\n%s\n\nRun: %s/%s/actions/runs/%s\n' "The weekly link check found links that no longer resolve. Fix the page, or add a pattern to .lychee.toml if the target is deliberately unreachable." "$(head -c 6000 lychee/out.md)" "$GITHUB_SERVER_URL" "$GITHUB_REPOSITORY" "$GITHUB_RUN_ID")"
+          existing="$(gh issue list --repo "$GITHUB_REPOSITORY" --state open --search "in:title \"$title\"" --json number --jq '.[0].number // empty')"
+          if [ -n "$existing" ]; then
+            gh issue comment "$existing" --repo "$GITHUB_REPOSITORY" --body "$body"
+          else
+            gh issue create --repo "$GITHUB_REPOSITORY" --title "$title" --label documentation --body "$body"
+          fi

@@ -1,3 +1,9 @@
+---
+title: "ADR-0006: Banis are a registry of pointers over the verbatim corpus; non-SGGS text is a separate labelled layer"
+description: "Why Nitnem banis are a registry of pointers over the verbatim corpus, with non-SGGS text kept as a separate labelled layer."
+sidebar:
+  order: 6
+---
 # ADR-0006: Banis are a registry of pointers over the verbatim corpus; non-SGGS text is a separate labelled layer
 
 - Status: accepted (2026-09-18)
