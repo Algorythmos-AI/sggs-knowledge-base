@@ -9,7 +9,7 @@ verified:
 ---
 # The Roman fold
 
-Seekers spell a Gurmukhi word in Roman letters the way they hear it. The fold makes every spelling
+Seekers spell a [[Gurmukhi]] word in Roman letters the way they hear it. The fold makes every spelling
 of a word land on one key — and it must be exactly the same fold wherever it runs, or the key the
 query produces will not match the key in the index and lines go missing without any error.
 

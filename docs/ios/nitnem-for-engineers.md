@@ -9,7 +9,7 @@ verified:
 ---
 # Nitnem for engineers
 
-Nitnem — the daily banis — is where the app most needs the prime directive spelled out in data
+[[Nitnem]] — the daily banis — is where the app most needs the prime directive spelled out in data
 structures. The corpus has no notion of a bani, several banis are not in Sri Guru Granth Sahib Ji
 at all, and one differs by tradition. [ADR-0006](../adr/0006-bani-registry-over-verbatim-corpus.md)
 answers all three without ever copying or blending text.
@@ -43,7 +43,7 @@ flowchart LR
   on every build and by `guard_banis.py` in CI, so a corpus rebuild that shifts ids fails loudly.
 - **Proof.** The registry is additive (older databases report `banis_available: false` and the
   apps hide the feature); `contract/golden_banis.ndjson` pins every bani's line sequence and a
-  SHA-256 of its Gurmukhi, replayed by the app's `BaniParityTests`.
+  SHA-256 of its [[Gurmukhi]], replayed by the app's `BaniParityTests`.
 
 ## Numbering without guessing
 

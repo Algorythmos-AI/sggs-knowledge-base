@@ -40,9 +40,22 @@ test.describe('the wiki', () => {
     await page.goto('/architecture/overview/');
     const figures = page.locator('figure[data-diagram="mermaid"]');
     await expect(figures).toHaveCount(3);
-    await expect(figures.first().locator('svg')).toBeVisible();
-    await expect(figures.first().locator('svg title')).toHaveCount(1);
+    // drawn in both palettes; exactly one is shown (the light one in a light scheme), one title read out
+    await expect(figures.first().locator('.mmd--light svg')).toBeVisible();
+    await expect(figures.first().locator('.mmd--dark svg')).toBeHidden();
+    await expect(figures.first().locator('svg:visible title')).toHaveCount(1);
     await expect(page.locator('pre code.language-mermaid')).toHaveCount(0);
+  });
+
+  test('in the dark scheme the diagrams are drawn in the dark palette', async ({ page }) => {
+    await mockApi(page);
+    await page.addInitScript(() => { try { localStorage.setItem('starlight-theme', 'dark'); } catch { /* private window */ } });
+    await page.goto('/architecture/overview/');
+    const first = page.locator('figure[data-diagram="mermaid"]').first();
+    await expect(first.locator('.mmd--dark svg')).toBeVisible();
+    await expect(first.locator('.mmd--light svg')).toBeHidden();
+    const bg = await first.evaluate((f) => getComputedStyle(f).backgroundColor);
+    expect(bg).toBe('rgb(30, 26, 23)');   // the ink card, not a cream card on a dark page
   });
 
   test('relative links written for GitHub resolve on the site', async ({ page }) => {
@@ -90,7 +103,7 @@ test.describe('the wiki', () => {
       const errors: string[] = [];
       page.on('console', (m) => { if (m.type() === 'error') errors.push(m.text()); });
       page.on('pageerror', (e) => errors.push(e.message));
-      await mockApi(page);
+      await mockApi(page, { '/api/health': 'health.json', '/api/search': 'search-sat-nam.json' });   // the home page runs a first search
       await page.goto(path);
       const results = await new AxeBuilder({ page }).withTags(['wcag2a', 'wcag2aa', 'wcag21aa']).analyze();
       expect(results.violations, JSON.stringify(results.violations, null, 1)).toEqual([]);

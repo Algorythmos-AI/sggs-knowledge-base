@@ -40,7 +40,7 @@ Source: [`pipeline/check_release_license.sh`](https://github.com/Algorythmos-AI/
 The gate runs on the **exact artifact** the archive stages, never on the developer's pair. It
 fails a public build that bundles English without the attestation, a database whose
 `scripture_sha256` differs from the certified corpus value, an artifact that does not hash to its
-manifest, a missing golden suite, or — for an App Store channel — Nitnem's non-SGGS text without
+manifest, a missing golden suite, or — for an App Store channel — [[Nitnem]]'s non-SGGS text without
 the scholar's `REVIEWED: true`.
 
 ## The archive, gate by gate
@@ -87,7 +87,7 @@ Source: [`ios/App/Sources/Data/LaunchIntegrity.swift`](https://github.com/Algory
 ## Bookmarks: a separate store with its own ladder
 
 Saved verses live in a **separate, writable SwiftData store**, never in the read-only corpus
-database, and store the verbatim Gurmukhi (no saroop markup). The schema is versioned from the
+database, and store the verbatim [[Gurmukhi]] (no saroop markup). The schema is versioned from the
 first TestFlight build so a later change ships as a real migration stage:
 
 <!-- sggs:code file="ios/App/Sources/Persistence/SavedLine.swift" symbol="SavedLineSchemaV1" repo="gurbani-soul-ios" -->

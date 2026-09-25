@@ -18,7 +18,7 @@ verbatim, straight from the API.
 ## Explore real records
 
 <!-- sggs:ang-explorer ang="1" -->
-On the rendered wiki this is a live explorer: choose an Ang and every line record of it is listed,
+On the rendered wiki this is a live explorer: choose an [[Ang]] and every line record of it is listed,
 verbatim from `/api/ang/{n}`, with the placement and heading columns beside it and a definition of
 each column on hover. On GitHub, open [Ang 1 on the website](https://gurbanisoul.com/ang/1) instead.
 
@@ -80,8 +80,8 @@ compositions, flagged for scholarly review; a verse that merely contains a raag 
 
 ## What search reads
 
-`fts` is an FTS5 table with external content over `lines`, covering `text`, `translit`,
-`translit_norm`, `fl_g`, `fl_r` and `skeleton`, tokenised so Gurmukhi signs and `ੴ` stay inside
+`fts` is an [[FTS5]] table with external content over `lines`, covering `text`, `translit`,
+`translit_norm`, `fl_g`, `fl_r` and `skeleton`, tokenised so [[Gurmukhi]] signs and `ੴ` stay inside
 tokens. `do_search` ranks with `bm25` and column weights **10 · 5 · 4 · 3 · 3 · 1** in that order: a
 hit in the verbatim text outranks a transliteration hit, which outranks a first-letter or skeleton
 hit. Beside it, `fts_en` serves the English tier, `fts_shabad` cross-line passages and `fts_tri`

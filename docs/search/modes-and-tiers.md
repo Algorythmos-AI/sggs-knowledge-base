@@ -10,7 +10,7 @@ verified:
 # Modes and tiers
 
 `/api/search?q=&mode=&limit=&offset=` takes a query of at most 300 characters and a **mode**. The
-response always has `mode` (which tier answered), `results` (verbatim lines with their Ang, the
+response always has `mode` (which tier answered), `results` (verbatim lines with their [[Ang]], the
 transliteration and the English layer attached) and `related_themes`; a theme answer adds
 `concept`. `limit` is clamped to 0–200 and `offset` to 0–1,000,000, so a client can never dump the
 corpus by accident.

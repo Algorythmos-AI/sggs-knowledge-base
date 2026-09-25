@@ -10,7 +10,7 @@ sidebar:
 Welcome. This project is a study application over **Sri Guru Granth Sahib Ji**, the scripture and
 living Guru of the Sikhs: a verbatim corpus of its 1,430 Angs, a search and verification engine, a
 website ([gurbanisoul.com](https://gurbanisoul.com)) and an iOS app (Gurbani Soul). You do not need
-to know Sikh scripture, Gurmukhi or Punjabi to contribute. You do need to work with the text the way
+to know Sikh scripture, [[Gurmukhi]] or Punjabi to contribute. You do need to work with the text the way
 this project does: **verbatim, cited, never altered.**
 
 ## The one rule
@@ -48,7 +48,7 @@ flowchart LR
 ## Three sentences to remember
 
 1. **Scripture is data you never write.** It arrives from the pinned database and is shown with its
-   Ang: *Sri Guru Granth Sahib Ji · Ang N*. Explanation is always labelled as explanation.
+   [[Ang]]: *Sri Guru Granth Sahib Ji · Ang N*. Explanation is always labelled as explanation.
 2. **Everything is proven by CI.** You cannot merge; the owner merges after every check is green and
    the change has been seen on staging. A deploy is verified by the running *commit*, not a version.
 3. **Small, reviewed, reversible.** One change per pull request, a conventional-commit title, the
@@ -58,5 +58,5 @@ flowchart LR
 
 Almost everything outside the scripture itself: search quality, the verification engine, the API,
 the website, the iOS app, documentation, diagrams, tests, tooling and the wiki you are reading.
-The [learning paths](../README.md) (coming in this wiki) group these by role; until then, the
-[engineering handbook](../engineering/README.md) is the map.
+The [learning paths](../learning-paths/README.md) group these by role, each a checklist of pages
+and exercises in order; the [engineering handbook](../engineering/README.md) is the map of the rules.

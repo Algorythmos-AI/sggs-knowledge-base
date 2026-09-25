@@ -9,7 +9,7 @@ verified:
 ---
 # Search & verification
 
-Two engines, one rule: **the text is never guessed**. Search returns verbatim lines with their Ang
+Two engines, one rule: **the text is never guessed**. Search returns verbatim lines with their [[Ang]]
 or nothing; verification returns a verdict with the canonical line or `NOT_FOUND`. Both fold Roman
 input with the same function the database was built with, and both are pinned by golden vectors
 that every deploy and the iOS app replay.

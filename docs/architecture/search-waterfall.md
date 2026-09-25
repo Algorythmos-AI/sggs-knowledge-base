@@ -22,7 +22,7 @@ harnesses are in [Search & verification](../search/README.md).
 <!-- sggs:waterfall q="sat nam" -->
 On the rendered wiki this is a simulator: type a query, pick a mode, and the `mode` the API reports
 names the tier that answered while the matching step of the poster lights up; results are shown
-verbatim with their Ang. On GitHub, try the same queries on [gurbanisoul.com](https://gurbanisoul.com).
+verbatim with their [[Ang]]. On GitHub, try the same queries on [gurbanisoul.com](https://gurbanisoul.com).
 
 ## The tiers, in code order
 
@@ -47,7 +47,7 @@ build if the code gains a tier this page does not name.
 
 Then, whatever tier answered: `bm25` ranking with column weights **10 · 5 · 4 · 3 · 3 · 1** over
 `text`, `translit`, `translit_norm`, `fl_g`, `fl_r`, `skeleton`; translations attached to every
-result; related themes for a Gurmukhi query. Nothing is guessed: when every tier is exhausted the
+result; related themes for a [[Gurmukhi]] query. Nothing is guessed: when every tier is exhausted the
 list is empty and the last tier reached is the `mode`.
 
 <!-- sggs:code file="webapp/sggs/search.py" symbol="do_search" -->
