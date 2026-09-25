@@ -4,8 +4,8 @@ description: "The CI-gated deploy pipeline gate by gate, its one-time setup, sec
 sidebar:
   order: 1
 verified:
-  commit: efcd3edb
-  date: "2026-09-25"
+  commit: ce6ed1b1
+  date: "2026-09-26"
 ---
 # Runbook: Deploys (CI-gated)
 
@@ -119,6 +119,26 @@ wiki are proven by their own deploy workflows.
 ## Manual redeploy / hotfix
 - Redeploy current `main`: Actions → deploy-production → *Run workflow* (branch `main`).
 - Hotfix: `hotfix/*` → PR to `main` (squash) → the pipeline deploys it → merge `main` back into `integration`.
+
+## Launch-day App Store switch
+The site shows "Coming soon" until the Vercel project env `PUBLIC_APP_STORE_LIVE` is `1`
+(`frontend/src/site.ts` → `APP_STORE_LIVE`; the website README, "The App Store switch"). Launch day
+is therefore **not** a release — the version stays the one the App Store build carries:
+1. Apple approves the version; the owner presses **Release** in App Store Connect.
+2. Wait until `curl -s -o /dev/null -w '%{http_code}' https://apps.apple.com/app/id6812982384` prints
+   `200` (it can take hours). Never flip before: the site would link to a missing page.
+3. Vercel → project `sggs-knowledge-base` → Settings → Environment Variables → add
+   `PUBLIC_APP_STORE_LIVE` = `1` for **Production** only.
+4. `gh workflow run deploy-production --ref main --repo Algorythmos-AI/sggs-platform` — the same SHA
+   redeploys through every gate (see *Manual redeploy*); `deploy-web` pulls the new env, the
+   `@smoke` spec accepts the live state, and the tag step exits early ("already tagged").
+5. Prove it: `SGGS_EXPECT_APP_STORE=live PLAYWRIGHT_BASE_URL=https://gurbanisoul.com npx playwright
+   test e2e/landing.spec.ts --grep @smoke --project=desktop` (from `frontend/`), and
+   `/api/meta` still reports the release version.
+
+Rehearse on staging first: the same variable on **Preview** + `gh workflow run deploy-staging --ref
+integration`, then remove it and re-run. To take the site back to "Coming soon", delete the
+variable and redeploy the same way.
 
 ## Concurrency
 Runs share the `production` group without cancellation: a run in progress always finishes.

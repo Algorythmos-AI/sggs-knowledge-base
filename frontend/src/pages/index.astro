@@ -8,7 +8,7 @@ import DeviceFrame from '../components/DeviceFrame.astro';
 import PhotoBand from '../components/PhotoBand.astro';
 import Newsletter from '../components/Newsletter.astro';
 import JsonLd from '../components/JsonLd.astro';
-import { SITE_URL, APP_STORE_URL, SUPPORT_EMAIL } from '../site.ts';
+import { SITE_URL, APP_STORE_URL, APP_STORE_LIVE, SUPPORT_EMAIL } from '../site.ts';
 import { LEARN_SLUGS } from '../routes';
 import { LEARN_COVERS } from '../covers';
 import verse from '../generated/landing-verse.json';
@@ -62,7 +62,7 @@ const learnTop = (await getCollection('learn'))
 
 // --- Structured data (JSON-LD) — emitted via <JsonLd>, which escapes "<". ---
 // One Organization node, referenced by @id from WebSite and SoftwareApplication so search engines
-// resolve them to the same publisher. installUrl/url are added only once the App Store URL exists.
+// resolve them to the same publisher. installUrl/url are added only once the app is live (APP_STORE_LIVE).
 const orgId = `${SITE_URL}/#org`;
 const organization = {
   "@context": "https://schema.org",
@@ -97,7 +97,7 @@ const softwareApplication = {
   operatingSystem: "iOS",
   offers: { "@type": "Offer", price: "0", priceCurrency: "USD" },
   publisher: { "@id": orgId },
-  ...(APP_STORE_URL ? { url: APP_STORE_URL, installUrl: APP_STORE_URL } : {}),
+  ...(APP_STORE_LIVE ? { url: APP_STORE_URL, installUrl: APP_STORE_URL } : {}),
 };
 ---
 <Marketing title="Gurbani Soul — Sri Guru Granth Sahib Ji, verbatim & offline" description={desc} path="/">
@@ -136,7 +136,7 @@ const softwareApplication = {
           <h1>Gurbani Soul</h1>
           <p class="hero-lede">A quiet, exact companion to Sri Guru Granth Sahib Ji. Verbatim, cited by Ang, never invented.</p>
           <div class="hero-cta">
-            {APP_STORE_URL
+            {APP_STORE_LIVE
               ? <a class="pill" href={APP_STORE_URL} aria-label="Get Gurbani Soul on the App Store">Download on the App Store</a>
               : <span class="pill soon" data-app-store="coming-soon">Coming soon to the App Store</span>}
             <a class="hero-ghost" href="/search">Open the Knowledge Base</a>
@@ -413,8 +413,8 @@ const softwareApplication = {
       <h2 class="h-statement">Quiet, exact, always with you.</h2>
       <p class="body-lg dl-body">Sri Guru Granth Sahib Ji on your iPhone and iPad — the complete Granth, verbatim, fully offline.</p>
       <div class="cta-row dl-cta">
-        {APP_STORE_URL
-          ? <a class="btn" href={APP_STORE_URL}>Download on the App Store</a>
+        {APP_STORE_LIVE
+          ? <a class="btn" href={APP_STORE_URL} aria-label="Get Gurbani Soul on the App Store">Download on the App Store</a>
           : <span class="pill soon dl-soon" data-app-store="coming-soon-foot">Coming soon to the App Store</span>}
         <a class="btn ghost" href="/features" data-astro-prefetch>See every feature</a>
       </div>

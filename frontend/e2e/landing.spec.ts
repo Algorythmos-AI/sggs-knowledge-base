@@ -1,5 +1,33 @@
-import { test, expect } from '@playwright/test';
+import { test, expect, type Page } from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright';
+
+// The App Store CTAs have exactly two consistent states, switched at build time by
+// PUBLIC_APP_STORE_LIVE (frontend/src/site.ts → APP_STORE_LIVE). Before launch every CTA reads
+// "Coming soon" and the page carries no store link, no Smart App Banner and no JSON-LD installUrl;
+// once live, no coming-soon marker remains and every CTA links to the product page. A mixed page
+// fails either way. SGGS_EXPECT_APP_STORE=live|soon additionally pins which state must be served
+// (the launch-day check against production).
+const STORE_URL = 'https://apps.apple.com/app/id6812982384';
+async function expectAppStoreState(page: Page) {
+  const banner = page.locator('meta[name="apple-itunes-app"]');
+  const live = (await banner.count()) > 0;
+  const expected = process.env.SGGS_EXPECT_APP_STORE;
+  if (expected) expect(live ? 'live' : 'soon', 'App Store state served').toBe(expected);
+  const ld = (await page.locator('script[type="application/ld+json"]').allTextContents()).join('\n');
+  expect(ld.includes('installUrl'), 'JSON-LD installUrl present iff live').toBe(live);
+  if (live) {
+    await expect(banner).toHaveAttribute('content', 'app-id=6812982384');
+    await expect(page.locator('[data-app-store^="coming-soon"]')).toHaveCount(0);
+    await expect(page.locator(`.hero-cta a[href="${STORE_URL}"]`)).toHaveCount(1);
+    await expect(page.locator(`#download a[href="${STORE_URL}"]`)).toHaveCount(1);
+    await expect(page.locator(`header .mnav-right a[href="${STORE_URL}"]`)).toHaveCount(1);
+  } else {
+    // exactly one canonical "coming soon" element (the hero) plus the download band's own marker
+    await expect(page.locator('[data-app-store="coming-soon"]')).toHaveCount(1);
+    await expect(page.locator('[data-app-store="coming-soon-foot"]')).toHaveCount(1);
+    await expect(page.locator('a[href*="apps.apple.com"]')).toHaveCount(0);
+  }
+}
 
 // The gurbanisoul.com landing at / — App Review and first-time visitors see this first.
 test('landing renders the brand, the verse and the CTAs @smoke', async ({ page }) => {
@@ -11,8 +39,8 @@ test('landing renders the brand, the verse and the CTAs @smoke', async ({ page }
   await expect(page.locator('p.verse[lang="pa"]')).toContainText('ੴ ਸਤਿ ਨਾਮੁ');
   await expect(page.locator('.cite')).toContainText('Ang 1');
 
-  // exactly one canonical App-Store "coming soon" element (the hero)
-  await expect(page.locator('[data-app-store="coming-soon"]')).toHaveCount(1);
+  // the App Store CTAs are all "coming soon" or all live — never a mix
+  await expectAppStoreState(page);
 
   // hero image offers modern formats + a descriptive alt
   expect(await page.locator('picture source[type="image/avif"]').count()).toBeGreaterThanOrEqual(1);
@@ -33,9 +61,8 @@ test('landing renders the brand, the verse and the CTAs @smoke', async ({ page }
   for (const href of ['/watch', '/learn', '/privacy', '/search']) {
     expect(await page.locator(`main a[href="${href}"]`).count()).toBeGreaterThanOrEqual(1);
   }
-  // exactly one verse on Home; the download band uses its own coming-soon marker
+  // exactly one verse on Home (the download band's CTA is checked by expectAppStoreState)
   await expect(page.locator('p.verse')).toHaveCount(1);
-  await expect(page.locator('[data-app-store="coming-soon-foot"]')).toHaveCount(1);
 
   // the Raag Clock story is a static screenshot: no live clock (that lives on /watch)
   await expect(page.locator('#features, #clock')).toHaveCount(0);

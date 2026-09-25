@@ -238,14 +238,25 @@ class LandingPage(unittest.TestCase):
             self.assertIn('id="mnav"', html, f"{route}: marketing nav #mnav missing")
 
     def test_cta_state_is_consistent(self):
-        # Exactly one canonical App-Store "coming soon" element (the hero one), and the page never
-        # shows BOTH a real App-Store download link and a coming-soon chip of the same kind.
+        # The App Store CTAs are in exactly one of two states (site.ts APP_STORE_LIVE, a build-time
+        # switch): before launch, one canonical "coming soon" element (the hero) plus the download
+        # band's own marker, and no store link, Smart App Banner or JSON-LD installUrl; once live,
+        # no coming-soon marker at all and store links in the hero, the download band and the nav.
         self._skip_if_unbuilt()
-        soon = re.findall(r'data-app-store="coming-soon"', self.html)
-        self.assertEqual(len(soon), 1, f"expected exactly one [data-app-store=coming-soon], got {len(soon)}")
-        download_link = re.search(r'<a\b[^>]*aria-label="[^"]*App Store[^"]*"', self.html)
-        self.assertFalse(download_link and soon,
-                         "page shows both an App-Store download link and a coming-soon chip")
+        live = 'name="apple-itunes-app"' in self.html
+        soon = re.findall(r'data-app-store="coming-soon(?:-foot|-nav)?"', self.html)
+        store_links = re.findall(r'<a\b[^>]*href="https://apps\.apple\.com/app/id\d+"', self.html)
+        if live:
+            self.assertEqual(soon, [], "live App Store build still shows a coming-soon marker")
+            self.assertGreaterEqual(len(store_links), 3, "live build: expected store links in hero, band and nav")
+            self.assertIn("installUrl", self.html, "live build: JSON-LD SoftwareApplication lacks installUrl")
+        else:
+            self.assertEqual(soon.count('data-app-store="coming-soon"'), 1,
+                             "expected exactly one canonical [data-app-store=coming-soon] (the hero)")
+            self.assertEqual(soon.count('data-app-store="coming-soon-foot"'), 1,
+                             "expected the download band's [data-app-store=coming-soon-foot]")
+            self.assertEqual(store_links, [], "coming-soon build links to the App Store")
+            self.assertNotIn("installUrl", self.html, "coming-soon build carries a JSON-LD installUrl")
 
     def test_landing_raags_match_db(self):
         # The raags listed under each pahar must be exactly the DB's primary claims for that pahar,
@@ -746,6 +757,39 @@ class SmartBannerConsistency(unittest.TestCase):
         self.assertTrue(app_id and app_url, "one of APP_STORE_ID / APP_STORE_URL is set but not the other")
         self.assertTrue(app_url.endswith("/id" + app_id),
                         f"APP_STORE_URL {app_url!r} must end with /id{app_id}")
+
+
+class AppStoreSwitch(unittest.TestCase):
+    """Whether the site presents the app as live on the App Store is a build-time switch
+    (PUBLIC_APP_STORE_LIVE=1, set in the Vercel project env on launch day), never a source edit:
+    APP_STORE_LIVE is defined once, from the env, and every App Store render site keys on it —
+    never on APP_STORE_URL/APP_STORE_ID, which are committed Apple values and always truthy."""
+
+    DEFINITION = 'export const APP_STORE_LIVE = import.meta.env.PUBLIC_APP_STORE_LIVE === "1";'
+
+    def test_live_flag_comes_only_from_the_env(self):
+        site = (FRONTEND / "src" / "site.ts").read_text(encoding="utf-8")
+        assignments = re.findall(r"(?<![A-Z_])APP_STORE_LIVE\s*=(?!=)", site)
+        self.assertEqual(len(assignments), 1, "APP_STORE_LIVE must be defined exactly once")
+        self.assertIn(self.DEFINITION, site, "APP_STORE_LIVE must read PUBLIC_APP_STORE_LIVE and nothing else")
+        for f in [FRONTEND / "vercel.json", *FRONTEND.glob(".env*"), ROOT / "vercel.json"]:
+            if f.exists():
+                self.assertNotIn("PUBLIC_APP_STORE_LIVE", f.read_text(encoding="utf-8"),
+                                 f"{f.relative_to(ROOT)}: the switch belongs in the Vercel project env, not the repo")
+
+    def test_render_sites_key_on_the_live_flag(self):
+        truthy = re.compile(r"(\{\s*|\.\.\.\(\s*)APP_STORE_(URL|ID)\s*(\?|&&)")
+        users = []
+        for f in sorted((FRONTEND / "src").rglob("*")):
+            if f.suffix not in (".astro", ".ts", ".tsx", ".mdx") or f.name == "site.ts":
+                continue
+            text = f.read_text(encoding="utf-8")
+            rel = f.relative_to(ROOT)
+            self.assertIsNone(truthy.search(text), f"{rel}: gate App Store output on APP_STORE_LIVE, not on the URL/ID")
+            if re.search(r"\bAPP_STORE_(URL|ID)\b", text):
+                users.append(rel)
+                self.assertIn("APP_STORE_LIVE", text, f"{rel}: uses the App Store URL/ID without APP_STORE_LIVE")
+        self.assertGreaterEqual(len(users), 3, f"expected Seo, MarketingNav and the landing to use the switch, got {users}")
 
 
 class NoSecretsInFrontend(unittest.TestCase):
