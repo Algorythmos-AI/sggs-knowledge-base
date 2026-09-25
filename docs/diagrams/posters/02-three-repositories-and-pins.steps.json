@@ -1,0 +1,38 @@
+[
+  {
+    "id": "step-01",
+    "title": "The scripture is built and proven in sggs-data",
+    "caption": "The source PDF’s checksum is attested. The pipeline extracts the corpus, reconciles it character for character against the PDF, runs the golden checks, builds the SQLite database and passes the integrity gate. Any editorial repair is registered in a scholar-reviewed ledger. The database is published by commit, sha256 and size.",
+    "link": "/onboarding/how-the-repos-fit/"
+  },
+  {
+    "id": "step-02",
+    "title": "The platform pins it",
+    "caption": "dataset.lock.json names the sggs-data commit and the object’s sha256 and size. make dataset downloads exactly that object, verifies it and installs it atomically; make dataset-check proves sggs-data publishes it at that commit. A new dataset arrives only as a reviewed bump of this file.",
+    "link": "/adr/0008-dataset-by-pin/"
+  },
+  {
+    "id": "step-03",
+    "title": "The platform serves and publishes",
+    "caption": "webapp/serve.py and frontend/ serve the API and the website at one version. From the running code, tools/gen_golden_vectors.py records the golden contract: thousands of input/output vectors for the Roman fold, search, verification and the reader, plus the OpenAPI spec.",
+    "link": "/api/reference/"
+  },
+  {
+    "id": "step-04",
+    "title": "The app vendors and re-proves",
+    "caption": "gurbani-soul-ios pins the contract at a platform release tag (vendor.lock.json, sha256 per file) and the same dataset pin. It builds its own bundled database pair and runs byte-parity tests so its Swift port equals the Python source of truth. Its MARKETING_VERSION must equal the platform version it vendored.",
+    "link": "/adr/0007-three-repositories/"
+  },
+  {
+    "id": "step-05",
+    "title": "This wiki pins the sibling docs",
+    "caption": "docs-site/sources.lock.json records, per sibling repository, a commit and the sha256 of every published documentation file; the build installs them under /data/ and /ios/ with a canonical-source banner. A pin bump is a small reviewed pull request.",
+    "link": "/adr/0012-docs-site/"
+  },
+  {
+    "id": "step-06",
+    "title": "One version number",
+    "caption": "The web footer, /api/meta, /api/health, the iOS About screen and the App Store all report the same X.Y.Z, and every platform release is re-archived as iOS X.Y.Z (1) from the release tag. A release is complete only when web, API and the binary report the same number from the same commit.",
+    "link": "/adr/0004-unified-semver/"
+  }
+]

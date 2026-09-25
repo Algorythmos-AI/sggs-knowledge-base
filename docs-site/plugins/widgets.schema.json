@@ -4,6 +4,10 @@
     "status": {
       "purpose": "Live production version, commit, build date and health checks from /api/health.",
       "attrs": {}
+    },
+    "walkthrough": {
+      "purpose": "Inserted by remark-posters around an inlined poster; not written by authors (use ![alt](../diagrams/posters/NN-slug.svg)).",
+      "attrs": {}
     }
   }
 }

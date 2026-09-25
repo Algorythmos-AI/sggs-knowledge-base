@@ -52,6 +52,9 @@ jobs:
       - name: Plugin unit tests
         working-directory: docs-site
         run: npm run test:unit
+      - name: Every committed poster equals its spec
+        working-directory: docs-site
+        run: node scripts/build-posters.mjs --check
       - name: Build (links validated, every Mermaid fence rendered)
         working-directory: docs-site
         env: { PUBLIC_DOCS_COMMIT: "${{ github.sha }}" }

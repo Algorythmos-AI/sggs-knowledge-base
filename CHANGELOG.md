@@ -8,6 +8,12 @@ entries prior to v1.1.0 are the project's original prose style and are preserved
 No change to the scripture text, the corpus, the database bytes or any API response.
 
 ### Added
+- **Posters and walkthroughs.** Four large process posters (system landscape, three repositories
+  and pins, request lifecycle, bounded contexts and the gateway), generated from declarative specs
+  in `docs-site/posters/` by the poster kit into `docs/diagrams/posters/` (checked for drift in CI),
+  inlined on the site as step-through walkthroughs with a zoomable lightbox (`<sggs-walkthrough>`);
+  new pages: request lifecycle, bounded contexts and the gateway, three repositories and pins,
+  diagrams and posters (the spec and how to add one).
 - **Onboarding track.** `docs/onboarding/` — your first week, how the three repositories fit, run it
   locally, your first pull request, who to ask, and the reverence checklist for working with sacred
   text as an engineer; plus a `CODE_OF_CONDUCT.md`. First group in the wiki's sidebar.

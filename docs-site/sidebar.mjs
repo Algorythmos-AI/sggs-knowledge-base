@@ -14,6 +14,7 @@ export const SIDEBAR = [
     label: 'Reference',
     items: [
       { label: 'Glossary', slug: 'glossary' },
+      { label: 'Diagrams and posters', slug: 'diagrams' },
       { label: 'The website', slug: 'website' },
       { label: 'Reports & audit history', slug: 'reports' },
       { label: 'Risk register', slug: 'risk-register' },
