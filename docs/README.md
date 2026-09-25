@@ -23,6 +23,7 @@ build date, dataset build and the health checks — read live from `/api/health`
 | If you want to… | Read |
 |---|---|
 | Join the project (engineer, intern, student) | [Start here — your first week](onboarding/README.md) |
+| Learn what the scripture is before you touch the data | [Scripture 101](scripture/README.md) — what it is, its structure, the script and its Unicode, the Answer Protocol |
 | Understand the whole system in 5 minutes | [Architecture overview](architecture/overview.md) |
 | Know how text fidelity is guaranteed | [Scripture integrity](https://github.com/Algorythmos-AI/sggs-data/blob/main/docs/architecture/scripture-integrity.md) (sggs-data) · [The editorial ledger](data/editorial-ledger.md) |
 | Understand the data model & `comp_id` | [Anatomy of a line record](data/line-record.md) · [Database schema](https://github.com/Algorythmos-AI/sggs-data/blob/main/docs/architecture/database-schema.md) (sggs-data) |

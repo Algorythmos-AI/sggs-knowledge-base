@@ -59,6 +59,21 @@ ATTR_RE = re.compile(r"([a-z][a-z0-9-]*)=\"([^\"<>]*)\"")
 LINK_RE = re.compile(r"(?<!\!)\[[^\]]*\]\(([^)\s]+)(?:\s+\"[^\"]*\")?\)")
 DEF_RE = re.compile(r"^\[[^\]]+\]:\s*(\S+)", re.M)
 HEX_RE = re.compile(r"#[0-9a-fA-F]{3}(?:[0-9a-fA-F]{3})?\b")
+TERM_RE = re.compile(r"\[\[([^\[\]\n]{1,60})\]\]")
+
+
+_GLOSSARY: set[str] | None = None
+
+
+def glossary_terms() -> set[str]:
+    """Every term (and alias, `A / B`) of docs/glossary.md's tables — what `[[Term]]` may name."""
+    global _GLOSSARY
+    if _GLOSSARY is None:
+        names: set[str] = set()
+        for m in re.finditer(r"^\|\s*\*\*(.+?)\*\*\s*\|", (DOCS / "glossary.md").read_text(encoding="utf-8"), re.M):
+            names.update(x.strip() for x in m.group(1).split(" / "))
+        _GLOSSARY = names
+    return _GLOSSARY
 
 
 @dataclass
@@ -261,6 +276,10 @@ def check_page(path: Path, tokens_hex: set[str], widgets: dict, db: sqlite3.Conn
         w = WIDGET_RE.match(line.strip())
         if w:
             P.extend(check_widget(path, n, w, widgets, lines))
+        for t in TERM_RE.finditer(strip_code_spans(line)):
+            name = t.group(1).split("|", 1)[0].strip()
+            if name not in glossary_terms():
+                P.append(Problem(path, n, f"[[{name}]] is not a glossary term (docs/glossary.md)"))
         # scripture: collect blockquote runs
         if line.startswith(">"):
             quote_block.append((n, line[1:].strip()))

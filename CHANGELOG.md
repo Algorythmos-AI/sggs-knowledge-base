@@ -8,6 +8,15 @@ entries prior to v1.1.0 are the project's original prose style and are preserved
 No change to the scripture text, the corpus, the database bytes or any API response.
 
 ### Added
+- **Scripture 101 and the glossary.** `docs/scripture/` — what Sri Guru Granth Sahib Ji is, the
+  structure (poster 13, every number read from the pinned database), Vaars, saloks and pauris, the
+  Bhatts and the Swaiyye, Gurmukhi and Unicode, transliteration and the fold, the Answer Protocol
+  for engineers — each marked *explanation, not scripture; scholar review pending (G3)*, with the two
+  cited lines verified against the database by the docs gate (the docs job now installs the pinned
+  database for that). The glossary grows from 13 to 87 terms in four groups; `[[Term]]` in any page
+  becomes a hover-card with the definition and a link (`remark-terms`, `<sggs-term>`), and an unknown
+  term fails the build. Self-check quizzes (`<!-- sggs:quiz -->` + a ```quiz fence, `<sggs-quiz>`)
+  on three pages.
 - **The iOS app on the wiki.** `docs/ios/` — the iOS app (inputs by pin, promises), how the app
   takes a release (vendor sync, one number, the ledger, `check_release_complete.py`), contract and
   parity (the Swift suites; the Swift fold read from the source), database pair and launch

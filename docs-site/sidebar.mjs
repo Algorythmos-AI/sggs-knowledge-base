@@ -5,6 +5,7 @@ const dir = (label, directory, extra = {}) => ({ label, items: [{ autogenerate: 
 
 export const SIDEBAR = [
   dir('Start here', 'onboarding'),
+  dir('Scripture 101', 'scripture'),
   dir('Architecture', 'architecture'),
   {
     label: 'Data & pipeline',

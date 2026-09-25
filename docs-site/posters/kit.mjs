@@ -66,6 +66,7 @@ function drawNode(n) {
   const k = KINDS[n.kind ?? 'box'];
   for (const ln of n.lines ?? [n.label]) {
     const m = typeof ln === 'object' ? ln : { text: ln };
+    if (m.text === '') continue;
     const size = m.size ?? n.size ?? 18;
     if (size < 16) PROBLEMS.push(`${n.id}: text size ${size} is under the 16px minimum ("${m.text}")`);
     const over = textWidth(m.text, size, m.mono || n.mono) - (n.w - 20);
@@ -74,12 +75,13 @@ function drawNode(n) {
   const dash = k.dash ? ` stroke-dasharray="${k.dash}"` : '';
   const title = n.title ? `<title>${esc(n.title)}</title>` : '';
   const [cx, cy] = center(n);
-  const lines = n.lines ?? [n.label];
+  // a node may carry no text (a scaled bar segment whose name is its <title>)
+  const lines = (n.lines ?? [n.label]).filter((ln) => (typeof ln === 'object' ? ln.text : ln) !== '');
   let shape = `<rect x="${n.x}" y="${n.y}" width="${n.w}" height="${n.h}" rx="${k.rx}" fill="${k.fill}" stroke="${k.stroke}" stroke-width="${k.sw}"${dash}/>`;
   if (n.kind === 'store') {
     shape += `<ellipse cx="${cx}" cy="${n.y + 10}" rx="${n.w / 2}" ry="10" fill="${k.fill}" stroke="${k.stroke}" stroke-width="${k.sw}"/>`;
   }
-  const body = textBlock(cx, cy + (n.kind === 'store' ? 6 : 0), lines, { size: n.size ?? 18, fill: k.text, weight: n.weight ?? 500, mono: n.mono });
+  const body = lines.length ? textBlock(cx, cy + (n.kind === 'store' ? 6 : 0), lines, { size: n.size ?? 18, fill: k.text, weight: n.weight ?? 500, mono: n.mono }) : '';
   // no links inside the SVG: it is role="img" and must not contain interactive content (axe: nested-interactive)
   if (n.href) PROBLEMS.push(`${n.id}: nodes cannot carry links (the poster is role="img"); put the link in the step's caption`);
   return title + shape + body;

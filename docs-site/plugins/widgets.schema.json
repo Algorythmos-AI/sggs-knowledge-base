@@ -54,6 +54,14 @@
           "description": "The route to open first, e.g. /api/ang/{n}."
         }
       }
+    },
+    "quiz": {
+      "purpose": "Self-check questions: `<!-- sggs:quiz -->` followed by a ```quiz fence (Q: lines and answers, the right one marked ✓ — why). No backend; the fence reads as text on GitHub.",
+      "attrs": {}
+    },
+    "term": {
+      "purpose": "Inserted by remark-terms for [[Term]]; not written by authors as a comment. Hover-card with the glossary definition.",
+      "attrs": {}
     }
   }
 }

@@ -181,3 +181,9 @@ class Drift(unittest.TestCase):
 
     def test_repo_has_no_drift(self):
         self.assertEqual([str(p) for p in dc.check_drift()], [])
+
+
+class Terms(Fixture):
+    def test_known_terms_pass_and_unknown_fail(self):
+        self.assertEqual(self.errors(FM + "An [[Ang]] and a [[Salok|salok]] are fine; `[[not-a-term]]` in code is ignored.\n"), [])
+        self.assertTrue(any("not a glossary term" in e for e in self.errors(FM + "A [[Frobnicator]] here.\n")))

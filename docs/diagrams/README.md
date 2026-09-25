@@ -29,8 +29,9 @@ plain image on GitHub.
 | 10 | The CI gates map | every workflow and job on a pull request, what the rulesets require, the deploy chains, the schedules | [CI gates](../process/ci-gates.md) |
 | 11 | The delivery pipeline | branch → PR → staging → release PR → production → tag → the app follows; rollback; the watchers | [Branching & delivery flow](../process/branching.md) |
 | 12 | iOS release and integrity | vendor sync, one number, the archive's gates, the ledger, the launch-integrity and bookmarks ladders | [Database pair and launch integrity](../ios/db-pair-and-launch-integrity.md) |
+| 13 | The structure of the Granth | Angs 1–1430 as one bar: the opening, the thirty-one raags, the closing sections, the Vaars, the voices — every number from the pinned database | [The structure](../scripture/structure.md) |
 
-The structure of the Granth (13) follows with Scripture 101.
+All thirteen posters of the plan are in place.
 
 ## How a poster is made
 
@@ -73,7 +74,7 @@ Enforced by `tools/docs_check.py` on every pull request:
   footer `Source of truth: <files>` naming files that exist.
 - Every step is a `<g id="step-NN" data-step>` group, and the `.steps.json` sidecar lists the
   same ids with a title, a caption and a link.
-- **No scripture.** Posters carry technical tokens only.
+- **No scripture.** Posters carry technical tokens only (a raag's name, a section's name — never a verse).
 - Every poster is referenced by at least one page, with alt text.
 
 ## Adding a poster
