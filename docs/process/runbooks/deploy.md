@@ -4,7 +4,7 @@ description: "The CI-gated deploy pipeline gate by gate, its one-time setup, sec
 sidebar:
   order: 1
 verified:
-  commit: f25ab970
+  commit: efcd3edb
   date: "2026-09-25"
 ---
 # Runbook: Deploys (CI-gated)
@@ -53,17 +53,23 @@ flowchart LR
 ## The wiki (docs.gurbanisoul.com) — one-time setup (owner)
 The wiki (`docs-site/`, ADR-0012) deploys through `deploy-docs.yml` with the same posture: the
 Vercel project's git deployments are off; CI builds, deploys, smokes by commit, promotes, rolls back.
-1. **Vercel** → New Project **`sggs-docs`** from this repository, Root Directory **`docs-site`**,
-   Framework Astro. Settings → Git: disable automatic deployments (the committed
-   `docs-site/vercel.json` also sets `git.deploymentEnabled` false for `main` and `integration`).
-2. Domains: add **`docs.gurbanisoul.com`**. Cloudflare (zone *Company-Domains*):
-   `CNAME docs → cname.vercel-dns.com`, **DNS-only** (grey cloud), like the apex and `www`.
-3. Claim the staging alias once: `vercel alias set <any deployment of sggs-docs> sggs-docs-staging.vercel.app`
-   (CI re-points it on every push to `integration`).
+1. **Vercel** — create the project with **no Git connection** (so the platform can never deploy
+   it by itself): `vercel project add sggs-docs --scope skalaliyas-projects`, then Settings → Build
+   and Deployment → Framework Preset **Astro**. Leave **Root Directory empty** (`.`): the workflow
+   runs `vercel pull/build/deploy` from inside `docs-site/`, so a Root Directory of `docs-site`
+   would resolve to `docs-site/docs-site` and fail. (The web project differs: its Root Directory
+   is `frontend` and its workflow runs from the repository root.)
+2. Domains: add **`docs.gurbanisoul.com`** (Production). Cloudflare (zone *Company-Domains*):
+   `CNAME docs →` the target Vercel recommends for the domain (Domains → *View DNS configuration*;
+   `cname.vercel-dns.com` also works), **DNS-only** (grey cloud), like the apex and `www`.
+3. The staging alias `sggs-docs-staging.vercel.app` is claimed by the first staging run
+   (`vercel alias set` in `deploy-docs.yml`), and re-pointed on every push to `integration`.
 4. GitHub → Settings → Environments → **`staging`** and **`production`**: reuse `VERCEL_TOKEN` and
    `VERCEL_ORG_ID`; add **`VERCEL_DOCS_PROJECT_ID`** (the new project's id) and
    **`VERCEL_DOCS_BYPASS_SECRET`** (Deployment Protection → Protection Bypass for Automation; it is
-   per project, so the web project's secret does not work here). Never paste a value anywhere else.
+   per project, so the web project's secret does not work here — Vercel Authentication protects
+   every URL except the custom domain, so the staging alias and the unaliased production smoke
+   both need it). Never paste a value anywhere else.
 5. Until the domain resolves, `deploy-production`'s public smoke fails after promotion and the job
    rolls back; the staging job proves the build in the meantime.
 

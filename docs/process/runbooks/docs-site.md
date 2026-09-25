@@ -4,7 +4,7 @@ description: "Launching docs.gurbanisoul.com and keeping it honest: one-time set
 sidebar:
   order: 6
 verified:
-  commit: 55dc5ed4
+  commit: efcd3edb
   date: "2026-09-25"
 ---
 # Runbook: the docs site (launch and after)
@@ -53,7 +53,7 @@ Anything wrong is a normal pull request into `integration`; the site redeploys t
 
 ## 3. Production
 
-1. Cloudflare: `CNAME docs → cname.vercel-dns.com`, DNS-only. Vercel: the domain is attached to
+1. Cloudflare: `CNAME docs →` Vercel's recommended target, DNS-only. Vercel: the domain is attached to
    `sggs-docs` and shows *Valid Configuration*.
 2. Merge the next release PR `integration → main` (a merge commit, as always). `deploy-docs`'s
    `deploy-production` job builds, deploys unaliased, smokes by commit, promotes to
