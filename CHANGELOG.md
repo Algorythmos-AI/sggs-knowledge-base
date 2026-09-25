@@ -3,9 +3,11 @@
 The format below (newest first) follows [Keep a Changelog](https://keepachangelog.com);
 entries prior to v1.1.0 are the project's original prose style and are preserved verbatim.
 
-## [Unreleased]
+## [1.3.10] — 2026-09-25 — the API on Vercel functions in production, the engineering wiki
 
-No change to the scripture text, the corpus, the database bytes or any API response.
+No change to the scripture text, the corpus or the database bytes (`cb6775ff…`). Every legacy
+`/api/*` response is byte-identical: the golden contract pins it, and production now replays it
+against the new deployment before that deployment goes live.
 
 ### Added
 - **The wiki launches.** An Open Graph card for every page, prerendered at build in the wiki's
