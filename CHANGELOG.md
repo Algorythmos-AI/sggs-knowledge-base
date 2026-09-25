@@ -17,6 +17,10 @@ entries prior to v1.1.0 are the project's original prose style and are preserved
 - **The docs smoke fails on any redirect** (the `trailingSlash` loop would have passed a lenient
   check), checks `/api/meta`, and finds its poster on the architecture page instead of skipping it.
 - Two wiki links that 404ed: the reader is `/reader?ang=N`, and the website has no verify page.
+- **`apply_rulesets.sh` could weaken branch protection:** it PUT each committed ruleset as-is, which
+  resets keys the file does not mention (both trunks have `require_extra_approval_for_unattributed_changes`
+  on). It now merges the file into the live ruleset (`scripts/gh/merge_ruleset.py`, tested) and
+  takes `--dry-run`.
 
 ### Changed
 - **The wiki's CSP allows inline scripts by sha256 only** (13 hashes; no `'unsafe-inline'`),
@@ -24,7 +28,8 @@ entries prior to v1.1.0 are the project's original prose style and are preserved
   page's e2e and axe run under the real policy. ADR-0012 amended.
 - **The `docs` job equals `make docs`:** types, `check:render`, `check:links` and `check:csp` join
   the build checks; it also runs every night on `integration`, opening one issue while red. The
-  `main` ruleset requires `docs`. `docs-links` also checks the sibling docs and pins its actions by
+  `main` ruleset requires `docs` to merge; the product's `deploy-production` does not wait on it
+  (`wait_for_checks.py --exclude docs`), so a wiki failure never blocks a product release. `docs-links` also checks the sibling docs and pins its actions by
   SHA. `docs_check` gates the poster legend and the theme's brand colours against the tokens.
 - `docs-site/scripts/visual-qa.mjs` proxies `/api` to production (`https://gurbanisoul.com`, was
   the Render rollback origin) and accepts a Vercel bypass for the staging alias.

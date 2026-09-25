@@ -24,6 +24,7 @@ and `deploy-staging` fails clearly at preflight.
 Then apply the ruleset that makes the docs job required:
 
 ```bash
+REPO=Algorythmos-AI/sggs-platform bash scripts/gh/apply_rulesets.sh --dry-run   # prints the change
 REPO=Algorythmos-AI/sggs-platform bash scripts/gh/apply_rulesets.sh
 ```
 

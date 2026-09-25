@@ -42,7 +42,9 @@ jobs:
       - name: Wait for every required check on this exact commit
         env:
           GH_TOKEN: ${{ github.token }}
-        run: python3 scripts/ci/wait_for_checks.py "$GITHUB_SHA" --extra playwright
+        # `docs` (the wiki's job) is required to MERGE into main, but the product never waits on it:
+        # deploy-docs ships the wiki on its own, and its main-guard reports a red docs job
+        run: python3 scripts/ci/wait_for_checks.py "$GITHUB_SHA" --extra playwright --exclude docs
 
   preflight:
     name: preflight
