@@ -72,3 +72,43 @@ sggs-ang-explorer { display: block; margin: 1.25rem 0 2rem; }
 /* ── build-time code excerpts and pinned-copy banner ──────────────────────────────────── */
 .excerpt__source { margin: -0.5rem 0 1.5rem; font-size: 0.8rem; color: var(--sl-color-gray-3); }
 .canonical { margin: 0 0 1.5rem; padding: 0.7rem 1rem; border: 1px solid var(--sl-color-hairline); border-left: 3px solid var(--sl-color-accent); border-radius: 0 8px 8px 0; background: var(--sl-color-bg-nav); font-size: 0.9rem; line-height: 1.5; }
+
+/* ── shared: result lines and chips ──────────────────────────────────────────────────────── */
+.chip--warn { border-color: var(--sl-color-orange); }
+.chip--bad { border-color: var(--sl-color-red); }
+.lines { list-style: none; padding: 0; margin: 0.75rem 0; display: grid; gap: 0.6rem; }
+.line { padding: 0.65rem 0.9rem; border: 1px solid var(--sl-color-hairline); border-radius: 10px; background: var(--sl-color-bg-nav); }
+.line p { margin: 0; }
+.line__gm { font-size: 1.2rem; line-height: 1.6; }
+.line__cite { font-size: 0.8rem; color: var(--sl-color-gray-3); margin-top: 0.15rem !important; }
+.line__tr, .line__en { font-size: 0.85rem; color: var(--sl-color-gray-2); margin-top: 0.3rem !important; }
+.line__label { font-weight: 600; color: var(--sl-color-gray-3); }
+
+/* ── <sggs-waterfall> / <sggs-verify> ────────────────────────────────────────────────────── */
+sggs-waterfall, sggs-verify, sggs-api-try { display: block; margin: 1.25rem 0 2rem; }
+.wf__bar, .vf__row, .at__actions, .at__urlrow { display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: center; }
+.wf__input, .vf__claim, .at__input, .wf__mode, .at__route { font: inherit; padding: 0.4rem 0.6rem; border-radius: 6px; border: 1px solid var(--sl-color-hairline); background: var(--sl-color-bg); color: var(--sl-color-white); }
+.wf__input { flex: 1 1 16rem; min-width: 12rem; }
+.vf__claim { width: 100%; font-size: 1.05rem; line-height: 1.6; resize: vertical; }
+.vf__form { display: grid; gap: 0.4rem; }
+.vf__label, .at__label { font-size: 0.85rem; color: var(--sl-color-gray-2); }
+.wf__input:focus-visible, .vf__claim:focus-visible, .at__input:focus-visible, .wf__mode:focus-visible, .at__route:focus-visible { outline: 2px solid var(--sl-color-accent); outline-offset: 2px; }
+.wf__examples, .vf__examples { display: flex; flex-wrap: wrap; gap: 0.4rem; margin: 0.5rem 0; }
+.wf__status, .vf__status, .at__status { font-size: 0.9rem; color: var(--sl-color-gray-2); margin: 0.5rem 0; }
+.wf__tier, .vf__verdict, .at__headers { display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: center; margin: 0.5rem 0; }
+.wf__why, .vf__why, .vf__conf { font-size: 0.9rem; color: var(--sl-color-gray-2); }
+.wf__empty, .wf__concept, .wf__related, .vf__matched { font-size: 0.9rem; margin: 0.5rem 0; }
+.vf__details { display: grid; grid-template-columns: max-content 1fr; gap: 0.2rem 1rem; margin: 0.5rem 0 0; font-size: 0.85rem; }
+.vf__details dd { margin: 0; }
+.vf__dd { font-size: 0.9rem; }
+
+/* ── <sggs-api-try> ──────────────────────────────────────────────────────────────────────── */
+.at__form { display: grid; gap: 0.5rem; padding: 0.9rem 1rem; border: 1px solid var(--sl-color-hairline); border-radius: 12px; background: var(--sl-color-bg-nav); }
+.at__route { width: 100%; }
+.at__fields { display: grid; gap: 0.5rem; grid-template-columns: repeat(auto-fill, minmax(14rem, 1fr)); }
+.at__field { display: grid; gap: 0.2rem; }
+.at__desc { font-size: 0.75rem; color: var(--sl-color-gray-3); }
+.at__url, .at__curl { font-size: 0.85rem; word-break: break-all; }
+.at__curlpre { margin: 0; padding: 0.5rem 0.7rem; font-size: 0.8rem; background: var(--sl-color-bg); border-radius: 6px; overflow-x: auto; }
+.at__body { max-height: 28rem; overflow: auto; font-size: 0.8rem; margin: 0.5rem 0 0; }
+.at__body:focus-visible { outline: 2px solid var(--sl-color-accent); outline-offset: 2px; }

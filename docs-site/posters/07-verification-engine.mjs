@@ -1,0 +1,46 @@
+// Poster 07 — /api/verify (webapp/verify.py): from a claimed quotation to a verdict, rung by rung.
+const V = { version: '1.3.9', date: '2026-09-25', commit: '7a343c62' };
+export default {
+  number: '07', slug: 'verification-engine',
+  title: 'The verification engine',
+  subtitle: 'Is this quotation really in the Granth? /api/verify answers with a verdict, a confidence and the canonical line — never a guess',
+  description: 'The claim is NFC-normalised and its script detected. Gurmukhi claims are cleaned of dandas and numerals; Roman claims are folded with roman_norm. Candidate lines come from the FTS index (an exact phrase, then a looser OR). Each candidate is scored with difflib’s ratio against the claim. The ladder then decides: an exact byte match is VERIFIED_EXACT; a claim contained whole in a line is VERIFIED_PARTIAL; a best ratio of at least 0.95 is VERIFIED; at least 0.85 is PROBABLE, or AMBIGUOUS when the runner-up is within 0.05 and itself at least 0.80; anything lower is NOT_FOUND with no line asserted. A claimed Ang adds +ANG_MATCH or +ANG_MISMATCH with the actual Ang.',
+  height: 1100, verified: V,
+  sources: ['webapp/verify.py', 'webapp/romannorm.py', 'webapp/sggs/verification.py', 'contract/golden_verify.ndjson'],
+  legend: ['box', 'store', 'good', 'gate', 'note'],
+  groups: [
+    { label: 'The verdict ladder — first rung that fits wins', x: 560, y: 150, w: 1000, h: 700 },
+  ],
+  nodes: [
+    { id: 'claim', kind: 'box', x: 40, y: 160, w: 480, h: 100, lines: ['1 · Normalise, detect the script', { text: 'NFC · Gurmukhi: dandas and numerals off', size: 16 }, { text: 'Roman: roman_norm per word', size: 16 }], step: 'step-01' },
+    { id: 'cand', kind: 'store', x: 40, y: 300, w: 480, h: 100, lines: ['2 · Candidates from fts', { text: 'exact phrase first, then a looser OR', size: 16 }, { text: 'Gurmukhi: text / skeleton · Roman: translit_norm', size: 16 }], step: 'step-02' },
+    { id: 'score', kind: 'box', x: 40, y: 440, w: 480, h: 100, lines: ['Score each candidate', { text: 'difflib.SequenceMatcher(claim, line).ratio()', size: 16, mono: true }, { text: 'best · second · gap = best − second', size: 16 }], step: 'step-02' },
+    { id: 'ang', kind: 'note', x: 40, y: 580, w: 480, h: 100, lines: ['7 · The Ang modifier', { text: 'a claimed Ang adds +ANG_MATCH or', size: 16 }, { text: '+ANG_MISMATCH(actual=N) to the verdict', size: 16 }], step: 'step-07' },
+    { id: 'out', kind: 'note', x: 40, y: 720, w: 480, h: 110, lines: ['The answer', { text: 'verdict · confidence · matched_line_id · ang', size: 16 }, { text: 'gurmukhi (canonical) · raag · author · comp_id', size: 16 }, { text: 'distance_details: best, second, gap, scored', size: 16 }], step: 'step-07' },
+    { id: 'r3', kind: 'good', x: 590, y: 200, w: 940, h: 80, lines: ['3 · VERIFIED_EXACT · confidence 1.0', { text: 'after NFC and punctuation stripping, the bytes equal a canonical line', size: 16 }], step: 'step-03' },
+    { id: 'r4', kind: 'good', x: 590, y: 310, w: 940, h: 80, lines: ['4 · VERIFIED_PARTIAL · confidence 0.95', { text: 'the claim (3+ words or 12+ characters) sits whole inside a canonical line', size: 16 }], step: 'step-04' },
+    { id: 'r5', kind: 'good', x: 590, y: 420, w: 940, h: 80, lines: ['5 · VERIFIED · confidence = ratio', { text: 'best ratio ≥ 0.95', size: 16, mono: true }], step: 'step-05' },
+    { id: 'r6', kind: 'box', x: 590, y: 530, w: 460, h: 100, lines: ['6 · PROBABLE', { text: 'best ratio ≥ 0.85 and the runner-up', size: 16 }, { text: 'is not close: gap ≥ 0.05', size: 16 }], step: 'step-06' },
+    { id: 'r6b', kind: 'box', x: 1070, y: 530, w: 460, h: 100, lines: ['6 · AMBIGUOUS', { text: 'best ≥ 0.85, second ≥ 0.80, gap < 0.05', size: 16, mono: true }, { text: 'two lines fit: the engine will not choose', size: 16 }], step: 'step-06' },
+    { id: 'r7', kind: 'gate', x: 590, y: 660, w: 940, h: 80, lines: ['7 · NOT_FOUND · confidence 0.0', { text: 'best ratio < 0.85, or no candidates — no line is asserted, no percentage misleads', size: 16 }], step: 'step-07' },
+    { id: 'thr', kind: 'note', x: 590, y: 770, w: 940, h: 60, lines: [{ text: 'webapp/verify.py: _THRESH_EXACT 0.95 · _THRESH_PROBABLE 0.85 · _THRESH_AMBIG 0.80 · _THRESH_GAP 0.05', size: 16 }], step: 'step-05' },
+    { id: 'gold', kind: 'note', x: 560, y: 880, w: 1000, h: 60, lines: [{ text: 'contract/golden_verify.ndjson pins the verdicts; contract_http.py replays them against every deploy', size: 16 }], step: 'step-07' },
+  ],
+  edges: [
+    { from: 'claim', to: 'cand', step: 'step-02' }, { from: 'cand', to: 'score', step: 'step-02' },
+    { from: 'score', to: 'r3', dashed: true, step: 'step-03', via: [[540, 490], [540, 240]] },
+    { from: 'r3', to: 'r4', label: 'no', step: 'step-04', dx: 60 }, { from: 'r4', to: 'r5', label: 'no', step: 'step-05', dx: 60 },
+    { from: 'r5', to: 'r6', label: 'no', step: 'step-06', dx: 60 }, { from: 'r5', to: 'r6b', step: 'step-06' },
+    { from: 'r6', to: 'r7', label: 'no', step: 'step-07', dx: 60 }, { from: 'r6b', to: 'r7', step: 'step-07' },
+    { from: 'score', to: 'ang', step: 'step-07' }, { from: 'ang', to: 'out', step: 'step-07' },
+  ],
+  steps: [
+    { id: 'step-01', title: 'Normalise and detect the script', caption: 'The claim is trimmed and NFC-normalised. If it holds Gurmukhi, dandas, danda numerals and pipes are stripped to give the clean claim; if it is Roman, every word is folded with roman_norm — the same fold that built the translit_norm column — to give the claim key.', link: '/search/verification-engine/' },
+    { id: 'step-02', title: 'Candidates, then a score for each', caption: 'The FTS index is asked for an exact phrase first (the text column for Gurmukhi, translit_norm for Roman; the skeleton as a second chance), then for a looser OR of the tokens. Every candidate line is scored with difflib’s SequenceMatcher ratio against the claim; the best, the runner-up and the gap between them decide the rung.', link: '/search/verification-engine/' },
+    { id: 'step-03', title: 'VERIFIED_EXACT', caption: 'If the phrase query produced an exact hit — the cleaned bytes equal a canonical line — the verdict is VERIFIED_EXACT with confidence 1.0. Nothing fuzzy was needed.', link: '/search/verification-engine/' },
+    { id: 'step-04', title: 'VERIFIED_PARTIAL', caption: 'People quote half a line constantly. If the claim is at least three words or twelve characters and sits whole inside a candidate line (but is not the whole line), the verdict is VERIFIED_PARTIAL with confidence 0.95 and that line is returned.', link: '/search/verification-engine/' },
+    { id: 'step-05', title: 'VERIFIED', caption: 'A best ratio of at least 0.95 (_THRESH_EXACT) is VERIFIED; the confidence is the ratio itself. Small transliteration differences land here.', link: '/search/verification-engine/' },
+    { id: 'step-06', title: 'PROBABLE or AMBIGUOUS', caption: 'A best ratio of at least 0.85 (_THRESH_PROBABLE) is PROBABLE — unless the runner-up is itself at least 0.80 (_THRESH_AMBIG) and within 0.05 (_THRESH_GAP), in which case two lines fit and the verdict is AMBIGUOUS: the engine reports both scores and refuses to choose.', link: '/search/verification-engine/' },
+    { id: 'step-07', title: 'NOT_FOUND, the Ang modifier, the answer', caption: 'Below 0.85, or with no candidates at all, the verdict is NOT_FOUND with confidence 0.0 and no line is asserted — a percentage would only mislead. When the caller claimed an Ang and a line was matched, the verdict gains +ANG_MATCH or +ANG_MISMATCH(actual=N). The response carries the verdict, the confidence, the matched line id, the canonical Gurmukhi with its Ang, raag, author, comp_id and section, and distance_details. contract/golden_verify.ndjson pins these verdicts across every deploy and the iOS port.', link: '/search/harnesses-and-golden-vectors/' },
+  ],
+};

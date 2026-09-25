@@ -45,8 +45,9 @@ ci: check-versions dataset-check test-web contract docs-check ## run the gates C
 	@echo "make ci: PASS"
 
 # ── the wiki (docs-site/ over docs/; docs.gurbanisoul.com) ───────────────────
-docs-check: ## docs gates: frontmatter, links, widgets, Mermaid palette, scripture rule, posters, site config, sibling pin
+docs-check: ## docs gates: frontmatter, links, widgets, Mermaid palette, scripture rule, posters, drift vs code, site config, sibling pin, generated pages
 	python3 tools/docs_check.py
+	python3 tools/gen_route_table.py --check
 	python3 tools/fetch_sibling_docs.py --check
 	python3 -m unittest discover -s tools/tests
 docs: ## build the wiki (installs pinned sibling docs; renders every Mermaid fence; validates links)

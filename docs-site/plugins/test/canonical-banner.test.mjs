@@ -24,3 +24,8 @@ test('a GitHub link to a pinned sibling document stays on the wiki; others are l
   assert.equal(pinnedPageFor('https://github.com/Algorythmos-AI/sggs-data/blob/main/docs/design/x.md', sources), null);
   assert.equal(rewriteLink('https://github.com/Algorythmos-AI/sggs-data/blob/main/pipeline/reconcile.py', 'docs/README.md', sources), 'https://github.com/Algorythmos-AI/sggs-data/blob/main/pipeline/reconcile.py');
 });
+
+test('a link to the generated API reference resolves to its virtual page', () => {
+  assert.equal(rewriteLink('reference/', 'docs/api/README.md', sources), '/api/reference/');
+  assert.equal(rewriteLink('../api/reference/#tag/search', 'docs/search/README.md', sources), '/api/reference/#tag/search');
+});

@@ -26,6 +26,16 @@ export const SIDEBAR = [
       },
     ],
   },
+  dir('Search & verification', 'search'),
+  {
+    label: 'API',
+    items: [
+      { label: 'The JSON API', slug: 'api' },
+      { label: 'API routes', slug: 'api/routes' },
+      { label: 'Contract and OpenAPI', slug: 'api/contract-and-openapi' },
+      { label: 'Versioning and caching', slug: 'api/versioning-and-caching' },
+    ],
+  },
   dir('Engineering handbook', 'engineering'),
   dir('Process & runbooks', 'process'),
   dir('Brand', 'brand'),

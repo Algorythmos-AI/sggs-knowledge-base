@@ -75,6 +75,12 @@ export class SggsWalkthrough extends HTMLElement {
     this.show(next < 0 ? n - 1 : next >= n ? -1 : next);
   }
 
+  /** Light the step with this id (a widget on the page calls it, e.g. the waterfall simulator). */
+  goTo(stepId: string) {
+    const i = this.steps.findIndex((s) => s.id === stepId);
+    if (i >= 0) { this.stop(); this.show(i); }
+  }
+
   show(i: number) {
     this.current = i;
     const groups = this.groups();

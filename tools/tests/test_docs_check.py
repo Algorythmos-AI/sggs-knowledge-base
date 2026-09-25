@@ -161,3 +161,23 @@ class SiblingPages(unittest.TestCase):
             for pr in dc.check_page(page, tokens, widgets, None):
                 self.assertIn(pr.level, ("notice", "warning"), f"{page}: {pr.msg}")
         self.assertFalse(dc.is_sibling(dc.DOCS / "README.md"))
+
+
+class Drift(unittest.TestCase):
+    """The engine pages and posters name what the code names."""
+
+    def test_mode_literals_are_read_from_the_code(self):
+        lits = dc.search_mode_literals()
+        for expected in ("gurmukhi", "gurmukhi-skeleton", "roman", "roman-spelling-tolerant", "first-letters", "english",
+                         "english-translation", "variant-match", "mixed-script", "skeleton-blob", "seeker-lexicon",
+                         "passage-match", "(honorifics dropped)", "+ honorific-dropped"):
+            self.assertIn(expected, lits)
+
+    def test_thresholds_are_read_from_the_code(self):
+        t = dc.verify_thresholds()
+        self.assertEqual(t["_THRESH_EXACT"], "0.95")
+        self.assertEqual(t["_THRESH_PROBABLE"], "0.85")
+        self.assertEqual(t["_THRESH_GAP"], "0.05")
+
+    def test_repo_has_no_drift(self):
+        self.assertEqual([str(p) for p in dc.check_drift()], [])

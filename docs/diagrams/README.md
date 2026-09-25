@@ -21,10 +21,13 @@ plain image on GitHub.
 | 02 | Three repositories and the pins that join them | data → platform → app hand-offs by lock file, one version number | [Three repositories and pins](../architecture/three-repositories-and-pins.md) |
 | 03 | Anatomy of a line record | a PDF page → units → the 23 columns of the `lines` table; what the FTS index reads and its bm25 weights | [Anatomy of a line record](../data/line-record.md) |
 | 04 | Corpus pipeline and gates | `rebuild_all.sh` stage by stage: extraction, reconcile, golden suite, atomic installs, the database layers, the integrity gate, CI on every pull request | [Corpus pipeline and gates](../data/pipeline.md) |
+| 05 | The search waterfall | `do_search` as coded: normalise, mixed script, explicit modes, the twelve auto-mode tiers, the ranking | [Search waterfall](../architecture/search-waterfall.md) |
+| 06 | The fold in three places | the five steps of `roman_norm`, its three homes, the 24,719 golden vectors | [The Roman fold](../search/the-roman-fold.md) |
+| 07 | The verification engine | normalise, candidates, scoring, the verdict ladder with the code's thresholds, the Ang modifier | [Verification engine](../search/verification-engine.md) |
 | 08 | Request lifecycle | `GET /api/ang/712` from the browser to SQLite and back, in code order | [Request lifecycle](../architecture/request-lifecycle.md) |
 | 09 | Bounded contexts and the gateway | five contexts, module slicing, routing generated from the code, the proofs | [Bounded contexts and the gateway](../architecture/bounded-contexts-and-gateway.md) |
 
-More follow with the search, verification, delivery and iOS pages.
+More follow with the delivery and iOS pages.
 
 ## How a poster is made
 
