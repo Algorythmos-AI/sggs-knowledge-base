@@ -16,5 +16,6 @@ exclude = [
   "^https://dashboard\\.render\\.com",
   "^https://appstoreconnect\\.apple\\.com",
   "^https://buttondown\\.com/api",
+  "^https://unsplash\\.com/",                   # answers 401 to GitHub runner IPs (datacenter bot wall), 200 elsewhere
   "^mailto:",
 ]
