@@ -6,7 +6,7 @@
 Sri Guru Granth Sahib Ji is sacred scripture. The Gurmukhi text served here (built in [`sggs-data`](https://github.com/Algorythmos-AI/sggs-data), pinned by `dataset.lock.json`) was extracted, with documented deterministic corrections only, from a freely-circulated Unicode Gurmukhi edition ("Siri Guru Granth Sahib in Gurmukhi, with Index", 1,483 pp) supplied by the repository owner. The source PDF itself is not included. The text is treated with reverence: verbatim, always cited by Ang, never paraphrased. Handle accordingly.
 
 ## English translation layer
-`translations` table: **English translation by Dr. Sant Singh Khalsa.** Full layer (58,039 lines) sourced from the **ShabadOS open database** (github.com/shabados/database, release 4.8.7 — the 151MB `database.sqlite` is gitignored, re-download to rebuild); earlier partial layer via the **BaniDB/GurbaniNow** public APIs. Translation used with attribution for personal, local, non-commercial study. **Do not redistribute publicly or commercially.** If this repository is ever made public, remove `pipeline/translations/`, the `translations` table from `db/sggs.sqlite`, and this layer's UI display first.
+`translations` table: **English translation by Dr. Sant Singh Khalsa.** Full layer (58,039 lines) sourced from the **ShabadOS open database** (github.com/shabados/database, release 4.8.7 — the 151MB `database.sqlite` is gitignored, re-download to rebuild); earlier partial layer via the **BaniDB/GurbaniNow** public APIs. Translation used with attribution for personal, local, non-commercial study. **Do not redistribute publicly or commercially.** ShabadOS's own licensing page (release 4.8.7) states that supporting text such as translations is "subject to their respective source copyrights" — the rights holder's written licence is the only route to distributing this layer (gate G4). If this repository is ever made public, remove `pipeline/translations/`, the `translations` table from `db/sggs.sqlite`, and this layer's UI display first.
 
 **Status (2026-09-24):** the translation source files are not in this repository. They live in the private `Algorythmos-AI/sggs-source` repository (release `translations-en-v1`) and are restored for a rebuild in `Algorythmos-AI/sggs-data` (its `scripts/data/fetch_translations.sh`, verified against `pipeline/translations.SHA256SUMS`). Earlier commits in this repository's history still contain them, and the served database still carries the `translations` table; both are addressed before this repository is published (see the licence gate G4).
 
@@ -35,11 +35,27 @@ The web app and API code (everything in `webapp/`, `frontend/` and `tools/` exce
   FTS, never cited as an Ang, and it carries **no English translation**. It is **not** covered
   by the character-for-character reconcile proof; it ships in a public build only after the
   scholar review recorded in `ios/Resources/NITNEM-REVIEW.md` of the app repository (`REVIEWED: true`).
-- **Licence.** The ShabadOS repository publishes its code under the MIT licence and states
-  that the contents of its `data` folder are free of known copyright restrictions (public
-  domain). Record the exact licence text of the release used before any public wording
-  claims "public domain"; provenance is recorded in `banis.source_label` and here.
-  The Ardaas wording follows the SGPC Sikh Rehat Maryada.
+- **Licence — as published at ShabadOS tag `4.8.7`, the release used** (read 2026-09-26 from
+  `github.com/shabados/database` at that tag: `docs/licensing.md` and the README's "License" and
+  "Gurbani and Panthic Compositions" sections):
+  - *Gurbani* in the `data` folder and generated under `build`, "including the `gurmukhi` JSON and
+    SQLite fields", is marked with the **Creative Commons Public Domain Mark 1.0**; the README adds
+    that "derogatory treatments (including adding to, deleting from, altering of, or adapting) the
+    words" are forbidden. This covers the Sri Dasam Granth and Ardaas text of the Nitnem layer, which
+    is rendered verbatim and never edited.
+  - "Supporting text … are subject to their respective source copyrights, some by other authors" —
+    this includes translations such as the English layer above: ShabadOS grants no licence for it.
+  - "Translations, transliterations, notes, compilations, or other items which are not Gurbani and
+    which are created or uniquely organized by the Shabad OS team" are **CC BY-SA 4.0**. Whether the
+    bani membership and order used here (a traditional composition per the SGPC Sikh Rehat Maryada)
+    counts as such a compilation is an open item for the licence review (gate G4 / H3): if it does,
+    the attribution below also needs the CC BY-SA 4.0 link and the derived bani tables stay
+    share-alike.
+  - Code outside `data`/`build` was GPL v3 at that tag (not used here). The project moved to MIT on
+    2025-01-14; that change does not apply to release 4.8.7.
+
+  Provenance is recorded in `banis.source_label` and here. The Ardaas wording follows the SGPC Sikh
+  Rehat Maryada.
 - Required in-app attribution: "Bani ordering and Sri Dasam Granth / Ardaas text via the
   ShabadOS open database. Sri Guru Granth Sahib Ji text is this project's own verified corpus."
 
