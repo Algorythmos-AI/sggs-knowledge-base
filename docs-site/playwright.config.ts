@@ -16,7 +16,8 @@ export default defineConfig({
   },
   projects: [
     { name: 'desktop', use: { ...devices['Desktop Chrome'] } },
-    { name: 'mobile', use: { ...devices['iPhone 13'] } },
+    // phone viewport on Chromium: the only browser CI installs (the iPhone preset would need WebKit)
+    { name: 'mobile', use: { ...devices['Pixel 7'], defaultBrowserType: 'chromium' } },
   ],
   webServer: {
     command: 'node scripts/serve-dist.mjs 4323',
