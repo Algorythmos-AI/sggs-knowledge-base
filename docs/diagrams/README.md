@@ -28,8 +28,9 @@ plain image on GitHub.
 | 09 | Bounded contexts and the gateway | five contexts, module slicing, routing generated from the code, the proofs | [Bounded contexts and the gateway](../architecture/bounded-contexts-and-gateway.md) |
 | 10 | The CI gates map | every workflow and job on a pull request, what the rulesets require, the deploy chains, the schedules | [CI gates](../process/ci-gates.md) |
 | 11 | The delivery pipeline | branch → PR → staging → release PR → production → tag → the app follows; rollback; the watchers | [Branching & delivery flow](../process/branching.md) |
+| 12 | iOS release and integrity | vendor sync, one number, the archive's gates, the ledger, the launch-integrity and bookmarks ladders | [Database pair and launch integrity](../ios/db-pair-and-launch-integrity.md) |
 
-The iOS release poster (12) and the structure of the Granth (13) follow with their sections.
+The structure of the Granth (13) follows with Scripture 101.
 
 ## How a poster is made
 

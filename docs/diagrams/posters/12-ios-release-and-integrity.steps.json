@@ -1,0 +1,56 @@
+[
+  {
+    "id": "step-01",
+    "title": "Vendor the release",
+    "caption": "make vendor-sync-platform REF=vX.Y.Z copies the platform’s golden contract and contributors roster into the app repository at their upstream paths and records the commit, a sha256 per file and the platform’s APP_VERSION in vendor.lock.json. The dataset is the same sggs-data pin the platform serves; the iOS database builder is vendored from it. CI proves every vendored file equals its lock entry and its source.",
+    "link": "/ios/how-the-app-takes-a-release/"
+  },
+  {
+    "id": "step-02",
+    "title": "One number",
+    "caption": "MARKETING_VERSION must equal the vendored platform version; CURRENT_PROJECT_VERSION stays 1 and every upload passes BUILD=N, kept monotonic within a marketing version by the ledger before any archive starts. A release is re-archived at the same number even for a web-only change.",
+    "link": "/engineering/delivery/"
+  },
+  {
+    "id": "step-03",
+    "title": "Stage the database pair",
+    "caption": "From a clean, detached worktree at the tag, make testflight derives the database for the chosen profile — public, Gurmukhi-only, by default — into a staging directory under ios/App/build, with its manifest: profile, db_sha256, scripture_sha256, en_bundled, size, tables. The developer’s own pair in ios/Resources is never read or written.",
+    "link": "/ios/db-pair-and-launch-integrity/"
+  },
+  {
+    "id": "step-04",
+    "title": "The licence gate",
+    "caption": "check_release_license.sh runs on that exact artifact: English may be bundled only with LICENSED: true in the attestation; scripture_sha256 must equal the certified corpus value; the artifact must hash to its manifest; every golden suite must be present; and on the App Store channel the Nitnem non-SGGS text must carry the scholar’s REVIEWED: true.",
+    "link": "/ios/db-pair-and-launch-integrity/"
+  },
+  {
+    "id": "step-05",
+    "title": "XcodeGen and archive",
+    "caption": "A temporary sibling spec differs from project.yml in exactly three lines (the name and the two database resource paths, pointed at the staging directory); XcodeGen generates a throw-away project; xcodebuild archives the Release configuration with the Team ID and build number from the command line under automatic signing. Xcode must be at or above Apple’s SDK floor.",
+    "link": "/ios/db-pair-and-launch-integrity/"
+  },
+  {
+    "id": "step-06",
+    "title": "Upload and prove",
+    "caption": "The archive is exported for App Store Connect; with UPLOAD=1 the export is the upload. Then the script proves what was built: the Info.plist version and build and the manifest inside the .app equal what was staged. CHANNEL=appstore is declared up front, because a TestFlight binary and an App Store binary are the same upload.",
+    "link": "/ios/how-the-app-takes-a-release/"
+  },
+  {
+    "id": "step-07",
+    "title": "The ledger, and “complete”",
+    "caption": "The build is appended to ios/testflight-builds.json — version, build, source_commit, platform_commit, dataset_commit, profile, channel, db_sha256, Xcode and SDK — and committed with the release; make appstore-preflight submits only a build recorded on the App Store channel. scripts/release/check_release_complete.py X.Y.Z then proves production’s web and API report X.Y.Z from the tag’s commit and that the ledger has an appstore build of X.Y.Z with that platform commit.",
+    "link": "/ios/how-the-app-takes-a-release/"
+  },
+  {
+    "id": "step-08",
+    "title": "On the device: launch integrity",
+    "caption": "Before any scripture is shown, LaunchIntegrity hashes the bundled database and compares it with the manifest’s db_sha256; a match means the database is bit-identical to the proven corpus. After one full streaming verify a fingerprint (sha, file size and mtime, bundle version, manifest sha) lets later launches skip the re-hash — but any change forces a full re-verify and a failure is never cached. On any failure the app refuses to present scripture and shows the report under About → Integrity. The threat model is accidents; anti-tamper is code signing’s job.",
+    "link": "/ios/db-pair-and-launch-integrity/"
+  },
+  {
+    "id": "step-09",
+    "title": "On the device: the bookmarks store",
+    "caption": "Saved verses live in a separate writable SwiftData store — never the read-only corpus — holding verbatim Gurmukhi without saroop markup, under a versioned schema (SavedLineSchemaV1) with a migration plan. Opening it climbs a ladder: the versioned schema, a retry, and only on a second consecutive failure destroy-and-recreate, so a transient error never costs a reader their bookmarks. Nitnem progress is its own JSON file in the App Group with a frozen v1 schema.",
+    "link": "/ios/nitnem-for-engineers/"
+  }
+]

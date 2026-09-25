@@ -8,6 +8,14 @@ entries prior to v1.1.0 are the project's original prose style and are preserved
 No change to the scripture text, the corpus, the database bytes or any API response.
 
 ### Added
+- **The iOS app on the wiki.** `docs/ios/` — the iOS app (inputs by pin, promises), how the app
+  takes a release (vendor sync, one number, the ledger, `check_release_complete.py`), contract and
+  parity (the Swift suites; the Swift fold read from the source), database pair and launch
+  integrity (poster 12: the archive's gates, the launch-integrity ladder, the bookmarks store
+  ladder), Nitnem for engineers (the registry as pointers over the verbatim corpus, the separate
+  reviewed layer, variants, numbering, the Nitnem day). gurbani-soul-ios's own docs (launch and
+  test plans, listing, Nitnem spec, runbooks, ADR, contributing) and the tooling excerpted here are
+  pinned in `docs-site/sources.lock.json` and published under `/ios/…` with the canonical banner.
 - **Delivery, CI and operations on the wiki.** Posters 10 (the CI gates map) and 11 (the delivery
   pipeline) on the CI gates and branching pages; every page under `docs/process/`,
   `docs/engineering/` and `docs/architecture/` now carries a `verified: {commit, date}` stamp (read
