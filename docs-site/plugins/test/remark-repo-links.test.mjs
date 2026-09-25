@@ -13,7 +13,8 @@ test('links to published pages become site paths, anchors kept', () => {
 });
 
 test('links to directories resolve to their index page or the GitHub tree', () => {
-  assert.equal(rewriteLink('../adr/', from, sources), 'https://github.com/Algorythmos-AI/sggs-platform/tree/integration/docs/adr');
+  assert.equal(rewriteLink('../adr/', from, sources), '/adr/');   // docs/adr/README.md is the decisions index
+  assert.equal(rewriteLink('../design/', from, sources), 'https://github.com/Algorythmos-AI/sggs-platform/tree/integration/docs/design');   // never published
   assert.equal(rewriteLink('../process/', from, sources), 'https://github.com/Algorythmos-AI/sggs-platform/tree/integration/docs/process');
   assert.equal(rewriteLink('../', from, sources), '/');
   assert.equal(rewriteLink('../website/', from, sources), '/website/');

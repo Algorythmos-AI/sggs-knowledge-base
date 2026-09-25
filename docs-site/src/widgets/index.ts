@@ -9,6 +9,8 @@ import { SggsVerify } from './verify';
 import { SggsApiTry } from './api-try';
 import { SggsTerm } from './term';
 import { SggsQuiz } from './quiz';
+import { SggsProgress } from './progress';
+import { SggsReleases } from './releases';
 import { watchScrollRegions } from './a11y';
 
 const define = (name: string, ctor: CustomElementConstructor) => {
@@ -23,5 +25,7 @@ define('sggs-verify', SggsVerify);
 define('sggs-api-try', SggsApiTry);
 define('sggs-term', SggsTerm);
 define('sggs-quiz', SggsQuiz);
+define('sggs-progress', SggsProgress);
+define('sggs-releases', SggsReleases);
 
 watchScrollRegions();

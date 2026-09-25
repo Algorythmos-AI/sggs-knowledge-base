@@ -505,7 +505,7 @@ def check_posters(tokens_hex: set[str]) -> list[Problem]:
 
 SEARCH_PY = ROOT / "webapp" / "sggs" / "search.py"
 VERIFY_PY = ROOT / "webapp" / "verify.py"
-GENERATED = {"docs/api/routes.md": "tools/gen_route_table.py"}
+GENERATED = {"docs/api/routes.md": "tools/gen_route_table.py", "docs/reference/contributors.md": "tools/gen_contributors.py"}
 
 
 def search_mode_literals() -> set[str]:

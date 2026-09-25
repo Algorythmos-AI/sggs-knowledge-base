@@ -23,6 +23,7 @@ build date, dataset build and the health checks — read live from `/api/health`
 | If you want to… | Read |
 |---|---|
 | Join the project (engineer, intern, student) | [Start here — your first week](onboarding/README.md) |
+| Follow a guided path, or do a hands-on exercise | [Learning paths](learning-paths/README.md) · [Exercises](exercises/README.md) · [Contributing to the wiki](contributing/README.md) |
 | Learn what the scripture is before you touch the data | [Scripture 101](scripture/README.md) — what it is, its structure, the script and its Unicode, the Answer Protocol |
 | Understand the whole system in 5 minutes | [Architecture overview](architecture/overview.md) |
 | Know how text fidelity is guaranteed | [Scripture integrity](https://github.com/Algorythmos-AI/sggs-data/blob/main/docs/architecture/scripture-integrity.md) (sggs-data) · [The editorial ledger](data/editorial-ledger.md) |
@@ -32,7 +33,7 @@ build date, dataset build and the health checks — read live from `/api/health`
 | Rebuild the database, or take a new dataset | [Corpus pipeline and gates](data/pipeline.md) · [The dataset pin](data/dataset-pin.md) · the [rebuild runbook](https://github.com/Algorythmos-AI/sggs-data/blob/main/docs/process/runbooks/rebuild-db.md) (sggs-data) |
 | Know what CI checks and why | [CI gates](process/ci-gates.md) |
 | Understand the iOS app, or take it through TestFlight to the App Store | [The iOS app](ios/README.md) · [How the app takes a release](ios/how-the-app-takes-a-release.md) · the pinned [launch plan](https://github.com/Algorythmos-AI/gurbani-soul-ios/blob/main/docs/ios/testflight-launch-plan.md) |
-| Understand a past decision | [ADRs](adr/) |
+| Understand a past decision, a release, or a path in the repository | [Decisions](adr/README.md) · [Releases](reference/releases.md) · [Repository map](reference/repo-map.md) |
 
 ## Repository at a glance
 | Path | What |

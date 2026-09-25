@@ -1,3 +1,4 @@
+import os
 import subprocess
 import sys
 import unittest
@@ -21,4 +22,15 @@ class RouteTable(unittest.TestCase):
 
     def test_check_mode_exits_zero_when_current(self):
         r = subprocess.run([sys.executable, str(ROOT / "tools" / "gen_route_table.py"), "--check"], capture_output=True, text=True)
+        self.assertEqual(r.returncode, 0, r.stdout + r.stderr)
+
+
+class Generators(unittest.TestCase):
+    def test_contributors_page_is_current_and_generated(self):
+        import gen_contributors
+        self.assertEqual(gen_contributors.OUT.read_text(encoding="utf-8"), gen_contributors.build(), "run: python3 tools/gen_contributors.py")
+        self.assertIn(gen_contributors.HEADER, gen_contributors.build())
+
+    def test_repo_map_platform_paths_exist(self):
+        r = subprocess.run([sys.executable, str(ROOT / "tools" / "gen_repo_map.py"), "--check"], capture_output=True, text=True, env={**os.environ, "GH_TOKEN": "", "GITHUB_TOKEN": ""})
         self.assertEqual(r.returncode, 0, r.stdout + r.stderr)

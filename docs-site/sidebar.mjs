@@ -6,6 +6,10 @@ const dir = (label, directory, extra = {}) => ({ label, items: [{ autogenerate: 
 export const SIDEBAR = [
   dir('Start here', 'onboarding'),
   dir('Scripture 101', 'scripture'),
+  {
+    label: 'Learn & contribute',
+    items: [dir('Learning paths', 'learning-paths'), dir('Exercises', 'exercises'), dir('Contributing to the wiki', 'contributing')],
+  },
   dir('Architecture', 'architecture'),
   {
     label: 'Data & pipeline',
@@ -67,6 +71,9 @@ export const SIDEBAR = [
     items: [
       { label: 'Glossary', slug: 'glossary' },
       { label: 'Diagrams and posters', slug: 'diagrams' },
+      { label: 'Repository map', slug: 'reference/repo-map' },
+      { label: 'The contributors to the Granth', slug: 'reference/contributors' },
+      { label: 'Releases', slug: 'reference/releases' },
       { label: 'The website', slug: 'website' },
       { label: 'Reports & audit history', slug: 'reports' },
       { label: 'Risk register', slug: 'risk-register' },
