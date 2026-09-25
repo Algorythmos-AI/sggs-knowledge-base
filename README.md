@@ -80,16 +80,26 @@ The same offline app runs unchanged in the cloud. The browser only ever calls `/
                     ┌──────────────────┴───────────────────┐
    gurbanisoul.com (canonical apex, 200)      www + *.vercel.app (308 → apex)
                     │
-     ┌──────────────┴───────────────┐
+     ┌──────────────┴────────────────┐
      │  Vercel — Astro static site   │   /            → Gurbani Soul landing
      │  (frontend/ → webapp/static/) │   /search /reader … → Knowledge Base
-     └──────────────┬───────────────┘   /privacy /support  → policy (App Store URLs)
-                    │  /api/*  (rewrite)
-                    ▼
-     ┌───────────────────────────────┐
-     │  Render — stdlib Python API    │   webapp/serve.py, DB opened read-only
-     │  (webapp/Dockerfile)           │   /api/search /ang /shabad /verify /health …
-     └───────────────────────────────┘
+     └──────────────┬────────────────┘   /privacy /support  → policy (App Store URLs)
+                    │  /api/*  (rewrite — target set by gateway/routes.json)
+                    ├┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┐
+                    │  production                        ┆  rollback only
+                    ▼                                    ▼
+     ┌───────────────────────────────┐   ┌┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┐
+     │  Vercel — Python functions    │   ┆  Render — stdlib Python API  ┆
+     │  in the same web project      │   ┆  (webapp/Dockerfile)         ┆
+     │  (api/svc/all.py, generated   │   ┆  sggs-knowledge-base         ┆
+     │  by build_api_functions.py)   │   ┆  .onrender.com               ┆
+     └───────────────────────────────┘   ┆  redeployed every release    ┆
+                                         ┆  until retired               ┆
+                                         └┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┘
+
+     Both run the same stdlib webapp/serve.py on the pinned DB, opened read-only
+     (/api/search /ang /shabad /verify /health …). Rollback: set production.api_platform
+     to "render" in gateway/routes.json, regenerate and release (runbooks/services-production.md).
 
      Gurbani Soul (iOS) — no network at all: the DB ships inside the app.
 ```
@@ -313,6 +323,8 @@ Honest about the edges:
 
 > ### ⚠️ Keep this repository PRIVATE
 > The **English translation layer** (Dr. Sant Singh Khalsa, via the ShabadOS open database) is licensed for **personal, non-commercial use with attribution** and **must not be redistributed publicly**. See **`NOTICE.md`** for the full terms and the source registry.
+>
+> **Current status:** the repository is temporarily public by owner decision D-002 (free Actions compute) and goes private again at the org's go-private step (`Algorythmos-AI/.github-private` → `docs/go-private.md`).
 
 The Gurmukhi scripture is the eternal Word and belongs to the Panth; it is reproduced here verbatim for study. Code in this repository is the author's own. Before making anything public, read `NOTICE.md`.
 
