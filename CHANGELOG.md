@@ -29,6 +29,13 @@ No change to the scripture text, the corpus, the database bytes or any API respo
   frontmatter block and every existing diagram an accessible title.
 
 ### Changed
+- **Production's API moves onto the Vercel functions.** `gateway/routes.json` sets production to
+  `api_platform: vercel` with no per-context services, so every `/api` path on gurbanisoul.com is
+  answered by `all` — the same `serve.py` handler and pinned database, now inside the web project.
+  `deploy-production` checks every function (ready, this commit, its contexts, API files not
+  published) and runs the whole golden contract on the unaliased deployment before promoting it.
+  Vercel Git previews are off (`git.deploymentEnabled: false`); review web changes on staging.
+  Render keeps deploying every release as the rollback target (runbook: services-production).
 - **The API runs as Vercel functions on staging.** Each bounded context is a Python function in
   the web's own Vercel project (plus `all`, the whole API), generated at deploy time from the pinned
   database by `tools/build_api_functions.py` — the same `serve.py` handler, each function with its
