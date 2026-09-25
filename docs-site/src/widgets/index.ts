@@ -2,6 +2,7 @@
 // docs-site/plugins/remark-widgets.mjs (`<!-- sggs:<name> -->`). One small bundle, loaded once per
 // page (src/components/Head.astro); nothing here is required to read the page.
 import { SggsStatus } from './status';
+import { SggsWalkthrough } from './walkthrough';
 import { makeScrollRegionsFocusable } from './a11y';
 
 const define = (name: string, ctor: CustomElementConstructor) => {
@@ -9,6 +10,7 @@ const define = (name: string, ctor: CustomElementConstructor) => {
 };
 
 define('sggs-status', SggsStatus);
+define('sggs-walkthrough', SggsWalkthrough);
 
 makeScrollRegionsFocusable();
 window.addEventListener('resize', () => makeScrollRegionsFocusable(), { passive: true });

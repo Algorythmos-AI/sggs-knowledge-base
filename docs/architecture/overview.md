@@ -6,6 +6,10 @@ sidebar:
 ---
 # Architecture Overview
 
+The whole system on one poster — press *Next* on the site to build it up step by step:
+
+![Poster 01 — the system landscape: people, surfaces, API, pinned database, sources, CI](../diagrams/posters/01-system-landscape.svg)
+
 ## System context (C4 level 1)
 
 ```mermaid

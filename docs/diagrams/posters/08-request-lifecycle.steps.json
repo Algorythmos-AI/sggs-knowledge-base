@@ -1,0 +1,50 @@
+[
+  {
+    "id": "step-01",
+    "title": "Same-origin call",
+    "caption": "The browser (or a wiki widget) calls /api/ang/712 on the site’s own host. There is no CORS and no API base URL in the frontend: a Vercel rewrite forwards the request — on staging to the context’s own function, on production to the single Render API. The rules are generated from the route table.",
+    "link": "/architecture/bounded-contexts-and-gateway/"
+  },
+  {
+    "id": "step-02",
+    "title": "Identity and probes first",
+    "caption": "H._handle stamps the clock and a request id — an incoming X-Request-Id or x-vercel-id is reused only if it is a plain token, otherwise a uuid4 — then answers /healthz (liveness) and /readyz (every table each enabled context declares is present) before anything else.",
+    "link": "/adr/0009-production-verification/"
+  },
+  {
+    "id": "step-03",
+    "title": "Two API surfaces, one body",
+    "caption": "/api/v1/* has strict semantics: an unknown endpoint is 404 and every error is {code, message, request_id}. /api/* is the legacy surface whose responses are byte-pinned by the golden contract. Anything else is a static file, served from a realpath jail.",
+    "link": "/api/reference/"
+  },
+  {
+    "id": "step-04",
+    "title": "The dispatcher",
+    "caption": "api() splits the path, ensures FTS5 is detected, and looks up (first segment, second segment) in ROUTES — 26 routes, each tagged with its bounded context. In split mode a route whose context is not enabled in this process is a 404: a service never answers for another.",
+    "link": "/architecture/bounded-contexts-and-gateway/"
+  },
+  {
+    "id": "step-05",
+    "title": "The context reads SQLite",
+    "caption": "The handler in sggs/reader.py runs parameterised SQL (never string-built; FTS columns allowlisted; every integer through _int()) on a connection opened read-only and immutable, one per handler thread. The app can never write to the scripture.",
+    "link": "/engineering/invariants/"
+  },
+  {
+    "id": "step-06",
+    "title": "Respond: caching and headers",
+    "caption": "Responses that depend only on the immutable database (ang, shabad, lines, analytics, timing …) are cacheable for the browser and the CDN, with a sha256 ETag that turns a repeat into a 304. Every response carries nosniff, X-Frame-Options DENY, no-referrer, HSTS, the request id and X-Service (which service answered).",
+    "link": "/engineering/invariants/"
+  },
+  {
+    "id": "step-07",
+    "title": "Log the path, never the query",
+    "caption": "One JSON line per request goes to stderr: method, path, status, milliseconds and the request id. The query string is never written, so what people search for is not recorded anywhere. The verbatim lines of Ang 712 reach the browser.",
+    "link": "/adr/0009-production-verification/"
+  },
+  {
+    "id": "step-08",
+    "title": "Errors and limits",
+    "caption": "An ApiError keeps its status (a missing composition is 404); a bad parameter is 400 with a short message; anything unexpected is a generic 500 — the detail goes to the server log, never over the wire. The server caps handler threads and times out idle sockets so a slow client cannot hold a slot.",
+    "link": "/engineering/invariants/"
+  }
+]

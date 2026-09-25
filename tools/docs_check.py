@@ -363,7 +363,7 @@ def check_posters(tokens_hex: set[str]) -> list[Problem]:
             P.append(Problem(svg, 1, 'poster <svg> needs width="100%" and no fixed height'))
         if 'role="img"' not in head:
             P.append(Problem(svg, 1, 'poster <svg> needs role="img"'))
-        if not re.search(r"<title>[^<]{5,}</title>", s) or not re.search(r"<desc>[^<]{40,}</desc>", s):
+        if not re.search(r"<title[^>]*>[^<]{5,}</title>", s) or not re.search(r"<desc[^>]*>[^<]{40,}</desc>", s):
             P.append(Problem(svg, 1, "poster needs <title> (its alt) and a <desc> of at least 40 characters"))
         if "#DA291C" in s.upper():
             P.append(Problem(svg, 1, "brand red never appears in a poster"))

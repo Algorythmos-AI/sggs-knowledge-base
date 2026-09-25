@@ -2,7 +2,7 @@
 # The scripture database is owned by Algorythmos-AI/sggs-data and consumed by pin (dataset.lock.json);
 # data rebuilds, reconcile and the scripture gates live there.
 
-.PHONY: help doctor dataset dataset-check ci openapi contract-http pr-checks release-preflight watch-deploy verify-prod check-versions test-web test-frontend contract harnesses canary slices release docs docs-dev docs-check docs-e2e
+.PHONY: help doctor dataset dataset-check ci openapi contract-http pr-checks release-preflight watch-deploy verify-prod check-versions test-web test-frontend contract harnesses canary slices release docs docs-dev docs-check docs-e2e posters
 help: ## list targets
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | awk 'BEGIN{FS=":.*?## "}{printf "  \033[36m%-16s\033[0m %s\n",$$1,$$2}'
 
@@ -51,10 +51,12 @@ docs-check: ## docs gates: frontmatter, links, widgets, Mermaid palette, scriptu
 	python3 -m unittest discover -s tools/tests
 docs: ## build the wiki (installs pinned sibling docs; renders every Mermaid fence; validates links)
 	python3 tools/fetch_sibling_docs.py
-	cd docs-site && npm ci && npm run test:unit && npm run build && npm run check:mermaid && npm run check:budget
+	cd docs-site && npm ci && npm run test:unit && node scripts/build-posters.mjs --check && npm run build && npm run check:all
 docs-dev: ## serve the wiki locally on :4322 (proxies /api to a local serve.py on :7777)
 	python3 tools/fetch_sibling_docs.py
 	cd docs-site && npm run dev
+posters: ## regenerate the wiki's posters from docs-site/posters/*.mjs into docs/diagrams/posters/
+	cd docs-site && node scripts/build-posters.mjs
 docs-e2e: docs ## end-to-end + accessibility suite against the built wiki (mocked API)
 	cd docs-site && npx playwright install chromium && npm run test:e2e
 
