@@ -566,6 +566,11 @@ def check_site_config() -> list[Problem]:
         unknown = sorted(set(v) - VERCEL_JSON_KEYS)
         if unknown:
             P.append(Problem(vercel, 1, f"docs-site/vercel.json has keys Vercel's schema rejects at deploy: {', '.join(unknown)} (comments belong in docs, not in vercel.json)"))
+        # trailingSlash:true redirects /api/x to /api/x/ BEFORE the rewrite; the product host then
+        # redirects /api/x/ back to /api/x and the two loop, so every live widget fails (first staging
+        # deploy, 2026-09-26). Starlight's links already end in a slash; leave the setting unset.
+        if v.get("trailingSlash") is True:
+            P.append(Problem(vercel, 1, "trailingSlash must not be true: it redirects /api/* before the rewrite and loops with the product host's own redirect"))
         host = re.search(r'SITE_URL\s*=\s*"https://([^/"]+)"', site_ts.read_text(encoding="utf-8")).group(1)
         rw = [r for r in v.get("rewrites", []) if r.get("source") == "/api/:path*"]
         if not rw or rw[0].get("destination") != f"https://{host}/api/:path*":

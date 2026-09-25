@@ -126,6 +126,17 @@ class SiteConfig(unittest.TestCase):
         finally:
             real.write_text(original, encoding="utf-8")
 
+    def test_trailing_slash_redirect_is_refused(self):
+        # trailingSlash:true loops /api/* with the product host's own trailing-slash redirect.
+        real = dc.SITE / "vercel.json"
+        original = real.read_text(encoding="utf-8")
+        try:
+            v = json.loads(original); v["trailingSlash"] = True
+            real.write_text(json.dumps(v), encoding="utf-8")
+            self.assertTrue(any("trailingSlash" in str(p) for p in dc.check_site_config()))
+        finally:
+            real.write_text(original, encoding="utf-8")
+
     def test_repo_docs_pass(self):
         errors = [str(p) for p in dc.run(ROOT / "db" / "sggs.sqlite") if p.level == "error"]
         self.assertEqual(errors, [])
