@@ -4,7 +4,7 @@ description: "The branch model: feature branches into integration, release pull 
 sidebar:
   order: 1
 verified:
-  commit: 4db8c6fc
+  commit: d2b39998
   date: "2026-09-26"
 ---
 # Branching & Delivery Flow
