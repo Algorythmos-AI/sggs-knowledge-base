@@ -6,7 +6,12 @@
 export function makeScrollRegionsFocusable(root: ParentNode = document) {
   const candidates = root.querySelectorAll<HTMLElement>('.sl-markdown-content pre, .sl-markdown-content table, .diagram__scroll');
   for (const el of candidates) {
-    const overflows = el.scrollWidth > el.clientWidth + 1;
+    // A content table or a wide diagram is made focusable whether or not it overflows *right now*:
+    // Starlight lets tables scroll sideways, and whether one does depends on the fonts that arrive
+    // later and on the viewport. Measuring would leave a window in which a scrollable table has no
+    // keyboard access; one extra Tab stop per table is the safer trade.
+    const always = el.tagName === 'TABLE' || el.classList.contains('diagram__scroll');
+    const overflows = always || el.scrollWidth > el.clientWidth + 1;
     if (overflows && !el.hasAttribute('tabindex')) {
       el.setAttribute('tabindex', '0');
       if (!el.hasAttribute('role')) el.setAttribute('role', 'region');
