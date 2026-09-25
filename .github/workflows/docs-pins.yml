@@ -53,8 +53,24 @@ jobs:
           python3 tools/fetch_sibling_docs.py --check
           python3 tools/fetch_sibling_docs.py
           python3 tools/docs_check.py
-      - name: Open or refresh the pull request (as the token's owner)
+      - name: Can DOCS_BOT_TOKEN push here? (a dry-run push; nothing is written)
+        id: bot
         if: steps.pins.outputs.changed == 'true' && env.HAVE_BOT == 'true'
+        env: { BOT: "${{ secrets.DOCS_BOT_TOKEN }}" }
+        run: |
+          # a token can authenticate yet lack write access (resource owner left as the user, not
+          # approved by the organization, Contents read-only): find out before touching anything
+          if git push --dry-run --force -q "https://x-access-token:${BOT}@github.com/${GITHUB_REPOSITORY}.git" "HEAD:refs/heads/bot/docs-pins" 2> "$RUNNER_TEMP/push.err"; then
+            echo "ok=true" >> "$GITHUB_OUTPUT"; echo "the bot token can push"
+          else
+            reason="$(grep -E '^(remote:|fatal:)' "$RUNNER_TEMP/push.err" | sed -E 's#https://[^ ]*@#https://#g' | head -3 | tr '\n' ' ')"
+            echo "ok=false" >> "$GITHUB_OUTPUT"
+            { echo "reason<<EOF"; echo "$reason"; echo "EOF"; } >> "$GITHUB_OUTPUT"
+            echo "::warning::DOCS_BOT_TOKEN cannot push to $GITHUB_REPOSITORY: $reason"
+          fi
+      - name: Open or refresh the pull request (as the token's owner)
+        id: pr
+        if: steps.pins.outputs.changed == 'true' && steps.bot.outputs.ok == 'true'
         env:
           GH_TOKEN: ${{ secrets.DOCS_BOT_TOKEN }}
           BOT: ${{ secrets.DOCS_BOT_TOKEN }}
@@ -78,15 +94,30 @@ jobs:
           fi
           issue="$(gh issue list --repo "$GITHUB_REPOSITORY" --state open --search 'in:title "docs: the sibling docs changed — bump the pins"' --json number --jq '.[0].number // empty')"
           if [ -n "$issue" ]; then gh issue close "$issue" --repo "$GITHUB_REPOSITORY" --comment "Superseded by the pull request on bot/docs-pins."; fi
-      - name: Or one issue, while DOCS_BOT_TOKEN is not set
-        if: steps.pins.outputs.changed == 'true' && env.HAVE_BOT != 'true'
-        env: { GH_TOKEN: "${{ github.token }}" }
+      - name: Or one issue, when the bot cannot open the pull request
+        # no token, a token that cannot push, or a failed pull-request step: the bump is never lost
+        if: >-
+          always() && steps.pins.outputs.changed == 'true' &&
+          (env.HAVE_BOT != 'true' || steps.bot.outputs.ok != 'true' || steps.pr.outcome == 'failure')
+        env:
+          GH_TOKEN: ${{ github.token }}
+          BOT_OK: ${{ steps.bot.outputs.ok }}
+          BOT_REASON: ${{ steps.bot.outputs.reason }}
+          PR_OUTCOME: ${{ steps.pr.outcome }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
         run: |
           title="docs: the sibling docs changed — bump the pins"
+          if [ "$HAVE_BOT" != "true" ]; then
+            why="DOCS_BOT_TOKEN is not set, so no pull request was opened."
+          elif [ "$BOT_OK" != "true" ]; then
+            why="DOCS_BOT_TOKEN is set but cannot push to this repository (${BOT_REASON:-no reason given}). Check it at https://github.com/settings/personal-access-tokens: resource owner **Algorythmos-AI** (not a personal account), repository **sggs-platform** selected, **Contents** and **Pull requests** read and write, and not *pending* organization approval."
+          else
+            why="The bot's pull-request step failed (${PR_OUTCOME}); see the run."
+          fi
           {
             cat "$RUNNER_TEMP/pins.md"
-            printf '\nDOCS_BOT_TOKEN is not set, so no pull request was opened. By hand, in a branch from integration:\n\n'
-            printf '    python3 tools/docs_pins.py && make docs-check\n'
+            printf '\n%s By hand, in a branch from integration:\n\n' "$why"
+            printf '    python3 tools/docs_pins.py && make docs-check\n\nRun: %s\n' "$RUN_URL"
           } > "$RUNNER_TEMP/issue.md"
           existing="$(gh issue list --repo "$GITHUB_REPOSITORY" --state open --search "in:title \"$title\"" --json number --jq '.[0].number // empty')"
           if [ -n "$existing" ]; then

@@ -4,7 +4,7 @@ description: "What each GitHub Actions workflow and job proves before a change c
 sidebar:
   order: 3
 verified:
-  commit: 606e5242
+  commit: 929534bf
   date: "2026-09-26"
 ---
 # CI Gates — what each check proves
@@ -33,7 +33,7 @@ verified:
 | `docs-links` (weekly, not a PR check) | every external link in `docs/` and in the sibling docs the wiki publishes still resolves (lychee, policy in `.lychee.toml`); a failure opens or updates one issue, never blocks | — |
 | `uptime` (every 15 min, not a PR check) | production `/api/health` all-true; `/privacy` and `/support` (the App Store URLs) resolve with their content; a failure opens or updates one issue. Job `docs`: the wiki's landing page and `/api/health` through its rewrite, with no redirect (its own issue) | — |
 | `docs-watch` (every 6 h, not a PR check) | `docs.gurbanisoul.com` serves the commit the last successful `deploy-docs` run on `main` shipped (a domain changed outside CI fails it), `docs_smoke.py` passes, and the **live suite** (`docs-site/e2e-live`) passes against the real API: status strip, search, the Ang explorer on Angs 1/712/1256, a line read from the API verifying exact, the API console, ⌘K search, axe as deployed, no CSP errors. One issue, closed when green | — |
-| `docs-pins` (Mondays, not a PR check) | when a sibling repository changes a file the wiki publishes, a pull request moves its pin (`tools/docs_pins.py`; a commit that touched nothing published moves nothing); opened with `DOCS_BOT_TOKEN` so the required checks run, or one issue while that secret is absent | `DOCS_BOT_TOKEN` (optional) |
+| `docs-pins` (Mondays, not a PR check) | when a sibling repository changes a file the wiki publishes, a pull request moves its pin (`tools/docs_pins.py`; a commit that touched nothing published moves nothing); opened with `DOCS_BOT_TOKEN` so the required checks run (after a dry-run push proves the token can write), or one issue — naming the cause — when the secret is absent, cannot push, or the pull-request step fails | `DOCS_BOT_TOKEN` (optional) |
 | `docs-freshness` (Mondays, not a PR check) | lists the stamped pages whose cited code (excerpts, linked source files, the posters' "Source of truth") changed since their `verified` stamp, then pages far behind; one issue rewritten weekly, closed when every page is fresh (`tools/docs_check.py --freshness`) | — |
 
 The PDF, the corpus rebuild and the scripture gates (reconcile attestation, regroup invariants,

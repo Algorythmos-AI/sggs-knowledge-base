@@ -56,6 +56,11 @@ entries prior to v1.1.0 are the project's original prose style and are preserved
   the Render rollback origin) and accepts a Vercel bypass for the staging alias.
 
 ### Fixed
+- **`docs-pins` never loses a bump to a bad token.** Its first run with `DOCS_BOT_TOKEN` failed with a
+  403: the token authenticated but could not push (its resource owner or approval), and the run just
+  went red. It now proves the token with a dry-run push first and falls back to the issue — naming the
+  cause — when the token is missing, cannot push, or the pull-request step fails. The runbook shows
+  how to create the token.
 - **The wiki's deploy pipeline.** Staging refuses to be the docs project's first Vercel deployment
   (the first one became production on 2026-09-26 and served an `integration` build at
   `docs.gurbanisoul.com`) and fails unless its own deployment is a preview. Production's rollback

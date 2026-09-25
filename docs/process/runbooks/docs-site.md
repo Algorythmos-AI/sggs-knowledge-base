@@ -4,7 +4,7 @@ description: "Launching docs.gurbanisoul.com and keeping it honest: one-time set
 sidebar:
   order: 6
 verified:
-  commit: f17ecc77
+  commit: 929534bf
   date: "2026-09-26"
 ---
 # Runbook: the docs site (launch and after)
@@ -27,6 +27,28 @@ Then apply the ruleset that makes the docs job required:
 REPO=Algorythmos-AI/sggs-platform bash scripts/gh/apply_rulesets.sh --dry-run   # prints the change
 REPO=Algorythmos-AI/sggs-platform bash scripts/gh/apply_rulesets.sh
 ```
+
+### The pin bot's token (`DOCS_BOT_TOKEN`)
+
+`docs-pins` opens its pull request with a fine-grained personal access token, so the required checks
+run on it (a pull request opened with the workflow's own token would trigger none). At
+<https://github.com/settings/personal-access-tokens/new>:
+
+| Field | Value |
+|---|---|
+| Resource owner | **Algorythmos-AI** — not your personal account (it cannot be changed later) |
+| Repository access | Only select repositories → `sggs-platform` |
+| Repository permissions | **Contents** and **Pull requests**: Read and write (nothing else) |
+| Expiration | 90 days, with a renewal reminder |
+
+If the organization requires approval, approve it under Organization settings → Personal access
+tokens → Pending requests. Then `gh secret set DOCS_BOT_TOKEN --repo Algorythmos-AI/sggs-platform`
+(a hidden prompt; never paste a token into chat or a file).
+
+Before it writes anything, the workflow checks the token with a dry-run push. A token that
+authenticates but cannot push — a personal resource owner, pending approval, read-only Contents —
+does not fail silently: the bump arrives as the issue *docs: the sibling docs changed — bump the
+pins*, which names the cause. An expired or removed token does the same.
 
 ## 2. Staging walkthrough (before the first promotion)
 
