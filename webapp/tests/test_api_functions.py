@@ -64,6 +64,48 @@ class Entries(unittest.TestCase):
                 baf.generate("abc123", Path(t), REAL_DB)
 
 
+def _vercelignored(path, pattern):
+    """Does a .vercelignore (gitignore-syntax) pattern exclude `path` (relative to the repo root)?
+    Covers the forms that file uses: anchored or not, directory or file, shell globs."""
+    import fnmatch
+    is_dir = pattern.endswith("/")
+    pat = pattern.rstrip("/")
+    anchored = pat.startswith("/") or "/" in pat
+    pat = pat.lstrip("/")
+    parts = path.split("/")
+    if anchored:
+        n = len(pat.split("/"))
+        return fnmatch.fnmatchcase("/".join(parts[:n]), pat) and (not is_dir or n < len(parts))
+    last = len(parts) - 1
+    return any(fnmatch.fnmatchcase(c, pat) and (not is_dir or i < last) for i, c in enumerate(parts))
+
+
+class UploadIgnore(unittest.TestCase):
+    """The deploy uploads what `vercel build` bundled, minus .vercelignore. A pattern that matches
+    the generated API files drops them from the upload (the build then fails on Vercel, or worse)."""
+    GENERATED = ("frontend/_sggs/db/all.sqlite", "frontend/_sggs/db/search.sqlite",
+                 "frontend/_sggs/webapp/serve.py", "frontend/_sggs/webapp/sggs/core.py",
+                 "frontend/api/svc/all.py", "frontend/pyproject.toml", "frontend/.python-version")
+
+    def patterns(self):
+        lines = (ROOT / ".vercelignore").read_text(encoding="utf-8").splitlines()
+        return [l.strip() for l in lines if l.strip() and not l.lstrip().startswith("#")]
+
+    def test_the_matcher_catches_an_unanchored_directory_rule(self):
+        self.assertTrue(_vercelignored("frontend/_sggs/db/all.sqlite", "db/"))
+        self.assertFalse(_vercelignored("frontend/_sggs/db/all.sqlite", "/db/"))
+        self.assertTrue(_vercelignored("db/sggs.sqlite", "/db/"))
+
+    def test_no_pattern_drops_the_generated_api_files(self):
+        for path in self.GENERATED:
+            for pat in self.patterns():
+                self.assertFalse(_vercelignored(path, pat), f".vercelignore `{pat}` excludes {path}")
+
+    def test_the_repositorys_own_backend_and_database_stay_out_of_uploads(self):
+        for path in ("db/sggs.sqlite", "webapp/serve.py", "contract/golden_search.ndjson"):
+            self.assertTrue(any(_vercelignored(path, pat) for pat in self.patterns()), path)
+
+
 class OutputGuard(unittest.TestCase):
     """--verify-output reads what `vercel build` actually bundled."""
 

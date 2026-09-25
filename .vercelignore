@@ -1,16 +1,19 @@
-# Vercel builds only the Astro frontend (Root Directory = frontend/). Keep uploads lean by
-# excluding the backend, the ~109 MB LFS database, and other non-frontend assets. (dist/ and
-# node_modules/ are already gitignored, so Vercel rebuilds them; db/sggs.sqlite would upload only
-# as an LFS pointer anyway — this is belt-and-suspenders for faster builds.)
-db/
-database.sqlite
-webapp/
-ios/
-pipeline/
-corpus/
-concordance/
-validation/
-audit/
-contract/
+# Vercel builds only the Astro frontend (Root Directory = frontend/) plus the API functions that
+# tools/build_api_functions.py generates under frontend/ at deploy time. Keep uploads lean by
+# excluding the repository's own backend, database and other non-frontend assets.
+#
+# Every directory pattern is anchored with a leading "/": an unanchored `db/` or `webapp/` would
+# also match frontend/_sggs/db/ and frontend/_sggs/webapp/ and silently drop the API's databases
+# and code from the upload (webapp/tests/test_api_functions.py guards this).
+/db/
+/database.sqlite
+/webapp/
+/ios/
+/pipeline/
+/corpus/
+/concordance/
+/validation/
+/audit/
+/contract/
 *.pdf
 *.key
