@@ -31,7 +31,8 @@ for (const src of pages) {
   const fences = (md.match(/^```mermaid\b/gm) ?? []).length;
   const rendered = (html.match(/data-diagram="mermaid"/g) ?? []).length;
   if (fences !== rendered) problems.push(`${rel}: ${fences} Mermaid fence(s) in the source but ${rendered} rendered diagram(s)`);
-  const refs = (md.match(/!\[[^\]]*\]\([^)]*diagrams\/posters\/[^)]+\.svg\)/g) ?? []).length;
+  const prose = md.replace(/```[\s\S]*?```/g, '').replace(/`[^`\n]*`/g, '');   // examples in code do not count
+  const refs = (prose.match(/!\[[^\]]*\]\([^)]*diagrams\/posters\/[^)]+\.svg\)/g) ?? []).length;
   const figs = (html.match(/<figure class="poster"/g) ?? []).length;
   if (refs !== figs) problems.push(`${rel}: ${refs} poster image(s) in the source but ${figs} walkthrough figure(s) in the page`);
   checked++; diagrams += rendered; posters += figs;
