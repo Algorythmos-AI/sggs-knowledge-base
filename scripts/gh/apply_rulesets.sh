@@ -1,21 +1,32 @@
 #!/usr/bin/env bash
-# Apply .github/rulesets/*.json to the repo via the GitHub API (idempotent:
-# updates a ruleset with the same name if it already exists). Requires GitHub
-# Team/Pro on the repo owner, and `gh auth` with admin on the repo.
-#   REPO=Algorythmos-AI/sggs-platform bash scripts/gh/apply_rulesets.sh
+# Apply .github/rulesets/*.json to the repo via the GitHub API (idempotent). An existing ruleset with
+# the same name is updated by MERGING the committed file into the live ruleset
+# (scripts/gh/merge_ruleset.py): keys the file does not mention — ones GitHub added later, such as
+# require_extra_approval_for_unattributed_changes — are kept, never reset to a weaker default.
+# Requires GitHub Team/Pro on the repo owner, and `gh auth` with admin on the repo.
+#   REPO=Algorythmos-AI/sggs-platform bash scripts/gh/apply_rulesets.sh            # apply
+#   REPO=Algorythmos-AI/sggs-platform bash scripts/gh/apply_rulesets.sh --dry-run  # show what would change
 set -euo pipefail
+DRY=""; [ "${1:-}" = "--dry-run" ] && DRY=1
 REPO="${REPO:-$(gh repo view --json nameWithOwner -q .nameWithOwner)}"
-echo "Applying rulesets to $REPO"
+HERE="$(cd "$(dirname "$0")" && pwd)"
+TMP="$(mktemp -d)"; trap 'rm -rf "$TMP"' EXIT
+echo "Applying rulesets to $REPO${DRY:+ (dry run)}"
 existing="$(gh api "repos/$REPO/rulesets" --jq '.[] | "\(.id) \(.name)"' 2>/dev/null || true)"
 for f in .github/rulesets/*.json; do
   name="$(python3 -c "import json,sys;print(json.load(open('$f'))['name'])")"
   id="$(echo "$existing" | awk -v n="$name" '$2==n{print $1}')"
   if [ -n "$id" ]; then
-    echo "  updating '$name' (id $id) from $f"
-    gh api -X PUT "repos/$REPO/rulesets/$id" --input "$f" >/dev/null
+    gh api "repos/$REPO/rulesets/$id" > "$TMP/live.json"
+    echo "  '$name' (id $id) from $f:"
+    python3 "$HERE/merge_ruleset.py" "$TMP/live.json" "$f" --diff | sed 's/^/    /'
+    if [ -z "$DRY" ]; then
+      python3 "$HERE/merge_ruleset.py" "$TMP/live.json" "$f" > "$TMP/put.json"
+      gh api -X PUT "repos/$REPO/rulesets/$id" --input "$TMP/put.json" >/dev/null
+    fi
   else
     echo "  creating '$name' from $f"
-    gh api -X POST "repos/$REPO/rulesets" --input "$f" >/dev/null
+    [ -z "$DRY" ] && gh api -X POST "repos/$REPO/rulesets" --input "$f" >/dev/null
   fi
 done
-echo "Done. Verify in GitHub → Settings → Rules → Rulesets."
+echo "Done.${DRY:+ Nothing was changed.} Verify in GitHub → Settings → Rules → Rulesets."

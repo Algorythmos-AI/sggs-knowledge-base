@@ -4,7 +4,7 @@ description: "Launching docs.gurbanisoul.com and keeping it honest: one-time set
 sidebar:
   order: 6
 verified:
-  commit: df69071d
+  commit: 4db8c6fc
   date: "2026-09-26"
 ---
 # Runbook: the docs site (launch and after)
@@ -24,6 +24,7 @@ and `deploy-staging` fails clearly at preflight.
 Then apply the ruleset that makes the docs job required:
 
 ```bash
+REPO=Algorythmos-AI/sggs-platform bash scripts/gh/apply_rulesets.sh --dry-run   # prints the change
 REPO=Algorythmos-AI/sggs-platform bash scripts/gh/apply_rulesets.sh
 ```
 
