@@ -12,3 +12,5 @@ public/posters/
 test-results/
 playwright-report/
 .lighthouseci/
+qa-shots/
+src/og/fonts/

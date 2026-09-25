@@ -20,6 +20,7 @@ import { remarkAdrTimeline } from './plugins/remark-adr-timeline.mjs';
 import { remarkReleases } from './plugins/remark-releases.mjs';
 import { remarkMermaid } from './plugins/remark-mermaid.mjs';
 import { remarkPosters } from './plugins/remark-posters.mjs';
+import { remarkTaskLists } from './plugins/remark-task-lists.mjs';
 import { SIDEBAR } from './sidebar.mjs';
 
 // The commit this build documents: CI passes PUBLIC_DOCS_COMMIT; locally, git. Emitted as
@@ -39,7 +40,7 @@ export default defineConfig({
     // Order matters: links and widgets are rewritten before Starlight's own plugins see the tree;
     // Mermaid renders at the remark stage, before Expressive Code sees code blocks. Links in the
     // built HTML are validated afterwards by scripts/check-links.mjs.
-    processor: unified({ remarkPlugins: [remarkStripTitleH1, remarkRepoLinks, remarkWidgets, remarkCodeExcerpt, remarkApiTry, remarkQuiz, remarkRepoMap, remarkAdrTimeline, remarkReleases, remarkTerms, remarkGlossaryAnchors, remarkMermaid, remarkPosters] }),
+    processor: unified({ remarkPlugins: [remarkStripTitleH1, remarkRepoLinks, remarkWidgets, remarkCodeExcerpt, remarkApiTry, remarkQuiz, remarkRepoMap, remarkAdrTimeline, remarkReleases, remarkTerms, remarkGlossaryAnchors, remarkMermaid, remarkPosters, remarkTaskLists] }),
   },
   integrations: [
     starlight({
