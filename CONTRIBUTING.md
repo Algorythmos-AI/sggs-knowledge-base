@@ -1,5 +1,8 @@
 # Contributing
 
+New here? Start with the wiki's [onboarding track](docs/onboarding/README.md) and the
+[code of conduct](CODE_OF_CONDUCT.md).
+
 ## Prime directive
 This repository is a verbatim knowledge base of **Sri Guru Granth Sahib Ji**.
 **Never edit, normalize, or "correct" the Gurmukhi text.** If something looks
