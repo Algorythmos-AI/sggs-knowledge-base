@@ -13,8 +13,8 @@
 | `deploy-verify` (on Vercel `deployment_status`, previews only) | preview `/api/health` all-true (passes with a notice without the repo-level bypass secret) | — |
 | `release` (manual fallback) | idempotent tag + GitHub Release on `main`; normal releases are cut by `deploy-production` after a verified deploy | — |
 | `data-canary` (every 6 h, not a PR check) | production serves the pinned scripture byte for byte: 500 random lines (`/api/lines`) and 12 random Angs plus Angs 1, 712, 1430 (`/api/ang/N`), from the API origin **and** through the public site's CDN; the golden contract replays against production; a failure opens or updates one issue | pinned DB |
-| `deploy-staging · deploy-services` | each per-context staging service (`sggs-staging-*`) is deployed at the exact commit through the Render API and reports it on `/readyz` | `RENDER_API_KEY` |
-| `deploy-staging · verify` | the web smoke; every routed context answers **through the gateway** with its own `X-Service`; an unknown prefix still falls through to the single API; the **whole golden contract passes through the gateway** | bypass secret, pinned DB |
+| `deploy-staging · deploy-web` | the API functions are generated at the commit from the pinned database (slices proven); after `vercel build` every function bundles only its entry, the API code and its own database, and no database or API source is in the static output | pinned DB |
+| `deploy-staging · verify` | every API function's `/readyz` reports this commit and exactly its contexts; no API file is downloadable; the web smoke; every routed context answers **through the gateway** with its own `X-Service`; an unknown prefix falls through to `all`; the **whole golden contract passes through the gateway** | bypass secret, pinned DB |
 | `uptime` (every 15 min, not a PR check) | production `/api/health` all-true; `/privacy` and `/support` (the App Store URLs) resolve with their content; a failure opens or updates one issue | — |
 
 The PDF, the corpus rebuild and the scripture gates (reconcile attestation, regroup invariants,

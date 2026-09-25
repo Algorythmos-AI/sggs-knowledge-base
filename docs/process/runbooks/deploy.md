@@ -41,22 +41,24 @@ flowchart LR
 
 ## Staging (review integration before production)
 Every push to `integration` runs **`deploy-staging.yml`**: gates (core checks on the SHA) →
-staging Render deploy (verified by `/api/health.commit`) → staging web deploy aliased to
-`sggs-staging.vercel.app` → `@smoke`. No promote, no release. Open `sggs-staging.vercel.app`
-logged in to Vercel (it is SSO-protected). Staging web proxies `/api` to `sggs-api-staging`
-via the host-conditioned rewrite in `frontend/vercel.json`.
+staging web deploy with the API inside it → alias to `sggs-staging.vercel.app` → verify. No promote,
+no release. Open `sggs-staging.vercel.app` logged in to Vercel (it is SSO-protected).
+
+The API runs as Python functions in the web project (ADR-0011): `tools/build_api_functions.py`
+generates one function per bounded context plus `all` from the pinned database (each context's slice
+is proven by the slicer), `vercel build` bundles them, and `--verify-output` refuses the build if a
+function bundles anything but its entry, the API code and its own database, or if a database or API
+source would be published as a static file. After the alias, `scripts/ci/verify_functions.py` checks
+every function's `/readyz` (this commit, exactly its contexts, `X-Service`), then the gateway probes,
+the web smoke and the whole golden contract run through the staging site.
 
 **One-time staging setup (owner):**
-1. **Render** → New → **Blueprint** → pick the repo. The committed staging-only `render.yaml`
-   creates `sggs-api-staging` (Docker `webapp/Dockerfile`, branch `integration`, auto-deploy off,
-   free plan). Then its Settings → **Deploy Hook** → copy the URL.
-   (Do NOT `render services create` by CLI — it can't set the Dockerfile path and the build fails.)
-2. **Vercel** — the alias `sggs-staging.vercel.app` already exists (claimed via
+1. **Vercel** — the alias `sggs-staging.vercel.app` already exists (claimed via
    `vercel alias set <deployment> sggs-staging.vercel.app`); CI re-points it each deploy. Nothing to do
    unless you want a nicer domain.
-3. **GitHub** → Settings → Environments → **`staging`** (deployment branch `integration`). Secrets:
+2. **GitHub** → Settings → Environments → **`staging`** (deployment branch `integration`). Secrets:
    `VERCEL_TOKEN`, `VERCEL_ORG_ID`, `VERCEL_PROJECT_ID`, `VERCEL_AUTOMATION_BYPASS_SECRET` (same values
-   as `production`), and `RENDER_DEPLOY_HOOK_STAGING` (from step 1). The preflight job fails clearly if any are missing.
+   as `production`). The preflight job fails clearly if any are missing.
 
 ## Preview checks (optional)
 `deploy-verify.yml` health-checks feature-branch **preview** deployments. Previews are behind
@@ -91,21 +93,10 @@ The image bakes the commit at build time (`webapp/Dockerfile`: `ARG RENDER_GIT_C
 deploy-api times out with a hint. Check the Render build log for the build arg, then set a
 service environment variable `SGGS_COMMIT` manually for that one deploy and re-run the job.
 
-## Staging services (Phase 4, staging only) — one-time setup
+## Staging services
 
-`render.yaml` declares one free staging service per bounded context (`sggs-staging-reader`,
-`-search`, `-verify`, `-insights`, `-knowledge`). Each builds the same image with `SGGS_MODULES` set,
-so the build cuts that context's database slice (`tools/slice_db.py`). The `deploy-services` job of
-`deploy-staging` deploys each at the exact commit through the Render API and waits for `/readyz` to
-report that commit. Production is unchanged.
-
-1. **Create the services:** Render dashboard → *Blueprints* → the Blueprint linked to this repository
-   → **Sync** (or *New Blueprint Instance* from `render.yaml` on branch `integration`). Confirm that
-   exactly the five `sggs-staging-*` services are added. Nothing production is declared here.
-2. **API key:** Render dashboard → *Account Settings* → *API Keys* → create one, then store it only in
-   the GitHub `staging` environment:
-   `gh secret set RENDER_API_KEY --env staging --repo Algorythmos-AI/sggs-platform` (hidden prompt).
-3. The next merge to `integration` deploys all five; each must reach `/readyz` at that commit.
-
-Until the key exists, `deploy-services` is a no-op with a notice. The gateway still sends every
-`/api/*` request to `sggs-api-staging`; routing prefixes to the new services is the next step.
+Staging answers each bounded context with its own Vercel function (ADR-0011); which contexts are
+split per environment is `gateway/routes.json`, and `frontend/vercel.json` is generated from it
+(`python3 tools/gen_gateway.py`; a test fails on drift). To send a context back to `all`, remove it
+from `staging.services`, regenerate, and merge. Production keeps the Render single API until it is
+moved the same way (`docs/process/runbooks/services-production.md`).

@@ -4,7 +4,7 @@
 |---|---|---|---|
 | Branch | working tree | `integration` | `main` |
 | Web | `serve.py` on :7777 | `sggs-staging.vercel.app` (SSO-protected; open logged in) | **`gurbanisoul.com`** (canonical) |
-| API | same process | Render `sggs-api-staging.onrender.com` (free; cold-starts) | Render `sggs-knowledge-base.onrender.com` |
+| API | same process | Vercel functions in the web project, one per context + `all` (ADR-0011) | Render `sggs-knowledge-base.onrender.com` |
 | iOS | simulator | TestFlight **Internal** | TestFlight **External** / App Store |
 | DB profile | full | full | full (public profile until the English licence is recorded) |
 | Who deploys | you | `deploy-staging.yml` on push to integration | `deploy-production.yml` on push to main |
@@ -15,14 +15,15 @@
 email routing are in [`docs/website/README.md`](../website/README.md).
 
 ## Same-origin API (no CORS)
-The browser always calls `/api/*`; Vercel rewrites those to the Render service.
-The staging rewrite is **host-conditioned**, so no frontend configuration or CORS
-is needed:
+The browser always calls `/api/*` on the site's own host, so no frontend configuration or CORS is
+needed. On staging the rewrites are internal and **host-conditioned**: each context's prefixes go to
+its function, everything else to `all`. Production proxies `/api` to the Render service. The rules
+are generated (`tools/gen_gateway.py` from `gateway/routes.json`), for example:
 
 ```json
-{ "source": "/api/:path*",
+{ "source": "/api/timing(/.*)?",
   "has": [{ "type": "host", "value": "sggs-staging.vercel.app" }],
-  "destination": "https://sggs-api-staging.onrender.com/api/:path*" },
+  "destination": "/api/svc/knowledge" },
 { "source": "/api/:path*",
   "destination": "https://sggs-knowledge-base.onrender.com/api/:path*" }
 ```
@@ -30,9 +31,8 @@ is needed:
 ## As-code
 - **Deploys are CI-gated** — see [runbook: deploy](runbooks/deploy.md). The platforms' own git
   auto-deploys are switched off after cutover.
-- Render: `render.yaml` (Blueprint) declares **staging only** (`sggs-api-staging`, from `webapp/Dockerfile`).
-  Production (`sggs-knowledge-base`) is a manually managed service and is deliberately **not**
-  in the Blueprint, so linking it can never create or adopt production.
+- Render: production (`sggs-knowledge-base`, from `webapp/Dockerfile`) is a manually managed
+  service; no Blueprint is committed. Staging no longer uses Render (ADR-0011).
 - Vercel: `frontend/vercel.json` (root dir = `frontend/`) — production branch `main`,
   staging a custom environment tracking `integration`.
 - `deploy-verify` CI curls `/api/health` and asserts `/api/meta.version` matches the

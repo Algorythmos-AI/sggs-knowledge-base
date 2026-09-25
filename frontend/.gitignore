@@ -7,3 +7,10 @@ dist/
 # Playwright
 playwright-report/
 test-results/
+
+# The API functions, generated at deploy time by tools/build_api_functions.py (never committed)
+api/svc/
+_sggs/
+.python-version
+pyproject.toml
+uv.lock
