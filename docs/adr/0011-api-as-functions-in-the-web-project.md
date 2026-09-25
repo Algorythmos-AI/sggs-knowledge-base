@@ -6,8 +6,8 @@ sidebar:
 ---
 # ADR-0011: The API runs as Vercel functions inside the web project (staging first)
 
-**Status:** accepted (2026-09-25) — live on staging; production keeps the Render single API until it
-is moved the same way. Supersedes the *hosting* part of ADR-0010 (per-context Render services); its
+**Status:** accepted (2026-09-25) — live on staging; production moves onto `all` (the whole API as one
+function) in the release after 1.3.9, with the Render single API kept deployed as its rollback target. Supersedes the *hosting* part of ADR-0010 (per-context Render services); its
 slicing, generated routing and proofs stand.
 
 **Context.** Running the five contexts as always-on Render services in production would cost about

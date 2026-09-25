@@ -64,13 +64,20 @@ class Gateway(unittest.TestCase):
 
     def test_services_exist_only_on_the_vercel_functions(self):
         bad = copy.deepcopy(CFG)
-        bad["production"]["services"] = ["search"]
+        bad["production"] = {"api_platform": "render", "api": "https://example.onrender.com", "services": ["search"]}
         with self.assertRaises(SystemExit):
             gg.environments(bad)
         bad = copy.deepcopy(CFG)
         bad["staging"]["api_platform"] = "fly"
         with self.assertRaises(SystemExit):
             gg.environments(bad)
+
+    def test_production_can_roll_back_to_render(self):
+        back = copy.deepcopy(CFG)
+        back["production"] = {"api_platform": "render", "api": "https://sggs-knowledge-base.onrender.com", "services": []}
+        prod = [r for r in gg.rewrites(back) if not r.get("has")]
+        self.assertEqual(prod, [{"source": "/api/:path*",
+                                 "destination": "https://sggs-knowledge-base.onrender.com/api/:path*"}])
 
     def test_routed_contexts_have_probes(self):
         for env in ("staging", "production"):

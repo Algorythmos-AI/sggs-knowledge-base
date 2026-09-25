@@ -16,13 +16,13 @@ reaches users unless every required check on that exact commit is green.
 ```mermaid
 flowchart LR
     accTitle: The deploy-production job chain
-    accDescr: Gates, preflight and approval, then the API deploy and its verification, the unaliased web deploy and its smoke, promotion with the public smoke and rollback edge, and the release tag.
+    accDescr: Gates, preflight and approval, then the API deploy and its verification, the unaliased web deploy with its API functions and their checks, promotion with the public smoke and rollback edge, and the release tag.
   G[gates: required checks on SHA] --> A[approve]
   P[preflight: secrets present] --> A
   A --> DA[deploy-api: Render hook ref=SHA]
   DA --> VA[verify-api: commit==SHA, health, superset check]
   VA --> DW[deploy-web: vercel build + deploy --skip-domain]
-  DW --> VW[verify-web: @smoke on unaliased URL]
+  DW --> VW[verify-web: API functions, golden contract, @smoke on unaliased URL]
   VW --> PR[promote: vercel promote + @smoke on public domain]
   PR --> R[release: tag vX.Y.Z + GitHub Release]
   PR -. smoke fails .-> RB[vercel rollback to previous + incident issue]
@@ -34,9 +34,9 @@ flowchart LR
 | gates | every required check (from `.github/rulesets/main.json`) + `playwright` succeeded on this SHA | nothing deployed |
 | preflight | all production secrets exist | nothing deployed |
 | approve | optional human click (add reviewers to env `production-approval`) | nothing deployed |
-| deploy-api | Render runs **this commit** (`/api/health.commit == SHA`) and is healthy | web untouched; old API keeps serving until Render switches |
+| deploy-api | Render runs **this commit** (`/api/health.commit == SHA`) and is healthy — production's rollback target while `/api` is on the functions | web untouched; old API keeps serving until Render switches |
 | verify-api | 100 sampled compositions serve exact lines, headings present, gaps 404 | incident issue; **roll back Render** (rollback.md) |
-| deploy-web / verify-web | the built frontend passes the heading smoke **before** it is live | not promoted — users unaffected |
+| deploy-web / verify-web | **before** it is live: every API function is ready at this commit with exactly its contexts and the API's files are not downloadable (`verify_functions.py --env production`), the whole golden contract holds through its `/api` (`contract_http.py`), and the heading smoke passes | not promoted — users unaffected |
 | promote | public domain serves this commit and passes smoke | automatic `vercel rollback` to the recorded previous deployment + incident issue |
 | release | tag + GitHub Release are created only after a verified deploy | re-run the job |
 
@@ -89,15 +89,18 @@ the web smoke and the whole golden contract run through the staging site.
    as `production`). The preflight job fails clearly if any are missing.
 
 ## Preview checks (optional)
-`deploy-verify.yml` health-checks feature-branch **preview** deployments. Previews are behind
+`deploy-verify.yml` health-checks **preview** deployments. Vercel Git previews of the web are off
+(`frontend/vercel.json` → `git.deploymentEnabled: false`: a Git preview carries no API functions,
+so its `/api` would point at nothing — review web changes on staging), so it now fires for the
+CI-made preview deployments (staging, the wiki). Previews are behind
 Vercel Deployment Protection, so it needs a **repo-level** secret (not the `production`
 environment one):
 
 ```bash
 gh secret set VERCEL_AUTOMATION_BYPASS_SECRET --repo Algorythmos-AI/sggs-platform
 ```
-Without it the check posts a notice and passes. (Previews proxy `/api` to production, so this
-is a light smoke, not a gate.)
+Without it the check posts a notice and passes. It is a light smoke, not a gate: staging and the
+wiki are proven by their own deploy workflows.
 
 ## Cutover (do in this order)
 1. Merge the pipeline to `integration`, then the release PR to `main` (**merge commit**).
@@ -126,5 +129,8 @@ service environment variable `SGGS_COMMIT` manually for that one deploy and re-r
 Staging answers each bounded context with its own Vercel function (ADR-0011); which contexts are
 split per environment is `gateway/routes.json`, and `frontend/vercel.json` is generated from it
 (`python3 tools/gen_gateway.py`; a test fails on drift). To send a context back to `all`, remove it
-from `staging.services`, regenerate, and merge. Production keeps the Render single API until it is
-moved the same way (`docs/process/runbooks/services-production.md`).
+from `staging.services`, regenerate, and merge. Production answers `/api` with `all` from the
+release after 1.3.9; the Render single API keeps deploying as its rollback target until it is
+retired (`docs/process/runbooks/services-production.md`, step 4). Staging no longer uses Render: the
+six free `sggs-api-staging` / `sggs-staging-*` services are unused and can be deleted in the Render
+dashboard (ADR-0011, Consequences).
