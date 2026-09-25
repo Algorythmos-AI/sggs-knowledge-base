@@ -6,6 +6,26 @@ const dir = (label, directory, extra = {}) => ({ label, items: [{ autogenerate: 
 export const SIDEBAR = [
   dir('Start here', 'onboarding'),
   dir('Architecture', 'architecture'),
+  {
+    label: 'Data & pipeline',
+    items: [
+      { label: 'Overview', slug: 'data' },
+      { label: 'Anatomy of a line record', slug: 'data/line-record' },
+      { label: 'Corpus pipeline and gates', slug: 'data/pipeline' },
+      { label: 'The dataset pin', slug: 'data/dataset-pin' },
+      { label: 'The editorial ledger', slug: 'data/editorial-ledger' },
+      {
+        // pinned from Algorythmos-AI/sggs-data (docs-site/sources.lock.json); canonical there
+        label: 'From sggs-data (pinned)', collapsed: true,
+        items: [
+          dir('Architecture', 'data/architecture'),
+          dir('Decisions', 'data/adr'),
+          dir('Runbooks', 'data/process/runbooks'),
+          { label: 'Answer protocol', slug: 'data/answer-protocol' },
+        ],
+      },
+    ],
+  },
   dir('Engineering handbook', 'engineering'),
   dir('Process & runbooks', 'process'),
   dir('Brand', 'brand'),

@@ -8,6 +8,32 @@
     "walkthrough": {
       "purpose": "Inserted by remark-posters around an inlined poster; not written by authors (use ![alt](../diagrams/posters/NN-slug.svg)).",
       "attrs": {}
+    },
+    "ang-explorer": {
+      "purpose": "Live Ang explorer: every line record of an Ang from /api/ang/{n}, verbatim, with the columns annotated; quick picks and header/rahao filters.",
+      "attrs": {
+        "ang": {
+          "description": "The Ang to open first (1–1430); default 1."
+        }
+      }
+    },
+    "code": {
+      "purpose": "A code excerpt read from the real source at build time (this repository at the documented commit, or a pinned sibling from sources.lock.json) — never a pasted copy. Resolved by plugins/remark-code-excerpt.mjs; no JavaScript.",
+      "attrs": {
+        "file": {
+          "description": "Repository-relative path of the file.",
+          "required": true
+        },
+        "repo": {
+          "description": "A source name from docs-site/sources.lock.json (e.g. sggs-data); omitted = this repository."
+        },
+        "symbol": {
+          "description": "A function/class/const name to excerpt (language-aware); the excerpt runs to the end of its block."
+        },
+        "lines": {
+          "description": "An explicit range, e.g. 23-60, instead of a symbol."
+        }
+      }
     }
   }
 }

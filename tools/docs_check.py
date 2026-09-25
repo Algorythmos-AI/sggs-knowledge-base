@@ -75,6 +75,23 @@ def _rel(path: Path) -> str:
 
 
 # ── helpers ────────────────────────────────────────────────────────────────────────────────────
+def is_sibling(path: Path) -> bool:
+    """A page installed from a sibling repository at its pinned commit (canonical elsewhere): what
+    only that repository can fix is reported as a notice here, never as an error."""
+    try:
+        return path.resolve().is_relative_to(SOURCES_DIR.resolve())
+    except (OSError, ValueError):
+        return False
+
+
+def sibling_sources() -> dict:
+    """docs-site/sources.lock.json: name -> {repository, commit, files{path: …}}."""
+    try:
+        return json.loads((SITE / "sources.lock.json").read_text(encoding="utf-8")).get("sources", {})
+    except (OSError, ValueError):
+        return {}
+
+
 def published_pages() -> list[Path]:
     pages = [p for p in sorted(DOCS.rglob("*.md"))
              if not str(p.relative_to(ROOT)).startswith(NOT_PUBLISHED)]
@@ -276,6 +293,8 @@ def check_link(path: Path, n: int, target: str) -> list[Problem]:
     file_part, _, anchor = target.partition("#")
     dest = (path.parent / file_part).resolve()
     if not dest.exists():
+        if is_sibling(path):
+            return [Problem(path, n, f"link {target} is not pinned here; the site sends it to GitHub at the pinned commit", level="notice")]
         return [Problem(path, n, f"broken link: {target} ({_rel(dest)} does not exist)")]
     if anchor and dest.suffix == ".md" and anchor not in anchors_of(dest):
         return [Problem(path, n, f"anchor #{anchor} not found in {_rel(dest)}")]
@@ -292,6 +311,52 @@ def check_widget(path: Path, n: int, m: re.Match, widgets: dict, lines) -> list[
     following = [l for nn, l, code in lines if n < nn <= n + 3]
     if not any(l.strip() and not WIDGET_RE.match(l.strip()) and not l.startswith("#") for l in following):
         P.append(Problem(path, n, f"widget sggs:{name} needs static fallback text within the next 3 lines"))
+    if name == "code" and "file" in attrs:
+        P.extend(check_code_target(path, n, attrs))
+    return P
+
+
+SYMBOL_RE = {
+    ".py": r"^[ \t]*(?:(?:async\s+)?(?:def|class)\s+{n}\b|{n}\s*(?::[^=]+)?=(?!=))",
+    ".mjs": r"^[ \t]*(?:export\s+)?(?:default\s+)?(?:async\s+)?(?:function\*?\s+{n}\b|class\s+{n}\b|(?:const|let|var)\s+{n}\b)",
+    ".swift": r"^[ \t]*(?:(?:public|private|internal|fileprivate|open|static|final|override|mutating|@\w+)\s+)*(?:func|struct|class|enum|protocol|extension|actor|var|let)\s+{n}\b",
+    ".sh": r"^[ \t]*(?:function\s+)?{n}\s*\(\)",
+}
+SYMBOL_RE[".js"] = SYMBOL_RE[".ts"] = SYMBOL_RE[".mjs"]
+
+
+def check_code_target(path: Path, n: int, attrs: dict) -> list[Problem]:
+    """`<!-- sggs:code file= repo= symbol= lines= -->`: the file exists in this repository or is pinned by
+    the named sibling; a symbol is found when the file is on disk; a range is well formed."""
+    file, repo = attrs["file"], attrs.get("repo")
+    if ".." in file.split("/") or file.startswith("/"):
+        return [Problem(path, n, f"widget sggs:code: bad file {file!r}")]
+    if repo:
+        src = sibling_sources().get(repo)
+        if src is None:
+            return [Problem(path, n, f"widget sggs:code: unknown repo {repo!r} (docs-site/sources.lock.json)")]
+        if file not in src.get("files", {}):
+            return [Problem(path, n, f"widget sggs:code: {repo} does not pin {file} (add it to include, run tools/fetch_sibling_docs.py --update {repo})")]
+        disk = SOURCES_DIR / repo / file
+    else:
+        disk = ROOT / file
+        if not disk.exists():
+            return [Problem(path, n, f"widget sggs:code: {file} does not exist in this repository")]
+    P: list[Problem] = []
+    if "lines" in attrs and not re.fullmatch(r"[1-9]\d*-[1-9]\d*", attrs["lines"]):
+        P.append(Problem(path, n, f"widget sggs:code: lines must be A-B (got {attrs['lines']!r})"))
+    if "symbol" not in attrs and "lines" not in attrs:
+        P.append(Problem(path, n, "widget sggs:code: give symbol= or lines="))
+    if "symbol" in attrs:
+        pat = SYMBOL_RE.get(disk.suffix)
+        if pat is None:
+            P.append(Problem(path, n, f"widget sggs:code: symbol= is not supported for {disk.suffix} files; use lines="))
+        elif disk.exists():
+            rx = re.compile(pat.format(n=re.escape(attrs["symbol"])), re.M)
+            if not rx.search(disk.read_text(encoding="utf-8", errors="replace")):
+                P.append(Problem(path, n, f"widget sggs:code: symbol {attrs['symbol']!r} not found in {file}"))
+        else:
+            P.append(Problem(path, n, f"widget sggs:code: {repo}/{file} is not installed, symbol not checked (tools/fetch_sibling_docs.py)", level="notice"))
     return P
 
 
@@ -301,7 +366,8 @@ def check_mermaid(path: Path, n: int, src: str, tokens_hex: set[str]) -> list[Pr
         P.append(Problem(path, n, "Mermaid `%%{init` directives are not allowed — the site theme is central"))
     bad = sorted({h.upper() for h in HEX_RE.findall(src)} - tokens_hex)
     if bad:
-        P.append(Problem(path, n, f"Mermaid colours must come from docs/brand/tokens.json; not allowed: {', '.join(bad)}"))
+        P.append(Problem(path, n, f"Mermaid colours must come from docs/brand/tokens.json; not allowed: {', '.join(bad)}",
+                         level="notice" if is_sibling(path) else "error"))
     if "accTitle" not in src:
         P.append(Problem(path, n, "Mermaid diagram has no `accTitle:` (screen readers get no name)", level="warning"))
     return P
@@ -343,6 +409,12 @@ def check_verified_commit(path: Path, commit: str) -> list[Problem]:
     return []
 
 
+def pinned_file(name: str) -> bool:
+    """`<source>/<path>` names a file pinned from a sibling repository (docs-site/sources.lock.json)."""
+    src, _, rel = name.partition("/")
+    return rel in sibling_sources().get(src, {}).get("files", {})
+
+
 def check_posters(tokens_hex: set[str]) -> list[Problem]:
     P: list[Problem] = []
     pdir = DOCS / "diagrams" / "posters"
@@ -380,7 +452,7 @@ def check_posters(tokens_hex: set[str]) -> list[Problem]:
             for f in re.findall(r"Source of truth:\s*([^<]+)<", s)[:1]:
                 for name in re.split(r"\s*[·,]\s*", f.strip()):
                     name = name.strip()
-                    if name and not (ROOT / name).exists() and not name.startswith("Algorythmos-AI/"):
+                    if name and not (ROOT / name).exists() and not name.startswith("Algorythmos-AI/") and not pinned_file(name):
                         P.append(Problem(svg, 1, f"poster footer names a file that does not exist: {name}"))
         if not re.search(r"v\d+\.\d+\.\d+ · verified \d{4}-\d{2}-\d{2} · [0-9a-f]{7}", s):
             P.append(Problem(svg, 1, "poster needs a version stamp `vX.Y.Z · verified YYYY-MM-DD · <sha7>`"))

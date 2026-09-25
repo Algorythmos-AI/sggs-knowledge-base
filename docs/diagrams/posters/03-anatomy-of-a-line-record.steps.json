@@ -1,0 +1,50 @@
+[
+  {
+    "id": "step-01",
+    "title": "A page is an Ang",
+    "caption": "The pipeline opens the attested source PDF and reads pages 54 to 1483. page_content strips the page borders and the page number, joins the wrapped lines, and maps each PDF page to its Ang: 1 to 1430. Both numbers are kept on every row (pdf_page, ang).",
+    "link": "/data/pipeline/"
+  },
+  {
+    "id": "step-02",
+    "title": "A page becomes units",
+    "caption": "segment_units splits the page stream on the double danda. Numeral markers such as ॥੧॥ stay attached to the unit they close, and a ਰਹਾਉ marker sets the rahao flag. One unit becomes one row: is_rahao is 1 on a refrain line, is_header is 1 on a heading.",
+    "link": "/data/line-record/"
+  },
+  {
+    "id": "step-03",
+    "title": "Headings carry the metadata",
+    "caption": "detect_header decides whether a unit is a structural heading — a raag title, the ੴ invocation, a ਮਹਲਾ or Bhagat label — and reads the raag, section, author, ghar and composition type from it. Those values are inherited by the lines that follow. A verse that merely contains a raag word or a form word is not a heading (the v1.1.4 weak-signal rule). Japji has no ਮਹਲਾ line in the print, so its author is null.",
+    "link": "/data/line-record/"
+  },
+  {
+    "id": "step-04",
+    "title": "comp_id groups a composition",
+    "caption": "A run of consecutive heading lines opens one composition together with the body that follows, so /api/shabad/{comp_id} returns the printed title. The run adopts its last heading’s id, so no body line ever changes comp_id and vacated ids become permanent gaps. line_no counts 1..N inside the composition; id is the row’s identity for ever.",
+    "link": "/data/architecture/database-schema/"
+  },
+  {
+    "id": "step-05",
+    "title": "The text, three ways",
+    "caption": "gurmukhi is the line as printed, dandas and markers included — verbatim, proven character for character against the PDF, and never edited anywhere in the system. text is the same line without markers, for indexing. markers is the JSON list of the numerals that closed the unit. The API returns gurmukhi and translit for every line, never a rewritten form.",
+    "link": "/data/editorial-ledger/"
+  },
+  {
+    "id": "step-06",
+    "title": "Search forms are derived",
+    "caption": "From the text the pipeline derives translit (Roman transliteration), translit_norm (the spelling-tolerant fold, built in the database), fl_g and fl_r (first letters in Gurmukhi and Roman, for first-letter search) and skeleton (the line with its vowel signs stripped). They are reading aids and search keys, not scripture.",
+    "link": "/architecture/search-waterfall/"
+  },
+  {
+    "id": "step-07",
+    "title": "Structure columns",
+    "caption": "enrich_v2 adds stanza_index, pada_total and source_category — structural metadata the reader and the app use for layout — without touching any text column. comp_type is known to be mislabelled in places and is suppressed at the display layer; prefer comp_id and section.",
+    "link": "/data/architecture/database-schema/"
+  },
+  {
+    "id": "step-08",
+    "title": "The FTS index",
+    "caption": "fts is an FTS5 table with external content over lines: text, translit, translit_norm, fl_g, fl_r and skeleton, tokenised so Gurmukhi signs and ੴ stay inside tokens. do_search ranks with bm25 and column weights 10, 5, 4, 3, 3, 1 — the verbatim text outranks a transliteration hit, which outranks a first-letter or skeleton hit. fts_en, fts_shabad and fts_tri serve the English, passage and typo tiers; translations live in their own table.",
+    "link": "/architecture/search-waterfall/"
+  }
+]
