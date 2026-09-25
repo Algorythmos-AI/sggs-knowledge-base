@@ -29,6 +29,9 @@ entries prior to v1.1.0 are the project's original prose style and are preserved
   `make docs-freshness`, `make docs-pins`.
 
 ### Changed
+- **A verified stamp goes stale when the code it cites changes**, not after a fixed number of
+  commits: merging a stack of pull requests moved thirteen pages past the old sixty-commit mark
+  while nothing they describe had changed. Pages that cite no code still warn at 300 commits.
 - **Mermaid diagrams follow the reader's scheme:** each is drawn from both legs of the palette (palette
   colours in `classDef`/`style` lines swap to their dark twins; a label that would lose contrast takes
   the better ink) and CSS shows the matching one. Geometry is rounded to two decimals, so the heaviest

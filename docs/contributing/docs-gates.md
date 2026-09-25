@@ -20,7 +20,7 @@ request and is a **required check on `integration`**.
 | Mermaid | a colour outside the palette; an `%%{init}` directive; (warning) no `accTitle` |
 | scripture | a verse-sized run of Gurmukhi outside a code span; a blockquote without the citation; a cited line that is not verbatim in the pinned database |
 | terms | `[[Term]]` names no glossary row |
-| verified stamps | a process, engineering or architecture page without one; (warning) a stamp sixty commits behind |
+| verified stamps | a process, engineering or architecture page without one; (warning) code the page cites — a code excerpt, a linked source file, a poster's *Source of truth* — changed after its stamp, or, for a page that cites no code, a stamp 300 commits old |
 | posters | the visual spec (legend included); a footer naming a missing file; a sidecar that disagrees with the step groups; a poster no page references |
 | drift | a search `mode` the code reports that the waterfall page or poster 05 does not name; a verify threshold poster 07 does not state; a generated page without its header |
 | site config | the `/api` rewrite, git deployments off, the CSP (inline scripts by hash only, never `'unsafe-inline'`), no `trailingSlash`, keys Vercel accepts, the sources lock's shape |

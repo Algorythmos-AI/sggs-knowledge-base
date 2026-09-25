@@ -278,12 +278,25 @@ class Freshness(unittest.TestCase):
     def test_the_report_orders_moved_pages_first_and_is_empty_when_fresh(self):
         rows = [{"page": "docs/a.md", "commit": "aaaaaaa", "date": "2026-09-25", "behind": 3, "cited": ["x.py"], "changed": []},
                 {"page": "docs/b.md", "commit": "bbbbbbb", "date": "2026-09-25", "behind": 9, "cited": ["y.py"], "changed": ["y.py"]},
-                {"page": "docs/c.md", "commit": "ccccccc", "date": "2026-09-01", "behind": 80, "cited": [], "changed": []}]
+                {"page": "docs/c.md", "commit": "ccccccc", "date": "2026-09-01", "behind": 400, "cited": [], "changed": []},
+                {"page": "docs/d.md", "commit": "ddddddd", "date": "2026-09-01", "behind": 900, "cited": ["z.py"], "changed": []},
+                {"page": "docs/e.md", "commit": "eeeeeee", "date": "2026-09-01", "behind": 80, "cited": [], "changed": []}]
         md = dc.freshness_markdown(rows)
         self.assertLess(md.index("docs/b.md"), md.index("docs/c.md"))
         self.assertNotIn("docs/a.md", md)
+        self.assertNotIn("docs/d.md", md)      # its cited code did not change: fresh however old
+        self.assertNotIn("docs/e.md", md)      # cites no code, but not old enough to nag
         self.assertIn("| `docs/b.md` | `bbbbbbb` 2026-09-25 | 9 | `y.py` |", md)
         self.assertEqual(dc.freshness_markdown([rows[0]]), "")
+
+    def test_the_stamp_warning_follows_the_cited_code(self):
+        page = dc.DOCS / "architecture" / "request-lifecycle.md"
+        text = '<!-- sggs:code file="webapp/serve.py" symbol="api" -->\n'
+        first = dc.subprocess.run(["git", "rev-list", "--max-parents=0", "HEAD"], cwd=dc.ROOT, capture_output=True, text=True).stdout.split()[0]
+        head = dc.subprocess.run(["git", "rev-parse", "HEAD"], cwd=dc.ROOT, capture_output=True, text=True).stdout.strip()
+        self.assertTrue(any("cites changed" in p.msg for p in dc.check_verified_commit(page, first, text)))
+        self.assertEqual(dc.check_verified_commit(page, head, text), [])
+        self.assertTrue(any("not in this repository" in p.msg for p in dc.check_verified_commit(page, "0" * 40, text)))
 
     def test_the_repository_report_runs(self):
         rows = dc.freshness()

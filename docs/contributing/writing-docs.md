@@ -12,7 +12,8 @@ Every page begins with `title` (8–120 characters) and `description` (40–200)
 first `# H1` equals the title (GitHub shows it; the site strips it). Order a section's pages with
 `sidebar.order`. Pages under `docs/process/`, `docs/engineering/` and `docs/architecture/` must
 carry `verified: {commit, date}` — the commit you last read the page against — and the gate warns
-when a stamp falls sixty commits behind.
+when code the page cites (a code excerpt, a linked source file, a poster's *Source of truth*)
+changes after that commit; the weekly `docs-freshness` issue lists the same pages.
 
 ## Links
 
