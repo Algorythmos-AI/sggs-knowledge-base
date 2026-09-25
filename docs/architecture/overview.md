@@ -3,6 +3,9 @@ title: "Architecture Overview"
 description: "The system in one page: who uses it, the containers across three repositories, production deployment and the five data layers."
 sidebar:
   order: 1
+verified:
+  commit: f25ab970
+  date: "2026-09-25"
 ---
 # Architecture Overview
 

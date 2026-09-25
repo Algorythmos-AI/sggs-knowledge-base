@@ -3,6 +3,9 @@ title: "Runbook: move production onto the API functions"
 description: "Moving production onto the per-context API functions, gated on the performance baseline and the data canary."
 sidebar:
   order: 3
+verified:
+  commit: f25ab970
+  date: "2026-09-25"
 ---
 # Runbook: move production onto the API functions
 

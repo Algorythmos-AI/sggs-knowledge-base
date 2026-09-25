@@ -48,6 +48,7 @@ export const SIDEBAR = [
       { label: 'The website', slug: 'website' },
       { label: 'Reports & audit history', slug: 'reports' },
       { label: 'Risk register', slug: 'risk-register' },
+      { label: 'The archive', slug: 'archive' },
     ],
   },
 ];

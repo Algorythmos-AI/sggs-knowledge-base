@@ -3,6 +3,9 @@ title: "Release timeline & known issues"
 description: "The releases that explain today's invariants, in order, with what each one changed and the rule it left behind; then the items that are still open and who owns them."
 sidebar:
   order: 5
+verified:
+  commit: f25ab970
+  date: "2026-09-25"
 ---
 # Release timeline & known issues
 

@@ -3,8 +3,16 @@ title: "Branching & Delivery Flow"
 description: "The branch model: feature branches into integration, release pull requests into main, required checks and pull-request hygiene."
 sidebar:
   order: 1
+verified:
+  commit: f25ab970
+  date: "2026-09-25"
 ---
 # Branching & Delivery Flow
+
+The whole journey, from a branch to production and the App Store, as the pipeline runs it — press
+*Next* on the site to walk it:
+
+![Poster 11 — The delivery pipeline: ship into integration and onto staging, release into main and onto production, tag, the app follows, then the canary and uptime watch](../diagrams/posters/11-delivery-pipeline.svg)
 
 ```mermaid
 gitGraph
@@ -26,8 +34,8 @@ gitGraph
 
 ## Rules
 - **`integration` is the trunk.** Branch `feature/*` or `fix/*` from it; open a PR
-  back into `integration`. Merging to `integration` deploys **staging** (web +
-  Render API). TestFlight uploads are **manual** and happen in the app
+  back into `integration`. Merging to `integration` deploys **staging** (the web with
+  the API as Vercel functions inside it, ADR-0011). TestFlight uploads are **manual** and happen in the app
   repository (gurbani-soul-ios) — no merge here uploads a build.
 - **`main` is production.** It only ever receives a **release PR from `integration`**
   (or `hotfix/*`). The `version-consistency` gate enforces the source branch.
@@ -51,8 +59,8 @@ source of truth — keep this list in step with them):
 - `main`: PR + 1 approval + CODEOWNERS + resolved threads + strict status checks `python`,
   `frontend`, `integrity`, `versions`, `secrets`, `static-analysis`; no deletion or force-push.
   **No linear-history rule** (see Merge strategy).
-- `integration`: PR + CODEOWNERS + checks `python`, `frontend`, `integrity`, `secrets`; no
-  deletion or force-push.
+- `integration`: PR + CODEOWNERS + checks `python`, `frontend`, `integrity`, `secrets`, `docs` (the
+  wiki job, ADR-0012); no deletion or force-push.
 - Tags `v*`: no deletion or force-push.
 - `playwright` and the iOS jobs are not required checks, but `deploy-staging` /
   `deploy-production` wait for `playwright` on the exact commit before deploying.

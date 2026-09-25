@@ -3,6 +3,9 @@ title: "Runbook: support inbox"
 description: "The public support address used in the App Store listing and on the website, and how it is handled."
 sidebar:
   order: 5
+verified:
+  commit: f25ab970
+  date: "2026-09-25"
 ---
 # Runbook: support inbox
 

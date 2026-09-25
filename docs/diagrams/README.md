@@ -26,8 +26,10 @@ plain image on GitHub.
 | 07 | The verification engine | normalise, candidates, scoring, the verdict ladder with the code's thresholds, the Ang modifier | [Verification engine](../search/verification-engine.md) |
 | 08 | Request lifecycle | `GET /api/ang/712` from the browser to SQLite and back, in code order | [Request lifecycle](../architecture/request-lifecycle.md) |
 | 09 | Bounded contexts and the gateway | five contexts, module slicing, routing generated from the code, the proofs | [Bounded contexts and the gateway](../architecture/bounded-contexts-and-gateway.md) |
+| 10 | The CI gates map | every workflow and job on a pull request, what the rulesets require, the deploy chains, the schedules | [CI gates](../process/ci-gates.md) |
+| 11 | The delivery pipeline | branch → PR → staging → release PR → production → tag → the app follows; rollback; the watchers | [Branching & delivery flow](../process/branching.md) |
 
-More follow with the delivery and iOS pages.
+The iOS release poster (12) and the structure of the Granth (13) follow with their sections.
 
 ## How a poster is made
 

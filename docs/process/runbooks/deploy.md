@@ -3,6 +3,9 @@ title: "Runbook: Deploys (CI-gated)"
 description: "The CI-gated deploy pipeline gate by gate, its one-time setup, secrets and how to read a failed run."
 sidebar:
   order: 1
+verified:
+  commit: f25ab970
+  date: "2026-09-25"
 ---
 # Runbook: Deploys (CI-gated)
 

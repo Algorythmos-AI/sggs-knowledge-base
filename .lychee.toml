@@ -1,0 +1,21 @@
+# External-link policy for the weekly docs-links workflow (lychee). Internal links are validated
+# on every build by docs-site/scripts/check-links.mjs; this file governs the outside world only.
+scheme = ["https", "http"]
+max_concurrency = 8
+max_retries = 2
+timeout = 20
+accept = [200, 201, 204, 206, 301, 302, 303, 307, 308, 429]
+# Only links that leave the repository: relative paths are the build's job.
+exclude_path = ["docs/reports/archive", "docs/design"]
+exclude = [
+  "^https?://(localhost|127\\.0\\.0\\.1)",
+  "^https://sggs-staging\\.vercel\\.app",        # SSO-protected
+  "^https://sggs-docs-staging\\.vercel\\.app",   # SSO-protected
+  "^https://docs\\.gurbanisoul\\.com",           # until the domain is live
+  "^https://github\\.com/.*/(edit|settings|issues/new)",
+  "^https://vercel\\.com/(account|.*/settings)",
+  "^https://dashboard\\.render\\.com",
+  "^https://appstoreconnect\\.apple\\.com",
+  "^https://buttondown\\.com/api",
+  "^mailto:",
+]

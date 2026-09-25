@@ -3,6 +3,9 @@ title: "Environments"
 description: "Local, staging and production side by side: hosts, API platforms, data, protection and who deploys what."
 sidebar:
   order: 2
+verified:
+  commit: f25ab970
+  date: "2026-09-25"
 ---
 # Environments
 
@@ -53,11 +56,11 @@ The App Store Connect API-key secrets used by TestFlight live in **GitHub Enviro
 (`production`/`staging`), not Vercel — never echo a value; a pasted secret is a leaked secret.
 
 ## Rollback
-Web: Vercel Instant Rollback. API: Render redeploy of the previous image. Data:
-each GitHub Release attaches the DB manifest; restore from the tagged LFS object.
-See [runbook: rollback](runbooks/rollback.md).
+Web: Vercel Instant Rollback (automatic when the public smoke fails after promote). API: Render
+redeploy of the previous image. Data: revert the `dataset.lock.json` bump — every pinned object stays
+available in sggs-data. See [runbook: rollback](runbooks/rollback.md).
 
 ## Human-gated setup (one time)
-Authorize the Vercel and Render GitHub Apps on the org, link the Render Blueprint,
-create the Vercel `staging` custom environment + domain, add the App Store Connect
-API-key secrets for TestFlight.
+Authorize the Vercel and Render GitHub Apps on the org, create the Vercel `staging` custom
+environment + alias, add the deploy secrets to the GitHub Environments (runbook: deploy). The App Store
+Connect API-key secrets live in the app repository's environments.

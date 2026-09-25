@@ -1,0 +1,50 @@
+[
+  {
+    "id": "step-01",
+    "title": "web-ci: the code",
+    "caption": "python runs ruff, the server and repo-gate unit tests, replays the golden contract over HTTP, checks that contract/openapi.json is current and covers every dispatcher route, that /api/health is all-true, the shabad-heading regression and the search harnesses. frontend builds the Astro site and passes the pahar vectors. api-image builds the Docker image and proves the running container reports the commit and honours the contract.",
+    "link": "/process/ci-gates/"
+  },
+  {
+    "id": "step-02",
+    "title": "The data pin and the version",
+    "caption": "integrity proves dataset.lock.json and contract/_meta.json name the same object, that sggs-data publishes it at the pinned commit, and that the installed database opens, passes quick_check and holds 60,658 lines over Angs 1–1430. versions proves the five platform version strings agree and that a main PR comes from integration or a hotfix branch.",
+    "link": "/data/dataset-pin/"
+  },
+  {
+    "id": "step-03",
+    "title": "Security and hygiene",
+    "caption": "gitleaks (secrets), bandit and semgrep (static analysis), actionlint, and a blocking npm audit at level high on frontend/ and docs-site/ (deps). pr-hygiene requires a conventional-commit title.",
+    "link": "/process/ci-gates/"
+  },
+  {
+    "id": "step-04",
+    "title": "End to end",
+    "caption": "The Playwright suite drives the real site against serve.py and the pinned database: the Ang 712 heading, search to the panel heading, and axe on the home page. It is not a required check, but both deploy chains wait for it on the exact commit.",
+    "link": "/process/ci-gates/"
+  },
+  {
+    "id": "step-05",
+    "title": "The docs job",
+    "caption": "The wiki is gated like the product: the sibling pin is consistent and installed; tools/docs_check.py checks frontmatter, links and anchors, widget fallbacks, the Mermaid palette, the scripture-quotation rule, the posters, the verified stamps and drift against the code; the generated routes page is current; the plugin and tool unit tests pass; the site builds with every Mermaid fence rendered; every internal link resolves; the page budgets hold; Playwright and axe run with a mocked API; Lighthouse passes its budgets.",
+    "link": "/process/ci-gates/"
+  },
+  {
+    "id": "step-06",
+    "title": "What a ruleset requires",
+    "caption": "The JSON files under .github/rulesets are the source of truth, applied by scripts/gh/apply_rulesets.sh. integration requires python, frontend, integrity, secrets and docs; main requires python, frontend, integrity, versions, secrets and static-analysis with the strict policy, plus a review and CODEOWNERS. Neither allows deletion or force-push; main has no linear-history rule because release PRs are merge commits.",
+    "link": "/process/branching/"
+  },
+  {
+    "id": "step-07",
+    "title": "On a merge: the deploy chains",
+    "caption": "A merge into integration runs deploy-staging: gates on the commit, preflight for secrets, the API functions generated and proven, the web built and aliased, then verify (every function ready at the commit, the gateway, the smoke, the whole contract). A merge into main runs deploy-production: gates plus playwright, preflight, an optional approval, API deploy and verification by commit, web built unaliased and smoked, promotion with the public smoke and a rollback edge, then the tag. The wiki has the same chain in deploy-docs.",
+    "link": "/process/runbooks/deploy/"
+  },
+  {
+    "id": "step-08",
+    "title": "Between merges",
+    "caption": "Every six hours the data canary proves production serves the pinned scripture byte for byte — 500 sampled lines and fifteen Angs, at the API origin and through the site’s CDN — and replays the golden contract; every fifteen minutes uptime probes /api/health and the App Store URLs; on Mondays security scans the full history for secrets and docs-links checks every external link in the wiki. Each opens or updates one issue; none pages or redeploys.",
+    "link": "/process/ci-gates/"
+  }
+]

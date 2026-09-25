@@ -3,6 +3,9 @@ title: "Brand & domains"
 description: "Product identity: company, app and website names, the gurbanisoul.com domain, visual identity rules and the identifiers that never change."
 sidebar:
   order: 4
+verified:
+  commit: f25ab970
+  date: "2026-09-25"
 ---
 # Brand & domains
 

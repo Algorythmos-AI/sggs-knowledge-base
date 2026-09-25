@@ -12,7 +12,7 @@ Maintained on the delivery board (`type/risk`); top items:
 |---|---|---|---|
 | A rebuild changes something scriptural | low | critical | reconcile + golden + `verify_regroup` + `guard_scripture` + CODEOWNERS; rollback = restore backups |
 | iOS bookmarks break on a data change | low | high | keep-last `comp_id` rule (no body comp changes); `SavedStoreLadderTests` |
-| Org transfer breaks Vercel/Render/LFS | medium | high | [org-transfer runbook](process/runbooks/org-transfer.md); verify LFS + deploy-verify before deleting the old remote |
+| Org transfer breaks Vercel/Render | closed (transferred 2026-09) | — | [org-transfer runbook](reports/archive/org-transfer.md) (archived); the platforms were re-linked and `make dataset-check` proves the pin |
 | macOS CI minutes exhausted | medium | medium | path-filter the iOS job; concurrency-cancel; nightly-only heavy jobs |
 | Render free-tier cold starts on staging | high | low | uptime ping keeps it warm; deploy-verify retries |
 | Apple Developer Program still pending | high | medium | TestFlight workflow dormant; simulator evidence as interim gate |
