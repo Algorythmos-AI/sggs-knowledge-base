@@ -39,6 +39,13 @@ jobs:
         run: |
           python3 tools/fetch_sibling_docs.py --check
           python3 tools/fetch_sibling_docs.py
+      - name: The pinned database (cited scripture on the wiki is verified against it)
+        uses: actions/cache@v4
+        with:
+          path: .dataset-cache
+          key: dataset-${{ hashFiles('dataset.lock.json') }}
+      - env: { GH_TOKEN: "${{ secrets.SGGS_READ_TOKEN || github.token }}" }
+        run: python3 scripts/data/fetch_dataset.py --cache-dir .dataset-cache
       - name: Source-level docs gates (frontmatter, links, widgets, Mermaid palette, scripture rule, posters, site config)
         run: |
           python3 tools/docs_check.py

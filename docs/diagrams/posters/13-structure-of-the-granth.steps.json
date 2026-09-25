@@ -1,0 +1,38 @@
+[
+  {
+    "id": "step-01",
+    "title": "One bar, 1,430 Angs",
+    "caption": "The whole scripture drawn to scale: every Ang is the same width, from Ang 1 at the left to Ang 1430 at the right. Hover a segment for its name and span. Every number on this poster comes from the pinned database, the same one the site and the app serve.",
+    "link": "/scripture/structure/"
+  },
+  {
+    "id": "step-02",
+    "title": "The opening: Angs 1–13",
+    "caption": "The Granth opens with the Mool Mantar and Japji Sahib (Angs 1–8, 385 lines, no author line in the print), then So Dar, So Purakh and Sohila — the evening and night prayers — before the first raag begins on Ang 14.",
+    "link": "/scripture/what-sggs-is/"
+  },
+  {
+    "id": "step-03",
+    "title": "Thirty-one raags: Angs 14–1353",
+    "caption": "From Ang 14 the hymns are arranged by raag, the musical mode they are sung in — Sireeraag first, Jaijaavantee last on Ang 1353. Inside a raag the compositions follow the Gurus in order, then the Bhagats. A raag’s span in the database is the longest run of Angs where it is the majority, so a liturgical mention elsewhere never drags a raag’s start. Gaurhee, Maaroo and Raamakalee are the largest.",
+    "link": "/scripture/structure/"
+  },
+  {
+    "id": "step-04",
+    "title": "After the raags: Angs 1353–1430",
+    "caption": "The closing sections leave the raag framework: the Sahaskriti saloks, Gatha, Phunhe and Chaubole (Guru Arjan Dev Ji), the Bhatts’ Swaiyye in praise of the Gurus (1385–1409), the saloks beyond the Vaars, Guru Tegh Bahadur Ji’s saloks, Mundavani — the seal — and Raagmala. The database clears the raag column here and detects these sections from their headings.",
+    "link": "/scripture/bhatts-and-swaiyye/"
+  },
+  {
+    "id": "step-05",
+    "title": "The twenty-two Vaars",
+    "caption": "Twenty-two Vaars sit inside the raags, marked under the bar: ballads of pauris by one author with saloks interleaved from several Gurus. The pipeline detects them by their title headers, and a Vaar’s pauris keep the Vaar’s author even where the interleaved saloks carry other ਮਃ headers.",
+    "link": "/scripture/vaars-saloks-pauris/"
+  },
+  {
+    "id": "step-06",
+    "title": "The voices, and the numbers",
+    "caption": "Six Gurus, fifteen Bhagats, eleven Bhatts, Satta and Balwand, and Bhai Mardana: 29 attributed authors, with Japji carrying no author line. 60,658 lines in 4,527 compositions; 13 named sections outside the raags; 54 themes in the concept index. Every figure is read from the database — the structure page lists them all.",
+    "link": "/scripture/structure/"
+  }
+]

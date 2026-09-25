@@ -7,6 +7,8 @@ import { SggsAngExplorer } from './ang-explorer';
 import { SggsWaterfall } from './waterfall';
 import { SggsVerify } from './verify';
 import { SggsApiTry } from './api-try';
+import { SggsTerm } from './term';
+import { SggsQuiz } from './quiz';
 import { watchScrollRegions } from './a11y';
 
 const define = (name: string, ctor: CustomElementConstructor) => {
@@ -19,5 +21,7 @@ define('sggs-ang-explorer', SggsAngExplorer);
 define('sggs-waterfall', SggsWaterfall);
 define('sggs-verify', SggsVerify);
 define('sggs-api-try', SggsApiTry);
+define('sggs-term', SggsTerm);
+define('sggs-quiz', SggsQuiz);
 
 watchScrollRegions();
