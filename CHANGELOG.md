@@ -92,6 +92,8 @@ No change to the scripture text, the corpus, the database bytes or any API respo
   published) and runs the whole golden contract on the unaliased deployment before promoting it.
   Vercel Git previews are off (`git.deploymentEnabled: false`); review web changes on staging.
   Render keeps deploying every release as the rollback target (runbook: services-production).
+  The deploy runbook's gate table and diagram describe the new checks; its preview-check section
+  and staging notes no longer assume Git previews or Render staging services.
 - **The API runs as Vercel functions on staging.** Each bounded context is a Python function in
   the web's own Vercel project (plus `all`, the whole API), generated at deploy time from the pinned
   database by `tools/build_api_functions.py` — the same `serve.py` handler, each function with its
