@@ -166,3 +166,8 @@ h1#_top,
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation-duration: 0.001ms !important; transition-duration: 0.001ms !important; }
 }
+
+/* Task lists (`- [ ]`): rendered as labelled glyphs by plugins/remark-task-lists.mjs. */
+.sl-markdown-content li.task-list-item { list-style: none; margin-inline-start: -1.25rem; }
+.sl-markdown-content .task-box { display: inline-block; width: 1.25rem; color: var(--sl-color-gray-2); }
+.sl-markdown-content .task-box[data-done="1"] { color: var(--sl-color-accent-high); }

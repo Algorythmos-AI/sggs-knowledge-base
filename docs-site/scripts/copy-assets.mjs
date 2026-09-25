@@ -1,6 +1,7 @@
 // prebuild: the fonts the product already ships (frontend/public/fonts, with their OFL licences) and
 // the diagram posters (docs/diagrams/posters) are copied into public/ so the wiki serves them itself.
-// Nothing is duplicated in git: public/fonts and public/posters are ignored.
+// The static OG-card font instances (frontend/src/og/fonts) go to src/og/fonts for src/pages/og.
+// Nothing is duplicated in git: public/fonts, public/posters and src/og/fonts are ignored.
 import { cpSync, existsSync, mkdirSync, readdirSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -10,6 +11,7 @@ const root = path.resolve(here, '../..');
 const copies = [
   ['frontend/public/fonts', 'docs-site/public/fonts', ['SantLipi-VF.woff2', 'SourceSerif4-latin.woff2', 'OFL.txt', 'OFL-SourceSerif4.txt']],
   ['docs/diagrams/posters', 'docs-site/public/posters', null],
+  ['frontend/src/og/fonts', 'docs-site/src/og/fonts', ['SourceSerif4-og.ttf', 'SantLipi-og.ttf', 'OFL.txt', 'OFL-SourceSerif4.txt']],
 ];
 for (const [from, to, only] of copies) {
   const src = path.join(root, from);

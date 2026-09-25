@@ -8,6 +8,13 @@ entries prior to v1.1.0 are the project's original prose style and are preserved
 No change to the scripture text, the corpus, the database bytes or any API response.
 
 ### Added
+- **The wiki launches.** An Open Graph card for every page, prerendered at build in the wiki's
+  style (satori + resvg, static fonts; only the ੴ glyph is Gurmukhi); the 404 page and the cards
+  are tested; Lighthouse runs on twenty pages and axe on every page the build produces; the smoke
+  checks a card; `docs-site/scripts/visual-qa.mjs` shoots every section in light, dark and phone
+  width for the owner's walkthrough; the launch runbook (`docs/process/runbooks/docs-site.md`):
+  one-time setup, the staging walkthrough, DNS cut-over, production smoke, rollback, the routine
+  after launch, the sibling README links and the open review items.
 - **Learn and contribute on the wiki.** Four learning paths (platform engineer, data engineer, iOS
   engineer, reviewer or scholar) with progress remembered in the browser (`<sggs-progress>`); six
   exercises runnable with `make` targets alone, each with expected output and a self-check quiz;

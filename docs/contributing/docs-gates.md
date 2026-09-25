@@ -39,8 +39,8 @@ a pinned file no longer matches its commit. Regenerate or re-pin; never edit a g
 `npm run build` renders every Mermaid fence and every poster; then `check-render` (every page
 rendered completely — Astro logs a failed render and exits 0), `check-mermaid`, `check-links`
 (every internal link and fragment in the built HTML) and `check-budget` (JS per page, largest page).
-Then Playwright with a mocked API on desktop and phone, axe on every new page, and Lighthouse on
-five pages.
+Then Playwright with a mocked API on desktop and phone, axe on **every page the build produced**
+(from the sitemap), and Lighthouse on twenty pages.
 
 ## Reading a failure
 

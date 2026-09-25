@@ -15,8 +15,10 @@ export const collections = {
   docs: defineCollection({
     loader: glob({
       base: '..',
-      pattern: ['docs/**/*.md', '!docs/reports/archive/**', '!docs/design/**', ...siblingPatterns],
-      generateId: ({ entry }) => idForRepoPath(entry, sources) ?? `__unpublished__/${entry}`,
+      // The site's own 404 page lives here (docs-site/src/content/docs/404.md): it is not part of the
+      // handbook, only of the site, so it is not under docs/.
+      pattern: ['docs/**/*.md', '!docs/reports/archive/**', '!docs/design/**', 'docs-site/src/content/docs/404.md', ...siblingPatterns],
+      generateId: ({ entry }) => (entry === 'docs-site/src/content/docs/404.md' ? '404' : idForRepoPath(entry, sources) ?? `__unpublished__/${entry}`),
     }),
     schema: docsSchema({
       extend: z.object({
