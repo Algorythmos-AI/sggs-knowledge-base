@@ -185,7 +185,7 @@ ${frame}
 ${unstepped}
 ${stepGroups}
 <line x1="40" y1="${H - 130}" x2="${W - 40}" y2="${H - 130}" stroke="var(--poster-kraft, #B69A81)" stroke-width="1"/>
-${legend}
+<g class="pk-legend">${legend}</g>
 ${footer}
 </svg>
 `;

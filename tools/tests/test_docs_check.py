@@ -137,6 +137,54 @@ class SiteConfig(unittest.TestCase):
         finally:
             real.write_text(original, encoding="utf-8")
 
+    def test_unsafe_inline_scripts_are_refused(self):
+        # inline scripts are allowed by hash (docs-site/scripts/csp.mjs); 'unsafe-inline' would undo that
+        real = dc.SITE / "vercel.json"
+        original = real.read_text(encoding="utf-8")
+        try:
+            real.write_text(original.replace("script-src 'self'", "script-src 'self' 'unsafe-inline'"), encoding="utf-8")
+            self.assertTrue(any("unsafe-inline" in str(p) for p in dc.check_site_config()))
+        finally:
+            real.write_text(original, encoding="utf-8")
+
+
+class Theme(unittest.TestCase):
+    CSS = ':root {\n  --sgs-paper: #171412;\n}\n:root[data-theme="light"] {\n  --sgs-paper: #fbf7f0;\n}\n'
+
+    def tokens(self):
+        return json.loads((dc.DOCS / "brand" / "tokens.json").read_text(encoding="utf-8"))
+
+    def test_the_site_theme_matches_the_tokens(self):
+        self.assertEqual([str(p) for p in dc.check_theme()], [])
+
+    def test_a_drifted_brand_colour_is_refused(self):
+        with tempfile.TemporaryDirectory() as d:
+            css = Path(d) / "theme.css"
+            real = (dc.SITE / "src" / "styles" / "theme.css").read_text(encoding="utf-8")
+            css.write_text(real.replace("--sgs-accent-text: #8a6100", "--sgs-accent-text: #8a6101"), encoding="utf-8")
+            msgs = [p.msg for p in dc.check_theme(css, self.tokens())]
+            self.assertEqual(len(msgs), 1, msgs)
+            self.assertIn("light theme --sgs-accent-text is #8A6101", msgs[0])
+
+    def test_a_missing_role_is_refused(self):
+        with tempfile.TemporaryDirectory() as d:
+            css = Path(d) / "theme.css"
+            css.write_text(self.CSS, encoding="utf-8")
+            msgs = [p.msg for p in dc.check_theme(css, self.tokens())]
+            self.assertTrue(any("lacks --sgs-accent" in m for m in msgs))
+            self.assertFalse(any("--sgs-paper " in m and "is #" in m for m in msgs))   # paper matches both legs
+
+
+class PosterLegend(unittest.TestCase):
+    def test_a_poster_without_its_legend_is_refused(self):
+        svg = dc.DOCS / "diagrams" / "posters" / "01-system-landscape.svg"
+        original = svg.read_text(encoding="utf-8")
+        try:
+            svg.write_text(original.replace('<g class="pk-legend">', '<g>'), encoding="utf-8")
+            self.assertTrue(any("legend" in p.msg and p.file == svg for p in dc.check_posters(dc.load_tokens_hex())))
+        finally:
+            svg.write_text(original, encoding="utf-8")
+
     def test_repo_docs_pass(self):
         errors = [str(p) for p in dc.run(ROOT / "db" / "sggs.sqlite") if p.level == "error"]
         self.assertEqual(errors, [])

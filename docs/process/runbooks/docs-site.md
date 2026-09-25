@@ -4,8 +4,8 @@ description: "Launching docs.gurbanisoul.com and keeping it honest: one-time set
 sidebar:
   order: 6
 verified:
-  commit: efcd3edb
-  date: "2026-09-25"
+  commit: df69071d
+  date: "2026-09-26"
 ---
 # Runbook: the docs site (launch and after)
 
@@ -56,26 +56,41 @@ Anything wrong is a normal pull request into `integration`; the site redeploys t
 1. Cloudflare: `CNAME docs →` Vercel's recommended target, DNS-only. Vercel: the domain is attached to
    `sggs-docs` and shows *Valid Configuration*.
 2. Merge the next release PR `integration → main` (a merge commit, as always). `deploy-docs`'s
-   `deploy-production` job builds, deploys unaliased, smokes by commit, promotes to
-   `docs.gurbanisoul.com`, smokes again — and rolls back with an incident issue if the public
-   smoke fails.
+   `deploy-production` job records the deployment the domain serves now (the rollback target),
+   builds, deploys unaliased, smokes by commit, promotes to `docs.gurbanisoul.com`, smokes again —
+   and rolls back if the public smoke fails. Every failure opens an issue that says whether
+   production changed.
+
+   > [!NOTE]
+   > **A project's first Vercel deployment became production.** On 2026-09-26 the docs
+   > project's first deployment — a *preview* from `deploy-staging` — was recorded as production,
+   > and `docs.gurbanisoul.com` attached to it, so the domain served an `integration` build until
+   > the 1.3.10 release. `deploy-staging` now refuses to run while the project has no production
+   > deployment (`scripts/ci/vercel_api.py has-production`) and fails if its own deployment is not
+   > a preview. For a new Vercel project, the first deployment must come from `deploy-production`.
 3. Prove it:
 
    ```bash
    python3 scripts/ci/docs_smoke.py https://docs.gurbanisoul.com --commit <sha>
    ```
 
-   The smoke checks the landing, a Mermaid render, the search index, `/api/health` through the
-   rewrite, a poster and an Open Graph card, and that `<meta name="sggs-docs-commit">` equals the
-   commit.
+   The smoke checks the landing, a Mermaid render, the search index, `/api/health` and `/api/meta`
+   through the rewrite, the poster the architecture page links as "open full size" and an Open
+   Graph card, and that `<meta name="sggs-docs-commit">` equals the commit. Nothing may redirect:
+   a redirect on `/api` is how the widgets broke before launch (`trailingSlash`).
 4. Owner walkthrough of section 2 on the public domain, once.
 
 ## 4. Rollback
 
-The job rolls back on its own when the public smoke fails. By hand: Vercel → `sggs-docs` →
-Deployments → the previous good deployment → *Instant Rollback*, or
-`vercel rollback <previous-url> --scope <team>` with the docs project's token. The wiki carries no
-state, so a rollback costs nothing but the newer pages.
+The job rolls back on its own when the public smoke fails **after** promotion, to the deployment
+the domain served before the run (read from Vercel by the domain, never "the newest production
+deployment": a build deployed with `--skip-domain` whose smoke failed is also a READY production
+deployment, but it never served anyone). A failure before promotion changes nothing and says so in
+its issue. By hand: `python3 scripts/ci/vercel_api.py live docs.gurbanisoul.com` names the serving
+deployment; Vercel → `sggs-docs` → Deployments → the previous good deployment → *Instant Rollback*,
+or `vercel rollback <previous-url> --scope <team>` with the docs project's token. After a rollback
+Vercel stops assigning the domain automatically; the next `deploy-production` run's `vercel promote`
+restores it. The wiki carries no state, so a rollback costs nothing but the newer pages.
 
 ## 5. After launch: the routine
 
