@@ -94,6 +94,16 @@ against the new deployment before that deployment goes live.
   frontmatter block and every existing diagram an accessible title.
 
 ### Changed
+- **The App Store links are a launch-day switch.** `frontend/src/site.ts` now commits Apple's app id
+  (`6812982384`) and product URL, and a build-time flag `APP_STORE_LIVE` (true only when the build
+  env sets `PUBLIC_APP_STORE_LIVE=1`) decides what every render site shows: "Coming soon" with no
+  store link, Smart App Banner or JSON-LD `installUrl` (the default), or the live links everywhere.
+  Launch day is a Vercel env var plus a redeploy of the same commit, so the site keeps the version
+  the App Store build carries (runbook: deploy.md, "Launch-day App Store switch"). The landing
+  `@smoke` spec and the built-HTML gate accept exactly those two states and never a mix; the new
+  `AppStoreSwitch` gate keeps the flag env-only and every render site keyed on it.
+- **fflate 0.7.5 in the web build** (#197, GHSA-px8p-9vwx-vf98): an npm override replaces the 0.7.3
+  that satori pulls in; build-time only, and the OG cards are byte-identical.
 - **Production's API moves onto the Vercel functions.** `gateway/routes.json` sets production to
   `api_platform: vercel` with no per-context services, so every `/api` path on gurbanisoul.com is
   answered by `all` — the same `serve.py` handler and pinned database, now inside the web project.

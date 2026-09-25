@@ -2,10 +2,11 @@
 // MarketingNav.astro — sticky top bar for the gurbanisoul.com landing. White text over the dark
 // hero before scroll; frosted paper with a hairline once scrolled (both handled in marketing.css,
 // toggled by landing.ts). Inline links + CTA collapse into a hamburger <dialog> under 840px.
-// The CTA is a real App Store link only when APP_STORE_URL is set; otherwise a "Coming soon" chip.
+// The CTA is a real App Store link only when APP_STORE_LIVE (the app is on the App Store);
+// otherwise a "Coming soon" chip.
 // The nav's coming-soon chip is tagged data-app-store="coming-soon-nav" so the page's single
 // canonical "coming soon" element (data-app-store="coming-soon") remains the hero one.
-import { APP_STORE_URL } from "../site";
+import { APP_STORE_URL, APP_STORE_LIVE } from "../site";
 
 // `overHero` (default) floats the bar over the dark hero with white text until scrolled. Pages with
 // no dark hero (e.g. Learn, Features, The watch) pass overHero={false} so the resting bar uses ink
@@ -44,7 +45,7 @@ const links = [
 
     <div class="mnav-right">
       <button id="themeBtn" aria-label="Theme">◐</button>
-      {APP_STORE_URL
+      {APP_STORE_LIVE
         ? <a class="pill" href={APP_STORE_URL} aria-label="Get Gurbani Soul on the App Store">Get the app</a>
         : <span class="pill soon" data-app-store="coming-soon-nav">Coming soon</span>}
       <button class="burger" aria-expanded="false" aria-controls="mobileMenu" aria-label="Open menu">
@@ -66,7 +67,7 @@ const links = [
       <a href={l.href} data-astro-prefetch={l.prefetch ? "" : undefined}
          aria-current={isCurrent(l.href) ? "page" : undefined}>{l.label}</a>
     ))}
-    {APP_STORE_URL
+    {APP_STORE_LIVE
       ? <a class="pill mm-cta" href={APP_STORE_URL} aria-label="Get Gurbani Soul on the App Store">Get the app</a>
       : <span class="pill soon mm-cta" data-app-store="coming-soon-nav">Coming soon</span>}
   </div>

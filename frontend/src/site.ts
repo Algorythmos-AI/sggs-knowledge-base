@@ -3,14 +3,19 @@
 export const SITE_URL = "https://gurbanisoul.com";
 export const SUPPORT_EMAIL = "support@gurbanisoul.com";
 
-// Empty until Apple assigns the App Store URL. When set, the landing swaps the
-// "Coming soon" note for the official App Store badge (see docs/website/README.md).
-export const APP_STORE_URL = "";
+// The App Store product page and Apple's numeric app id (the digits after `/id`). Both are real
+// (App Store Connect assigned them to Gurbani Soul) and stay committed; the SmartBannerConsistency
+// gate requires APP_STORE_URL to end with `/id` + APP_STORE_ID.
+export const APP_STORE_URL = "https://apps.apple.com/app/id6812982384";
+export const APP_STORE_ID = "6812982384";
 
-// Apple's numeric App Store id (the digits after `/id` in APP_STORE_URL). Empty until Apple
-// assigns it. When set, <Seo> emits the Smart App Banner (`apple-itunes-app`). Keep in step with
-// APP_STORE_URL — the SmartBannerConsistency gate requires APP_STORE_URL to end with `/id`+this.
-export const APP_STORE_ID = "";
+// Whether the app is live on the App Store. A build-time switch, never hardcoded: it is true only
+// when the build env sets PUBLIC_APP_STORE_LIVE=1 (Vercel project env, Production — set on launch
+// day after Apple's page answers 200; docs/process/runbooks/deploy.md → "Launch-day App Store
+// switch"). While false, every page shows "Coming soon" and emits no store link, no Smart App
+// Banner and no JSON-LD installUrl. Every App Store render site keys on this constant (the
+// AppStoreSwitch gate in webapp/tests/test_repo_gates.py enforces both rules).
+export const APP_STORE_LIVE = import.meta.env.PUBLIC_APP_STORE_LIVE === "1";
 
 // Imagery shipped under src/assets/landing/, one entry per file (the imagery-credit gate in
 // webapp/tests/test_repo_gates.py parses `who`, `url` and `file` from this literal — keep each
