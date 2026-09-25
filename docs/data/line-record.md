@@ -70,7 +70,7 @@ A heading is detected by `detect_header` from the unit's text — a raag title, 
 heading lines opens one composition together with the body that follows** (post-pass 1b in
 `build_corpus.py`), so `/api/shabad/{comp_id}` returns the printed title. The run adopts its
 *last* heading's id, so no body line ever changes `comp_id` and vacated ids become permanent gaps:
-4,706 distinct compositions, `max(comp_id)` 5,380, `comp_id` 1 a gap because the Mool Mantar folds
+4,527 distinct compositions and `max(comp_id)` 5,376 in the pinned dataset, `comp_id` 1 a gap because the Mool Mantar folds
 into Japji (`comp_id` 2). The full model, the before/after diagram and the invariants are in the
 canonical [database schema](https://github.com/Algorythmos-AI/sggs-data/blob/main/docs/architecture/database-schema.md).
 
