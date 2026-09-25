@@ -49,7 +49,7 @@ NOT_PUBLISHED = ("docs/reports/archive/", "docs/design/")
 # pages the site generates rather than reads from docs/ (starlight-openapi): a link to one is valid
 VIRTUAL_PAGES = {"docs/api/reference": "/api/reference/"}
 REQUIRE_VERIFIED: tuple[str, ...] = ("docs/process/", "docs/engineering/", "docs/architecture/")
-STALE_AFTER_COMMITS = 60
+STALE_UNTRACKED_AFTER = 300   # commits: a stamp on a page that cites no code is only as good as its age
 TITLE_LEN, DESC_LEN = (8, 120), (40, 200)
 CITATION_RE = re.compile(r"^—\s*Sri Guru Granth Sahib Ji\s*·\s*Ang\s+(\d{1,4})\s*$")
 GURMUKHI_RUN = re.compile(r"[਀-੿][਀-੿‌‍ ]*[਀-੿]|[਀-੿]")
@@ -251,7 +251,7 @@ def check_page(path: Path, tokens_hex: set[str], widgets: dict, db: sqlite3.Conn
         if not re.fullmatch(r"[0-9a-f]{7,40}", str(v.get("commit", ""))) or not re.fullmatch(r"\d{4}-\d{2}-\d{2}", str(v.get("date", ""))):
             P.append(Problem(path, 1, "verified needs commit (7–40 hex) and date (YYYY-MM-DD)"))
         else:
-            P.extend(check_verified_commit(path, str(v["commit"])))
+            P.extend(check_verified_commit(path, str(v["commit"]), text))
     elif any(rel.startswith(d) for d in REQUIRE_VERIFIED):
         P.append(Problem(path, 1, "this page must carry `verified: {commit, date}` (last read against the code)"))
 
@@ -423,16 +423,30 @@ def check_quote(path: Path, block: list[tuple[int, str]], db: sqlite3.Connection
     return P
 
 
-def check_verified_commit(path: Path, commit: str) -> list[Problem]:
-    try:
-        subprocess.run(["git", "cat-file", "-e", f"{commit}^{{commit}}"], cwd=ROOT, check=True, capture_output=True)
-        behind = subprocess.run(["git", "rev-list", "--count", f"{commit}..HEAD"], cwd=ROOT, capture_output=True, text=True)
-        n = int(behind.stdout.strip() or 0) if behind.returncode == 0 else 0
-    except (subprocess.CalledProcessError, FileNotFoundError):
+def check_verified_commit(path: Path, commit: str, text: str = "") -> list[Problem]:
+    """A stamp is stale when code the page cites changed since it (the precise signal), or — for a
+    page that cites no code — when it is very old. Raw commit distance alone is noise: merging a
+    stack of pull requests adds dozens of commits that touch nothing a page describes."""
+    if subprocess.run(["git", "cat-file", "-e", f"{commit}^{{commit}}"], cwd=ROOT, capture_output=True).returncode != 0:
         return [Problem(path, 1, f"verified commit {commit[:7]} is not in this repository's history", level="warning")]
-    if n > STALE_AFTER_COMMITS:
-        return [Problem(path, 1, f"verified against {commit[:7]}, {n} commits ago — re-read this page against the code", level="warning")]
+    files = cited_files(path, text) if text else []
+    if files:
+        changed = changed_since(commit, files)
+        if changed:
+            return [Problem(path, 1, f"code this page cites changed since its stamp {commit[:7]} ({', '.join(changed[:4])}"
+                                     f"{' …' if len(changed) > 4 else ''}) — re-read it against the code and move the stamp", level="warning")]
+        return []
+    behind = subprocess.run(["git", "rev-list", "--count", f"{commit}..HEAD"], cwd=ROOT, capture_output=True, text=True)
+    n = int(behind.stdout.strip() or 0) if behind.returncode == 0 else 0
+    if n > STALE_UNTRACKED_AFTER:
+        return [Problem(path, 1, f"verified against {commit[:7]}, {n} commits ago, and it cites no code to track — re-read it", level="warning")]
     return []
+
+
+def changed_since(commit: str, files: list[str]) -> list[str]:
+    out = subprocess.run(["git", "log", "--format=", "--name-only", f"{commit}..HEAD", "--", *files],
+                         cwd=ROOT, capture_output=True, text=True).stdout
+    return sorted({l for l in out.splitlines() if l.strip()})
 
 
 def pinned_file(name: str) -> bool:
@@ -692,20 +706,19 @@ def freshness() -> list[dict]:
         behind = int(subprocess.run(["git", "rev-list", "--count", f"{commit}..HEAD"], cwd=ROOT, capture_output=True,
                                     text=True).stdout.strip() or 0) if known else -1
         files = cited_files(page, text)
-        changed = []
-        if known and files:
-            out = subprocess.run(["git", "log", "--format=", "--name-only", f"{commit}..HEAD", "--", *files],
-                                 cwd=ROOT, capture_output=True, text=True).stdout
-            changed = sorted({l for l in out.splitlines() if l.strip()})
+        changed = changed_since(commit, files) if known and files else []
         rows.append({"page": _rel(page), "commit": commit[:7], "date": str(v.get("date", "")), "behind": behind,
                      "cited": files, "changed": changed})
     return rows
 
 
-def freshness_markdown(rows: list[dict], stale_after: int = STALE_AFTER_COMMITS) -> str:
-    """The issue body: pages whose cited code changed, then pages simply far behind; empty when all fresh."""
+def freshness_markdown(rows: list[dict], stale_after: int = STALE_UNTRACKED_AFTER) -> str:
+    """The issue body: pages whose cited code changed, then pages that cite no code and are very old
+    (or whose stamp is not in history); empty when all fresh. A page whose cited code did not change
+    is fresh however many commits have passed."""
     moved = sorted((r for r in rows if r["changed"]), key=lambda r: (-len(r["changed"]), -r["behind"]))
-    old = sorted((r for r in rows if not r["changed"] and (r["behind"] > stale_after or r["behind"] < 0)), key=lambda r: -r["behind"])
+    old = sorted((r for r in rows if not r["changed"] and (r["behind"] < 0 or (not r["cited"] and r["behind"] > stale_after))),
+                 key=lambda r: -r["behind"])
     if not moved and not old:
         return ""
     out = ["Pages whose `verified` stamp may no longer hold. Re-read each against the code, fix what drifted,",
@@ -716,7 +729,7 @@ def freshness_markdown(rows: list[dict], stale_after: int = STALE_AFTER_COMMITS)
                 f"{' …' if len(r['changed']) > 6 else ''} |" for r in moved]
         out.append("")
     if old:
-        out += [f"## More than {stale_after} commits behind (or a stamp not in history)", "", "| Page | Stamp | Commits since |", "|---|---|---|"]
+        out += [f"## Citing no code and more than {stale_after} commits behind (or a stamp not in history)", "", "| Page | Stamp | Commits since |", "|---|---|---|"]
         out += [f"| `{r['page']}` | `{r['commit']}` {r['date']} | {r['behind'] if r['behind'] >= 0 else 'not in history'} |" for r in old]
         out.append("")
     return "\n".join(out)
