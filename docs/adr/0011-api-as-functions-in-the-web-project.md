@@ -22,8 +22,9 @@ firewall between the web and the API.
   database), each fixing `SGGS_MODULES`, `SGGS_DB` and the commit, refusing to load when its slice
   lacks a declared table, and serving with `serve.H` unchanged. Slices are cut and proven by
   `tools/slice_db.py`. Nothing generated is committed. Every deployment carries all six functions.
-- **Routing stays generated from the code.** `tools/gen_gateway.py` writes `frontend/vercel.json`:
-  per environment (`gateway/routes.json`), `api_platform: vercel` rewrites each routed context's
+- **Routing stays generated from the code.** `tools/gen_gateway.py` writes `frontend/vercel.json`'s
+  rewrites; the function configuration (bundles, region) is added at deploy time together with the
+  generated files, so a build without them — a Vercel Git preview — still succeeds. Per environment (`gateway/routes.json`), `api_platform: vercel` rewrites each routed context's
   prefixes (and `/api/v1` twins) to its function and everything else to `all`; `api_platform: render`
   proxies `/api` to the Render single API. Rewrites are internal (one edge, one firewall), use unnamed
   groups so the handler sees the original path and query, and are host-conditioned for staging.

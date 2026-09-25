@@ -167,6 +167,13 @@ class GeneratedFunctionsServe(unittest.TestCase):
                 status, _, _ = self._get(base + other[ctx])
                 self.assertEqual(status, 404)                  # another context's route is not served here
 
+    def test_the_build_config_names_exactly_the_generated_functions(self):
+        doc = json.loads((self.web / "vercel.json").read_text(encoding="utf-8"))
+        self.assertEqual(doc["regions"], [gg.REGION])
+        self.assertEqual(doc["functions"], gg.functions())
+        for f in doc["functions"]:
+            self.assertTrue((self.web / f).is_file(), f)
+
     def test_all_serves_every_context_with_a_healthy_database(self):
         base = self._serve("all")
         status, svc, body = self._get(base + "/api/health")

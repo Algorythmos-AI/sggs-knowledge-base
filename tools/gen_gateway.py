@@ -1,13 +1,15 @@
 #!/usr/bin/env python3
-"""Generate the gateway (frontend/vercel.json "rewrites", "functions", "regions") from the code.
+"""Generate the gateway (frontend/vercel.json "rewrites") and the API functions' configuration.
 
     python3 tools/gen_gateway.py            # rewrite frontend/vercel.json
     python3 tools/gen_gateway.py --check    # exit 1 if vercel.json differs from what would be generated
     python3 tools/gen_gateway.py --probes staging   # "context url-path" for each routed context
 
 The API runs inside the web's Vercel project as Python functions: one per bounded context plus
-`all` (the whole API on the full database), generated at build time by tools/build_api_functions.py.
-Every deployment carries all of them; gateway/routes.json decides, per environment, where /api goes:
+`all` (the whole API on the full database), generated at deploy time by tools/build_api_functions.py,
+which also adds their configuration (functions()) to vercel.json then. The committed vercel.json
+carries the rewrites only, so a build without the generated files (a Git preview) still succeeds.
+Every CI deployment carries all six; gateway/routes.json decides, per environment, where /api goes:
 
   * api_platform "vercel": each context in "services" is rewritten to its function (every prefix
     that serve.ROUTES tags with that context, and its /api/v1 twin); every other /api path, /readyz
@@ -122,8 +124,8 @@ def functions() -> dict:
 
 def render(cfg: dict) -> str:
     doc = json.loads(VERCEL.read_text(encoding="utf-8"))
-    doc["regions"] = [REGION]
-    doc["functions"] = functions()
+    for key in ("regions", "functions"):   # added at deploy time, with the files they describe
+        doc.pop(key, None)
     doc["rewrites"] = rewrites(cfg)
     return json.dumps(doc, indent=2, ensure_ascii=False) + "\n"
 
@@ -146,8 +148,7 @@ def main(argv=None) -> int:
         print("gateway routing is current")
         return 0
     VERCEL.write_text(want, encoding="utf-8")
-    doc = json.loads(want)
-    print(f"wrote {VERCEL.relative_to(ROOT)} ({len(doc['rewrites'])} rewrites, {len(doc['functions'])} functions)")
+    print(f"wrote {VERCEL.relative_to(ROOT)} ({len(json.loads(want)['rewrites'])} rewrites)")
     return 0
 
 

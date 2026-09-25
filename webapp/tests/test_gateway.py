@@ -45,11 +45,18 @@ class Gateway(unittest.TestCase):
             if r["destination"].startswith("/api/svc/"):
                 self.assertNotIn(":", r["source"], r)
 
+    def test_the_committed_file_names_no_functions(self):
+        # A build without the generated function files (a Vercel Git preview) must still succeed:
+        # a `functions` pattern that matches no file fails the build. The deploy adds them.
+        self.assertNotIn("functions", VERCEL)
+        self.assertNotIn("regions", VERCEL)
+
     def test_every_function_excludes_the_web_and_the_other_databases(self):
         names = gg.function_names()
-        self.assertEqual(sorted(VERCEL["functions"]), sorted(f"api/svc/{n}.py" for n in names))
+        fns = gg.functions()
+        self.assertEqual(sorted(fns), sorted(f"api/svc/{n}.py" for n in names))
         for name in names:
-            excl = VERCEL["functions"][f"api/svc/{name}.py"]["excludeFiles"]
+            excl = fns[f"api/svc/{name}.py"]["excludeFiles"]
             for n in names:
                 self.assertEqual(f"_sggs/db/{n}.sqlite" in excl, n != name, (name, n))
             for w in gg.WEB_ONLY:

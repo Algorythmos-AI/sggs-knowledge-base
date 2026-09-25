@@ -12,6 +12,11 @@ production is a routing change, released through the normal pipeline, with no ne
   pricing can never surprise the plan.
 
 ## Steps
+0. **Previews.** The committed `frontend/vercel.json` names no functions (the deploy adds them with
+   the generated files), so Vercel's Git preview builds carry none and their `/api` follows the
+   production rule. Once production is on `vercel`, that rule points at a function a Git preview
+   does not have: switch Git previews off (`git.deploymentEnabled: false` in `frontend/vercel.json`)
+   in the same release, and review web changes on staging.
 1. **Move production to the functions, whole API first.** In `gateway/routes.json` set
    `production.api_platform` to `vercel` and drop `production.api`, keeping `production.services`
    empty, so every `/api` path is answered by `all` (the single API's role, same database, same

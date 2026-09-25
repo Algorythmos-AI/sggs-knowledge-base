@@ -549,34 +549,5 @@
       "main": false,
       "integration": false
     }
-  },
-  "regions": [
-    "pdx1"
-  ],
-  "functions": {
-    "api/svc/insights.py": {
-      "maxDuration": 60,
-      "excludeFiles": "{src/**,public/**,e2e/**,scripts/**,dist/**,.astro/**,test-results/**,playwright-report/**,*.json,*.mjs,*.ts,_sggs/db/knowledge.sqlite,_sggs/db/reader.sqlite,_sggs/db/search.sqlite,_sggs/db/verify.sqlite,_sggs/db/all.sqlite}"
-    },
-    "api/svc/knowledge.py": {
-      "maxDuration": 60,
-      "excludeFiles": "{src/**,public/**,e2e/**,scripts/**,dist/**,.astro/**,test-results/**,playwright-report/**,*.json,*.mjs,*.ts,_sggs/db/insights.sqlite,_sggs/db/reader.sqlite,_sggs/db/search.sqlite,_sggs/db/verify.sqlite,_sggs/db/all.sqlite}"
-    },
-    "api/svc/reader.py": {
-      "maxDuration": 60,
-      "excludeFiles": "{src/**,public/**,e2e/**,scripts/**,dist/**,.astro/**,test-results/**,playwright-report/**,*.json,*.mjs,*.ts,_sggs/db/insights.sqlite,_sggs/db/knowledge.sqlite,_sggs/db/search.sqlite,_sggs/db/verify.sqlite,_sggs/db/all.sqlite}"
-    },
-    "api/svc/search.py": {
-      "maxDuration": 60,
-      "excludeFiles": "{src/**,public/**,e2e/**,scripts/**,dist/**,.astro/**,test-results/**,playwright-report/**,*.json,*.mjs,*.ts,_sggs/db/insights.sqlite,_sggs/db/knowledge.sqlite,_sggs/db/reader.sqlite,_sggs/db/verify.sqlite,_sggs/db/all.sqlite}"
-    },
-    "api/svc/verify.py": {
-      "maxDuration": 60,
-      "excludeFiles": "{src/**,public/**,e2e/**,scripts/**,dist/**,.astro/**,test-results/**,playwright-report/**,*.json,*.mjs,*.ts,_sggs/db/insights.sqlite,_sggs/db/knowledge.sqlite,_sggs/db/reader.sqlite,_sggs/db/search.sqlite,_sggs/db/all.sqlite}"
-    },
-    "api/svc/all.py": {
-      "maxDuration": 60,
-      "excludeFiles": "{src/**,public/**,e2e/**,scripts/**,dist/**,.astro/**,test-results/**,playwright-report/**,*.json,*.mjs,*.ts,_sggs/db/insights.sqlite,_sggs/db/knowledge.sqlite,_sggs/db/reader.sqlite,_sggs/db/search.sqlite,_sggs/db/verify.sqlite}"
-    }
   }
 }
