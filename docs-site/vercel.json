@@ -1,6 +1,5 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
-  "_comment": "docs.gurbanisoul.com. Live widgets call /api same-origin; the rewrite sends them to the public API on the product host (tools/docs_check.py asserts the host equals frontend/src/site.ts SITE_URL). Deploys are CI-gated (.github/workflows/deploy-docs.yml): the platform's git deployments are off.",
   "trailingSlash": true,
   "cleanUrls": false,
   "rewrites": [
