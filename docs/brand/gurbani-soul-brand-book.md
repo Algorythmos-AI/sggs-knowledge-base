@@ -188,7 +188,10 @@ signal of state.
 ## 11. Governance
 
 `tokens.json` is the source of truth. Any colour change: edit the JSON, re-run the report, commit both.
-Once phase 2 lands, a unit test pins `DesignTokens.swift` to the JSON. Decisions are logged below.
+Phase 2 has landed (gurbani-soul-ios `ios/App/Shared/DesignTokens.swift`: `AccentPalette.soul`,
+`brandDefault`, `accentFill`), but the planned unit test that pins `DesignTokens.swift` to the JSON
+does not exist yet: the Swift values mirror the JSON by hand, so a colour change must be made in both
+until that test lands. Decisions are logged below.
 
 | Date | Decision |
 |---|---|
@@ -215,7 +218,7 @@ token, type or icon change and compare with the previous dated set. First set: `
 | G3 Sensitivity | Granthi / scholar, with the scripture-fidelity charter | ੴ treatment, icon, and any red near Gurbani accepted |
 | G4 Legal | Professional clearance, with the pending trademark review | Gold-and-red palette without Arches or Token cleared for the App Store |
 
-## 13. Implementation map (phase 2 — not started)
+## 13. Implementation map (phase 2 — shipped in PRs #28–#31; kept as the record)
 
 One pull request per step, tests green at each:
 

@@ -76,7 +76,7 @@ Source: [`pipeline/atomic_install.py` · `install`](https://github.com/Algorythm
 ## Beside the rebuild
 
 - **`verify_regroup.py`** compares an old and a new database and allows only `comp_id` and
-  `line_no` to differ — every Gurmukhi byte must be identical. Any pull request in sggs-data that
+  `line_no` to differ — every [[Gurmukhi]] byte must be identical. Any pull request in sggs-data that
   touches the corpus or the database runs it; `--invariants` re-checks the grouping invariants of
   the committed database alone.
 - **On every pull request** the data repository's `data-ci.yml` re-proves the committed data:

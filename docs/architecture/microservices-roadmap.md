@@ -57,7 +57,7 @@ and after each move.
 
 `tools/slice_db.py --modules <ctx> --out build/slices/<ctx>.sqlite` (or `make slices`) cuts a
 service's database from the pinned one: the context's declared tables plus their closure (foreign-key
-targets, FTS5 shadow tables and external content tables), VACUUMed, every kept table proven equal in
+targets, [[FTS5]] shadow tables and external content tables), VACUUMed, every kept table proven equal in
 content to the full database and every kept FTS index passing `integrity-check`, installed
 atomically. Each slice was then served on its own (`SGGS_MODULES=<ctx> SGGS_DB=<slice>`):
 

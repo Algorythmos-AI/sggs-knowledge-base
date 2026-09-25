@@ -40,6 +40,9 @@
       "attrs": {
         "q": {
           "description": "The query to run first."
+        },
+        "limit": {
+          "description": "How many results to show (1–20); default 8. The home page shows 3."
         }
       }
     },
@@ -81,7 +84,19 @@
       "attrs": {}
     },
     "releases": {
-      "purpose": "CHANGELOG.md as a release timeline, rendered at build (remark-releases), with a filter box on the site.",
+      "purpose": "CHANGELOG.md as a release timeline, rendered at build (remark-releases), with a filter box on the site; `limit` keeps the newest N.",
+      "attrs": {
+        "limit": {
+          "description": "Show only the newest N releases (no filter box), e.g. on the home page."
+        }
+      }
+    },
+    "cards": {
+      "purpose": "Turns the Markdown list that follows into a grid of cards at build (remark-cards): each item is `[Title](link) — one sentence`. No JavaScript; on GitHub the list itself is the fallback.",
+      "attrs": {}
+    },
+    "swatches": {
+      "purpose": "The brand palette from docs/brand/tokens.json, rendered at build (remark-swatches): every role, light and dark, with a swatch and its contrast ratio. No JavaScript.",
       "attrs": {}
     }
   }

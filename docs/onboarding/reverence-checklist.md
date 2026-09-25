@@ -16,10 +16,10 @@ It applies to everyone, whatever their own beliefs.
 - **Only from the pinned database**, through the API or the corpus tools. Never from memory, a
   website, a screenshot, or a colleague's message.
 - In the website and the app, text reaches the screen from `/api/ang`, `/api/shabad`, `/api/search`
-  or `/api/lines`, verbatim, with its Ang. Keep it that way: no code path constructs, trims or
+  or `/api/lines`, verbatim, with its [[Ang]]. Keep it that way: no code path constructs, trims or
   "cleans" a line on the way.
 - In tests and fixtures, refer to a line by **id and Ang** and read it from the database at test
-  time, or quote it verbatim with its Ang as the fixture's source. Do not type Gurmukhi from
+  time, or quote it verbatim with its Ang as the fixture's source. Do not type [[Gurmukhi]] from
   memory into a fixture.
 - In documentation, a verse appears only as a blockquote ending
   `— Sri Guru Granth Sahib Ji · Ang N`; the wiki's gate verifies that quote against the database.
@@ -35,7 +35,7 @@ It applies to everyone, whatever their own beliefs.
 - **Display-only** transforms (the traditional-saroop rendering, the Sant Lipi font) change glyphs on
   screen and nothing else; the copied text stays verbatim. If you add one, prove the copied text is
   unchanged.
-- Transliteration and English are **separate, labelled layers**. Never blend them into the Gurmukhi;
+- [[Transliteration]] and English are **separate, labelled layers**. Never blend them into the Gurmukhi;
   never present a translation as the original.
 
 ## How it is shown and cited

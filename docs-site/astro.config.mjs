@@ -18,6 +18,8 @@ import { remarkQuiz } from './plugins/remark-quiz.mjs';
 import { remarkRepoMap } from './plugins/remark-repo-map.mjs';
 import { remarkAdrTimeline } from './plugins/remark-adr-timeline.mjs';
 import { remarkReleases } from './plugins/remark-releases.mjs';
+import { remarkCards } from './plugins/remark-cards.mjs';
+import { remarkSwatches } from './plugins/remark-swatches.mjs';
 import { remarkMermaid } from './plugins/remark-mermaid.mjs';
 import { remarkPosters } from './plugins/remark-posters.mjs';
 import { remarkTaskLists } from './plugins/remark-task-lists.mjs';
@@ -40,7 +42,7 @@ export default defineConfig({
     // Order matters: links and widgets are rewritten before Starlight's own plugins see the tree;
     // Mermaid renders at the remark stage, before Expressive Code sees code blocks. Links in the
     // built HTML are validated afterwards by scripts/check-links.mjs.
-    processor: unified({ remarkPlugins: [remarkStripTitleH1, remarkRepoLinks, remarkWidgets, remarkCodeExcerpt, remarkApiTry, remarkQuiz, remarkRepoMap, remarkAdrTimeline, remarkReleases, remarkTerms, remarkGlossaryAnchors, remarkMermaid, remarkPosters, remarkTaskLists] }),
+    processor: unified({ remarkPlugins: [remarkStripTitleH1, remarkRepoLinks, remarkWidgets, remarkCodeExcerpt, remarkApiTry, remarkQuiz, remarkRepoMap, remarkAdrTimeline, remarkReleases, remarkCards, remarkSwatches, remarkTerms, remarkGlossaryAnchors, remarkMermaid, remarkPosters, remarkTaskLists] }),
   },
   integrations: [
     starlight({
@@ -57,11 +59,13 @@ export default defineConfig({
         Head: './src/components/Head.astro',
         EditLink: './src/components/EditLink.astro',
         Footer: './src/components/Footer.astro',
+        SiteTitle: './src/components/SiteTitle.astro',
       },
       head: [
         { tag: 'meta', attrs: { name: 'sggs-docs-commit', content: process.env.PUBLIC_DOCS_COMMIT } },
       ],
-      sidebar: [...SIDEBAR, ...openAPISidebarGroups],
+      // the generated API reference sits inside the API group, not after Reference
+      sidebar: SIDEBAR.map((g) => (g.label === 'API' ? { ...g, items: [...g.items, ...openAPISidebarGroups] } : g)),
       plugins: [
         starlightOpenAPI([
           {

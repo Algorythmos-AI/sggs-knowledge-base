@@ -8,7 +8,7 @@ sidebar:
 
 | I want to… | Go to |
 |---|---|
-| understand why something is the way it is | the [ADRs](https://github.com/Algorythmos-AI/sggs-platform/tree/integration/docs/adr) — every decision that shaped the project, with its context and consequences |
+| understand why something is the way it is | the [ADRs](../adr/README.md) — every decision that shaped the project, with its context and consequences |
 | find the rule for a change I am making | [Engineering invariants](../engineering/invariants.md) first; then the [glossary](../glossary.md) for a term |
 | report a bug in the site, the API or a tool | a [bug report](https://github.com/Algorythmos-AI/sggs-platform/issues/new?template=bug.yml) |
 | propose a feature | a [feature request](https://github.com/Algorythmos-AI/sggs-platform/issues/new?template=feature.yml) |

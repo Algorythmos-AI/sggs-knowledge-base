@@ -11,7 +11,7 @@ import { mockApi } from './helpers';
 // production Content-Security-Policy: a script it blocks, or any uncaught error, fails here.
 const here = dirname(fileURLToPath(import.meta.url));
 const sitemap = readFileSync(resolve(here, '..', 'dist', 'sitemap-0.xml'), 'utf8');
-const urls = Array.from(sitemap.matchAll(/<loc>([^<]+)<\/loc>/g)).map((m) => new URL(m[1]).pathname).filter((p) => !p.startsWith('/api/reference/'));
+const urls = Array.from(sitemap.matchAll(/<loc>([^<]+)<\/loc>/g)).map((m) => new URL(m[1]).pathname);
 
 test.describe('every page', () => {
   test.beforeEach(({}, testInfo) => { test.skip(testInfo.project.name !== 'desktop', 'desktop only'); });
