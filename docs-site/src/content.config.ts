@@ -8,7 +8,7 @@ import { idForRepoPath, loadSources } from '../plugins/paths.mjs';
 
 const sources = loadSources();
 const siblingPatterns = Object.entries(sources).flatMap(([name, s]: [string, any]) =>
-  (s.include as string[]).map((p) => `docs-site/.sources/${name}/${p}`),
+  (s.include as string[]).filter((p) => p.endsWith('.md')).map((p) => `docs-site/.sources/${name}/${p}`),
 );
 
 export const collections = {

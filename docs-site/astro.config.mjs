@@ -10,6 +10,7 @@ import starlightOpenAPI, { openAPISidebarGroups } from 'starlight-openapi';
 import { remarkStripTitleH1 } from './plugins/remark-strip-title-h1.mjs';
 import { remarkRepoLinks } from './plugins/remark-repo-links.mjs';
 import { remarkWidgets } from './plugins/remark-widgets.mjs';
+import { remarkCodeExcerpt } from './plugins/remark-code-excerpt.mjs';
 import { remarkMermaid } from './plugins/remark-mermaid.mjs';
 import { remarkPosters } from './plugins/remark-posters.mjs';
 import { SIDEBAR } from './sidebar.mjs';
@@ -31,7 +32,7 @@ export default defineConfig({
     // Order matters: links and widgets are rewritten before Starlight's own plugins see the tree;
     // Mermaid renders at the remark stage, before Expressive Code sees code blocks. Links in the
     // built HTML are validated afterwards by scripts/check-links.mjs.
-    processor: unified({ remarkPlugins: [remarkStripTitleH1, remarkRepoLinks, remarkWidgets, remarkMermaid, remarkPosters] }),
+    processor: unified({ remarkPlugins: [remarkStripTitleH1, remarkRepoLinks, remarkWidgets, remarkCodeExcerpt, remarkMermaid, remarkPosters] }),
   },
   integrations: [
     starlight({

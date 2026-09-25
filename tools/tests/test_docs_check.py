@@ -121,3 +121,43 @@ class SiteConfig(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class CodeWidget(Fixture):
+    """`<!-- sggs:code -->`: the excerpt's target must exist and its symbol be findable."""
+
+    def test_platform_file_and_symbol(self):
+        self.assertEqual(self.errors(FM + '<!-- sggs:code file="webapp/sggs/core.py" symbol="LINE_COLS" -->\nSource: core.py.\n'), [])
+        self.assertTrue(any("does not exist" in e for e in self.errors(FM + '<!-- sggs:code file="webapp/nope.py" symbol="x" -->\nfallback\n')))
+        self.assertTrue(any("not found" in e for e in self.errors(FM + '<!-- sggs:code file="webapp/sggs/core.py" symbol="no_such_symbol" -->\nfallback\n')))
+        self.assertTrue(any("symbol= or lines=" in e for e in self.errors(FM + '<!-- sggs:code file="webapp/sggs/core.py" -->\nfallback\n')))
+        self.assertTrue(any("lines must be" in e for e in self.errors(FM + '<!-- sggs:code file="webapp/sggs/core.py" lines="x" -->\nfallback\n')))
+        self.assertTrue(any("bad file" in e for e in self.errors(FM + '<!-- sggs:code file="../etc/passwd" lines="1-2" -->\nfallback\n')))
+
+    def test_sibling_file_must_be_pinned(self):
+        self.assertTrue(any("unknown repo" in e for e in self.errors(FM + '<!-- sggs:code file="x.py" repo="nope" symbol="f" -->\nfallback\n')))
+        if "sggs-data" in dc.sibling_sources():
+            self.assertTrue(any("does not pin" in e for e in self.errors(FM + '<!-- sggs:code file="pipeline/not-pinned.py" repo="sggs-data" symbol="f" -->\nfallback\n')))
+            self.assertEqual(self.errors(FM + '<!-- sggs:code file="pipeline/reconcile.py" repo="sggs-data" lines="1-10" -->\nfallback\n'), [])
+
+
+class SiblingPages(unittest.TestCase):
+    """Pages installed from a sibling repository are canonical elsewhere: what only that repository
+    can fix is a notice here, and poster footers may name their pinned files."""
+
+    def test_pinned_file_names(self):
+        if "sggs-data" in dc.sibling_sources():
+            self.assertTrue(dc.pinned_file("sggs-data/pipeline/reconcile.py"))
+        self.assertFalse(dc.pinned_file("sggs-data/pipeline/nope.py"))
+        self.assertFalse(dc.pinned_file("nope/x.py"))
+
+    def test_sibling_pages_get_notices_not_errors(self):
+        installed = sorted(dc.SOURCES_DIR.rglob("*.md")) if dc.SOURCES_DIR.exists() else []
+        if not installed:
+            self.skipTest("sibling docs not installed (tools/fetch_sibling_docs.py)")
+        tokens, widgets = dc.load_tokens_hex(), dc.widget_schema()
+        for page in installed:
+            self.assertTrue(dc.is_sibling(page))
+            for pr in dc.check_page(page, tokens, widgets, None):
+                self.assertIn(pr.level, ("notice", "warning"), f"{page}: {pr.msg}")
+        self.assertFalse(dc.is_sibling(dc.DOCS / "README.md"))

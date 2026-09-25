@@ -3,7 +3,8 @@
 // page (src/components/Head.astro); nothing here is required to read the page.
 import { SggsStatus } from './status';
 import { SggsWalkthrough } from './walkthrough';
-import { makeScrollRegionsFocusable } from './a11y';
+import { SggsAngExplorer } from './ang-explorer';
+import { watchScrollRegions } from './a11y';
 
 const define = (name: string, ctor: CustomElementConstructor) => {
   if (!customElements.get(name)) customElements.define(name, ctor);
@@ -11,6 +12,6 @@ const define = (name: string, ctor: CustomElementConstructor) => {
 
 define('sggs-status', SggsStatus);
 define('sggs-walkthrough', SggsWalkthrough);
+define('sggs-ang-explorer', SggsAngExplorer);
 
-makeScrollRegionsFocusable();
-window.addEventListener('resize', () => makeScrollRegionsFocusable(), { passive: true });
+watchScrollRegions();

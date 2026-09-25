@@ -8,6 +8,15 @@ entries prior to v1.1.0 are the project's original prose style and are preserved
 No change to the scripture text, the corpus, the database bytes or any API response.
 
 ### Added
+- **Data & pipeline on the wiki.** `docs/data/` — overview, anatomy of a line record (poster 03
+  and a live Ang explorer over `/api/ang/{n}`), corpus pipeline and gates (poster 04, with code
+  read from sggs-data at the pinned commit), the dataset pin, and the editorial ledger (4 rules,
+  11 applications). sggs-data's canonical documents are published beside them by pin
+  (`docs-site/sources.lock.json` now pins sggs-data at a commit with the sha256 of every file) with
+  a "pinned copy" banner, and GitHub links to those documents stay on the wiki. New widgets:
+  `<sggs-ang-explorer>` and `<!-- sggs:code -->` (a build-time excerpt from the real source, never
+  a pasted copy; the build fails if the file or symbol is missing). The known-issues page is now a
+  release timeline.
 - **Posters and walkthroughs.** Four large process posters (system landscape, three repositories
   and pins, request lifecycle, bounded contexts and the gateway), generated from declarative specs
   in `docs-site/posters/` by the poster kit into `docs/diagrams/posters/` (checked for drift in CI),

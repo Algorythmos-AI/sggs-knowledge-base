@@ -19,10 +19,12 @@ plain image on GitHub.
 |---|---|---|---|
 | 01 | System landscape | people, the three surfaces, the API, the pinned database, the sources, and CI as the only path to production | [Architecture overview](../architecture/overview.md) |
 | 02 | Three repositories and the pins that join them | data → platform → app hand-offs by lock file, one version number | [Three repositories and pins](../architecture/three-repositories-and-pins.md) |
+| 03 | Anatomy of a line record | a PDF page → units → the 23 columns of the `lines` table; what the FTS index reads and its bm25 weights | [Anatomy of a line record](../data/line-record.md) |
+| 04 | Corpus pipeline and gates | `rebuild_all.sh` stage by stage: extraction, reconcile, golden suite, atomic installs, the database layers, the integrity gate, CI on every pull request | [Corpus pipeline and gates](../data/pipeline.md) |
 | 08 | Request lifecycle | `GET /api/ang/712` from the browser to SQLite and back, in code order | [Request lifecycle](../architecture/request-lifecycle.md) |
 | 09 | Bounded contexts and the gateway | five contexts, module slicing, routing generated from the code, the proofs | [Bounded contexts and the gateway](../architecture/bounded-contexts-and-gateway.md) |
 
-More follow with the pipeline, search, verification, delivery and iOS pages.
+More follow with the search, verification, delivery and iOS pages.
 
 ## How a poster is made
 
@@ -75,8 +77,8 @@ Enforced by `tools/docs_check.py` on every pull request:
    the legend and footer). Give each node and edge the step that introduces it; steps build the
    picture up in order.
 3. Write the steps: a title, a caption a student can read on its own, and the page that explains
-   it. Name the source files the poster was read against in `sources`, and the commit in
-   `verified`.
+   it. Name the source files the poster was read against in `sources` (a file pinned from a sibling
+   repository is named `sggs-data/<path>`), and the commit in `verified`.
 4. `node scripts/build-posters.mjs`, then embed it in a page as
    `![Alt text](../diagrams/posters/NN-slug.svg)`.
 5. `make docs-check` and `make docs`; look at it in light and dark, on a phone width, and with
