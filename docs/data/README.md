@@ -54,7 +54,7 @@ says where the canonical file is; edit them there.
 |---|---|---|
 | Line records | 60,658 | `data_quality.py` (sggs-data), `/api/health` |
 | Angs | 1–1430, gap-free | `golden_test.py`, `/api/health` |
-| Compositions (`comp_id`) | 4,706 distinct; `max(comp_id)` 5,380; gaps permanent | `verify_regroup.py --invariants` |
+| Compositions (`comp_id`) | 4,527 distinct; `max(comp_id)` 5,376; gaps permanent (read from the pinned database) | `verify_regroup.py --invariants` |
 | Vaars | 22, detected by title header | `build_vaars.py` |
 | Editorial rules / applications | 4 / 11, all reviewed | `ledger_check.py` |
 | Dataset served | `dataset.lock.json` → commit, sha256, size | `make dataset-check`, the `scripture-integrity` workflow |
