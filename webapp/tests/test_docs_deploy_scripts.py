@@ -63,11 +63,12 @@ class VercelApi(unittest.TestCase):
         self.assertEqual(va.main(["live"], {}, None), 2)                   # no token, no team
 
     def test_token_is_never_printed(self):
+        canary = "-".join(["never", "printed", "canary"])   # built at run time: not a secret-shaped literal
         r = subprocess.run([sys.executable, str(ROOT / "scripts/ci/vercel_api.py"), "has-production"],
-                           env={"VERCEL_TOKEN": "tok-SECRET-123", "PATH": "/usr/bin:/bin"},
+                           env={"VERCEL_TOKEN": canary, "PATH": "/usr/bin:/bin"},
                            capture_output=True, text=True, timeout=30)
         self.assertEqual(r.returncode, 2)
-        self.assertNotIn("SECRET", r.stdout + r.stderr)
+        self.assertNotIn(canary, r.stdout + r.stderr)
 
 
 class _Site(http.server.BaseHTTPRequestHandler):
