@@ -49,6 +49,9 @@
           },
           {
             "context": "static-analysis"
+          },
+          {
+            "context": "docs"
           }
         ]
       }

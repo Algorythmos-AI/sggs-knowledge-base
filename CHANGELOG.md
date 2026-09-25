@@ -3,6 +3,37 @@
 The format below (newest first) follows [Keep a Changelog](https://keepachangelog.com);
 entries prior to v1.1.0 are the project's original prose style and are preserved verbatim.
 
+## [Unreleased]
+
+### Fixed
+- **The wiki's deploy pipeline.** Staging refuses to be the docs project's first Vercel deployment
+  (the first one became production on 2026-09-26 and served an `integration` build at
+  `docs.gurbanisoul.com`) and fails unless its own deployment is a preview. Production's rollback
+  target is the deployment the domain actually serves (`scripts/ci/vercel_api.py`), not the newest
+  production deployment, which can be a failed, never-promoted build; the rollback runs only after a
+  failed public smoke; every production failure opens an issue that says whether production changed,
+  and a `main-guard` job reports a push to `main` whose `docs` job failed. Concurrency groups carry
+  the event, so a manual or nightly run can no longer cancel a staging deploy.
+- **The docs smoke fails on any redirect** (the `trailingSlash` loop would have passed a lenient
+  check), checks `/api/meta`, and finds its poster on the architecture page instead of skipping it.
+- Two wiki links that 404ed: the reader is `/reader?ang=N`, and the website has no verify page.
+- **`apply_rulesets.sh` could weaken branch protection:** it PUT each committed ruleset as-is, which
+  resets keys the file does not mention (both trunks have `require_extra_approval_for_unattributed_changes`
+  on). It now merges the file into the live ruleset (`scripts/gh/merge_ruleset.py`, tested) and
+  takes `--dry-run`.
+
+### Changed
+- **The wiki's CSP allows inline scripts by sha256 only** (13 hashes; no `'unsafe-inline'`),
+  checked by `docs-site/scripts/csp.mjs`; the e2e server sends the production headers, so every
+  page's e2e and axe run under the real policy. ADR-0012 amended.
+- **The `docs` job equals `make docs`:** types, `check:render`, `check:links` and `check:csp` join
+  the build checks; it also runs every night on `integration`, opening one issue while red. The
+  `main` ruleset requires `docs` to merge; the product's `deploy-production` does not wait on it
+  (`wait_for_checks.py --exclude docs`), so a wiki failure never blocks a product release. `docs-links` also checks the sibling docs and pins its actions by
+  SHA. `docs_check` gates the poster legend and the theme's brand colours against the tokens.
+- `docs-site/scripts/visual-qa.mjs` proxies `/api` to production (`https://gurbanisoul.com`, was
+  the Render rollback origin) and accepts a Vercel bypass for the staging alias.
+
 ## [1.3.10] — 2026-09-25 — the API on Vercel functions in production, the engineering wiki
 
 No change to the scripture text, the corpus or the database bytes (`cb6775ff…`). Every legacy

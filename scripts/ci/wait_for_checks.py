@@ -5,7 +5,9 @@ exact commit has succeeded. The deploy pipeline's gate: it never re-runs CI (whi
 could collide with the push-triggered runs' concurrency groups) — it waits for them.
 
 Required contexts are read from .github/rulesets/main.json (single source of truth,
-so the gate can't drift from branch protection), plus any --extra contexts.
+so the gate can't drift from branch protection), plus any --extra contexts, minus any
+--exclude contexts (a check required to MERGE that a deploy must not wait on — the product
+deploy excludes `docs`, the wiki's job: the wiki deploys on its own and never blocks the product).
 
 Exit 0 when all succeeded. Exit 1 fast on any failed/cancelled/skipped required
 check, if a required check hasn't appeared within --appear-timeout, or on the
@@ -23,6 +25,10 @@ def required_contexts():
         if r["type"] == "required_status_checks":
             return [c["context"] for c in r["parameters"]["required_status_checks"]]
     return []
+
+def wanted(base, extra=(), exclude=()):
+    """The contexts to wait on: the required ones plus extras, minus exclusions, in order, once each."""
+    return [c for c in dict.fromkeys([*base, *extra]) if c not in set(exclude)]
 
 def check_runs(repo, sha):
     out = subprocess.run(
@@ -43,6 +49,8 @@ def main():
     ap.add_argument("sha")
     ap.add_argument("--repo", default=None)
     ap.add_argument("--extra", nargs="*", default=[])
+    ap.add_argument("--exclude", nargs="*", default=[],
+                    help="required contexts this gate must not wait on (e.g. docs for the product deploy)")
     ap.add_argument("--contexts", nargs="*", default=None,
                     help="override the required-context list (default: read from main.json)")
     ap.add_argument("--interval", type=int, default=20)
@@ -54,7 +62,7 @@ def main():
     if not repo:
         sys.exit("--repo or GITHUB_REPOSITORY required")
     base = a.contexts if a.contexts is not None else required_contexts()
-    want = list(dict.fromkeys(base + a.extra))
+    want = wanted(base, a.extra, a.exclude)
     if not want:
         sys.exit("no required contexts found in .github/rulesets/main.json")
     print(f"waiting on {repo}@{a.sha[:7]} for: {', '.join(want)}")

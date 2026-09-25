@@ -21,9 +21,10 @@ request and is a **required check on `integration`**.
 | scripture | a verse-sized run of Gurmukhi outside a code span; a blockquote without the citation; a cited line that is not verbatim in the pinned database |
 | terms | `[[Term]]` names no glossary row |
 | verified stamps | a process, engineering or architecture page without one; (warning) a stamp sixty commits behind |
-| posters | the visual spec; a footer naming a missing file; a sidecar that disagrees with the step groups; a poster no page references |
+| posters | the visual spec (legend included); a footer naming a missing file; a sidecar that disagrees with the step groups; a poster no page references |
 | drift | a search `mode` the code reports that the waterfall page or poster 05 does not name; a verify threshold poster 07 does not state; a generated page without its header |
-| site config | the `/api` rewrite, git deployments off, the CSP, the sources lock's shape |
+| site config | the `/api` rewrite, git deployments off, the CSP (inline scripts by hash only, never `'unsafe-inline'`), no `trailingSlash`, keys Vercel accepts, the sources lock's shape |
+| theme | a brand colour in `docs-site/src/styles/theme.css` (paper, card, accent, accent text, accent fill, maroon, kraft, status colours; light and dark) that differs from `docs/brand/tokens.json` |
 
 Pinned sibling pages are checked too, but what only their repository can fix (a palette colour,
 a link to an unpinned file) is a notice, never an error.
@@ -36,11 +37,28 @@ a pinned file no longer matches its commit. Regenerate or re-pin; never edit a g
 
 ## The build and after
 
-`npm run build` renders every Mermaid fence and every poster; then `check-render` (every page
-rendered completely — Astro logs a failed render and exits 0), `check-mermaid`, `check-links`
-(every internal link and fragment in the built HTML) and `check-budget` (JS per page, largest page).
-Then Playwright with a mocked API on desktop and phone, axe on **every page the build produced**
-(from the sitemap), and Lighthouse on twenty pages.
+`npm run typecheck` first; `npm run build` renders every Mermaid fence and every poster; then
+`npm run check:all` — `check-render` (every page rendered completely — Astro logs a failed render
+and exits 0), `check-mermaid`, `check-links` (every internal link and fragment in the built HTML),
+`check-budget` (JS per page, largest page) and `check-csp`. Then Playwright with a mocked API on
+desktop and phone, axe on **every page the build produced** (from the sitemap), and Lighthouse on
+twenty pages. The e2e server (`scripts/serve-dist.mjs`) sends the headers `docs-site/vercel.json`
+gives production, so every page runs under the real Content-Security-Policy.
+
+### The CSP and its hashes
+
+The site allows inline scripts by their sha256, never with `'unsafe-inline'`. Starlight and the
+OpenAPI plugin inline a few small scripts (the theme picker, the sidebar, the search dialog); their
+hashes are listed in `docs-site/vercel.json`. They change only when those packages do — so a
+Starlight upgrade (often a Dependabot PR) turns `check-csp` red with the exact hashes. Then:
+
+```bash
+cd docs-site && npm run build && npm run csp:write
+```
+
+and review the diff: every new hash must belong to a script the upgrade brought. A script of your
+own belongs in a module file under `src/`, not inline; an inline `on…=` handler or a
+`javascript:` URL is refused outright.
 
 ## Reading a failure
 
