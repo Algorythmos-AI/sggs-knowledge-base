@@ -17,8 +17,8 @@ verified:
 Beside every line the database keeps a **[[Transliteration|transliteration]]** — the line in Roman
 letters, built by the pipeline from the Gurmukhi:
 
-> ੴ ਸਤਿ ਨਾਮੁ ਕਰਤਾ ਪੁਰਖੁ ਨਿਰਭਉ ਨਿਰਵੈਰੁ ਅਕਾਲ ਮੂਰਤਿ ਅਜੂਨੀ ਸੈਭੰ ਗੁਰ ਪ੍ਰਸਾਦਿ ॥
-> *ik oankaar sat naam karataa purakh nirabhau niravair akaal moorat ajoonee saibhn gur prasaad*
+> ੴ ਸਤਿ ਨਾਮੁ ਕਰਤਾ ਪੁਰਖੁ ਨਿਰਭਉ ਨਿਰਵੈਰੁ ਅਕਾਲ ਮੂਰਤਿ ਅਜੂਨੀ ਸੈਭੰ ਗੁਰ ਪ੍ਰਸਾਦਿ ॥  
+> *ik oankaar sat naam karataa purakh nirabhau niravair akaal moorat ajoonee saibhn gur prasaad*  
 > — Sri Guru Granth Sahib Ji · Ang 1
 
 It is a reading aid for people who do not read Gurmukhi, and a search key. It is **not** scripture:

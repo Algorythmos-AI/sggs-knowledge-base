@@ -53,7 +53,7 @@ test.describe('Scripture 101', () => {
     await expect(quote).toContainText('Sri Guru Granth Sahib Ji · Ang 1');
     const shown = (await quote.locator('p').first().textContent())?.trim();
     const data = JSON.parse(readFileSync(resolve(here, 'fixtures', 'ang-1.json'), 'utf8'));   // a verbatim capture of /api/ang/1
-    expect(shown).toBe(data.lines[0].gurmukhi);
+    expect(shown?.startsWith(data.lines[0].gurmukhi), shown).toBe(true);   // Gurmukhi first, then the transliteration and the citation
   });
 
   for (const path of ['/scripture/', '/scripture/what-sggs-is/', '/scripture/structure/', '/scripture/vaars-saloks-pauris/', '/scripture/bhatts-and-swaiyye/', '/scripture/gurmukhi-and-unicode/', '/scripture/transliteration-and-the-fold/', '/scripture/answer-protocol-for-engineers/', '/glossary/']) {

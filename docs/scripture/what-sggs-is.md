@@ -30,14 +30,14 @@ form is always the full name and the Ang: *Sri Guru Granth Sahib Ji · Ang N*.
 
 The Granth opens with the [[Mool Mantar]], the statement of the One:
 
-> ੴ ਸਤਿ ਨਾਮੁ ਕਰਤਾ ਪੁਰਖੁ ਨਿਰਭਉ ਨਿਰਵੈਰੁ ਅਕਾਲ ਮੂਰਤਿ ਅਜੂਨੀ ਸੈਭੰ ਗੁਰ ਪ੍ਰਸਾਦਿ ॥
-> *ik oankaar sat naam karataa purakh nirabhau niravair akaal moorat ajoonee saibhn gur prasaad*
+> ੴ ਸਤਿ ਨਾਮੁ ਕਰਤਾ ਪੁਰਖੁ ਨਿਰਭਉ ਨਿਰਵੈਰੁ ਅਕਾਲ ਮੂਰਤਿ ਅਜੂਨੀ ਸੈਭੰ ਗੁਰ ਪ੍ਰਸਾਦਿ ॥  
+> *ik oankaar sat naam karataa purakh nirabhau niravair akaal moorat ajoonee saibhn gur prasaad*  
 > — Sri Guru Granth Sahib Ji · Ang 1
 
 and [[Japji]] Sahib begins immediately after it, on the same Ang:
 
-> ਆਦਿ ਸਚੁ ਜੁਗਾਦਿ ਸਚੁ ॥
-> *aad sach jugaad sach*
+> ਆਦਿ ਸਚੁ ਜੁਗਾਦਿ ਸਚੁ ॥  
+> *aad sach jugaad sach*  
 > — Sri Guru Granth Sahib Ji · Ang 1
 
 The first line is exactly what `/api/ang/1` returns as its first record — verbatim, with the Ang.
