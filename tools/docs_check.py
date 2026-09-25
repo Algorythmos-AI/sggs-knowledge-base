@@ -49,7 +49,7 @@ NOT_PUBLISHED = ("docs/reports/archive/", "docs/design/")
 # pages the site generates rather than reads from docs/ (starlight-openapi): a link to one is valid
 VIRTUAL_PAGES = {"docs/api/reference": "/api/reference/"}
 REQUIRE_VERIFIED: tuple[str, ...] = ("docs/process/", "docs/engineering/", "docs/architecture/")
-STALE_AFTER_COMMITS = 60
+STALE_UNTRACKED_AFTER = 300   # commits: a stamp on a page that cites no code is only as good as its age
 TITLE_LEN, DESC_LEN = (8, 120), (40, 200)
 CITATION_RE = re.compile(r"^—\s*Sri Guru Granth Sahib Ji\s*·\s*Ang\s+(\d{1,4})\s*$")
 GURMUKHI_RUN = re.compile(r"[਀-੿][਀-੿‌‍ ]*[਀-੿]|[਀-੿]")
@@ -251,7 +251,7 @@ def check_page(path: Path, tokens_hex: set[str], widgets: dict, db: sqlite3.Conn
         if not re.fullmatch(r"[0-9a-f]{7,40}", str(v.get("commit", ""))) or not re.fullmatch(r"\d{4}-\d{2}-\d{2}", str(v.get("date", ""))):
             P.append(Problem(path, 1, "verified needs commit (7–40 hex) and date (YYYY-MM-DD)"))
         else:
-            P.extend(check_verified_commit(path, str(v["commit"])))
+            P.extend(check_verified_commit(path, str(v["commit"]), text))
     elif any(rel.startswith(d) for d in REQUIRE_VERIFIED):
         P.append(Problem(path, 1, "this page must carry `verified: {commit, date}` (last read against the code)"))
 
@@ -423,16 +423,30 @@ def check_quote(path: Path, block: list[tuple[int, str]], db: sqlite3.Connection
     return P
 
 
-def check_verified_commit(path: Path, commit: str) -> list[Problem]:
-    try:
-        subprocess.run(["git", "cat-file", "-e", f"{commit}^{{commit}}"], cwd=ROOT, check=True, capture_output=True)
-        behind = subprocess.run(["git", "rev-list", "--count", f"{commit}..HEAD"], cwd=ROOT, capture_output=True, text=True)
-        n = int(behind.stdout.strip() or 0) if behind.returncode == 0 else 0
-    except (subprocess.CalledProcessError, FileNotFoundError):
+def check_verified_commit(path: Path, commit: str, text: str = "") -> list[Problem]:
+    """A stamp is stale when code the page cites changed since it (the precise signal), or — for a
+    page that cites no code — when it is very old. Raw commit distance alone is noise: merging a
+    stack of pull requests adds dozens of commits that touch nothing a page describes."""
+    if subprocess.run(["git", "cat-file", "-e", f"{commit}^{{commit}}"], cwd=ROOT, capture_output=True).returncode != 0:
         return [Problem(path, 1, f"verified commit {commit[:7]} is not in this repository's history", level="warning")]
-    if n > STALE_AFTER_COMMITS:
-        return [Problem(path, 1, f"verified against {commit[:7]}, {n} commits ago — re-read this page against the code", level="warning")]
+    files = cited_files(path, text) if text else []
+    if files:
+        changed = changed_since(commit, files)
+        if changed:
+            return [Problem(path, 1, f"code this page cites changed since its stamp {commit[:7]} ({', '.join(changed[:4])}"
+                                     f"{' …' if len(changed) > 4 else ''}) — re-read it against the code and move the stamp", level="warning")]
+        return []
+    behind = subprocess.run(["git", "rev-list", "--count", f"{commit}..HEAD"], cwd=ROOT, capture_output=True, text=True)
+    n = int(behind.stdout.strip() or 0) if behind.returncode == 0 else 0
+    if n > STALE_UNTRACKED_AFTER:
+        return [Problem(path, 1, f"verified against {commit[:7]}, {n} commits ago, and it cites no code to track — re-read it", level="warning")]
     return []
+
+
+def changed_since(commit: str, files: list[str]) -> list[str]:
+    out = subprocess.run(["git", "log", "--format=", "--name-only", f"{commit}..HEAD", "--", *files],
+                         cwd=ROOT, capture_output=True, text=True).stdout
+    return sorted({l for l in out.splitlines() if l.strip()})
 
 
 def pinned_file(name: str) -> bool:
@@ -480,6 +494,8 @@ def check_posters(tokens_hex: set[str]) -> list[Problem]:
                     name = name.strip()
                     if name and not (ROOT / name).exists() and not name.startswith("Algorythmos-AI/") and not pinned_file(name):
                         P.append(Problem(svg, 1, f"poster footer names a file that does not exist: {name}"))
+        if not re.search(r'<g class="pk-legend">(?:<rect[^>]*/><text[^>]*>[^<]+</text>)+</g>', s):
+            P.append(Problem(svg, 1, "poster needs its legend (docs-site/posters/kit.mjs draws it from the node kinds)"))
         if not re.search(r"v\d+\.\d+\.\d+ · verified \d{4}-\d{2}-\d{2} · [0-9a-f]{7}", s):
             P.append(Problem(svg, 1, "poster needs a version stamp `vX.Y.Z · verified YYYY-MM-DD · <sha7>`"))
         steps_svg = set(re.findall(r'id="(step-\d{2})"', s))
@@ -581,6 +597,9 @@ def check_site_config() -> list[Problem]:
         csp = next((h["value"] for h in v["headers"][0]["headers"] if h["key"] == "Content-Security-Policy"), "")
         if "connect-src 'self'" not in csp or "frame-ancestors 'none'" not in csp:
             P.append(Problem(vercel, 1, "CSP must keep connect-src 'self' and frame-ancestors 'none'"))
+        script_src = next((d.split()[1:] for d in csp.split(";") if d.strip().startswith("script-src ")), [])
+        if "'unsafe-inline'" in script_src or not any(t.startswith("'sha256-") for t in script_src):
+            P.append(Problem(vercel, 1, "CSP script-src allows inline scripts by sha256 hash only, never 'unsafe-inline' (cd docs-site && npm run build && npm run csp:write)"))
     except (OSError, ValueError, AttributeError, KeyError, IndexError) as e:
         P.append(Problem(vercel, 1, f"cannot validate docs-site/vercel.json: {e}"))
     lock = SITE / "sources.lock.json"
@@ -600,6 +619,122 @@ def check_site_config() -> list[Problem]:
     return P
 
 
+# The site theme's brand colours must equal docs/brand/tokens.json (legs: 0 light, 1 dark). Only the
+# named brand roles are held to the tokens; the neutral greys Starlight needs are the theme's own.
+THEME_TOKENS = {
+    "--sgs-paper": ("surfaces", "paper"), "--sgs-paper-warm": ("surfaces", "paperWarm"),
+    "--sgs-card": ("surfaces", "card"), "--sgs-canvas": ("surfaces", "canvas"),
+    "--sgs-accent": ("soul", "accent"), "--sgs-accent-text": ("soul", "accentText"),
+    "--sgs-accent-fill": ("soul", "accentFill"), "--sgs-on-accent": ("soul", "onAccent"),
+    "--sgs-maroon": ("brand", "maroon"), "--sgs-kraft": ("brand", "kraft"),
+    "--sgs-positive": ("status", "positive"), "--sgs-negative": ("status", "negative"),
+    "--sgs-info": ("status", "info"), "--sgs-special": ("status", "special"),
+}
+
+
+def theme_blocks(css: str) -> dict[str, dict[str, str]]:
+    """{'dark': {var: hex}, 'light': {var: hex}} from theme.css's two :root blocks (dark is Starlight's default)."""
+    out: dict[str, dict[str, str]] = {}
+    for sel, body in re.findall(r"([^{}]+)\{([^{}]*)\}", css):
+        sel = sel.strip()
+        leg = "light" if sel == ':root[data-theme="light"]' else "dark" if sel == ":root" else None
+        if leg:
+            out.setdefault(leg, {}).update({k: v.upper() for k, v in re.findall(r"(--[a-z0-9-]+):\s*(#[0-9A-Fa-f]{6})\b", body)})
+    return out
+
+
+def check_theme(css_path: Path | None = None, tokens: dict | None = None) -> list[Problem]:
+    css_path = css_path or SITE / "src" / "styles" / "theme.css"
+    tokens = tokens or json.loads((DOCS / "brand" / "tokens.json").read_text(encoding="utf-8"))
+    blocks = theme_blocks(css_path.read_text(encoding="utf-8"))
+    P: list[Problem] = []
+    for leg, i in (("light", 0), ("dark", 1)):
+        have = blocks.get(leg, {})
+        for var, (group, name) in THEME_TOKENS.items():
+            want = tokens[group][name][i].upper()
+            if var not in have:
+                P.append(Problem(css_path, 1, f"{leg} theme lacks {var} (tokens.json {group}.{name} = {want})"))
+            elif have[var] != want:
+                P.append(Problem(css_path, 1, f"{leg} theme {var} is {have[var]}, tokens.json {group}.{name} is {want}"))
+    return P
+
+
+# ── freshness (a report, not a gate): which stamped pages cite code that moved since their stamp ──
+CODE_ATTR_RE = re.compile(r'sggs:code\b[^>]*?\bfile="([^"]+)"([^>]*)-->')
+POSTER_REF_RE = re.compile(r"!\[[^\]]*\]\(([^)\s]*diagrams/posters/[^)\s]+\.svg)\)")
+
+
+def cited_files(page: Path, text: str) -> list[str]:
+    """Repository files a page stands on: platform code excerpts, relative links to non-Markdown
+    files, and the "Source of truth" files of the posters it embeds (repo-relative, existing, and
+    outside docs/)."""
+    out: set[str] = set()
+    for m in CODE_ATTR_RE.finditer(text):
+        if "repo=" not in m.group(2):
+            out.add(m.group(1))
+    for m in LINK_RE.finditer(text):
+        target = m.group(1).split("#")[0]
+        if not target or "://" in target or target.startswith(("mailto:", "/")) or target.endswith(".md"):
+            continue
+        try:
+            rel = (page.parent / target).resolve().relative_to(ROOT)
+        except ValueError:
+            continue
+        out.add(str(rel))
+    for m in POSTER_REF_RE.finditer(text):
+        svg = (page.parent / m.group(1)).resolve()
+        if svg.exists():
+            for f in re.findall(r"Source of truth:\s*([^<]+)<", svg.read_text(encoding="utf-8"))[:1]:
+                out.update(n.strip() for n in re.split(r"\s*[·,]\s*", f.strip()) if n.strip())
+    # code and configuration only: a page (or a poster footer) naming documentation is not drift
+    return sorted(f for f in out if (ROOT / f).is_file() and not f.startswith("docs/"))
+
+
+def freshness() -> list[dict]:
+    """Every page with a `verified` stamp: commits since the stamp, and the cited files changed since."""
+    rows = []
+    for page in published_pages():
+        if str(page).startswith(str(SOURCES_DIR)):
+            continue
+        text = page.read_text(encoding="utf-8")
+        fm, _ = parse_frontmatter(text)
+        v = (fm or {}).get("verified")
+        if not isinstance(v, dict) or not v.get("commit"):
+            continue
+        commit = str(v["commit"])
+        known = subprocess.run(["git", "cat-file", "-e", f"{commit}^{{commit}}"], cwd=ROOT, capture_output=True).returncode == 0
+        behind = int(subprocess.run(["git", "rev-list", "--count", f"{commit}..HEAD"], cwd=ROOT, capture_output=True,
+                                    text=True).stdout.strip() or 0) if known else -1
+        files = cited_files(page, text)
+        changed = changed_since(commit, files) if known and files else []
+        rows.append({"page": _rel(page), "commit": commit[:7], "date": str(v.get("date", "")), "behind": behind,
+                     "cited": files, "changed": changed})
+    return rows
+
+
+def freshness_markdown(rows: list[dict], stale_after: int = STALE_UNTRACKED_AFTER) -> str:
+    """The issue body: pages whose cited code changed, then pages that cite no code and are very old
+    (or whose stamp is not in history); empty when all fresh. A page whose cited code did not change
+    is fresh however many commits have passed."""
+    moved = sorted((r for r in rows if r["changed"]), key=lambda r: (-len(r["changed"]), -r["behind"]))
+    old = sorted((r for r in rows if not r["changed"] and (r["behind"] < 0 or (not r["cited"] and r["behind"] > stale_after))),
+                 key=lambda r: -r["behind"])
+    if not moved and not old:
+        return ""
+    out = ["Pages whose `verified` stamp may no longer hold. Re-read each against the code, fix what drifted,",
+           "and move its stamp (`verified: {commit, date}`). Generated by `python3 tools/docs_check.py --freshness`.", ""]
+    if moved:
+        out += ["## The code a page cites changed since its stamp", "", "| Page | Stamp | Commits since | Changed since the stamp |", "|---|---|---|---|"]
+        out += [f"| `{r['page']}` | `{r['commit']}` {r['date']} | {r['behind']} | {', '.join(f'`{c}`' for c in r['changed'][:6])}"
+                f"{' …' if len(r['changed']) > 6 else ''} |" for r in moved]
+        out.append("")
+    if old:
+        out += [f"## Citing no code and more than {stale_after} commits behind (or a stamp not in history)", "", "| Page | Stamp | Commits since |", "|---|---|---|"]
+        out += [f"| `{r['page']}` | `{r['commit']}` {r['date']} | {r['behind'] if r['behind'] >= 0 else 'not in history'} |" for r in old]
+        out.append("")
+    return "\n".join(out)
+
+
 def run(db_path: Path | None = None) -> list[Problem]:
     tokens_hex = load_tokens_hex()
     widgets = widget_schema()
@@ -612,13 +747,24 @@ def run(db_path: Path | None = None) -> list[Problem]:
     problems += check_posters(tokens_hex)
     problems += check_drift()
     problems += check_site_config()
+    problems += check_theme()
     return problems
 
 
 def main(argv=None) -> int:
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     ap.add_argument("--db", type=Path, default=ROOT / "db" / "sggs.sqlite", help="pinned database (verifies cited scripture)")
+    ap.add_argument("--freshness", type=Path, metavar="OUT", nargs="?", const=Path("-"),
+                    help="report (never fail) the stamped pages whose cited code changed since their stamp; OUT or stdout")
     a = ap.parse_args(argv)
+    if a.freshness is not None:
+        md = freshness_markdown(freshness())
+        if str(a.freshness) == "-":
+            print(md or "every stamped page is fresh")
+        else:
+            a.freshness.write_text(md, encoding="utf-8")
+            print(f"freshness: {'pages to re-verify written to ' + str(a.freshness) if md else 'every stamped page is fresh'}")
+        return 0
     problems = run(a.db)
     for p in problems:
         print(p)

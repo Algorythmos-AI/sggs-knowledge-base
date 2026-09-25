@@ -9,7 +9,7 @@ verified:
 ---
 # The editorial ledger
 
-The Gurmukhi in the corpus is verbatim from the source Bir. The pipeline transforms the PDF's
+The [[Gurmukhi]] in the corpus is verbatim from the source Bir. The pipeline transforms the PDF's
 *glyph stream* into *logical Unicode* — and that is all it does. Every transform it applies is an
 entry in one register, `audit/editorial-ledger.jsonl` in sggs-data, and a CI gate there fails any
 scripture change or any new rule that has no entry. This page explains the register; the register
@@ -83,7 +83,7 @@ never be silently altered (sggs-data's `audit/data-quality-baseline.json`):
   1205) — flagged for scholarly review;
 - the three closing rubrics that stay one-line compositions (`TRAILING_RUBRICS`);
 - roughly twenty verses the source typography sets like headings;
-- one line with an empty `translit_norm` (id 35328, Ang 829), which a rebuild corrects.
+- one line with an empty `translit_norm` (id 35328, [[Ang]] 829), which a rebuild corrects.
 
 None of these is a text edit; each is a review question, and the answer arrives as a ledger entry
 or as "leave it as printed".

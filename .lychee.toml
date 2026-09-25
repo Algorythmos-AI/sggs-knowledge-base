@@ -11,11 +11,11 @@ exclude = [
   "^https?://(localhost|127\\.0\\.0\\.1)",
   "^https://sggs-staging\\.vercel\\.app",        # SSO-protected
   "^https://sggs-docs-staging\\.vercel\\.app",   # SSO-protected
-  "^https://docs\\.gurbanisoul\\.com",           # until the domain is live
   "^https://github\\.com/.*/(edit|settings|issues/new)",
   "^https://vercel\\.com/(account|.*/settings)",
   "^https://dashboard\\.render\\.com",
   "^https://appstoreconnect\\.apple\\.com",
   "^https://buttondown\\.com/api",
+  "^https://unsplash\\.com/",                   # answers 401 to GitHub runner IPs (datacenter bot wall), 200 elsewhere
   "^mailto:",
 ]

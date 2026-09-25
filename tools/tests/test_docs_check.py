@@ -137,6 +137,54 @@ class SiteConfig(unittest.TestCase):
         finally:
             real.write_text(original, encoding="utf-8")
 
+    def test_unsafe_inline_scripts_are_refused(self):
+        # inline scripts are allowed by hash (docs-site/scripts/csp.mjs); 'unsafe-inline' would undo that
+        real = dc.SITE / "vercel.json"
+        original = real.read_text(encoding="utf-8")
+        try:
+            real.write_text(original.replace("script-src 'self'", "script-src 'self' 'unsafe-inline'"), encoding="utf-8")
+            self.assertTrue(any("unsafe-inline" in str(p) for p in dc.check_site_config()))
+        finally:
+            real.write_text(original, encoding="utf-8")
+
+
+class Theme(unittest.TestCase):
+    CSS = ':root {\n  --sgs-paper: #171412;\n}\n:root[data-theme="light"] {\n  --sgs-paper: #fbf7f0;\n}\n'
+
+    def tokens(self):
+        return json.loads((dc.DOCS / "brand" / "tokens.json").read_text(encoding="utf-8"))
+
+    def test_the_site_theme_matches_the_tokens(self):
+        self.assertEqual([str(p) for p in dc.check_theme()], [])
+
+    def test_a_drifted_brand_colour_is_refused(self):
+        with tempfile.TemporaryDirectory() as d:
+            css = Path(d) / "theme.css"
+            real = (dc.SITE / "src" / "styles" / "theme.css").read_text(encoding="utf-8")
+            css.write_text(real.replace("--sgs-accent-text: #8a6100", "--sgs-accent-text: #8a6101"), encoding="utf-8")
+            msgs = [p.msg for p in dc.check_theme(css, self.tokens())]
+            self.assertEqual(len(msgs), 1, msgs)
+            self.assertIn("light theme --sgs-accent-text is #8A6101", msgs[0])
+
+    def test_a_missing_role_is_refused(self):
+        with tempfile.TemporaryDirectory() as d:
+            css = Path(d) / "theme.css"
+            css.write_text(self.CSS, encoding="utf-8")
+            msgs = [p.msg for p in dc.check_theme(css, self.tokens())]
+            self.assertTrue(any("lacks --sgs-accent" in m for m in msgs))
+            self.assertFalse(any("--sgs-paper " in m and "is #" in m for m in msgs))   # paper matches both legs
+
+
+class PosterLegend(unittest.TestCase):
+    def test_a_poster_without_its_legend_is_refused(self):
+        svg = dc.DOCS / "diagrams" / "posters" / "01-system-landscape.svg"
+        original = svg.read_text(encoding="utf-8")
+        try:
+            svg.write_text(original.replace('<g class="pk-legend">', '<g>'), encoding="utf-8")
+            self.assertTrue(any("legend" in p.msg and p.file == svg for p in dc.check_posters(dc.load_tokens_hex())))
+        finally:
+            svg.write_text(original, encoding="utf-8")
+
     def test_repo_docs_pass(self):
         errors = [str(p) for p in dc.run(ROOT / "db" / "sggs.sqlite") if p.level == "error"]
         self.assertEqual(errors, [])
@@ -210,3 +258,47 @@ class Terms(Fixture):
     def test_known_terms_pass_and_unknown_fail(self):
         self.assertEqual(self.errors(FM + "An [[Ang]] and a [[Salok|salok]] are fine; `[[not-a-term]]` in code is ignored.\n"), [])
         self.assertTrue(any("not a glossary term" in e for e in self.errors(FM + "A [[Frobnicator]] here.\n")))
+
+
+class Freshness(unittest.TestCase):
+    def test_cited_files_are_code_not_docs(self):
+        page = dc.DOCS / "architecture" / "request-lifecycle.md"
+        text = ('<!-- sggs:code file="webapp/serve.py" symbol="api" -->\n'
+                '<!-- sggs:code file="pipeline/build_db.py" repo="sggs-data" -->\n'
+                'See [the gateway](../../gateway/routes.json), [a page](overview.md), [gone](../../nope.py).\n'
+                '![Poster 08 — x](../diagrams/posters/08-request-lifecycle.svg)\n')
+        files = dc.cited_files(page, text)
+        self.assertIn("webapp/serve.py", files)
+        self.assertIn("gateway/routes.json", files)
+        self.assertNotIn("pipeline/build_db.py", files)          # a sibling's file: not this repository's history
+        self.assertNotIn("nope.py", files)                       # missing files are dropped
+        self.assertFalse(any(f.startswith("docs/") for f in files))
+        self.assertTrue(len(files) > 2)                          # the poster's source-of-truth files come in
+
+    def test_the_report_orders_moved_pages_first_and_is_empty_when_fresh(self):
+        rows = [{"page": "docs/a.md", "commit": "aaaaaaa", "date": "2026-09-25", "behind": 3, "cited": ["x.py"], "changed": []},
+                {"page": "docs/b.md", "commit": "bbbbbbb", "date": "2026-09-25", "behind": 9, "cited": ["y.py"], "changed": ["y.py"]},
+                {"page": "docs/c.md", "commit": "ccccccc", "date": "2026-09-01", "behind": 400, "cited": [], "changed": []},
+                {"page": "docs/d.md", "commit": "ddddddd", "date": "2026-09-01", "behind": 900, "cited": ["z.py"], "changed": []},
+                {"page": "docs/e.md", "commit": "eeeeeee", "date": "2026-09-01", "behind": 80, "cited": [], "changed": []}]
+        md = dc.freshness_markdown(rows)
+        self.assertLess(md.index("docs/b.md"), md.index("docs/c.md"))
+        self.assertNotIn("docs/a.md", md)
+        self.assertNotIn("docs/d.md", md)      # its cited code did not change: fresh however old
+        self.assertNotIn("docs/e.md", md)      # cites no code, but not old enough to nag
+        self.assertIn("| `docs/b.md` | `bbbbbbb` 2026-09-25 | 9 | `y.py` |", md)
+        self.assertEqual(dc.freshness_markdown([rows[0]]), "")
+
+    def test_the_stamp_warning_follows_the_cited_code(self):
+        page = dc.DOCS / "architecture" / "request-lifecycle.md"
+        text = '<!-- sggs:code file="webapp/serve.py" symbol="api" -->\n'
+        first = dc.subprocess.run(["git", "rev-list", "--max-parents=0", "HEAD"], cwd=dc.ROOT, capture_output=True, text=True).stdout.split()[0]
+        head = dc.subprocess.run(["git", "rev-parse", "HEAD"], cwd=dc.ROOT, capture_output=True, text=True).stdout.strip()
+        self.assertTrue(any("cites changed" in p.msg for p in dc.check_verified_commit(page, first, text)))
+        self.assertEqual(dc.check_verified_commit(page, head, text), [])
+        self.assertTrue(any("not in this repository" in p.msg for p in dc.check_verified_commit(page, "0" * 40, text)))
+
+    def test_the_repository_report_runs(self):
+        rows = dc.freshness()
+        self.assertTrue(any(r["page"] == "docs/process/ci-gates.md" for r in rows))
+        self.assertTrue(all(isinstance(r["behind"], int) for r in rows))

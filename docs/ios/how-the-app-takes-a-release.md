@@ -73,7 +73,7 @@ build a candidate, run from a clean detached worktree at the tag. It refuses a d
 for green CI on the commit, checks the version invariants and the ledger, then stages the
 database, runs the licence gate, generates a temporary Xcode project, archives, uploads, and proves
 what was built — the whole chain is [poster 12](db-pair-and-launch-integrity.md).
-`CHANNEL=appstore` is declared up front: it makes the Nitnem scholar-review attestation a hard
+`CHANNEL=appstore` is declared up front: it makes the [[Nitnem]] scholar-review attestation a hard
 requirement, and only a build recorded with that channel may be submitted
 (`make appstore-preflight`).
 

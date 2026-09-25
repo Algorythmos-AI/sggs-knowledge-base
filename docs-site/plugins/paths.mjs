@@ -43,7 +43,7 @@ const toPosix = (p) => p.split(path.sep).join('/');
 
 /**
  * Which tree a repo-relative path belongs to.
- * @returns {{kind:'platform'}|{kind:'sibling', name:string, repository:string, commit:string, alias:string, rel:string}|null}
+ * @returns {{kind:'platform'}|{kind:'sibling', name:string, repository:string, ref:string, commit:string, alias:string, rel:string}|null}
  */
 export function originOf(repoRel, sources = loadSources()) {
   repoRel = toPosix(repoRel);
@@ -52,7 +52,7 @@ export function originOf(repoRel, sources = loadSources()) {
     const name = rest.split('/')[0];
     const src = sources[name];
     if (!src) return null;
-    return { kind: 'sibling', name, repository: src.repository, commit: src.commit, alias: src.alias, rel: rest.slice(name.length + 1) };
+    return { kind: 'sibling', name, repository: src.repository, ref: src.ref ?? 'main', commit: src.commit, alias: src.alias, rel: rest.slice(name.length + 1) };
   }
   return { kind: 'platform' };
 }

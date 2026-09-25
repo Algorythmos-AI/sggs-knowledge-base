@@ -19,6 +19,31 @@ standard-library server serves a prebuilt Astro site and a native iOS app.
 On the rendered wiki this line shows what production is serving right now — version, commit,
 build date, dataset build and the health checks — read live from `/api/health`.
 
+![Poster 01 — The system landscape: the people, the three surfaces (web, iOS, API), the one read-only API, the pinned database, and where the verbatim text comes from](diagrams/posters/01-system-landscape.svg)
+
+## Ten minutes to your first search
+
+1. Clone the platform: `git clone https://github.com/Algorythmos-AI/sggs-platform.git && cd sggs-platform`
+2. `make doctor` — checks Python 3.12, Node 22 and whether the database is installed.
+3. `make dataset` — downloads the pinned database (~104 MiB), verifies its sha256, installs it.
+4. `cd webapp && python3 serve.py` — the API and the website on <http://localhost:7777>.
+5. Search. Every line comes back verbatim, with its Ang — or try it here, against production:
+
+<!-- sggs:waterfall q="sat nam" limit="3" -->
+On the rendered wiki this is the search simulator: it runs the query against the live API and
+lights the tier of the waterfall that answered. On GitHub, run
+`curl -s 'http://localhost:7777/api/search?q=sat%20nam&limit=3'` after step 4.
+
+The whole walk-through, with what to do when a step fails: [Run it locally](onboarding/run-it-locally.md).
+
+## Choose your path
+
+<!-- sggs:cards -->
+- [Platform engineer](learning-paths/platform-engineer.md) — the API, the search and verification engines, the data pin and the delivery pipeline, in order.
+- [Data engineer](learning-paths/data-engineer.md) — the line record, the corpus pipeline and its gates, the editorial ledger, and how a dataset reaches production.
+- [iOS engineer](learning-paths/ios-engineer.md) — Gurbani Soul: the contract and parity, the database pair and launch integrity, Nitnem, and how the app takes a release.
+- [Reviewer or scholar](learning-paths/reviewer-scholar.md) — what the project promises, where the text is proven, what a review checks, and how to say no.
+
 ## Start here
 | If you want to… | Read |
 |---|---|
@@ -34,6 +59,12 @@ build date, dataset build and the health checks — read live from `/api/health`
 | Know what CI checks and why | [CI gates](process/ci-gates.md) |
 | Understand the iOS app, or take it through TestFlight to the App Store | [The iOS app](ios/README.md) · [How the app takes a release](ios/how-the-app-takes-a-release.md) · the pinned [launch plan](https://github.com/Algorythmos-AI/gurbani-soul-ios/blob/main/docs/ios/testflight-launch-plan.md) |
 | Understand a past decision, a release, or a path in the repository | [Decisions](adr/README.md) · [Releases](reference/releases.md) · [Repository map](reference/repo-map.md) |
+
+## Latest changes
+
+<!-- sggs:releases limit="3" -->
+The newest releases, read from the changelog at build. Every release and what it changed:
+[Releases](reference/releases.md) · the full [changelog on GitHub](https://github.com/Algorythmos-AI/sggs-platform/blob/integration/CHANGELOG.md).
 
 ## Repository at a glance
 | Path | What |

@@ -2,16 +2,22 @@ name: deploy-docs
 # The wiki (docs-site/ over docs/). On every PR: the docs gates, the build (Mermaid rendered, links
 # validated), unit + e2e + accessibility tests and the performance budgets. On a push to integration:
 # deploy to the docs staging alias; on a push to main: build, deploy unaliased, smoke, promote to
-# docs.gurbanisoul.com, smoke again, roll back on failure. CI-gated like the product (ADR-0005,
-# ADR-0012); the Vercel project's own git deployments are off. Runbook: docs/process/runbooks/deploy.md.
+# docs.gurbanisoul.com, smoke again, roll back on failure; every production failure opens an issue.
+# Nightly: the docs job alone on integration, to catch drift from outside the repository (npm,
+# Starlight, the sibling repositories, the dataset) while no pull request is open.
+# CI-gated like the product (ADR-0005, ADR-0012); the Vercel project's own git deployments are off.
+# Runbooks: docs/process/runbooks/deploy.md, docs/process/runbooks/docs-site.md.
 on:
   pull_request:
   push:
     branches: [integration, main]
+  schedule:
+    - cron: "17 16 * * *"   # nightly, 16:17 UTC (02:17 in Sydney)
   workflow_dispatch:
 
 concurrency:
-  group: docs-${{ github.ref }}
+  # the event is part of the group: a nightly or manual run must never cancel a push run's deploy
+  group: docs-${{ github.event_name }}-${{ github.ref }}
   cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
 
 permissions:
@@ -26,7 +32,7 @@ jobs:
   docs:
     name: docs
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
         with: { fetch-depth: 0 }   # last-updated dates and verified-stamp staleness need history
@@ -40,7 +46,7 @@ jobs:
           python3 tools/fetch_sibling_docs.py --check
           python3 tools/fetch_sibling_docs.py
       - name: The pinned database (cited scripture on the wiki is verified against it)
-        uses: actions/cache@v4
+        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
         with:
           path: .dataset-cache
           key: dataset-${{ hashFiles('dataset.lock.json') }}
@@ -66,22 +72,23 @@ jobs:
       - name: Every committed poster equals its spec
         working-directory: docs-site
         run: node scripts/build-posters.mjs --check
-      - name: Build (links validated, every Mermaid fence rendered)
+      - name: Types
+        working-directory: docs-site
+        run: npm run typecheck
+      - name: Build (every Mermaid fence rendered)
         working-directory: docs-site
         env: { PUBLIC_DOCS_COMMIT: "${{ github.sha }}" }
         run: npm run build
-      - name: No diagram left unrendered; page budgets hold
+      - name: The built site is whole (render, Mermaid, links, budgets, CSP hashes) — the same as make docs
         working-directory: docs-site
-        run: |
-          npm run check:mermaid
-          npm run check:budget
-      - name: End-to-end + accessibility (mocked API)
+        run: npm run check:all
+      - name: End-to-end + accessibility (mocked API, served with the production headers and CSP)
         working-directory: docs-site
         run: npm run test:e2e
       - name: Lighthouse budgets
         working-directory: docs-site
         run: npm run lhci
-      - uses: actions/upload-artifact@v6
+      - uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
         if: always()
         with:
           name: docs-dist-and-reports
@@ -90,6 +97,34 @@ jobs:
             docs-site/playwright-report
             docs-site/.lighthouseci
           retention-days: 7
+
+  nightly-alert:
+    name: nightly-alert
+    # one issue while the nightly build is red; closed by the next green night
+    if: always() && github.event_name == 'schedule'
+    needs: docs
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      issues: write
+    steps:
+      - env:
+          GH_TOKEN: ${{ github.token }}
+          RESULT: ${{ needs.docs.result }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          title="docs: nightly wiki build failing"
+          existing="$(gh issue list --repo "$GITHUB_REPOSITORY" --state open --search "in:title \"$title\"" --json number --jq '.[0].number // empty')"
+          if [ "$RESULT" = "success" ]; then
+            if [ -n "$existing" ]; then gh issue close "$existing" --repo "$GITHUB_REPOSITORY" --comment "Green again: $RUN_URL"; fi
+            exit 0
+          fi
+          body="The nightly docs job on integration ($GITHUB_SHA) ended: $RESULT. Nothing in this repository changed since the last green run, so look outside it first: an npm or Starlight release, a sibling repository's docs (tools/fetch_sibling_docs.py --check), the dataset pin. Run: $RUN_URL"
+          if [ -n "$existing" ]; then
+            gh issue comment "$existing" --repo "$GITHUB_REPOSITORY" --body "$body"
+          else
+            gh issue create --repo "$GITHUB_REPOSITORY" --title "$title" --label documentation --body "$body"
+          fi
 
   deploy-staging:
     name: deploy-staging
@@ -117,6 +152,20 @@ jobs:
         with: { python-version-file: ".python-version" }
       - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with: { node-version-file: ".nvmrc", cache: npm, cache-dependency-path: docs-site/package-lock.json }
+      - name: Staging must never be the project's first deployment
+        # The project's first deployment became its production deployment although CI deployed it as
+        # a preview: that is how integration reached docs.gurbanisoul.com on 2026-09-26. Never again.
+        env: { VERCEL_TOKEN: "${{ secrets.VERCEL_TOKEN }}" }
+        run: |
+          if python3 scripts/ci/vercel_api.py has-production; then
+            echo "the docs project has a production deployment; a staging deploy stays a preview"
+          else
+            rc=$?
+            if [ "$rc" = 1 ]; then
+              echo "::error::the docs project has no production deployment yet, and Vercel would make this staging build production. Release to main first (deploy-production), per docs/process/runbooks/docs-site.md."
+            fi
+            exit 1
+          fi
       - run: npm i -g "$VERCEL_CLI"
       - env: { GH_TOKEN: "${{ secrets.SGGS_READ_TOKEN || github.token }}" }
         run: python3 tools/fetch_sibling_docs.py
@@ -136,10 +185,20 @@ jobs:
           cat deploy.err
           url=$(python3 ../scripts/ci/vercel_deploy_url.py deploy.out deploy.err)
           echo "deployed $url"
+          target=$(python3 ../scripts/ci/vercel_api.py target "$url")
+          if [ "$target" != "preview" ]; then
+            echo "::error::the staging deployment $url has target '$target', not preview: integration must never reach production"; exit 1
+          fi
           vercel alias set "$url" sggs-docs-staging.vercel.app --token="$VERCEL_TOKEN"
       - name: Smoke the staging wiki by commit
         env: { VERCEL_DOCS_BYPASS_SECRET: "${{ secrets.VERCEL_DOCS_BYPASS_SECRET }}" }
         run: python3 scripts/ci/docs_smoke.py "$DOCS_STAGING" --commit "$GITHUB_SHA"
+      - name: The live suite against staging (real API, the deployed headers and CSP)
+        working-directory: docs-site
+        env:
+          DOCS_LIVE_URL: ${{ env.DOCS_STAGING }}
+          VERCEL_BYPASS: ${{ secrets.VERCEL_DOCS_BYPASS_SECRET }}
+        run: npx playwright test -c playwright.live.config.ts
 
   deploy-production:
     name: deploy-production
@@ -177,14 +236,15 @@ jobs:
         run: |
           npm ci
           npx playwright install --with-deps chromium
-      - name: Record the current production deployment (rollback target)
+      - name: Record the deployment serving docs.gurbanisoul.com (the rollback target)
+        # the deployment the domain serves now, not the newest READY production deployment: a build
+        # deployed --skip-domain whose smoke failed is READY and production too, but never served
         id: prev
         env: { VERCEL_TOKEN: "${{ secrets.VERCEL_TOKEN }}" }
         run: |
-          prev=$(curl -fsS -H "Authorization: Bearer $VERCEL_TOKEN" \
-            "https://api.vercel.com/v6/deployments?projectId=$VERCEL_PROJECT_ID&teamId=$VERCEL_ORG_ID&target=production&state=READY&limit=1" \
-            | python3 -c "import sys,json;d=json.load(sys.stdin)['deployments'];print(d[0]['url'] if d else '')")
-          echo "previous production deployment: ${prev:-none}"
+          rc=0; prev=$(python3 scripts/ci/vercel_api.py live "$DOCS_PROD") || rc=$?
+          if [ "$rc" = 3 ]; then prev=""; elif [ "$rc" != 0 ]; then echo "::error::cannot read the live docs deployment"; exit 1; fi
+          echo "serving docs.gurbanisoul.com now: ${prev:-nothing}"
           echo "previous=$prev" >> "$GITHUB_OUTPUT"
       - name: Build + deploy (production target, NOT aliased yet)
         id: deploy
@@ -206,20 +266,57 @@ jobs:
         env: { VERCEL_DOCS_BYPASS_SECRET: "${{ secrets.VERCEL_DOCS_BYPASS_SECRET }}" }
         run: python3 scripts/ci/docs_smoke.py "${{ steps.deploy.outputs.url }}" --commit "$GITHUB_SHA"
       - name: Promote to docs.gurbanisoul.com and smoke the public domain
+        id: promote
         env:
           VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
           URL: ${{ steps.deploy.outputs.url }}
         run: |
           vercel promote "$URL" --yes --timeout 5m --token="$VERCEL_TOKEN"
           python3 scripts/ci/docs_smoke.py "$DOCS_PROD" --commit "$GITHUB_SHA"
-      - name: Roll back (public smoke failed)
-        if: failure() && steps.prev.outputs.previous != ''
+      - name: Roll back (the public smoke failed after promotion)
+        id: rollback
+        if: failure() && steps.promote.outcome == 'failure' && steps.prev.outputs.previous != ''
         env:
           VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
           PREV: ${{ steps.prev.outputs.previous }}
+        run: vercel rollback "$PREV" --yes --timeout 5m --token="$VERCEL_TOKEN"
+      - name: Open an incident issue
+        if: failure()
+        env:
           GH_TOKEN: ${{ github.token }}
+          PROMOTE: ${{ steps.promote.outcome }}
+          ROLLBACK: ${{ steps.rollback.outcome }}
+          PREV: ${{ steps.prev.outputs.previous }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
         run: |
-          vercel rollback "$PREV" --yes --timeout 5m --token="$VERCEL_TOKEN"
+          sha7=${GITHUB_SHA::7}
+          if [ "$PROMOTE" != "failure" ]; then
+            title="Docs deploy failed before promotion — production unchanged ($sha7)"
+          elif [ "$ROLLBACK" = "success" ]; then
+            title="Docs production rolled back to $PREV after a failed public smoke ($sha7)"
+          elif [ -z "$PREV" ]; then
+            title="Docs production failed its public smoke and had nothing to roll back to ($sha7)"
+          else
+            title="Docs production rollback FAILED after a failed public smoke ($sha7)"
+          fi
+          gh issue create --repo "$GITHUB_REPOSITORY" --title "$title" \
+            --body "Run: $RUN_URL · rollback target: ${PREV:-none} · runbook: docs/process/runbooks/docs-site.md#4-rollback"
+
+  main-guard:
+    name: main-guard
+    # a push to main whose docs job did not succeed never reaches deploy-production: say so loudly
+    if: always() && github.event_name == 'push' && github.ref == 'refs/heads/main' && needs.docs.result != 'success'
+    needs: docs
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      issues: write
+    steps:
+      - env:
+          GH_TOKEN: ${{ github.token }}
+          RESULT: ${{ needs.docs.result }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
           gh issue create --repo "$GITHUB_REPOSITORY" \
-            --title "Docs site rolled back after failed smoke (${GITHUB_SHA::7})" \
-            --body "Rolled back to $PREV. Run: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+            --title "Docs production deploy skipped: the docs check was $RESULT on main (${GITHUB_SHA::7})" \
+            --body "docs.gurbanisoul.com still serves the previous release. Fix forward through integration, then release. Run: $RUN_URL"

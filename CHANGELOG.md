@@ -5,6 +5,29 @@ entries prior to v1.1.0 are the project's original prose style and are preserved
 
 ## [Unreleased]
 
+### Added
+- **The wiki's front door.** The home page opens on the system-landscape poster, then *Ten minutes to
+  your first search* (clone → `make doctor` → `make dataset` → `serve.py`, with the live search
+  simulator limited to three results), the four learning paths as cards (`<!-- sggs:cards -->`, a
+  build-time widget over a plain Markdown list) and the three newest releases (`sggs:releases
+  limit="3"`).
+- **The integrity chain, for engineers** (`docs/data/integrity-chain.md`): one line of scripture from
+  the source PDF to a screen, and the gate that proves it at each of six stages — build, pin, serve,
+  watch, bundle, launch — every claim cross-read against the code that enforces it.
+- **The Brand section has an index** (`/brand/` was a 404) with the palette rendered from
+  `docs/brand/tokens.json` at build (`<!-- sggs:swatches -->`): every role, light and dark, and its
+  WCAG contrast computed from the file.
+- **The wiki watches itself.** `docs-watch` (every six hours) proves `docs.gurbanisoul.com` serves the
+  commit its last production deploy shipped and runs the new **live suite** (`docs-site/e2e-live`:
+  every API-backed widget against the real API, a line read from `/api/ang/1` verifying exact, axe as
+  deployed, no CSP errors) — the same suite runs after every staging deploy. `uptime` probes the
+  wiki too. `docs-pins` (Mondays) opens a pull request when a sibling repository changes a file the
+  wiki publishes (`tools/docs_pins.py`; with `DOCS_BOT_TOKEN`, else an issue); `docs-freshness`
+  (Mondays) lists the pages whose cited code changed since their `verified` stamp
+  (`tools/docs_check.py --freshness`). Every one keeps a single issue, closed when green.
+- `make review-pack`: the G3 scholar-review pack as one PDF with a sign-off sheet; `make docs-live`,
+  `make docs-freshness`, `make docs-pins`.
+
 ### Changed
 - **Production's API contexts each answer from their own function** (runbook services-production,
   step 3). `gateway/routes.json` lists all five contexts for production — reader, search, verify,
@@ -13,6 +36,50 @@ entries prior to v1.1.0 are the project's original prose style and are preserved
   contexts and runs the golden contract through the new rules before promotion; one context rolls
   back by removing it from the list. Batched into one release because every release is also an App
   Store update (owner decision 2026-09-26). No change to responses: the golden contract pins them.
+- **A verified stamp goes stale when the code it cites changes**, not after a fixed number of
+  commits: merging a stack of pull requests moved thirteen pages past the old sixty-commit mark
+  while nothing they describe had changed. Pages that cite no code still warn at 300 commits.
+- **Mermaid diagrams follow the reader's scheme:** each is drawn from both legs of the palette (palette
+  colours in `classDef`/`style` lines swap to their dark twins; a label that would lose contrast takes
+  the better ink) and CSS shows the matching one. Geometry is rounded to two decimals, so the heaviest
+  page is lighter than before (397 KB → 286 KB).
+- **Edit links on pinned sibling pages go to the branch** (GitHub cannot edit at a commit), with a
+  second link to the exact version the wiki pins.
+- The generated API reference sits inside the API group, has an e2e test and passes axe (its
+  "required" label and schema panels now use the brand's status red and the page background).
+- Glossary hover-cards on the first use of key terms across onboarding, architecture, data, search,
+  API and iOS; the phone header keeps "Sri Guru Granth Sahib Ji" whole instead of cutting the title
+  mid-word; the brand book states that phase 2 shipped and that the Swift-to-JSON parity test is still
+  to be written; stale onboarding links fixed.
+- **The wiki's CSP allows inline scripts by sha256 only** (13 hashes; no `'unsafe-inline'`),
+  checked by `docs-site/scripts/csp.mjs`; the e2e server sends the production headers, so every
+  page's e2e and axe run under the real policy. ADR-0012 amended.
+- **The `docs` job equals `make docs`:** types, `check:render`, `check:links` and `check:csp` join
+  the build checks; it also runs every night on `integration`, opening one issue while red. The
+  `main` ruleset requires `docs` to merge; the product's `deploy-production` does not wait on it
+  (`wait_for_checks.py --exclude docs`), so a wiki failure never blocks a product release. `docs-links` also checks the sibling docs and pins its actions by
+  SHA. `docs_check` gates the poster legend and the theme's brand colours against the tokens.
+- `docs-site/scripts/visual-qa.mjs` proxies `/api` to production (`https://gurbanisoul.com`, was
+  the Render rollback origin) and accepts a Vercel bypass for the staging alias.
+
+### Fixed
+- **The wiki's deploy pipeline.** Staging refuses to be the docs project's first Vercel deployment
+  (the first one became production on 2026-09-26 and served an `integration` build at
+  `docs.gurbanisoul.com`) and fails unless its own deployment is a preview. Production's rollback
+  target is the deployment the domain actually serves (`scripts/ci/vercel_api.py`), not the newest
+  production deployment, which can be a failed, never-promoted build; the rollback runs only after a
+  failed public smoke; every production failure opens an issue that says whether production changed,
+  and a `main-guard` job reports a push to `main` whose `docs` job failed. Concurrency groups carry
+  the event, so a manual or nightly run can no longer cancel a staging deploy.
+- **The docs smoke fails on any redirect** (the `trailingSlash` loop would have passed a lenient
+  check), checks `/api/meta`, and finds its poster on the architecture page instead of skipping it.
+- Two wiki links that 404ed: the reader is `/reader?ang=N`, and the website has no verify page.
+- The status strip's "checking /api/health…" state measured 3.17:1 (the whole chip was dimmed); only
+  its dot dims now. Found by the live suite on production; a mocked test now holds axe on that state.
+- **`apply_rulesets.sh` could weaken branch protection:** it PUT each committed ruleset as-is, which
+  resets keys the file does not mention (both trunks have `require_extra_approval_for_unattributed_changes`
+  on). It now merges the file into the live ruleset (`scripts/gh/merge_ruleset.py`, tested) and
+  takes `--dry-run`.
 
 ## [1.3.10] — 2026-09-25 — the API on Vercel functions in production, the engineering wiki
 

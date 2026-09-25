@@ -42,7 +42,9 @@ jobs:
       - name: Wait for every required check on this exact commit
         env:
           GH_TOKEN: ${{ github.token }}
-        run: python3 scripts/ci/wait_for_checks.py "$GITHUB_SHA" --extra playwright
+        # `docs` (the wiki's job) is required to MERGE into main, but the product never waits on it:
+        # deploy-docs ships the wiki on its own, and its main-guard reports a red docs job
+        run: python3 scripts/ci/wait_for_checks.py "$GITHUB_SHA" --extra playwright --exclude docs
 
   preflight:
     name: preflight
@@ -153,15 +155,16 @@ jobs:
         with: { token: "${{ secrets.SGGS_READ_TOKEN || github.token }}" }
       - name: Generate the API functions at this commit (every deployment carries them; routes.json decides what they serve)
         run: python3 tools/build_api_functions.py --commit "$GITHUB_SHA"
-      - name: Record the current production deployment (rollback target)
+      - name: Record the deployment serving the production domain (rollback target)
         id: prev
         env:
           VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+        # What gurbanisoul.com resolves to now, not the newest READY production build: a build whose
+        # smoke failed is READY and target=production too but was never promoted. No answer, no deploy.
         run: |
-          prev=$(curl -fsS -H "Authorization: Bearer $VERCEL_TOKEN" \
-            "https://api.vercel.com/v6/deployments?projectId=$VERCEL_PROJECT_ID&teamId=$VERCEL_ORG_ID&target=production&state=READY&limit=1" \
-            | python3 -c "import sys,json;d=json.load(sys.stdin)['deployments'];print(d[0]['url'] if d else '')")
-          echo "previous production deployment: ${prev:-none}"
+          prev=$(python3 scripts/ci/vercel_api.py live "$PROD_WEB") || {
+            echo "::error::cannot tell which deployment serves $PROD_WEB; not deploying without a rollback target (docs/process/runbooks/rollback.md)"; exit 1; }
+          echo "previous production deployment: $prev"
           echo "previous=$prev" >> "$GITHUB_OUTPUT"
       - name: Build + deploy (production target, NOT aliased yet)
         id: deploy
@@ -240,6 +243,7 @@ jobs:
           cache-dependency-path: frontend/package-lock.json
       - run: npm i -g "$VERCEL_CLI"
       - name: Promote to the production domain
+        id: promote
         env:
           VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
           URL: ${{ needs.deploy-web.outputs.url }}
@@ -260,8 +264,10 @@ jobs:
           npm ci
           npx playwright install --with-deps chromium
           npx playwright test --grep @smoke --project=desktop
-      - name: Roll back the web frontend (public smoke failed)
-        if: failure() && needs.deploy-web.outputs.previous != ''
+      - name: Roll back the web frontend (promote or public smoke failed)
+        # Only once the domain may have moved: a failed checkout/setup before promote leaves the
+        # previous deployment serving, so there is nothing to roll back.
+        if: failure() && needs.deploy-web.outputs.previous != '' && (steps.promote.outcome == 'failure' || steps.public.outcome == 'failure')
         env:
           VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
           PREV: ${{ needs.deploy-web.outputs.previous }}

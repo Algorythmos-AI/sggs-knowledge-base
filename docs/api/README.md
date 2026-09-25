@@ -11,7 +11,7 @@ verified:
 
 A read-only JSON API over the verbatim corpus, served by a Python standard-library server
 (`webapp/serve.py`) from a database opened read-only and immutable. Every scripture line comes back
-exactly as printed with its Ang; English is a separate, labelled layer; nothing is ever written.
+exactly as printed with its [[Ang]]; English is a separate, labelled layer; nothing is ever written.
 
 | Page | What you learn |
 |---|---|
@@ -32,7 +32,7 @@ it as a `curl` command. On GitHub, the routes are listed on [API routes](routes.
 - **Verbatim text.** `gurmukhi` is the line as printed, dandas and markers included; cite it as
   *Sri Guru Granth Sahib Ji · Ang N* (`ang` is on every line).
 - **Labelled layers.** `translit` is a reading aid; `en` is Dr. Sant Singh Khalsa's translation
-  via ShabadOS, attached to a line and never blended into the Gurmukhi.
+  via ShabadOS, attached to a line and never blended into the [[Gurmukhi]].
 - **Read-only, bounded.** Every integer parameter is clamped (`_int()`); `limit` and `offset`
   have ceilings; a claim or a query has a maximum length. There is no write route.
 - **The same under `/api/v1`.** Every path is also served under `/api/v1/…` with the same body and

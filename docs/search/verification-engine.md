@@ -10,7 +10,7 @@ verified:
 # Verification engine
 
 `/api/verify?q=&ang=` answers one question: *is this quotation really in Sri Guru Granth Sahib Ji,
-and where?* It returns a **verdict**, a **confidence**, the **canonical line** with its Ang, and the
+and where?* It returns a **verdict**, a **confidence**, the **canonical line** with its [[Ang]], and the
 scoring details. It never returns a line it is not sure about: below the thresholds the verdict
 is `NOT_FOUND` and no line is asserted. The engine is `webapp/verify.py`, stdlib only, importable
 and served by the `verify` bounded context.
@@ -20,10 +20,11 @@ and served by the `verify` bounded context.
 ## Try it
 
 <!-- sggs:verify -->
-On the rendered wiki this is a playground: paste a quotation (Gurmukhi, or romanised), optionally
+On the rendered wiki this is a playground: paste a quotation ([[Gurmukhi]], or romanised), optionally
 the Ang you believe it is on, and the verdict, the canonical line and the scoring details come back
-from the live API while the rung lights up on the poster. On GitHub, use the *Verify* page on
-[gurbanisoul.com](https://gurbanisoul.com/verify).
+from the live API while the rung lights up on the poster. On GitHub, open
+[this page on the wiki](https://docs.gurbanisoul.com/search/verification-engine/) to use it, or call
+`GET /api/verify?q=…&ang=…` on the production API yourself ([the API](../api/README.md)).
 
 ## The ladder
 

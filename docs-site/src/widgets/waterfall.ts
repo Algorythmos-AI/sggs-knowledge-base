@@ -66,7 +66,8 @@ export class SggsWaterfall extends HTMLElement {
     this.status.textContent = `Running /api/search?q=${q}&mode=${mode}…`;
     this.out.replaceChildren();
     lightStep(POSTER, 'step-01');
-    const d = await api<Result>(`/api/search?q=${encodeURIComponent(q)}&mode=${encodeURIComponent(mode)}&limit=8`);
+    const limit = Math.min(20, Math.max(1, Number(this.getAttribute('limit')) || 8));
+    const d = await api<Result>(`/api/search?q=${encodeURIComponent(q)}&mode=${encodeURIComponent(mode)}&limit=${limit}`);
     if (my !== this.seq) return;
     if (!d || !Array.isArray(d.results)) {
       this.status.textContent = 'The live API is not reachable right now, so the waterfall cannot run. The page explains every tier in order.';

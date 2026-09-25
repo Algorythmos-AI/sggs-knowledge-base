@@ -6,7 +6,9 @@ sidebar:
 ---
 # ADR-0012: The wiki is rendered as a docs site over the Markdown in docs/
 
-**Status:** accepted (2026-09-25). Extends ADR-0003; does not replace it.
+**Status:** accepted (2026-09-25). Extends ADR-0003; does not replace it. Amended 2026-09-26: the
+Content-Security-Policy allows inline scripts by sha256 hash, not `'unsafe-inline'`, and the e2e
+suite runs under it (see *Amendments*).
 
 **Context.** ADR-0003 put the wiki in `docs/` as Markdown + Mermaid so it is versioned with the
 code and reviewed in pull requests. Read raw on GitHub it stays a set of files: no search, no
@@ -47,3 +49,12 @@ appears typed into a page: only as an API-fetched verbatim line with its Ang, or
 the gate verifies. Starlight is used with Astro's unified Markdown processor because the wiki's
 plugins are remark plugins; a move to Astro's Sätteri processor is possible later without
 touching any page.
+
+## Amendments
+
+- **2026-09-26 — inline scripts by hash.** The launch CSP allowed `script-src 'unsafe-inline'`.
+  The build's inline scripts are few and fixed per package version (13 on 149 pages: Starlight's
+  theme, sidebar and search dialog, and the OpenAPI reference's tab pickers), so `script-src` now
+  lists their sha256 and nothing else runs inline. `docs-site/scripts/csp.mjs --check` fails the
+  `docs` job when the build and the policy disagree, and `scripts/serve-dist.mjs` serves the
+  production headers so the e2e suite runs under the real policy.

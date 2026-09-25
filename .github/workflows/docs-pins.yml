@@ -1,0 +1,96 @@
+name: docs-pins
+# Weekly: when sggs-data or gurbani-soul-ios changes documentation (or a source file a code excerpt
+# reads) that the wiki publishes, move its pin in docs-site/sources.lock.json — by pull request, so
+# the change is reviewed and the `docs` check proves it (ADR-0012). A commit that touched nothing
+# published moves no pin (tools/docs_pins.py).
+#
+# The pull request is opened with DOCS_BOT_TOKEN (a fine-grained token on this repository only:
+# contents + pull requests, write), so every required check runs on it — a pull request opened with
+# the workflow's own token would trigger no workflows. Without that secret the job opens one issue
+# with the same list and the exact command instead. Runbook: docs/process/runbooks/docs-site.md.
+on:
+  schedule:
+    - cron: "41 6 * * 1"   # Monday 06:41 UTC
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  issues: write
+
+concurrency:
+  group: docs-pins
+  cancel-in-progress: false
+
+jobs:
+  bump:
+    name: bump
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      HAVE_BOT: ${{ secrets.DOCS_BOT_TOKEN != '' }}
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with: { persist-credentials: false }
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5
+        with: { python-version-file: ".python-version" }
+      - name: Re-pin every sibling whose published docs changed
+        id: pins
+        env: { GH_TOKEN: "${{ secrets.SGGS_READ_TOKEN || github.token }}" }
+        run: python3 tools/docs_pins.py --summary "$RUNNER_TEMP/pins.md"
+      - name: Close the fallback issue once nothing is left to bump
+        if: steps.pins.outputs.changed == 'false'
+        env: { GH_TOKEN: "${{ github.token }}" }
+        run: |
+          title="docs: the sibling docs changed — bump the pins"
+          existing="$(gh issue list --repo "$GITHUB_REPOSITORY" --state open --search "in:title \"$title\"" --json number --jq '.[0].number // empty')"
+          if [ -n "$existing" ]; then
+            gh issue close "$existing" --repo "$GITHUB_REPOSITORY" --comment "The pins in docs-site/sources.lock.json are current: nothing the wiki publishes differs from the sibling repositories."
+          fi
+      - name: The docs gates pass with the new pins
+        if: steps.pins.outputs.changed == 'true'
+        env: { GH_TOKEN: "${{ secrets.SGGS_READ_TOKEN || github.token }}" }
+        run: |
+          python3 tools/fetch_sibling_docs.py --check
+          python3 tools/fetch_sibling_docs.py
+          python3 tools/docs_check.py
+      - name: Open or refresh the pull request (as the token's owner)
+        if: steps.pins.outputs.changed == 'true' && env.HAVE_BOT == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.DOCS_BOT_TOKEN }}
+          BOT: ${{ secrets.DOCS_BOT_TOKEN }}
+        run: |
+          set -euo pipefail
+          login="$(gh api user --jq .login)"; id="$(gh api user --jq .id)"; name="$(gh api user --jq '.name // .login')"
+          git config user.name "$name"
+          git config user.email "${id}+${login}@users.noreply.github.com"
+          branch=bot/docs-pins
+          git switch -c "$branch"
+          git add docs-site/sources.lock.json
+          git commit -q -m "docs(wiki): bump the sibling docs pins" -m "Moved by .github/workflows/docs-pins.yml: files the wiki publishes changed in the sibling repositories."
+          git push -q --force "https://x-access-token:${BOT}@github.com/${GITHUB_REPOSITORY}.git" "HEAD:refs/heads/$branch"
+          existing="$(gh pr list --repo "$GITHUB_REPOSITORY" --head "$branch" --state open --json number --jq '.[0].number // empty')"
+          if [ -n "$existing" ]; then
+            gh pr edit "$existing" --repo "$GITHUB_REPOSITORY" --body-file "$RUNNER_TEMP/pins.md"
+            echo "refreshed #$existing"
+          else
+            gh pr create --repo "$GITHUB_REPOSITORY" --base integration --head "$branch" \
+              --title "docs(wiki): bump the sibling docs pins" --body-file "$RUNNER_TEMP/pins.md"
+          fi
+          issue="$(gh issue list --repo "$GITHUB_REPOSITORY" --state open --search 'in:title "docs: the sibling docs changed — bump the pins"' --json number --jq '.[0].number // empty')"
+          if [ -n "$issue" ]; then gh issue close "$issue" --repo "$GITHUB_REPOSITORY" --comment "Superseded by the pull request on bot/docs-pins."; fi
+      - name: Or one issue, while DOCS_BOT_TOKEN is not set
+        if: steps.pins.outputs.changed == 'true' && env.HAVE_BOT != 'true'
+        env: { GH_TOKEN: "${{ github.token }}" }
+        run: |
+          title="docs: the sibling docs changed — bump the pins"
+          {
+            cat "$RUNNER_TEMP/pins.md"
+            printf '\nDOCS_BOT_TOKEN is not set, so no pull request was opened. By hand, in a branch from integration:\n\n'
+            printf '    python3 tools/docs_pins.py && make docs-check\n'
+          } > "$RUNNER_TEMP/issue.md"
+          existing="$(gh issue list --repo "$GITHUB_REPOSITORY" --state open --search "in:title \"$title\"" --json number --jq '.[0].number // empty')"
+          if [ -n "$existing" ]; then
+            gh issue edit "$existing" --repo "$GITHUB_REPOSITORY" --body-file "$RUNNER_TEMP/issue.md"
+          else
+            gh issue create --repo "$GITHUB_REPOSITORY" --title "$title" --label documentation --body-file "$RUNNER_TEMP/issue.md"
+          fi

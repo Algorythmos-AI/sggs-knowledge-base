@@ -2,6 +2,8 @@
 // phone width, for the owner's walkthrough before a promotion. Writes under docs-site/qa-shots/
 // (git-ignored). The API is proxied to production so live widgets render real data.
 //   node scripts/visual-qa.mjs [base-url]      default: the built dist/ on a local port
+//   DOCS_API=<origin>        where /api is answered (default: production, https://gurbanisoul.com)
+//   VERCEL_BYPASS=<secret>   for a protected base URL (the staging alias); never printed
 import { spawn } from 'node:child_process';
 import { mkdirSync } from 'node:fs';
 import { chromium } from 'playwright';
@@ -9,7 +11,7 @@ import { chromium } from 'playwright';
 const PAGES = ['/', '/onboarding/', '/scripture/structure/', '/scripture/what-sggs-is/', '/learning-paths/platform-engineer/', '/exercises/01-trace-a-search/',
   '/architecture/overview/', '/architecture/search-waterfall/', '/data/line-record/', '/data/architecture/database-schema/', '/search/verification-engine/', '/api/',
   '/api/routes/', '/ios/db-pair-and-launch-integrity/', '/engineering/invariants/', '/process/ci-gates/', '/brand/', '/adr/', '/glossary/', '/reference/repo-map/', '/archive/', '/nope/'];
-const API = 'https://sggs-knowledge-base.onrender.com';
+const API = process.env.DOCS_API || 'https://gurbanisoul.com';
 let base = process.argv[2], server = null;
 if (!base) {
   server = spawn('node', ['scripts/serve-dist.mjs', '4340'], { stdio: 'ignore' }); base = 'http://127.0.0.1:4340';
@@ -19,7 +21,8 @@ mkdirSync('qa-shots', { recursive: true });
 const browser = await chromium.launch();
 const name = (p) => (p === '/' ? 'home' : p.replace(/^\/|\/$/g, '').replace(/\//g, '_'));
 for (const [label, viewport, theme] of [['light', { width: 1440, height: 1100 }, 'light'], ['dark', { width: 1440, height: 1100 }, 'dark'], ['phone', { width: 390, height: 844 }, 'light']]) {
-  const ctx = await browser.newContext({ viewport, reducedMotion: 'reduce', isMobile: viewport.width < 500 });
+  const bypass = process.env.VERCEL_BYPASS ? { 'x-vercel-protection-bypass': process.env.VERCEL_BYPASS, 'x-vercel-set-bypass-cookie': 'true' } : undefined;
+  const ctx = await browser.newContext({ viewport, reducedMotion: 'reduce', isMobile: viewport.width < 500, extraHTTPHeaders: bypass });
   const page = await ctx.newPage();
   await page.route('**/api/**', async (route) => {
     if (route.request().resourceType() === 'document') return route.fallback();
