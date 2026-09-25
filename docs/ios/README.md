@@ -10,7 +10,7 @@ verified:
 # The iOS app
 
 **Gurbani Soul** is the consumer app: reading, searching and studying Sri Guru Granth Sahib Ji,
-fully offline, with the verbatim Gurmukhi cited by Ang. It lives in
+fully offline, with the verbatim [[Gurmukhi]] cited by [[Ang]]. It lives in
 [`Algorythmos-AI/gurbani-soul-ios`](https://github.com/Algorythmos-AI/gurbani-soul-ios) and
 **reads nothing from this repository's working tree**: every input arrives pinned and hash-verified
 ([ADR-0007](../adr/0007-three-repositories.md)), and its Swift search, verify and reader core is

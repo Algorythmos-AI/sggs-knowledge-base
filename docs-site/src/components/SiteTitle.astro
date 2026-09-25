@@ -1,0 +1,41 @@
+---
+// The header title, as Starlight draws it (no logo), with one change: on a phone the " — Knowledge
+// Base" suffix is dropped instead of the whole title being cut mid-word ("…Ji — Kno"). The scripture's
+// full name always stays; screen readers always hear the whole title.
+const { siteTitle, siteTitleHref } = Astro.locals.starlightRoute;
+const [name, ...rest] = siteTitle.split(' — ');
+const suffix = rest.join(' — ');
+---
+
+<a href={siteTitleHref} class="site-title sl-flex">
+	<span translate="no">{name}{suffix && <span class="site-title__suffix"> — {suffix}</span>}</span>
+</a>
+
+<style>
+	@layer starlight.core {
+		.site-title {
+			align-items: center;
+			gap: var(--sl-nav-gap);
+			font-size: var(--sl-text-h4);
+			font-weight: 600;
+			color: var(--sl-color-text-accent);
+			text-decoration: none;
+			white-space: nowrap;
+			min-width: 0;
+		}
+		span {
+			overflow: hidden;
+			text-overflow: ellipsis;
+		}
+	}
+	@media (max-width: 50rem) {
+		.site-title__suffix {
+			position: absolute;
+			width: 1px;
+			height: 1px;
+			overflow: hidden;
+			clip: rect(0 0 0 0);
+			white-space: nowrap;
+		}
+	}
+</style>

@@ -19,6 +19,7 @@ export const SIDEBAR = [
       { label: 'Corpus pipeline and gates', slug: 'data/pipeline' },
       { label: 'The dataset pin', slug: 'data/dataset-pin' },
       { label: 'The editorial ledger', slug: 'data/editorial-ledger' },
+      { label: 'The integrity chain', slug: 'data/integrity-chain' },
       {
         // pinned from Algorythmos-AI/sggs-data (docs-site/sources.lock.json); canonical there
         label: 'From sggs-data (pinned)', collapsed: true,

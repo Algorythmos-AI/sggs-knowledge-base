@@ -27,8 +27,9 @@ export function parseChangelog(text) {
   return out;
 }
 
-export function releasesHtml(releases) {
-  return `<sggs-releases><ol class="releases">${releases.map((r) => {
+export function releasesHtml(releases, limit = 0) {
+  const shown = limit > 0 ? releases.slice(0, limit) : releases;
+  return `<sggs-releases${limit > 0 ? ` limit="${limit}"` : ''}><ol class="releases">${shown.map((r) => {
     const tag = r.legacy ? '' : `https://github.com/${PLATFORM_REPO}/releases/tag/v${r.version}`;
     const kinds = Object.entries(r.kinds).map(([k, n]) => `${n} ${k.toLowerCase()}`).join(' · ');
     const text = `${r.version} ${r.date} ${r.title}`.toLowerCase();
@@ -40,8 +41,10 @@ export function remarkReleases(options = {}) {
   const file = options.file ?? path.join(REPO_ROOT, 'CHANGELOG.md');
   return (tree) => {
     visit(tree, 'html', (node) => {
-      if (!/^<sggs-releases\b[^>]*>\s*<\/sggs-releases>$/.test(node.value.trim())) return;
-      node.value = releasesHtml(parseChangelog(readFileSync(file, 'utf8')));
+      const m = /^<sggs-releases\b([^>]*)>\s*<\/sggs-releases>$/.exec(node.value.trim());
+      if (!m) return;
+      const limit = Number(/\blimit="(\d+)"/.exec(m[1])?.[1] ?? 0);
+      node.value = releasesHtml(parseChangelog(readFileSync(file, 'utf8')), limit);
     });
   };
 }

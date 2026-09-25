@@ -49,7 +49,7 @@ API is whole:
 curl -s http://localhost:7777/api/health | python3 -m json.tool
 ```
 
-Every value under `checks` must be `true`: 60,658 lines, 1,430 Angs, FTS5 working, the Mool
+Every value under `checks` must be `true`: 60,658 lines, 1,430 Angs, [[FTS5]] working, the Mool
 Mantar verbatim, at least 560 `ੴ`, the verifier alive. Then try a search and a page:
 
 ```bash
@@ -57,7 +57,7 @@ curl -s 'http://localhost:7777/api/search?q=sat%20nam&limit=3' | python3 -m json
 curl -s 'http://localhost:7777/api/ang/1' | python3 -m json.tool | head -40
 ```
 
-Every line comes back verbatim with its Ang. That is the only way scripture ever reaches a screen.
+Every line comes back verbatim with its [[Ang]]. That is the only way scripture ever reaches a screen.
 
 ## 4. The website source (optional)
 

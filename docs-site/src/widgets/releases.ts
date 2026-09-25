@@ -5,7 +5,7 @@ import { el } from './api';
 export class SggsReleases extends HTMLElement {
   connectedCallback() {
     const items = Array.from(this.querySelectorAll<HTMLElement>('.release'));
-    if (!items.length) return;
+    if (!items.length || this.hasAttribute('limit')) return;   // a short, limited list needs no filter
     const input = el('input', { type: 'search', class: 'wf__input releases__filter', placeholder: 'Filter by version, date or words in the title', 'aria-label': 'Filter releases' }) as HTMLInputElement;
     const count = el('span', { class: 'releases__count', role: 'status', 'aria-live': 'polite' }, [`${items.length} releases`]);
     input.addEventListener('input', () => {

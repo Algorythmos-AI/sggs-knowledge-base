@@ -6,6 +6,17 @@ entries prior to v1.1.0 are the project's original prose style and are preserved
 ## [Unreleased]
 
 ### Added
+- **The wiki's front door.** The home page opens on the system-landscape poster, then *Ten minutes to
+  your first search* (clone → `make doctor` → `make dataset` → `serve.py`, with the live search
+  simulator limited to three results), the four learning paths as cards (`<!-- sggs:cards -->`, a
+  build-time widget over a plain Markdown list) and the three newest releases (`sggs:releases
+  limit="3"`).
+- **The integrity chain, for engineers** (`docs/data/integrity-chain.md`): one line of scripture from
+  the source PDF to a screen, and the gate that proves it at each of six stages — build, pin, serve,
+  watch, bundle, launch — every claim cross-read against the code that enforces it.
+- **The Brand section has an index** (`/brand/` was a 404) with the palette rendered from
+  `docs/brand/tokens.json` at build (`<!-- sggs:swatches -->`): every role, light and dark, and its
+  WCAG contrast computed from the file.
 - **The wiki watches itself.** `docs-watch` (every six hours) proves `docs.gurbanisoul.com` serves the
   commit its last production deploy shipped and runs the new **live suite** (`docs-site/e2e-live`:
   every API-backed widget against the real API, a line read from `/api/ang/1` verifying exact, axe as
@@ -18,6 +29,18 @@ entries prior to v1.1.0 are the project's original prose style and are preserved
   `make docs-freshness`, `make docs-pins`.
 
 ### Changed
+- **Mermaid diagrams follow the reader's scheme:** each is drawn from both legs of the palette (palette
+  colours in `classDef`/`style` lines swap to their dark twins; a label that would lose contrast takes
+  the better ink) and CSS shows the matching one. Geometry is rounded to two decimals, so the heaviest
+  page is lighter than before (397 KB → 286 KB).
+- **Edit links on pinned sibling pages go to the branch** (GitHub cannot edit at a commit), with a
+  second link to the exact version the wiki pins.
+- The generated API reference sits inside the API group, has an e2e test and passes axe (its
+  "required" label and schema panels now use the brand's status red and the page background).
+- Glossary hover-cards on the first use of key terms across onboarding, architecture, data, search,
+  API and iOS; the phone header keeps "Sri Guru Granth Sahib Ji" whole instead of cutting the title
+  mid-word; the brand book states that phase 2 shipped and that the Swift-to-JSON parity test is still
+  to be written; stale onboarding links fixed.
 - **The wiki's CSP allows inline scripts by sha256 only** (13 hashes; no `'unsafe-inline'`),
   checked by `docs-site/scripts/csp.mjs`; the e2e server sends the production headers, so every
   page's e2e and axe run under the real policy. ADR-0012 amended.
