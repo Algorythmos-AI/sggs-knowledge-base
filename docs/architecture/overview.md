@@ -4,8 +4,8 @@ description: "The system in one page: who uses it, the containers across three r
 sidebar:
   order: 1
 verified:
-  commit: f25ab970
-  date: "2026-09-25"
+  commit: df4bff43
+  date: "2026-09-26"
 ---
 # Architecture Overview
 
