@@ -62,6 +62,27 @@
     "term": {
       "purpose": "Inserted by remark-terms for [[Term]]; not written by authors as a comment. Hover-card with the glossary definition.",
       "attrs": {}
+    },
+    "progress": {
+      "purpose": "Learning-path checklist: enhances the list that follows with checkboxes remembered in this browser only (localStorage, per path).",
+      "attrs": {
+        "path": {
+          "description": "A short key for the path, e.g. platform-engineer.",
+          "required": true
+        }
+      }
+    },
+    "repo-map": {
+      "purpose": "An expandable map of the three repositories with a one-line purpose per path, rendered at build from docs/reference/repo-map.json (remark-repo-map); no JavaScript.",
+      "attrs": {}
+    },
+    "adr-timeline": {
+      "purpose": "The ADRs on a timeline, rendered at build from docs/adr/*.md (remark-adr-timeline); no JavaScript.",
+      "attrs": {}
+    },
+    "releases": {
+      "purpose": "CHANGELOG.md as a release timeline, rendered at build (remark-releases), with a filter box on the site.",
+      "attrs": {}
     }
   }
 }

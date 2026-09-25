@@ -133,3 +133,33 @@ sggs-quiz { display: block; margin: 1.25rem 0 2rem; }
 .quiz__why { margin: 0.4rem 0 0; font-size: 0.9rem; color: var(--sl-color-gray-2); min-height: 1.4em; }
 .quiz__summary { font-size: 0.9rem; color: var(--sl-color-gray-2); }
 .review-banner { margin: 0 0 1.5rem; padding: 0.6rem 1rem; border: 1px solid var(--sl-color-hairline); border-left: 3px solid var(--sl-color-orange); border-radius: 0 8px 8px 0; background: var(--sl-color-bg-nav); font-size: 0.9rem; }
+
+/* ── learning paths, releases, ADR timeline, repo map ────────────────────────────────────── */
+sggs-progress { display: block; margin: 0.5rem 0; }
+.progress__bar { display: flex; flex-wrap: wrap; gap: 0.6rem; align-items: center; font-size: 0.9rem; color: var(--sl-color-gray-2); }
+.progress__list .progress__item { list-style: none; margin-left: -1.25rem; }
+.progress__item.is-done { color: var(--sl-color-gray-3); text-decoration: line-through; }
+.progress__item.is-done a { color: inherit; }
+.progress__box { margin-right: 0.3rem; accent-color: var(--sl-color-accent); }
+.releases__bar { display: flex; flex-wrap: wrap; gap: 0.6rem; align-items: center; margin: 0.5rem 0 1rem; }
+.releases__count { font-size: 0.85rem; color: var(--sl-color-gray-3); }
+.releases { list-style: none; padding: 0; margin: 0; display: grid; gap: 0.5rem; }
+.release { display: grid; grid-template-columns: 7rem 1fr; gap: 0.25rem 1rem; padding: 0.6rem 0.9rem; border: 1px solid var(--sl-color-hairline); border-radius: 10px; background: var(--sl-color-bg-nav); }
+.release__v { font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace; font-weight: 600; }
+.release__d { font-size: 0.8rem; color: var(--sl-color-gray-3); grid-column: 1; }
+.release__t { grid-column: 2; grid-row: 1 / span 2; }
+.release__k { font-size: 0.8rem; color: var(--sl-color-gray-3); }
+@media (max-width: 640px) { .release { grid-template-columns: 1fr; } .release__t { grid-column: 1; grid-row: auto; } }
+.adrs { list-style: none; padding: 0; margin: 0; border-left: 2px solid var(--sl-color-hairline); }
+.adr { position: relative; padding: 0.35rem 0 0.35rem 1.25rem; }
+.adr::before { content: ""; position: absolute; left: -7px; top: 0.85rem; width: 12px; height: 12px; border-radius: 50%; background: var(--sl-color-accent); }
+.adr__d { font-size: 0.8rem; color: var(--sl-color-gray-3); font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace; }
+.adr__s { font-size: 0.75rem; margin-left: 0.4rem; }
+.repo-map details { margin: 0.2rem 0 0.2rem 0.75rem; }
+.repo-map summary { cursor: pointer; font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace; font-size: 0.9rem; }
+.repo-map summary:focus-visible { outline: 2px solid var(--sl-color-accent); outline-offset: 2px; }
+.repo-map .repo-map__why { color: var(--sl-color-gray-2); font-family: var(--sl-font); font-size: 0.85rem; }
+.repo-map ul { list-style: none; padding-left: 1.25rem; margin: 0.2rem 0; }
+.repo-map li { font-size: 0.9rem; margin: 0.15rem 0; }
+.repo-map code { font-size: 0.85rem; }
+.repo-map__repo > summary { font-weight: 700; font-family: var(--sl-font); font-size: 1rem; }
