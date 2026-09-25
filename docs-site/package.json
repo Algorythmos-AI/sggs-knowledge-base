@@ -9,7 +9,7 @@
     "prebuild": "node scripts/copy-assets.mjs",
     "build": "astro build --force",
     "preview": "node scripts/serve-dist.mjs 4323",
-    "test:unit": "node --test plugins/test/",
+    "test:unit": "node --test 'plugins/test/*.test.mjs'",
     "test:e2e": "playwright test",
     "check:mermaid": "node scripts/check-mermaid.mjs dist",
     "check:budget": "node scripts/check-budget.mjs dist",
