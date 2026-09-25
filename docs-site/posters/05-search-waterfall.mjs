@@ -5,7 +5,7 @@ export default {
   title: 'The search waterfall',
   subtitle: 'What do_search does with a query, in the order the code does it — cheap exact tiers first, fuzzier tiers only when the earlier ones found nothing',
   description: 'A query is normalised and its script detected. Mixed Gurmukhi and Latin goes to the mixed-script blender. An explicit mode picks one tier. In auto mode a Gurmukhi query tries first letters or the verbatim text and then the skeleton; a Roman query tries a concept name, first letters or the transliteration, then the seeker lexicon, the variant index, the English layer, an honorific-dropped retry, the cross-line passage tier, the phonetic fold, the skeleton blob and a single-token theme. Results are bm25-ranked and returned with the tier that answered as mode.',
-  height: 1160, verified: V,
+  height: 1180, verified: V,
   sources: ['webapp/sggs/search.py', 'webapp/romannorm.py', 'webapp/sggs/core.py'],
   legend: ['box', 'store', 'gate', 'note'],
   groups: [
