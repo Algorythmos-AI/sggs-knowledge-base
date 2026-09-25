@@ -141,7 +141,8 @@ export function buildPoster(spec) {
   const legendKinds = spec.legend ?? [...new Set((spec.nodes ?? []).map((n) => n.kind ?? 'box'))];
   const legend = legendKinds.map((kind, i) => {
     const k = KINDS[kind];
-    const x = 40 + i * 255, y = H - 110;
+    const gap = Math.min(255, Math.floor((W - 80) / legendKinds.length));   // seven kinds still fit the width
+    const x = 40 + i * gap, y = H - 110;
     return `<rect x="${x}" y="${y}" width="26" height="18" rx="5" fill="${k.fill}" stroke="${k.stroke}" stroke-width="2"${k.dash ? ` stroke-dasharray="${k.dash}"` : ''}/>` +
       `<text x="${x + 34}" y="${y + 14}" font-family='${FONT_SANS}' font-size="16" fill="var(--poster-ink, #201A12)">${esc(KIND_LEGEND[kind])}</text>`;
   }).join('');

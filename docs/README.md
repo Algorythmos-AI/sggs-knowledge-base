@@ -30,7 +30,7 @@ build date, dataset build and the health checks — read live from `/api/health`
 | Ship a change | [Branching](process/branching.md) · [Environments](process/environments.md) · [Release](process/release.md) |
 | Rebuild the database, or take a new dataset | [Corpus pipeline and gates](data/pipeline.md) · [The dataset pin](data/dataset-pin.md) · the [rebuild runbook](https://github.com/Algorythmos-AI/sggs-data/blob/main/docs/process/runbooks/rebuild-db.md) (sggs-data) |
 | Know what CI checks and why | [CI gates](process/ci-gates.md) |
-| Take the iOS app through TestFlight to the App Store | [`Algorythmos-AI/gurbani-soul-ios`](https://github.com/Algorythmos-AI/gurbani-soul-ios) (`docs/ios/`) |
+| Understand the iOS app, or take it through TestFlight to the App Store | [The iOS app](ios/README.md) · [How the app takes a release](ios/how-the-app-takes-a-release.md) · the pinned [launch plan](https://github.com/Algorythmos-AI/gurbani-soul-ios/blob/main/docs/ios/testflight-launch-plan.md) |
 | Understand a past decision | [ADRs](adr/) |
 
 ## Repository at a glance

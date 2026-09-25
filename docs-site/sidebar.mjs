@@ -36,6 +36,27 @@ export const SIDEBAR = [
       { label: 'Versioning and caching', slug: 'api/versioning-and-caching' },
     ],
   },
+  {
+    label: 'iOS app',
+    items: [
+      { label: 'The iOS app', slug: 'ios' },
+      { label: 'How the app takes a release', slug: 'ios/how-the-app-takes-a-release' },
+      { label: 'Contract and parity', slug: 'ios/contract-and-parity' },
+      { label: 'Database pair and launch integrity', slug: 'ios/db-pair-and-launch-integrity' },
+      { label: 'Nitnem for engineers', slug: 'ios/nitnem-for-engineers' },
+      {
+        // pinned from Algorythmos-AI/gurbani-soul-ios (docs-site/sources.lock.json); canonical there
+        label: 'From gurbani-soul-ios (pinned)', collapsed: true,
+        items: [
+          dir('iOS', 'ios/ios'),
+          dir('Decisions', 'ios/adr'),
+          dir('Runbooks', 'ios/process/runbooks'),
+          { label: 'Nitnem spec', slug: 'ios/nitnem/spec' },
+          { label: 'Contributing', slug: 'ios/contributing' },
+        ],
+      },
+    ],
+  },
   dir('Engineering handbook', 'engineering'),
   dir('Process & runbooks', 'process'),
   dir('Brand', 'brand'),
