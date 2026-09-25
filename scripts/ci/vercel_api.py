@@ -1,102 +1,105 @@
 #!/usr/bin/env python3
+"""vercel_api.py — the Vercel facts a deploy job must read, never guess.
+
+  live DOMAIN        print the https URL of the deployment serving DOMAIN right now: the only
+                     correct rollback target. (The newest READY production deployment is not:
+                     a build deployed with --skip-domain whose smoke failed is READY and
+                     target=production too, but it never served anyone.)
+  target URL         print a deployment's target: "production" or "preview".
+  has-production     exit 0 when the project has a READY production deployment, 1 when it has
+                     none. The docs project's first deployment became its production deployment
+                     although CI deployed it as a preview (2026-09-26), so staging never goes first.
+
+Environment: VERCEL_TOKEN, VERCEL_ORG_ID (the team), VERCEL_PROJECT_ID (has-production only).
+Exit codes: 0 ok · 1 has-production found none · 2 API or usage error · 3 live: no deployment
+serves DOMAIN. Stdlib only; the token goes to api.vercel.com in a header and is never printed.
 """
-vercel_api.py — the read-only Vercel REST lookups the deploy pipelines make (stdlib only).
-
-  vercel_api.py live DOMAIN        print the https URL of the deployment serving DOMAIN right now
-  vercel_api.py deployment URL     print the deployment a hostname resolves to (JSON)
-  vercel_api.py has-production     print "yes" if the project has a READY production deployment, else "no"
-
-Env: VERCEL_TOKEN; VERCEL_ORG_ID (the team); VERCEL_PROJECT_ID (the project DOMAIN must belong to).
-
-The rollback target is the deployment the production domain resolves to, never "the newest READY
-production deployment": a build made with `vercel deploy --prebuilt --prod --skip-domain` whose smoke
-then failed is READY and target=production too, but it was never promoted, so the next release would
-record it as "previous" and a rollback would restore it. GET /v13/deployments/<host> resolves an alias
-hostname to the deployment it points at (the same answer as the alias table). Anything short of a
-READY production deployment of this project is an error (exit 1, `::error::`), never a guess.
-"""
-import argparse, json, os, sys, urllib.error, urllib.parse, urllib.request
+import json, os, sys, urllib.error, urllib.parse, urllib.request
 
 API = "https://api.vercel.com"
 
-class VercelError(RuntimeError):
+
+class NotFound(Exception):
     pass
 
-def _get(path, **query):
-    token = os.environ.get("VERCEL_TOKEN", "")
-    if not token:
-        raise VercelError("VERCEL_TOKEN is not set")
-    if os.environ.get("VERCEL_ORG_ID"):
-        query["teamId"] = os.environ["VERCEL_ORG_ID"]
-    url = API + path + ("?" + urllib.parse.urlencode(query) if query else "")
-    req = urllib.request.Request(url, headers={"Authorization": f"Bearer {token}", "User-Agent": "sggs-ci"})
+
+def http_get(path, token, team):
+    """GET API+path with the team, return parsed JSON. Raises NotFound on 404."""
+    sep = "&" if "?" in path else "?"
+    req = urllib.request.Request(f"{API}{path}{sep}teamId={urllib.parse.quote(team)}",
+                                 headers={"Authorization": f"Bearer {token}", "User-Agent": "sggs-ci"})
     try:
         with urllib.request.urlopen(req, timeout=30) as r:
-            return json.load(r)
+            return json.loads(r.read())
     except urllib.error.HTTPError as e:
-        body = e.read(300).decode("utf-8", "replace").strip()
-        raise VercelError(f"GET {path} → HTTP {e.code}: {body}") from None
-    except (urllib.error.URLError, TimeoutError, ValueError) as e:
-        raise VercelError(f"GET {path} failed: {e}") from None
+        if e.code == 404:
+            raise NotFound(path) from None
+        raise
 
-def _host(url):
-    h = (url or "").strip().split("://", 1)[-1]
-    return h.split("/", 1)[0].lower()
 
-def _project_id(project_id):
-    pid = project_id or os.environ.get("VERCEL_PROJECT_ID", "")
-    if not pid:
-        raise VercelError("VERCEL_PROJECT_ID is not set")
-    return pid
+def _host(url_or_host):
+    return urllib.parse.urlsplit(url_or_host).netloc if "://" in url_or_host else url_or_host.strip("/")
 
-def deployment(url):
-    """The deployment a hostname resolves to: a unique deployment URL, or an alias such as the production domain."""
-    host = _host(url)
-    if not host:
-        raise VercelError("no hostname given")
-    return _get("/v13/deployments/" + urllib.parse.quote(host, safe=""))
 
-def live_deployment(domain, project_id=None):
-    """https URL of the deployment serving `domain` right now — the only safe rollback target."""
-    pid = _project_id(project_id)
-    d = deployment(domain)
-    problems = []
-    if not d.get("url"):
-        problems.append("it has no url")
-    if d.get("readyState") != "READY":
-        problems.append(f"readyState is {d.get('readyState')!r}, not 'READY'")
-    if d.get("target") != "production":
-        problems.append(f"target is {d.get('target')!r}, not 'production'")
-    got = d.get("projectId") or (d.get("project") or {}).get("id")
-    if got != pid:
-        problems.append(f"it belongs to project {got!r}, not {pid!r}")
-    if problems:
-        raise VercelError(f"{_host(domain)} resolves to {d.get('id')!r} but " + "; ".join(problems))
-    return "https://" + _host(d["url"])
+def _deployment(d):
+    """The deployment object, whether the API wrapped it or not."""
+    return d.get("deployment", d) if isinstance(d, dict) else {}
 
-def has_production(project_id=None):
-    """Whether the project has any READY production deployment (false only before its first release)."""
-    d = _get("/v6/deployments", projectId=_project_id(project_id), target="production", state="READY", limit=1)
-    return bool(d.get("deployments"))
 
-def main(argv=None):
-    p = argparse.ArgumentParser(description=__doc__.strip().splitlines()[0])
-    sub = p.add_subparsers(dest="cmd", required=True)
-    sub.add_parser("live").add_argument("domain")
-    sub.add_parser("deployment").add_argument("url")
-    sub.add_parser("has-production")
-    a = p.parse_args(argv)
+def live_deployment(domain, get):
+    """https URL of the deployment currently serving DOMAIN, or None when nothing serves it."""
     try:
-        if a.cmd == "live":
-            print(live_deployment(a.domain))
-        elif a.cmd == "deployment":
-            print(json.dumps(deployment(a.url), indent=2))
-        else:
-            print("yes" if has_production() else "no")
-    except VercelError as e:
-        sys.stderr.write(f"::error::{e}\n")
-        return 1
-    return 0
+        dep = _deployment(get(f"/v13/deployments/{urllib.parse.quote(_host(domain))}"))
+    except NotFound:
+        return None
+    url = dep.get("url")
+    if not url or dep.get("readyState", dep.get("state")) not in ("READY", None):
+        return None
+    return "https://" + _host(url)
+
+
+def deployment_target(url, get):
+    """'production' or 'preview' (the API reports a preview's target as null)."""
+    dep = _deployment(get(f"/v13/deployments/{urllib.parse.quote(_host(url))}"))
+    return dep.get("target") or "preview"
+
+
+def has_production(project, get):
+    q = urllib.parse.urlencode({"projectId": project, "target": "production", "state": "READY", "limit": 1})
+    return bool(get(f"/v6/deployments?{q}").get("deployments"))
+
+
+def main(argv, env=os.environ, get=None):
+    if len(argv) < 1 or argv[0] not in ("live", "target", "has-production") or \
+            (argv[0] != "has-production" and len(argv) != 2):
+        print(__doc__, file=sys.stderr)
+        return 2
+    token, team = env.get("VERCEL_TOKEN"), env.get("VERCEL_ORG_ID")
+    if get is None:
+        if not token or not team:
+            print("::error::vercel_api: VERCEL_TOKEN and VERCEL_ORG_ID are required", file=sys.stderr)
+            return 2
+        get = lambda path: http_get(path, token, team)  # noqa: E731
+    try:
+        if argv[0] == "live":
+            url = live_deployment(argv[1], get)
+            if not url:
+                print(f"no deployment serves {argv[1]}", file=sys.stderr)
+                return 3
+            print(url)
+            return 0
+        if argv[0] == "target":
+            print(deployment_target(argv[1], get))
+            return 0
+        project = env.get("VERCEL_PROJECT_ID")
+        if not project:
+            print("::error::vercel_api: VERCEL_PROJECT_ID is required for has-production", file=sys.stderr)
+            return 2
+        return 0 if has_production(project, get) else 1
+    except (urllib.error.URLError, TimeoutError, OSError, ValueError, NotFound) as e:
+        print(f"::error::vercel_api {argv[0]}: {type(e).__name__}: {e}", file=sys.stderr)
+        return 2
+
 
 if __name__ == "__main__":
-    sys.exit(main())
+    sys.exit(main(sys.argv[1:]))

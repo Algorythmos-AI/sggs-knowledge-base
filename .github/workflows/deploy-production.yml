@@ -160,7 +160,8 @@ jobs:
         # What gurbanisoul.com resolves to now, not the newest READY production build: a build whose
         # smoke failed is READY and target=production too but was never promoted. No answer, no deploy.
         run: |
-          prev=$(python3 scripts/ci/vercel_api.py live "$PROD_WEB")
+          prev=$(python3 scripts/ci/vercel_api.py live "$PROD_WEB") || {
+            echo "::error::cannot tell which deployment serves $PROD_WEB; not deploying without a rollback target (docs/process/runbooks/rollback.md)"; exit 1; }
           echo "previous production deployment: $prev"
           echo "previous=$prev" >> "$GITHUB_OUTPUT"
       - name: Build + deploy (production target, NOT aliased yet)
