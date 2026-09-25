@@ -115,20 +115,16 @@ restores it. The wiki carries no state, so a rollback costs nothing but the newe
 | a scholar review is due (G3) | `make review-pack` writes one PDF — Scripture 101, the glossary's scripture and script sections, the contributors — with a sign-off sheet |
 | a new page | frontmatter, links, the scripture rule and the fallback rule are gated; a poster or a widget follows [the contributing guides](../../contributing/README.md) |
 
-## 6. Sibling README links (owner, after launch)
+## 6. Sibling README links
 
-Two small pull requests point readers of the sibling repositories at the wiki. Suggested text,
-for the top of each README:
-
-- **sggs-data** — *"The engineering wiki publishes this repository's docs at
-  [docs.gurbanisoul.com/data](https://docs.gurbanisoul.com/data/), pinned at a commit; edit them here."*
-- **gurbani-soul-ios** — *"The engineering wiki publishes this repository's docs at
-  [docs.gurbanisoul.com/ios](https://docs.gurbanisoul.com/ios/), pinned at a commit; edit them here."*
+Done (2026-09-26): both sibling READMEs open with a line pointing at the wiki's published copy of
+their docs ([sggs-data#11](https://github.com/Algorythmos-AI/sggs-data/pull/11),
+[gurbani-soul-ios#19](https://github.com/Algorythmos-AI/gurbani-soul-ios/pull/19)).
 
 ## 7. Open review items
 
 - The scholar review (gate G3) of [Scripture 101](../../scripture/README.md), the glossary's
-  scripture terms and the contributors chronology.
-- sggs-data's `database-schema.md` states 4,706 compositions and `max(comp_id)` 5,380; the pinned
-  database holds 4,527 and 5,376. The wiki's pages use the database; the data repository's page
-  needs its own correction.
+  scripture terms and the contributors chronology. `make review-pack` builds the PDF with a
+  sign-off sheet.
+- Resolved: sggs-data's `database-schema.md` now states the database's counts (4,527 compositions,
+  `max(comp_id)` 5,376), and `pipeline/tests/test_docs_facts.py` there holds them to the database.
