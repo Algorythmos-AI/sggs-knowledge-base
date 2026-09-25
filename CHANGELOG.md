@@ -8,6 +8,9 @@ entries prior to v1.1.0 are the project's original prose style and are preserved
 No change to the scripture text, the corpus, the database bytes or any API response.
 
 ### Added
+- **Onboarding track.** `docs/onboarding/` — your first week, how the three repositories fit, run it
+  locally, your first pull request, who to ask, and the reverence checklist for working with sacred
+  text as an engineer; plus a `CODE_OF_CONDUCT.md`. First group in the wiki's sidebar.
 - **The engineering wiki is a docs site.** `docs-site/` (Astro Starlight) renders the Markdown in
   `docs/` — unchanged, still PR-reviewed and GitHub-rendered — at docs.gurbanisoul.com with search,
   a sidebar, dark mode, brand-themed Mermaid rendered to accessible SVG at build, an API reference

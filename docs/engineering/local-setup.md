@@ -6,7 +6,8 @@ sidebar:
 ---
 # Local setup, repository map & API
 
-Running, rebuilding and navigating the project on a developer machine.
+Running, rebuilding and navigating the project on a developer machine. New to the project? The
+step-by-step version with troubleshooting is [Run it locally](../onboarding/run-it-locally.md).
 
 ## What this is
 
