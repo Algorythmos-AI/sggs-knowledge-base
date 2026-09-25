@@ -1,3 +1,9 @@
+---
+title: "Engineering invariants"
+description: "The rules every change must preserve: the prime directive on scripture, the data model, conventions, gotchas and how to verify."
+sidebar:
+  order: 1
+---
 # Engineering invariants
 
 The rules every change must preserve. The prime directive overrides everything else in this repository.

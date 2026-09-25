@@ -1,3 +1,9 @@
+---
+title: "ADR-0011: The API runs as Vercel functions inside the web project (staging first)"
+description: "Why the API runs as Vercel functions inside the web project on staging, and how production will follow."
+sidebar:
+  order: 11
+---
 # ADR-0011: The API runs as Vercel functions inside the web project (staging first)
 
 **Status:** accepted (2026-09-25) — live on staging; production keeps the Render single API until it

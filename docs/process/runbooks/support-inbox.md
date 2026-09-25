@@ -1,3 +1,9 @@
+---
+title: "Runbook: support inbox"
+description: "The public support address used in the App Store listing and on the website, and how it is handled."
+sidebar:
+  order: 5
+---
 # Runbook: support inbox
 
 The address in the App Store listing, on `/support` and in the EU trader declaration is public.

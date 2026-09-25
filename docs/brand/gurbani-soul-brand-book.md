@@ -1,3 +1,9 @@
+---
+title: "Gurbani Soul — Brand Book"
+description: "The Gurbani Soul brand: the gold rule, palette, typography, mark, components, voice, accessibility and the gates before shipping."
+sidebar:
+  order: 1
+---
 # Gurbani Soul — Brand Book
 
 Status: **adopted** — G1 passed 2026-09-18; phase 2 shipped to `integration` (PRs #28–#31). G3 and G4 remain open before App Store submission. Scope: the iOS app, its widgets, icon and share card.

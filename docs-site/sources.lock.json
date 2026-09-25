@@ -1,0 +1,4 @@
+{
+  "_comment": "Documentation of the sibling repositories, published on the wiki at a pinned commit (tools/fetch_sibling_docs.py; ADR-0012). A bump is a reviewed PR, exactly like dataset.lock.json. 'alias' is the URL prefix on the site; 'files' records the sha256 of every installed file.",
+  "sources": {}
+}

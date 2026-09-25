@@ -1,3 +1,9 @@
+---
+title: "Runbook: move production onto the API functions"
+description: "Moving production onto the per-context API functions, gated on the performance baseline and the data canary."
+sidebar:
+  order: 3
+---
 # Runbook: move production onto the API functions
 
 Staging answers every bounded context with its own Vercel function inside the web project

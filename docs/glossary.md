@@ -1,3 +1,9 @@
+---
+title: "Glossary"
+description: "Definitions of the scripture and engineering terms used across the wiki, from Ang and Rahao to comp_id and golden vectors."
+sidebar:
+  order: 1
+---
 # Glossary
 
 | Term | Meaning |

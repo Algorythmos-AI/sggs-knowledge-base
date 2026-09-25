@@ -1,3 +1,9 @@
+---
+title: "ADR-0010: One image per context, behind a gateway generated from the code (staging first)"
+description: "Why each bounded context can run as its own image behind a gateway generated from the route table."
+sidebar:
+  order: 10
+---
 # ADR-0010: One image per context, behind a gateway generated from the code (staging first)
 
 **Status:** accepted (2026-09-25); hosting superseded by ADR-0011 — the contexts now run as Vercel

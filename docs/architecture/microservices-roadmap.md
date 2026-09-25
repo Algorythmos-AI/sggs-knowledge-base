@@ -1,3 +1,9 @@
+---
+title: "Microservices Roadmap (monolith → modular → services)"
+description: "How the stdlib monolith is factored into bounded contexts, and the spikes and gates on the road to services."
+sidebar:
+  order: 3
+---
 # Microservices Roadmap (monolith → modular → services)
 
 `webapp/serve.py` is a single stdlib module today. The path to services is
@@ -13,6 +19,8 @@ Extraction order by coupling (cleanest first):
 
 ```mermaid
 flowchart LR
+    accTitle: Order of module extraction
+    accDescr: The order in which bounded contexts are extracted from the monolith on the road to services.
     verify[Verify] --> timing[Timing] --> analytics[Analytics] --> search[Search] --> reader[Reader]
 ```
 

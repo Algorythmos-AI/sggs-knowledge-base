@@ -1,3 +1,9 @@
+---
+title: "Runbook — launch-notice sign-up (Buttondown)"
+description: "Turning on the launch-notice sign-up on the landing page with Buttondown, and the privacy rules it must keep."
+sidebar:
+  order: 4
+---
 # Runbook — launch-notice sign-up (Buttondown)
 
 The site can show a quiet "know when it's on the App Store" sign-up on the landing (`/`). It is a

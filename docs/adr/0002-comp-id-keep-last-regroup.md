@@ -1,3 +1,9 @@
+---
+title: "ADR-0002: Fold heading runs into the composition, keeping the last heading's comp_id"
+description: "Why a run of heading lines folds into the composition it opens, keeping the last heading's comp_id and leaving permanent gaps."
+sidebar:
+  order: 2
+---
 # ADR-0002: Fold heading runs into the composition, keeping the last heading's `comp_id`
 
 **Status:** accepted (2026-09-15)

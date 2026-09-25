@@ -1,7 +1,15 @@
+---
+title: "Branching & Delivery Flow"
+description: "The branch model: feature branches into integration, release pull requests into main, required checks and pull-request hygiene."
+sidebar:
+  order: 1
+---
 # Branching & Delivery Flow
 
 ```mermaid
 gitGraph
+    accTitle: Branch model
+    accDescr: Feature branches merge into integration, which deploys staging; release merges from integration reach main, which deploys production and is tagged.
     commit id: "main"
     branch integration
     commit id: "trunk"

@@ -1,3 +1,9 @@
+---
+title: "ADR-0003: The engineering wiki lives in docs/"
+description: "Why the engineering wiki is Markdown and Mermaid under docs/, versioned with the code and reviewed in pull requests."
+sidebar:
+  order: 3
+---
 # ADR-0003: The engineering wiki lives in `docs/`
 
 **Status:** accepted (2026-09-15)

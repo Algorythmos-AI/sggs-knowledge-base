@@ -1,3 +1,9 @@
+---
+title: "Release Process"
+description: "The steps that take a green integration branch to a tagged production release."
+sidebar:
+  order: 4
+---
 # Release Process
 
 1. On `integration`, ensure everything is green on staging.

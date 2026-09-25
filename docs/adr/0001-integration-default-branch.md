@@ -1,3 +1,9 @@
+---
+title: "ADR-0001: integration is the trunk; main is production"
+description: "Why integration is the trunk that deploys staging and main is production, receiving only release pull requests."
+sidebar:
+  order: 1
+---
 # ADR-0001: `integration` is the trunk; `main` is production
 
 **Status:** accepted (2026-09-15)
