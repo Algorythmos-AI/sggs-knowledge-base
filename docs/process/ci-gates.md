@@ -4,7 +4,7 @@ description: "What each GitHub Actions workflow and job proves before a change c
 sidebar:
   order: 3
 verified:
-  commit: df69071d
+  commit: fe0ca6a7
   date: "2026-09-26"
 ---
 # CI Gates — what each check proves
