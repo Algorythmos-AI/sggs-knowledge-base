@@ -480,6 +480,8 @@ def check_posters(tokens_hex: set[str]) -> list[Problem]:
                     name = name.strip()
                     if name and not (ROOT / name).exists() and not name.startswith("Algorythmos-AI/") and not pinned_file(name):
                         P.append(Problem(svg, 1, f"poster footer names a file that does not exist: {name}"))
+        if not re.search(r'<g class="pk-legend">(?:<rect[^>]*/><text[^>]*>[^<]+</text>)+</g>', s):
+            P.append(Problem(svg, 1, "poster needs its legend (docs-site/posters/kit.mjs draws it from the node kinds)"))
         if not re.search(r"v\d+\.\d+\.\d+ · verified \d{4}-\d{2}-\d{2} · [0-9a-f]{7}", s):
             P.append(Problem(svg, 1, "poster needs a version stamp `vX.Y.Z · verified YYYY-MM-DD · <sha7>`"))
         steps_svg = set(re.findall(r'id="(step-\d{2})"', s))
@@ -581,6 +583,9 @@ def check_site_config() -> list[Problem]:
         csp = next((h["value"] for h in v["headers"][0]["headers"] if h["key"] == "Content-Security-Policy"), "")
         if "connect-src 'self'" not in csp or "frame-ancestors 'none'" not in csp:
             P.append(Problem(vercel, 1, "CSP must keep connect-src 'self' and frame-ancestors 'none'"))
+        script_src = next((d.split()[1:] for d in csp.split(";") if d.strip().startswith("script-src ")), [])
+        if "'unsafe-inline'" in script_src or not any(t.startswith("'sha256-") for t in script_src):
+            P.append(Problem(vercel, 1, "CSP script-src allows inline scripts by sha256 hash only, never 'unsafe-inline' (cd docs-site && npm run build && npm run csp:write)"))
     except (OSError, ValueError, AttributeError, KeyError, IndexError) as e:
         P.append(Problem(vercel, 1, f"cannot validate docs-site/vercel.json: {e}"))
     lock = SITE / "sources.lock.json"
@@ -600,6 +605,46 @@ def check_site_config() -> list[Problem]:
     return P
 
 
+# The site theme's brand colours must equal docs/brand/tokens.json (legs: 0 light, 1 dark). Only the
+# named brand roles are held to the tokens; the neutral greys Starlight needs are the theme's own.
+THEME_TOKENS = {
+    "--sgs-paper": ("surfaces", "paper"), "--sgs-paper-warm": ("surfaces", "paperWarm"),
+    "--sgs-card": ("surfaces", "card"), "--sgs-canvas": ("surfaces", "canvas"),
+    "--sgs-accent": ("soul", "accent"), "--sgs-accent-text": ("soul", "accentText"),
+    "--sgs-accent-fill": ("soul", "accentFill"), "--sgs-on-accent": ("soul", "onAccent"),
+    "--sgs-maroon": ("brand", "maroon"), "--sgs-kraft": ("brand", "kraft"),
+    "--sgs-positive": ("status", "positive"), "--sgs-negative": ("status", "negative"),
+    "--sgs-info": ("status", "info"), "--sgs-special": ("status", "special"),
+}
+
+
+def theme_blocks(css: str) -> dict[str, dict[str, str]]:
+    """{'dark': {var: hex}, 'light': {var: hex}} from theme.css's two :root blocks (dark is Starlight's default)."""
+    out: dict[str, dict[str, str]] = {}
+    for sel, body in re.findall(r"([^{}]+)\{([^{}]*)\}", css):
+        sel = sel.strip()
+        leg = "light" if sel == ':root[data-theme="light"]' else "dark" if sel == ":root" else None
+        if leg:
+            out.setdefault(leg, {}).update({k: v.upper() for k, v in re.findall(r"(--[a-z0-9-]+):\s*(#[0-9A-Fa-f]{6})\b", body)})
+    return out
+
+
+def check_theme(css_path: Path | None = None, tokens: dict | None = None) -> list[Problem]:
+    css_path = css_path or SITE / "src" / "styles" / "theme.css"
+    tokens = tokens or json.loads((DOCS / "brand" / "tokens.json").read_text(encoding="utf-8"))
+    blocks = theme_blocks(css_path.read_text(encoding="utf-8"))
+    P: list[Problem] = []
+    for leg, i in (("light", 0), ("dark", 1)):
+        have = blocks.get(leg, {})
+        for var, (group, name) in THEME_TOKENS.items():
+            want = tokens[group][name][i].upper()
+            if var not in have:
+                P.append(Problem(css_path, 1, f"{leg} theme lacks {var} (tokens.json {group}.{name} = {want})"))
+            elif have[var] != want:
+                P.append(Problem(css_path, 1, f"{leg} theme {var} is {have[var]}, tokens.json {group}.{name} is {want}"))
+    return P
+
+
 def run(db_path: Path | None = None) -> list[Problem]:
     tokens_hex = load_tokens_hex()
     widgets = widget_schema()
@@ -612,6 +657,7 @@ def run(db_path: Path | None = None) -> list[Problem]:
     problems += check_posters(tokens_hex)
     problems += check_drift()
     problems += check_site_config()
+    problems += check_theme()
     return problems
 
 

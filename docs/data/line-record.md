@@ -20,7 +20,7 @@ verbatim, straight from the API.
 <!-- sggs:ang-explorer ang="1" -->
 On the rendered wiki this is a live explorer: choose an Ang and every line record of it is listed,
 verbatim from `/api/ang/{n}`, with the placement and heading columns beside it and a definition of
-each column on hover. On GitHub, open [Ang 1 on the website](https://gurbanisoul.com/ang/1) instead.
+each column on hover. On GitHub, open [Ang 1 in the website's reader](https://gurbanisoul.com/reader?ang=1) instead.
 
 Try the quick picks. Ang 1 opens with a heading and then Japji, whose author is `null` because the
 print has no ਮਹਲਾ line. Ang 151 shows a raag title and its invocation sharing one heading run. Ang

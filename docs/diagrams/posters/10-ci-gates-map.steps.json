@@ -26,25 +26,25 @@
   {
     "id": "step-05",
     "title": "The docs job",
-    "caption": "The wiki is gated like the product: the sibling pin is consistent and installed; tools/docs_check.py checks frontmatter, links and anchors, widget fallbacks, the Mermaid palette, the scripture-quotation rule, the posters, the verified stamps and drift against the code; the generated routes page is current; the plugin and tool unit tests pass; the site builds with every Mermaid fence rendered; every internal link resolves; the page budgets hold; Playwright and axe run with a mocked API; Lighthouse passes its budgets.",
+    "caption": "The wiki is gated like the product: the sibling pin is consistent and installed; tools/docs_check.py checks frontmatter, links and anchors, widget fallbacks, the Mermaid palette, the scripture-quotation rule, the posters, the verified stamps and drift against the code; the generated routes page is current; the plugin and tool unit tests pass; the types check; the site builds with every Mermaid fence rendered; the built site is checked whole — every page rendered, every internal link resolving, the page budgets, and every inline script allowed by its CSP hash; Playwright and axe run with a mocked API under the production headers; Lighthouse passes its budgets.",
     "link": "/process/ci-gates/"
   },
   {
     "id": "step-06",
     "title": "What a ruleset requires",
-    "caption": "The JSON files under .github/rulesets are the source of truth, applied by scripts/gh/apply_rulesets.sh. integration requires python, frontend, integrity, secrets and docs; main requires python, frontend, integrity, versions, secrets and static-analysis with the strict policy, plus a review and CODEOWNERS. Neither allows deletion or force-push; main has no linear-history rule because release PRs are merge commits.",
+    "caption": "The JSON files under .github/rulesets are the source of truth, applied by scripts/gh/apply_rulesets.sh. integration requires python, frontend, integrity, secrets and docs; main requires python, frontend, integrity, versions, secrets, static-analysis and docs with the strict policy, plus a review and CODEOWNERS. Neither allows deletion or force-push; main has no linear-history rule because release PRs are merge commits.",
     "link": "/process/branching/"
   },
   {
     "id": "step-07",
     "title": "On a merge: the deploy chains",
-    "caption": "A merge into integration runs deploy-staging: gates on the commit, preflight for secrets, the API functions generated and proven, the web built and aliased, then verify (every function ready at the commit, the gateway, the smoke, the whole contract). A merge into main runs deploy-production: gates plus playwright, preflight, an optional approval, API deploy and verification by commit, web built unaliased and smoked, promotion with the public smoke and a rollback edge, then the tag. The wiki has the same chain in deploy-docs.",
+    "caption": "A merge into integration runs deploy-staging: gates on the commit, preflight for secrets, the API functions generated and proven, the web built and aliased, then verify (every function ready at the commit, the gateway, the smoke, the whole contract). A merge into main runs deploy-production: gates plus playwright, preflight, an optional approval, API deploy and verification by commit, web built unaliased and smoked, promotion with the public smoke and a rollback edge, then the tag. The wiki has the same chain in deploy-docs: its staging deploy refuses to be the project’s first deployment (Vercel made that one production), its rollback targets the deployment the domain actually serves, and every production failure — or a docs job that failed on main — opens an issue.",
     "link": "/process/runbooks/deploy/"
   },
   {
     "id": "step-08",
     "title": "Between merges",
-    "caption": "Every six hours the data canary proves production serves the pinned scripture byte for byte — 500 sampled lines and fifteen Angs, at the API origin and through the site’s CDN — and replays the golden contract; every fifteen minutes uptime probes /api/health and the App Store URLs; on Mondays security scans the full history for secrets and docs-links checks every external link in the wiki. Each opens or updates one issue; none pages or redeploys.",
+    "caption": "Every six hours the data canary proves production serves the pinned scripture byte for byte — 500 sampled lines and fifteen Angs, at the API origin and through the site’s CDN — and replays the golden contract; every fifteen minutes uptime probes /api/health and the App Store URLs; every night the whole docs job re-runs on integration to catch drift from outside the repository; on Mondays security scans the full history for secrets and docs-links checks every external link in the wiki and the sibling docs it publishes. Each opens or updates one issue; none pages or redeploys.",
     "link": "/process/ci-gates/"
   }
 ]
