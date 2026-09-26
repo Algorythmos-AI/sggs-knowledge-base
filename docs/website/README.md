@@ -45,9 +45,13 @@ there is exactly one indexable host. This is asserted at release time by
 `uptime.yml`.
 
 ### Email
-`support@gurbanisoul.com` is a **Cloudflare Email Routing** address forwarding to the owner's
-mailbox (Cloudflare adds the MX + SPF records; a `p=reject` DMARC TXT is set on `_dmarc`). It is the
-public contact in the App Store listing, `SECURITY.md`, and the privacy/support pages. See
+Mail for `gurbanisoul.com` is hosted by **Zoho Mail** (since 2026-09-26). `support@gurbanisoul.com` is an
+alias of the owner's mailbox, and a catch-all delivers any other address at the domain to it. DNS (Cloudflare,
+DNS only): MX `mx`/`mx2`/`mx3.zoho.com.au`, SPF `v=spf1 include:zohomail.com.au ~all`, DKIM selector `zmail`,
+and DMARC `v=DMARC1; p=none; rua=mailto:support@gurbanisoul.com` on `_dmarc` (move to `p=quarantine` after two
+weeks of clean reports). Do not add Cloudflare Email Routing's SPF include: it would break delivery. The address
+is the public contact in the App Store listing, the EU Digital Services Act trader declaration (verified
+2026-09-26), `SECURITY.md`, and the privacy/support pages. See
 [runbook: support-inbox](../process/runbooks/support-inbox.md).
 
 ---

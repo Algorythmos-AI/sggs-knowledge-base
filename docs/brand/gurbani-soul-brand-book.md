@@ -6,7 +6,7 @@ sidebar:
 ---
 # Gurbani Soul — Brand Book
 
-Status: **adopted** — G1 passed 2026-09-18; phase 2 shipped to `integration` (PRs #28–#31). G3 and G4 remain open before App Store submission. Scope: the iOS app, its widgets, icon and share card.
+Status: **adopted** — G1 passed 2026-09-18; phase 2 shipped to `integration` (PRs #28–#31). G3 and G4 were closed on 2026-09-26 for the first App Store submission (1.3.10, see the gates in §12). Scope: the iOS app, its widgets, icon and share card.
 The Knowledge Base website is a separate scholarly property and keeps its own name and theme.
 
 
@@ -44,7 +44,7 @@ rules; the playful retail voice and tagline.
 
 > **Hard rule — no gold mark on a red square, anywhere** (icon, avatar, launch, widget, marketing).
 > Individual colours are free to use; that *combination* is another company's trade dress.
-> Professional clearance (gate G4) is required before App Store submission.
+> Gate G4 was closed for submission on a documented self-search; professional clearance follows after launch (§12).
 
 The kit's printed contrast ratios are inaccurate (it states 11.2:1 and 1.9:1 where the real figures are
 9.94:1 and 1.69:1). This book quotes only computed values.
@@ -238,6 +238,13 @@ token, type or icon change and compare with the previous dated set. First set: `
 | G2 Contrast | Script | Zero failures, four legs, real surfaces |
 | G3 Sensitivity | Granthi / scholar, with the scripture-fidelity charter | ੴ treatment, icon, and any red near Gurbani accepted |
 | G4 Legal | Professional clearance, with the pending trademark review | Gold-and-red palette without Arches or Token cleared for the App Store |
+
+Status at the first submission (1.3.10, 2026-09-26):
+- **G3 closed 2026-09-26.** The ੴ icon treatment, the launch screen and the default traditional saroop were
+  accepted with no change requested, recorded by the owner. The review pack is kept with the release records.
+- **G4 closed 2026-09-26** by the owner on a documented self-search (trademark registers in Australia, the US, the EU and
+  WIPO, both app stores, and the trade-dress rule above); full professional clearance is scheduled after launch.
+  The search record is private and stays out of the public repositories.
 
 ## 13. Implementation map (phase 2 — shipped in PRs #28–#31; kept as the record)
 
