@@ -201,7 +201,8 @@ no Swift token; giving one a token means adding it to the test's mapping.
 A colour change, in order:
 
 1. **Here** — edit `tokens.json`, re-run `python3 scripts/brand/contrast_report.py` (must exit 0) and
-   commit both. CI also holds the web theme (`frontend/src/theme.ts`, `WebThemeMatchesTokens`) and the
+   commit both (`contrast_report.py --check`, in `make docs-check` and the wiki's `docs` job, fails if
+   they disagree). CI also holds the web theme (`frontend/src/theme.ts`, `WebThemeMatchesTokens`) and the
    wiki theme (`docs-site/src/styles/theme.css`, `tools/docs_check.py`) to the light and dark legs, so
    they change in the same PR.
 2. **Release** — the change reaches a platform release tag (or another ref the iOS repo can pin).
