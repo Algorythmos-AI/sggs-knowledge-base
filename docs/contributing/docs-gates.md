@@ -31,9 +31,10 @@ a link to an unpinned file) is a notice, never an error.
 
 ## Generators and pins
 
-`gen_route_table.py --check`, `gen_contributors.py --check` and `gen_repo_map.py --check` fail
-when a generated page or the repository map is stale; `fetch_sibling_docs.py --check` fails when
-a pinned file no longer matches its commit. Regenerate or re-pin; never edit a generated file.
+`gen_route_table.py --check`, `gen_contributors.py --check`, `gen_repo_map.py --check` and
+`scripts/brand/contrast_report.py --check` fail when a generated page or the repository map is
+stale; `fetch_sibling_docs.py --check` fails when a pinned file no longer matches its commit.
+Regenerate or re-pin; never edit a generated file.
 
 ## The build and after
 

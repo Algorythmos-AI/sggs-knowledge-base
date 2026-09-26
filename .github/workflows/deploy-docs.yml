@@ -58,6 +58,7 @@ jobs:
           python3 tools/gen_route_table.py --check
           python3 tools/gen_contributors.py --check
           GH_TOKEN="${{ secrets.SGGS_READ_TOKEN || github.token }}" python3 tools/gen_repo_map.py --check
+          python3 scripts/brand/contrast_report.py --check
       - name: Tool tests
         run: python3 -m unittest discover -s tools/tests -v
       - name: Install
