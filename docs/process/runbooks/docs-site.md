@@ -127,7 +127,7 @@ restores it. The wiki carries no state, so a rollback costs nothing but the newe
 
 | When | What |
 |---|---|
-| every pull request | the `docs` check (required on `integration`): gates, build, links, budgets, e2e, axe on every page, Lighthouse on twenty |
+| every pull request | the `docs` check (required on `integration` and `main`): gates, build, links, budgets, CSP, e2e, axe on every page, Lighthouse on five pages (all twenty nightly and on `main`) — about nine minutes |
 | a dataset bump lands | nothing to do: the docs job installs the pinned database and re-verifies the cited lines |
 | every 15 minutes | `uptime` probes the wiki's landing page and `/api/health` through its rewrite; issue *uptime: docs site probe failing* |
 | every 6 hours | `docs-watch`: the domain serves the last deployed commit, the smoke and the live suite pass; issue *docs-watch: production wiki check failing* (after a manual rollback it stays open until the next release — expected) |
