@@ -29,6 +29,13 @@ entries prior to v1.1.0 are the project's original prose style and are preserved
   `make docs-freshness`, `make docs-pins`.
 
 ### Changed
+- **Production's API contexts each answer from their own function** (runbook services-production,
+  step 3). `gateway/routes.json` lists all five contexts for production — reader, search, verify,
+  insights, knowledge — so each is answered by its own Vercel function with its own database slice,
+  and `all` keeps everything else. The deploy verifies every function at the commit with exactly its
+  contexts and runs the golden contract through the new rules before promotion; one context rolls
+  back by removing it from the list. Batched into one release because every release is also an App
+  Store update (owner decision 2026-09-26). No change to responses: the golden contract pins them.
 - **A verified stamp goes stale when the code it cites changes**, not after a fixed number of
   commits: merging a stack of pull requests moved thirteen pages past the old sixty-commit mark
   while nothing they describe had changed. Pages that cite no code still warn at 300 commits.
@@ -65,7 +72,9 @@ entries prior to v1.1.0 are the project's original prose style and are preserved
   403: the token authenticated but could not push (its resource owner or approval), and the run just
   went red. It now proves the token with a dry-run push first and falls back to the issue — naming the
   cause — when the token is missing, cannot push, or the pull-request step fails. The runbook shows
-  how to create the token.
+  how to create the token. Closing that issue uses the workflow's own token, so the bot token needs
+  only Contents and Pull requests (its first successful run opened #212, then failed closing the
+  issue with a token that rightly had no Issues permission).
 - **The wiki's deploy pipeline.** Staging refuses to be the docs project's first Vercel deployment
   (the first one became production on 2026-09-26 and served an `integration` build at
   `docs.gurbanisoul.com`) and fails unless its own deployment is a preview. Production's rollback

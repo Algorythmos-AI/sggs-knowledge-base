@@ -92,8 +92,14 @@ jobs:
             gh pr create --repo "$GITHUB_REPOSITORY" --base integration --head "$branch" \
               --title "docs(wiki): bump the sibling docs pins" --body-file "$RUNNER_TEMP/pins.md"
           fi
+      - name: Close the fallback issue — the pull request carries the bump
+        # with the workflow's own token: the bot token holds only contents + pull requests
+        if: steps.pr.outcome == 'success'
+        env: { GH_TOKEN: "${{ github.token }}" }
+        run: |
           issue="$(gh issue list --repo "$GITHUB_REPOSITORY" --state open --search 'in:title "docs: the sibling docs changed — bump the pins"' --json number --jq '.[0].number // empty')"
-          if [ -n "$issue" ]; then gh issue close "$issue" --repo "$GITHUB_REPOSITORY" --comment "Superseded by the pull request on bot/docs-pins."; fi
+          pr="$(gh pr list --repo "$GITHUB_REPOSITORY" --head bot/docs-pins --state open --json number --jq '.[0].number // empty')"
+          if [ -n "$issue" ]; then gh issue close "$issue" --repo "$GITHUB_REPOSITORY" --comment "Superseded by #${pr:-?} (bot/docs-pins)."; fi
       - name: Or one issue, when the bot cannot open the pull request
         # no token, a token that cannot push, or a failed pull-request step: the bump is never lost
         if: >-

@@ -469,6 +469,205 @@
       "destination": "/api/svc/all"
     },
     {
+      "source": "/api/analytics(/.*)?",
+      "destination": "/api/svc/insights"
+    },
+    {
+      "source": "/api/v1/analytics(/.*)?",
+      "destination": "/api/svc/insights"
+    },
+    {
+      "source": "/api/line_concepts(/.*)?",
+      "destination": "/api/svc/insights"
+    },
+    {
+      "source": "/api/v1/line_concepts(/.*)?",
+      "destination": "/api/svc/insights"
+    },
+    {
+      "source": "/api/neighbors(/.*)?",
+      "destination": "/api/svc/insights"
+    },
+    {
+      "source": "/api/v1/neighbors(/.*)?",
+      "destination": "/api/svc/insights"
+    },
+    {
+      "source": "/api/related(/.*)?",
+      "destination": "/api/svc/insights"
+    },
+    {
+      "source": "/api/v1/related(/.*)?",
+      "destination": "/api/svc/insights"
+    },
+    {
+      "source": "/api/themes(/.*)?",
+      "destination": "/api/svc/insights"
+    },
+    {
+      "source": "/api/v1/themes(/.*)?",
+      "destination": "/api/svc/insights"
+    },
+    {
+      "source": "/readyz",
+      "has": [
+        {
+          "type": "query",
+          "key": "svc",
+          "value": "insights"
+        }
+      ],
+      "destination": "/api/svc/insights"
+    },
+    {
+      "source": "/api/forms(/.*)?",
+      "destination": "/api/svc/knowledge"
+    },
+    {
+      "source": "/api/v1/forms(/.*)?",
+      "destination": "/api/svc/knowledge"
+    },
+    {
+      "source": "/api/timing(/.*)?",
+      "destination": "/api/svc/knowledge"
+    },
+    {
+      "source": "/api/v1/timing(/.*)?",
+      "destination": "/api/svc/knowledge"
+    },
+    {
+      "source": "/readyz",
+      "has": [
+        {
+          "type": "query",
+          "key": "svc",
+          "value": "knowledge"
+        }
+      ],
+      "destination": "/api/svc/knowledge"
+    },
+    {
+      "source": "/api/ang(/.*)?",
+      "destination": "/api/svc/reader"
+    },
+    {
+      "source": "/api/v1/ang(/.*)?",
+      "destination": "/api/svc/reader"
+    },
+    {
+      "source": "/api/bani(/.*)?",
+      "destination": "/api/svc/reader"
+    },
+    {
+      "source": "/api/v1/bani(/.*)?",
+      "destination": "/api/svc/reader"
+    },
+    {
+      "source": "/api/banis(/.*)?",
+      "destination": "/api/svc/reader"
+    },
+    {
+      "source": "/api/v1/banis(/.*)?",
+      "destination": "/api/svc/reader"
+    },
+    {
+      "source": "/api/health(/.*)?",
+      "destination": "/api/svc/reader"
+    },
+    {
+      "source": "/api/v1/health(/.*)?",
+      "destination": "/api/svc/reader"
+    },
+    {
+      "source": "/api/lines(/.*)?",
+      "destination": "/api/svc/reader"
+    },
+    {
+      "source": "/api/v1/lines(/.*)?",
+      "destination": "/api/svc/reader"
+    },
+    {
+      "source": "/api/meta(/.*)?",
+      "destination": "/api/svc/reader"
+    },
+    {
+      "source": "/api/v1/meta(/.*)?",
+      "destination": "/api/svc/reader"
+    },
+    {
+      "source": "/api/random(/.*)?",
+      "destination": "/api/svc/reader"
+    },
+    {
+      "source": "/api/v1/random(/.*)?",
+      "destination": "/api/svc/reader"
+    },
+    {
+      "source": "/api/shabad(/.*)?",
+      "destination": "/api/svc/reader"
+    },
+    {
+      "source": "/api/v1/shabad(/.*)?",
+      "destination": "/api/svc/reader"
+    },
+    {
+      "source": "/readyz",
+      "has": [
+        {
+          "type": "query",
+          "key": "svc",
+          "value": "reader"
+        }
+      ],
+      "destination": "/api/svc/reader"
+    },
+    {
+      "source": "/api/search(/.*)?",
+      "destination": "/api/svc/search"
+    },
+    {
+      "source": "/api/v1/search(/.*)?",
+      "destination": "/api/svc/search"
+    },
+    {
+      "source": "/api/word(/.*)?",
+      "destination": "/api/svc/search"
+    },
+    {
+      "source": "/api/v1/word(/.*)?",
+      "destination": "/api/svc/search"
+    },
+    {
+      "source": "/readyz",
+      "has": [
+        {
+          "type": "query",
+          "key": "svc",
+          "value": "search"
+        }
+      ],
+      "destination": "/api/svc/search"
+    },
+    {
+      "source": "/api/verify(/.*)?",
+      "destination": "/api/svc/verify"
+    },
+    {
+      "source": "/api/v1/verify(/.*)?",
+      "destination": "/api/svc/verify"
+    },
+    {
+      "source": "/readyz",
+      "has": [
+        {
+          "type": "query",
+          "key": "svc",
+          "value": "verify"
+        }
+      ],
+      "destination": "/api/svc/verify"
+    },
+    {
       "source": "/api/(.*)",
       "destination": "/api/svc/all"
     },
