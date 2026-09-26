@@ -23,7 +23,9 @@ test.describe('every page', () => {
   for (const path of urls) {
     test(`axe: ${path}`, async ({ page }) => {
       const blocked: string[] = [];
-      page.on('console', (m) => { if (m.type() === 'error' && /Content Security Policy|Refused to/i.test(m.text())) blocked.push(m.text()); });
+      // every console error counts (a CSP block, a malformed SVG path, a script failure) except the
+      // network errors of the mocked API's deliberate 503s
+      page.on('console', (m) => { if (m.type() === 'error' && !/Failed to load resource/i.test(m.text())) blocked.push(m.text()); });
       page.on('pageerror', (e) => blocked.push(`uncaught: ${e.message}`));
       await mockApi(page);
       const res = await page.goto(path);
@@ -31,7 +33,7 @@ test.describe('every page', () => {
       expect(res?.headers()['content-security-policy'], 'served with the production CSP').toContain("script-src 'self'");
       const results = await new AxeBuilder({ page }).withTags(['wcag2a', 'wcag2aa', 'wcag21aa']).analyze();
       expect(results.violations, JSON.stringify(results.violations, null, 1)).toEqual([]);
-      expect(blocked, 'no script blocked by the CSP, no uncaught error').toEqual([]);
+      expect(blocked, 'no console error: no script blocked by the CSP, no malformed SVG, no uncaught error').toEqual([]);
     });
   }
 });
