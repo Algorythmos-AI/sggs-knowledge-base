@@ -29,6 +29,12 @@ entries prior to v1.1.0 are the project's original prose style and are preserved
   `make docs-freshness`, `make docs-pins`.
 
 ### Changed
+- **The wiki names both routing states after #205.** `integration` routes production's five API
+  contexts to their own functions; production (v1.3.10) still answers every path with `all` until
+  the first release after the app is live, which moves all five at once. The architecture overview,
+  bounded contexts, environments, the API page, the roadmap, the release steps (which now carry the
+  per-context performance gate), ADR-0011 (an amendment note) and posters 08 and 09 say so; found by
+  the docs-freshness gate.
 - **Production's API contexts each answer from their own function** (runbook services-production,
   step 3). `gateway/routes.json` lists all five contexts for production — reader, search, verify,
   insights, knowledge — so each is answered by its own Vercel function with its own database slice,

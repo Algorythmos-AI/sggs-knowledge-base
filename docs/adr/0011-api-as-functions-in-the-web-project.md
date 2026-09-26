@@ -7,7 +7,7 @@ sidebar:
 # ADR-0011: The API runs as Vercel functions inside the web project (staging first)
 
 **Status:** accepted (2026-09-25) — live on staging; production moves onto `all` (the whole API as one
-function) in the release after 1.3.9, with the Render single API kept deployed as its rollback target. Supersedes the *hosting* part of ADR-0010 (per-context Render services); its
+function) in the release after 1.3.9, with the Render single API kept deployed as its rollback target. *Amended 2026-09-26: see* Amendments. Supersedes the *hosting* part of ADR-0010 (per-context Render services); its
 slicing, generated routing and proofs stand.
 
 **Context.** Running the five contexts as always-on Render services in production would cost about
@@ -51,3 +51,14 @@ excludes cold starts, as ADR-0010's does. Vercel runs Python 3.12 with SQLite 3.
 bm25) — the Render image ran 3.40.1 — and the contract passed byte-for-byte on it. Moving production
 is a change of `production.api_platform` to `vercel`, released through the normal pipeline and gated
 on the performance baseline and the data canary (`docs/process/runbooks/services-production.md`).
+
+## Amendments
+
+- **2026-09-26 — production's contexts move in one release.** Production went onto `all` with
+  1.3.10. Its per-context routing (services-production step 3) is on `integration`
+  (`gateway/routes.json` lists all five contexts for production) and goes live in **one** release
+  for all five, the first after the app is live on the App Store: under the one-version policy every
+  release is also an App Store update (owner decision). Each context is still gated on its own —
+  `verify_functions --env production`, the golden contract before promotion, the performance gate
+  per context — and rolls back alone by leaving the list. The Render single API stays deployed as
+  the rollback until services-production step 4. The decision above is unchanged.

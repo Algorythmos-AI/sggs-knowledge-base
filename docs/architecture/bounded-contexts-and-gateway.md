@@ -43,12 +43,15 @@ route outside the enabled set is a 404, and startup refuses a database missing a
 
 ## Routing, generated
 
-`gateway/routes.json` says per environment where `/api` goes: on staging to Vercel functions
-(`api/svc/<context>` plus `all`), on production to `all` alone until contexts are split out there
-one release at a time (setting `api_platform: render` proxies `/api` back to the Render single API — the rollback). `tools/gen_gateway.py`
+`gateway/routes.json` says per environment where `/api` goes. Staging and — on `integration` —
+production both list all five contexts, so each has its own Vercel function (`api/svc/<context>`)
+and `all` catches the rest. Production *today* (v1.3.10, released before the split) still answers
+every path with `all`; the five contexts go live there together in the first release after the app
+is on the App Store (owner decision 2026-09-26, services-production step 3). Setting
+`api_platform: render` proxies `/api` back to the Render single API — the rollback. `tools/gen_gateway.py`
 combines it with `serve.ROUTES` and writes the rewrites in `frontend/vercel.json`: every prefix of
-a routed context and its `/api/v1` twin to its function, everything else to `all`, host-conditioned
-for staging. At deploy time `tools/build_api_functions.py` generates the functions themselves;
+a routed context and its `/api/v1` twin to its function, everything else to `all` — staging's rules
+first, host-conditioned, then production's, host-less. At deploy time `tools/build_api_functions.py` generates the functions themselves;
 nothing generated is committed.
 
 ## What CI proves
@@ -59,6 +62,9 @@ nothing generated is committed.
 - `X-Service` probes: each routed context answers its own routes; `/api/nope` falls through to `all`.
 - The whole golden contract (266 records) replays through the gateway on the staging site.
 
-Reversal is one line: remove a context from `gateway/routes.json`. Production keeps the single
-API until the move is released through the normal pipeline
+Reversal is one line: remove a context from `gateway/routes.json` and `all` answers it again on the
+next deploy. Production changes only when the move is released through the normal pipeline, and
+that release owes the performance gate —
+`tools/perf_baseline.py --compare docs/perf/baseline-2026-09.json` from the same vantage, p95
+within +10 % per context — besides the data canary
 ([runbook](../process/runbooks/services-production.md)).

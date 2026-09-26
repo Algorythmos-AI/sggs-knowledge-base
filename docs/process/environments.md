@@ -26,22 +26,26 @@ email routing are in [`docs/website/README.md`](../website/README.md).
 ## Same-origin API (no CORS)
 The browser always calls `/api/*` on the site's own host, so no frontend configuration or CORS is
 needed. On staging the rewrites are internal and **host-conditioned**: each context's prefixes go to
-its function, everything else to `all`. Production's rules are internal too and unconditioned, so
-they catch every other host, including an unaliased deployment URL: with `production.api_platform`
-`vercel` and `production.services` empty, every `/api` path (and `/readyz`, `/healthz`) goes to
-`all`, the single API's role on the same database and code. The rules are generated
-(`tools/gen_gateway.py` from `gateway/routes.json`), for example:
+its function, everything else to `all`. Production's rules come after them, internal too and
+host-less, so they catch every other host, including an unaliased deployment URL. On `integration`,
+`production.services` lists all five contexts: from the release after 1.3.10 each context's prefixes
+go to its own function in production too, and everything else (and `/readyz`, `/healthz`) to `all`.
+Production today (v1.3.10) still sends every `/api` path to `all`, the single API's role on the same
+database and code. The rules are generated (`tools/gen_gateway.py` from `gateway/routes.json`), for
+example:
 
 ```json
 { "source": "/api/timing(/.*)?",
   "has": [{ "type": "host", "value": "sggs-staging.vercel.app" }],
   "destination": "/api/svc/knowledge" },
+{ "source": "/api/timing(/.*)?",
+  "destination": "/api/svc/knowledge" },
 { "source": "/api/(.*)",
   "destination": "/api/svc/all" }
 ```
 
-Splitting production's contexts out one release at a time, and retiring Render, is
-[runbook: services-production](runbooks/services-production.md).
+Splitting production's contexts out — all five in one release, the first after the app is live —
+and retiring Render afterwards are [runbook: services-production](runbooks/services-production.md).
 
 ## As-code
 - **Deploys are CI-gated** — see [runbook: deploy](runbooks/deploy.md). The platforms' own git
