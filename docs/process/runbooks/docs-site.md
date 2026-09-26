@@ -4,7 +4,7 @@ description: "Launching docs.gurbanisoul.com and keeping it honest: one-time set
 sidebar:
   order: 6
 verified:
-  commit: 929534bf
+  commit: 4adc454a
   date: "2026-09-26"
 ---
 # Runbook: the docs site (launch and after)
