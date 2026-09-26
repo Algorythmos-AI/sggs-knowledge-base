@@ -67,6 +67,10 @@ entries prior to v1.1.0 are the project's original prose style and are preserved
   SHA. `docs_check` gates the poster legend and the theme's brand colours against the tokens.
 - `docs-site/scripts/visual-qa.mjs` proxies `/api` to production (`https://gurbanisoul.com`, was
   the Render rollback origin) and accepts a Vercel bypass for the staging alias.
+- **The `docs` check takes about nine minutes, not eighteen.** Lighthouse was two-thirds of it (twenty
+  pages, three runs each). A pull request or a push to `integration` now audits five representative
+  pages (home, the heaviest page, a poster, a live widget, the largest table); the nightly run and
+  every push to `main` still audit all twenty.
 
 ### Fixed
 - **The contrast report regenerates as committed.** `scripts/brand/contrast_report.py` dropped the

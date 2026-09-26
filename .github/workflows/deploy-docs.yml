@@ -86,9 +86,24 @@ jobs:
       - name: End-to-end + accessibility (mocked API, served with the production headers and CSP)
         working-directory: docs-site
         run: npm run test:e2e
-      - name: Lighthouse budgets
+      - name: Lighthouse budgets (five pages on a pull request or staging push; all twenty nightly and on main)
+        # Lighthouse was two-thirds of this job (20 pages x 3 runs, ~12 minutes). A pull request needs
+        # the pages that stress the budget — the home page, the heaviest page, a poster, a live widget,
+        # the largest table — and the nightly run and every push to main still audit all twenty.
         working-directory: docs-site
-        run: npm run lhci
+        env:
+          FULL: ${{ github.event_name == 'schedule' || github.ref == 'refs/heads/main' }}
+        run: |
+          if [ "$FULL" = "true" ]; then
+            npm run lhci
+          else
+            npm run lhci -- \
+              --collect.url=http://localhost/index.html \
+              --collect.url=http://localhost/architecture/overview/index.html \
+              --collect.url=http://localhost/scripture/structure/index.html \
+              --collect.url=http://localhost/data/line-record/index.html \
+              --collect.url=http://localhost/glossary/index.html
+          fi
       - uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
         if: always()
         with:
