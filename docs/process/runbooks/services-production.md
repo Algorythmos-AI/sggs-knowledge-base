@@ -4,8 +4,8 @@ description: "Moving production onto the per-context API functions, gated on the
 sidebar:
   order: 3
 verified:
-  commit: f25ab970
-  date: "2026-09-25"
+  commit: 4391ce0a
+  date: "2026-09-26"
 ---
 # Runbook: move production onto the API functions
 
@@ -37,9 +37,14 @@ moving production is a routing change, released through the normal pipeline, wit
 2. **Hold the budget.** From the same place the baseline was taken:
    `python3 tools/perf_baseline.py --base https://gurbanisoul.com --from "<same vantage>" --compare docs/perf/baseline-2026-09.json`
    must PASS (p95 within +10 % per context; cold starts excluded by its warm-up).
-3. **Split one context at a time**: add knowledge to `production.services`, regenerate, release,
-   verify as in step 1 (its probe now shows `X-Service: knowledge`); then verify → insights → search
-   → reader, one release each.
+3. **Split the contexts.** Add the contexts to `production.services`, regenerate, release, and verify
+   as in step 1: each context's probe shows its own `X-Service` (e.g. `knowledge`), and step 2's
+   budget holds per context. *Decision 2026-09-26 (owner):* under the one-version policy every
+   release is also an App Store update, so all five contexts move in **one** release (after the app
+   is live) instead of five. Each is still gated on its own: `verify_functions --env production`
+   proves every function ready at the commit with exactly its contexts, the golden contract runs
+   through the new rules before promotion, and one context rolls back by removing it (below); the
+   instant lever is `vercel rollback` to the previous deployment.
 4. **Retire Render** after a full release cycle on the functions with the canary green: suspend and
    then delete the `sggs-knowledge-base` Render service, remove `RENDER_DEPLOY_HOOK` and the
    `deploy-api` / `verify-api` jobs from `deploy-production.yml`, and point the data canary's and the
