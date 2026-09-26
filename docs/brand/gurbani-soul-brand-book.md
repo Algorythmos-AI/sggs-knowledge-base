@@ -187,7 +187,8 @@ signal of state.
 
 ## 11. Governance
 
-`tokens.json` is the source of truth. Any colour change: edit the JSON, re-run the report, commit both.
+`tokens.json` is the source of truth. Any colour change: edit the JSON, re-run the report, commit both
+(`make docs-check` and the wiki's `docs` job run `contrast_report.py --check`, which fails if they disagree).
 Phase 2 has landed (gurbani-soul-ios `ios/App/Shared/DesignTokens.swift`: `AccentPalette.soul`,
 `brandDefault`, `accentFill`), but the planned unit test that pins `DesignTokens.swift` to the JSON
 does not exist yet: the Swift values mirror the JSON by hand, so a colour change must be made in both

@@ -56,6 +56,11 @@ entries prior to v1.1.0 are the project's original prose style and are preserved
   the Render rollback origin) and accepts a Vercel bypass for the staging alias.
 
 ### Fixed
+- **The contrast report regenerates as committed.** `scripts/brand/contrast_report.py` dropped the
+  wiki frontmatter `docs/brand/contrast-report.md` gained when `docs-site/` began publishing
+  `docs/`, so the brand book's "edit the JSON, re-run the report, commit both" produced a page the
+  frontmatter gate rejects. It now writes the frontmatter, and its new `--check` (in
+  `make docs-check`, the `docs` job and a tool test) fails when the committed page is stale.
 - **`docs-pins` never loses a bump to a bad token.** Its first run with `DOCS_BOT_TOKEN` failed with a
   403: the token authenticated but could not push (its resource owner or approval), and the run just
   went red. It now proves the token with a dry-run push first and falls back to the issue — naming the

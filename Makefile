@@ -50,6 +50,7 @@ docs-check: ## docs gates: frontmatter, links, widgets, Mermaid palette, scriptu
 	python3 tools/gen_route_table.py --check
 	python3 tools/gen_contributors.py --check
 	python3 tools/gen_repo_map.py --check
+	python3 scripts/brand/contrast_report.py --check
 	python3 tools/fetch_sibling_docs.py --check
 	python3 -m unittest discover -s tools/tests
 docs: ## build the wiki (installs pinned sibling docs; renders every Mermaid fence; validates links)
