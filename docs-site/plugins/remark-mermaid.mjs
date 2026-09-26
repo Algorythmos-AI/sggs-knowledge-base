@@ -90,8 +90,15 @@ export function darkStyles(source) {
 // geometry attributes (never text) takes about a third off each drawing, and every diagram is drawn
 // twice, so this keeps the heaviest page inside the HTML budget (scripts/check-budget.mjs).
 const GEOMETRY = /(\s(?:d|points|transform|x|y|x1|x2|y1|y2|cx|cy|r|rx|ry|width|height|viewBox|style)=")([^"]*)(")/g;
+// SVG path data is often compact — `3.023.043.021` is three numbers (3.023 .043 .021) — so a number
+// is only rounded when it starts a token (not right after a digit or a dot), and a result with no
+// decimal point is never allowed to fuse with a following `.05` into one number.
 export const roundGeometry = (svg) => svg.replace(GEOMETRY, (_, a, v, z) =>
-  a + v.replace(/-?\d+\.\d{3,}/g, (n) => String(Math.round(parseFloat(n) * 100) / 100)) + z);
+  a + v.replace(/(?<![\d.])-?\d+\.\d{3,}/g, (n, at, all) => {
+    let r = String(Math.round(parseFloat(n) * 100) / 100);
+    if (!r.includes('.') && all[at + n.length] === '.') r += '.0';
+    return r;
+  }) + z);
 
 let renderer;
 

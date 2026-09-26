@@ -73,6 +73,13 @@ entries prior to v1.1.0 are the project's original prose style and are preserved
   every push to `main` still audit all twenty.
 
 ### Fixed
+- **Two sequence diagrams drew broken paths** (`/data/dataset-pin/`, `/ios/how-the-app-takes-a-release/`):
+  the geometry rounding added with the two-palette diagrams also matched *across* compact SVG numbers
+  (`3.023.043.021` is 3.023, .043, .021) and could fuse a rounded integer with the next `.05`. It now
+  rounds only numbers that start a token, never lets a result fuse, and a test proves every number of a
+  real path survives (count and value within 0.005). The every-page e2e check now fails on any console
+  error, not only CSP ones — it would have caught this. Found by a pre-release sweep of all 150 pages
+  (dark-mode axe, phone overflow, images, console).
 - **The contrast report regenerates as committed.** `scripts/brand/contrast_report.py` dropped the
   wiki frontmatter `docs/brand/contrast-report.md` gained when `docs-site/` began publishing
   `docs/`, so the brand book's "edit the JSON, re-run the report, commit both" produced a page the

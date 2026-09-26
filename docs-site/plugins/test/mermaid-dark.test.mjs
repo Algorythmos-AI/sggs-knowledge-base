@@ -35,3 +35,17 @@ test('geometry is rounded to two decimals; text and colours are not touched', as
   assert.match(out, />v1\.2345678 build</);          // a label keeps every digit
   assert.match(out, /fill:#FDF6E3;width:10\.99px/);
 });
+
+// the numbers of an SVG path, as a browser reads them (a number never holds two dots)
+const numbers = (d) => d.match(/-?(?:\d+(?:\.\d*)?|\.\d+)(?:e[-+]?\d+)?/gi).map(Number);
+
+test('compact path data keeps every number: same count, each within half a hundredth', async () => {
+  const { roundGeometry } = await import('../remark-mermaid.mjs');
+  // a real sequence-diagram path from mermaid (docs/data/dataset-pin.md) — it broke the first rounding
+  const d = 'M3.023.043.021.043.02.043.018.044.017.043.015.044.013.044.012.044.011.045.009.044.007.045.006.045.004.045.002.045.001.045v17l-.001.045-.002.045-.004.045-.006.045 0.0005.05 12.3456-7.89012.5';
+  const out = /d="([^"]*)"/.exec(roundGeometry(`<svg><path d="${d}"/></svg>`))[1];
+  const a = numbers(d), b = numbers(out);
+  assert.equal(b.length, a.length, `numbers: ${a.length} before, ${b.length} after — ${out}`);
+  a.forEach((x, i) => assert.ok(Math.abs(x - b[i]) <= 0.005 + 1e-9, `#${i}: ${x} became ${b[i]}`));
+  assert.ok(out.length < d.length);
+});
