@@ -4,7 +4,7 @@ description: "The system in one page: who uses it, the containers across three r
 sidebar:
   order: 1
 verified:
-  commit: d2b39998
+  commit: a6615276
   date: "2026-09-26"
 ---
 # Architecture Overview
@@ -72,9 +72,9 @@ flowchart LR
 ```mermaid
 flowchart LR
     accTitle: Production deployment
-    accDescr: A push to main deploys one Vercel project holding the static frontend and the API as Python functions; /api is rewritten internally to the all function, which serves the pinned database; the Render single API stays deployed as the rollback target; the iOS archive ships through TestFlight to the App Store.
+    accDescr: A push to main deploys one Vercel project holding the static frontend and the API as Python functions; /api is rewritten internally to the API functions — today all of it to the all function, from the release after 1.3.10 each bounded context to its own function with all as the catch-all; the Render single API stays deployed as the rollback target; the iOS archive ships through TestFlight to the App Store.
     dev[git push main] --> vercel[Vercel<br/>static frontend + API functions]
-    vercel -->|/api/* internal rewrite| fn[function all<br/>serve.py + pinned DB]
+    vercel -->|/api/* internal rewrite| fn[API functions<br/>1.3.10: all · next release: per context]
     vercel -.->|rollback: api_platform render| render[Render<br/>the single API, kept deployed]
     ios2[iOS archive] --> tf[TestFlight / App Store]
     classDef n fill:#FDF6E3,color:#201A12,stroke:#A87900;
@@ -82,11 +82,19 @@ flowchart LR
 
 The web frontend and API are **same-origin**: the browser calls `/api/*` and Vercel's internal
 rewrites send those paths to the API, which runs as Python functions in the same Vercel project
-([ADR-0011](../adr/0011-api-as-functions-in-the-web-project.md)) — in production the whole API as
-one function, `all`. There is no CORS and the frontend carries no API-base configuration.
-`gateway/routes.json` decides this per environment: setting production's `api_platform` back to
-`render` proxies `/api` to the Render single API, which every release still deploys as the rollback
-target. Staging routes each bounded context to its own function — see
+([ADR-0011](../adr/0011-api-as-functions-in-the-web-project.md)). There is no CORS and the frontend
+carries no API-base configuration. `gateway/routes.json` decides the routing per environment:
+
+- **Staging** routes each of the five bounded contexts (`reader`, `search`, `verify`, `insights`,
+  `knowledge`) to its own function, with `all` — the whole API — as the catch-all.
+- **Production today (v1.3.10)** answers every `/api` path with `all`.
+- **From the release after 1.3.10** production routes the five contexts the same way as staging —
+  all five in that one release, the first after the app is live on the App Store
+  ([services-production](../process/runbooks/services-production.md), step 3). The change is already
+  on `integration`.
+
+Setting production's `api_platform` back to `render` proxies `/api` to the Render single API, which
+every release still deploys as the rollback target until it is retired. See
 [Environments](../process/environments.md) and [bounded contexts](bounded-contexts-and-gateway.md).
 
 ## The five layers

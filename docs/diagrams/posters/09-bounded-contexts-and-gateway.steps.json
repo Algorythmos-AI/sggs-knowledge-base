@@ -14,13 +14,13 @@
   {
     "id": "step-03",
     "title": "Routing is generated, never hand-written",
-    "caption": "gateway/routes.json says, per environment, where /api goes: on staging to Vercel functions, one per context plus all; on production to all alone, until contexts are split out there one release at a time. tools/gen_gateway.py combines it with the route table to produce the rewrites — every prefix of a routed context and its /api/v1 twin, then a catch-all to all.",
+    "caption": "gateway/routes.json says, per environment, where /api goes: on staging to Vercel functions, one per context plus all; on integration the production entry lists the same five contexts, which go live together in the first release after the app is on the App Store — production today (1.3.10) answers every path with all. tools/gen_gateway.py combines it with the route table to produce the rewrites — every prefix of a routed context and its /api/v1 twin, then a catch-all to all.",
     "link": "/adr/0011-api-as-functions-in-the-web-project/"
   },
   {
     "id": "step-04",
     "title": "What ships",
-    "caption": "The committed frontend/vercel.json carries only the rewrites (host-conditioned for staging; production sends /api to all). At deploy time tools/build_api_functions.py generates the functions — each fixing its SGGS_MODULES, its database slice and the commit — and adds their configuration; nothing generated is committed.",
+    "caption": "The committed frontend/vercel.json carries only the rewrites: staging’s, host-conditioned, first; then production’s, host-less, one per routed prefix; then the catch-all to all. At deploy time tools/build_api_functions.py generates the functions — each fixing its SGGS_MODULES, its database slice and the commit — and adds their configuration; nothing generated is committed.",
     "link": "/process/runbooks/deploy/"
   },
   {
@@ -32,7 +32,7 @@
   {
     "id": "step-06",
     "title": "And reversible in one line",
-    "caption": "Removing a context from gateway/routes.json sends its routes back to the single API on the next deploy. Production answers /api with all and splits contexts out one release at a time, gated on the performance baseline and the data canary; setting api_platform back to render returns it to the Render single API, which keeps deploying as the rollback.",
+    "caption": "Removing a context from gateway/routes.json sends its routes back to the single API on the next deploy. Production answers /api with all today and moves all five contexts in one release, each gated on its own — the functions proven at the commit, the golden contract, the performance baseline (p95 within +10 % per context) and the data canary; setting api_platform back to render returns it to the Render single API, which keeps deploying as the rollback.",
     "link": "/process/runbooks/services-production/"
   }
 ]

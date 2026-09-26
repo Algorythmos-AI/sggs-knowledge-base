@@ -29,10 +29,12 @@ entries prior to v1.1.0 are the project's original prose style and are preserved
   `make docs-freshness`, `make docs-pins`.
 
 ### Changed
-- **The `docs` check takes about nine minutes, not eighteen.** Lighthouse was two-thirds of it (twenty
-  pages, three runs each). A pull request or a push to `integration` now audits five representative
-  pages (home, the heaviest page, a poster, a live widget, the largest table); the nightly run and
-  every push to `main` still audit all twenty.
+- **The wiki names both routing states after #205.** `integration` routes production's five API
+  contexts to their own functions; production (v1.3.10) still answers every path with `all` until
+  the first release after the app is live, which moves all five at once. The architecture overview,
+  bounded contexts, environments, the API page, the roadmap, the release steps (which now carry the
+  per-context performance gate), ADR-0011 (an amendment note) and posters 08 and 09 say so; found by
+  the docs-freshness gate.
 - **Production's API contexts each answer from their own function** (runbook services-production,
   step 3). `gateway/routes.json` lists all five contexts for production — reader, search, verify,
   insights, knowledge — so each is answered by its own Vercel function with its own database slice,
@@ -65,6 +67,10 @@ entries prior to v1.1.0 are the project's original prose style and are preserved
   SHA. `docs_check` gates the poster legend and the theme's brand colours against the tokens.
 - `docs-site/scripts/visual-qa.mjs` proxies `/api` to production (`https://gurbanisoul.com`, was
   the Render rollback origin) and accepts a Vercel bypass for the staging alias.
+- **The `docs` check takes about nine minutes, not eighteen.** Lighthouse was two-thirds of it (twenty
+  pages, three runs each). A pull request or a push to `integration` now audits five representative
+  pages (home, the heaviest page, a poster, a live widget, the largest table); the nightly run and
+  every push to `main` still audit all twenty.
 
 ### Fixed
 - **The contrast report regenerates as committed.** `scripts/brand/contrast_report.py` dropped the

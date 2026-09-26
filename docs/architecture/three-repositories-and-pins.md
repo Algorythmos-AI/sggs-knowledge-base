@@ -4,7 +4,7 @@ description: "The hand-offs between sggs-data, sggs-platform and gurbani-soul-io
 sidebar:
   order: 6
 verified:
-  commit: d2b39998
+  commit: a6615276
   date: "2026-09-26"
 ---
 # Three repositories and pins

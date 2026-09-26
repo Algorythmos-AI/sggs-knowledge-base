@@ -4,8 +4,8 @@ description: "How the stdlib monolith is factored into bounded contexts, and the
 sidebar:
   order: 3
 verified:
-  commit: f25ab970
-  date: "2026-09-25"
+  commit: a6615276
+  date: "2026-09-26"
 ---
 # Microservices Roadmap (monolith → modular → services)
 
@@ -113,7 +113,9 @@ route is tagged with its context, so a prefix can only go to the service that se
 fails if `vercel.json` drifts. Staging routes contexts one at a time — first `knowledge`
 (`/api/timing/*`, `/api/forms`, and their `/api/v1` twins) — and the `deploy-staging` verify job
 proves each routed context answers through the real gateway with its own `X-Service`. Production
-still sends everything to the single API.
+(v1.3.10) still sends everything to `all`; `integration` now routes all five contexts for production
+too, and they go live together in the first release after the app is on the App Store
+([services-production](../process/runbooks/services-production.md), step 3).
 
 **`dataset_stats` is not needed.** The plan proposed a precomputed table so the reader slice could
 answer `/api/meta`'s cross-context counts. Measured on staging, the reader service's `/api/meta` is
