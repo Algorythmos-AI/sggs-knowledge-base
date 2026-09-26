@@ -4,7 +4,7 @@ description: "How one codebase runs as five contexts, how a process is sliced wi
 sidebar:
   order: 5
 verified:
-  commit: df4bff43
+  commit: a6615276
   date: "2026-09-26"
 ---
 # Bounded contexts and the gateway

@@ -4,7 +4,7 @@ description: "Local, staging and production side by side: hosts, API platforms, 
 sidebar:
   order: 2
 verified:
-  commit: 911d5bd0
+  commit: a6615276
   date: "2026-09-26"
 ---
 # Environments

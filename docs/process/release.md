@@ -4,8 +4,8 @@ description: "The steps that take a green integration branch to a tagged product
 sidebar:
   order: 4
 verified:
-  commit: f25ab970
-  date: "2026-09-25"
+  commit: a6615276
+  date: "2026-09-26"
 ---
 # Release Process
 

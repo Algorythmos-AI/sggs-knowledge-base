@@ -4,8 +4,8 @@ description: "The read-only JSON API over the verbatim corpus: what it promises,
 sidebar:
   order: 0
 verified:
-  commit: 7a343c62
-  date: "2026-09-25"
+  commit: a6615276
+  date: "2026-09-26"
 ---
 # The JSON API
 

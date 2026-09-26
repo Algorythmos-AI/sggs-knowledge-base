@@ -4,8 +4,8 @@ description: "How the stdlib monolith is factored into bounded contexts, and the
 sidebar:
   order: 3
 verified:
-  commit: f25ab970
-  date: "2026-09-25"
+  commit: a6615276
+  date: "2026-09-26"
 ---
 # Microservices Roadmap (monolith → modular → services)
 
