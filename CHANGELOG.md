@@ -73,6 +73,10 @@ entries prior to v1.1.0 are the project's original prose style and are preserved
   every push to `main` still audit all twenty.
 
 ### Fixed
+- **Docs match the live mail setup and the submission gates.** `support@gurbanisoul.com` is a Zoho Mail alias
+  (MX/SPF/DKIM for Zoho, DMARC `p=none` added 2026-09-26); the website README had described Cloudflare Email
+  Routing and a `p=reject` DMARC record that never existed. The brand book records G3 and G4 as closed for the
+  1.3.10 submission.
 - **Two sequence diagrams drew broken paths** (`/data/dataset-pin/`, `/ios/how-the-app-takes-a-release/`):
   the geometry rounding added with the two-palette diagrams also matched *across* compact SVG numbers
   (`3.023.043.021` is 3.023, .043, .021) and could fuse a rounded integer with the next `.05`. It now
