@@ -60,7 +60,9 @@ entries prior to v1.1.0 are the project's original prose style and are preserved
   403: the token authenticated but could not push (its resource owner or approval), and the run just
   went red. It now proves the token with a dry-run push first and falls back to the issue — naming the
   cause — when the token is missing, cannot push, or the pull-request step fails. The runbook shows
-  how to create the token.
+  how to create the token. Closing that issue uses the workflow's own token, so the bot token needs
+  only Contents and Pull requests (its first successful run opened #212, then failed closing the
+  issue with a token that rightly had no Issues permission).
 - **The wiki's deploy pipeline.** Staging refuses to be the docs project's first Vercel deployment
   (the first one became production on 2026-09-26 and served an `integration` build at
   `docs.gurbanisoul.com`) and fails unless its own deployment is a preview. Production's rollback
