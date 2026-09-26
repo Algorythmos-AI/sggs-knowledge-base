@@ -42,8 +42,8 @@ Regenerate or re-pin; never edit a generated file.
 `npm run check:all` — `check-render` (every page rendered completely — Astro logs a failed render
 and exits 0), `check-mermaid`, `check-links` (every internal link and fragment in the built HTML),
 `check-budget` (JS per page, largest page) and `check-csp`. Then Playwright with a mocked API on
-desktop and phone, axe on **every page the build produced** (from the sitemap), and Lighthouse on
-twenty pages. The e2e server (`scripts/serve-dist.mjs`) sends the headers `docs-site/vercel.json`
+desktop and phone, axe on **every page the build produced** (from the sitemap), and Lighthouse — on five representative pages
+for a pull request, on all twenty nightly and on `main`. The e2e server (`scripts/serve-dist.mjs`) sends the headers `docs-site/vercel.json`
 gives production, so every page runs under the real Content-Security-Policy.
 
 ### The CSP and its hashes
